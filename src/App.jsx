@@ -1,23 +1,18 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
-import Home from "./pages/Home";
-import About from "./pages/About";
-import Features from "./pages/Features";
-import Contact from "./pages/Contact";
-import Dashboard from "./pages/Dashboard";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
-import AuthRedirector from "./components/AuthRedirector"; // New Component for Redirection
+import {About,Features,Contact,Dashboard,Home} from "./pages";
+import {Header,Footer} from "./components";
+import AuthRedirector from "./auth/AuthRedirector"; // New Component for Redirection
 
 function App() {
     const auth = useAuth();
 
     return (
         
-        <Router> {/* ✅ Wrap Everything Inside Router */}
-        <Navbar />
+        <Router> 
+        <Header />
             {!auth.isAuthenticated }
-            <AuthRedirector /> {/* ✅ Handles redirection inside the Router */}
+            <AuthRedirector /> {/*Handles redirection inside the Router */}
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/about" element={<About />} />
