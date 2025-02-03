@@ -140,7 +140,7 @@ const Contact = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-btn hover:bg-highlight hover:text-white text-black font-semibold py-3 px-8 rounded-lg shadow-lg transition duration-300 ease-in-out mt-4"
+                className="btn"
               >
                 {loading ? "Sending..." : "Submit"}
               </Button>

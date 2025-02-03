@@ -48,13 +48,13 @@ const Header = () => {
                 >
                   Sign in
                 </button>
-                <Button onClick={signUpRedirect} className="bg-btn hover:bg-highlight hover:text-white text-black font-semibold py-3 px-6 md:py-3 md:px-8 rounded-lg shadow-lg transition duration-300 ease-in-out">
+                <Button onClick={signUpRedirect} className="btn">
                   Sign up
                 </Button>
               </>
             ) : (
               <>
-                <span className="text-white text-sm md:text-base lg:text-lg">
+                <span className="text-white text-sm md:text-sm lg:text-sm">
                   👤 {auth.user?.profile.email || "User"}
                 </span>
                 <Button onClick={signOutRedirect} className="btn">
