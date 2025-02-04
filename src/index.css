@@ -262,6 +262,9 @@
 .l-page-image{
   @apply w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl shadow-2xl shadow-black rounded-2xl
 }
+.dash{
+  @apply bg-bckground/50 border border-lines p-4 flex items-center justify-center
+}
 
 /*:root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
