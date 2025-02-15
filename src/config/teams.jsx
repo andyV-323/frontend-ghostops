@@ -1,0 +1,28 @@
+/** @format */
+
+export const TEAMS = [
+	"Reconnaissance (Recon)",
+	"Assault",
+	"Sniper",
+	"Demolition",
+	"Breach",
+	"Direct Action",
+	"Hostage Rescue",
+	"Sabotage",
+	"Pathfinders",
+	"Long-Range Surveillance (LRS)",
+	"Counter-Terrorism",
+	"Psychological Operations (PSYOPS)",
+	"Forward Air Control (FAC)",
+	"Underwater Demolition (UDT)",
+	"Mountain Warfare",
+	"Jungle Warfare",
+	"Urban Warfare",
+	"Clandestine Operations",
+	"Unconventional Warfare",
+	"Combat Search and Rescue (CSAR)",
+	"Electronic Warfare",
+	"EOD (Explosive Ordnance Disposal)",
+	"JTAC (Joint Terminal Attack Controller)",
+	"Logistics/Support",
+];

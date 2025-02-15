@@ -1,7 +1,10 @@
-import About from "./About";
-import Contact from "./Contact";
-import OperatorDashboard from "./OperatorDashboard.jsx";
-import Features from "./Features";
-import Home from "./Home";
+/** @format */
 
-export { About, Contact, OperatorDashboard, Features, Home };
+import About from "./landing/About.jsx";
+import Contact from "./landing/Contact.jsx";
+import OperatorDashboard from "./dashboard/OperatorDashboard.jsx";
+import Features from "./landing/Features.jsx";
+import Home from "./landing/Home.jsx";
+import Briefing from "./dashboard/Briefing.jsx";
+
+export { About, Contact, OperatorDashboard, Features, Home, Briefing };
