@@ -1,7 +1,4 @@
-/** @format */
-
 export const INJURIES = [
-	// 🔹 Minor Injuries (1-5 Days Recovery)
 	{
 		injury: "Flesh Wound",
 		recoveryDays: "1 days",
@@ -23,7 +20,6 @@ export const INJURIES = [
 		recoveryHours: [7.5],
 	},
 
-	// Moderate Injuries (1-2 Weeks Recovery)
 	{
 		injury: "Sprained Ankle",
 		recoveryDays: "7 days",
@@ -50,7 +46,6 @@ export const INJURIES = [
 		recoveryHours: [35],
 	},
 
-	// 🔹 Serious Injuries (2-6 Weeks Recovery)
 	{
 		injury: "Prolonged Headache & Nausea",
 		recoveryDays: "30 days",
@@ -77,7 +72,6 @@ export const INJURIES = [
 		recoveryHours: [105],
 	},
 
-	// 🔹 Major Bone Fractures (4-12 Weeks Recovery)
 	{
 		injury: "Broken Arm",
 		recoveryDays: "6 weeks",
@@ -99,7 +93,6 @@ export const INJURIES = [
 		recoveryHours: [210],
 	},
 
-	// 🔹 Severe Burns & Trauma (4-6 Months Recovery)
 	{
 		injury: "Severe Burn from Explosion",
 		recoveryDays: "120 days",
@@ -111,7 +104,6 @@ export const INJURIES = [
 		recoveryHours: [280],
 	},
 
-	// 🔹 Traumatic Brain Injuries (6-12 Months Recovery)
 	{
 		injury: "TBI w/ Prolonged Unconsciousness",
 		recoveryDays: "180 days",
@@ -123,7 +115,6 @@ export const INJURIES = [
 		recoveryHours: [420],
 	},
 
-	// 🔹 Fatal Injuries (KIA)
 	{
 		injury: "Penetrating Head Injury from Sniper Bullet",
 		recoveryDays: "KIA",

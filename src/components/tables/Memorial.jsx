@@ -1,54 +1,31 @@
-/** @format */
-
-import React, { useState, useEffect } from "react";
-import { getMemorialOperators, reviveOperator } from "../../services/api"; // ✅ Import recovery function
+import React, { useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faCaretDown,
 	faCaretUp,
 	faBoltLightning,
 } from "@fortawesome/free-solid-svg-icons";
+import { PropTypes } from "prop-types";
+import { useToggleExpand } from "@/hooks";
+import { useMemorialStore } from "@/zustand";
 
-const Memorial = ({ dataUpdated, refreshData }) => {
-	const [KIAOperators, setKIAOperators] = useState([]);
-	const [expandedOperator, setExpandedOperator] = useState(null);
+const Memorial = () => {
+	const { KIAOperators, fetchKIAOperators, reviveOperator } =
+		useMemorialStore();
+	const [expandedOperator, toggleExpand] = useToggleExpand();
 
-	// Fetch injured operators
+	// Fetch KIA operators on mount & when data updates
 	useEffect(() => {
-		const fetchKIAOperators = async () => {
-			try {
-				const data = await getMemorialOperators();
-				console.log("DEBUG: Injured Operators Data:", data);
-				setKIAOperators(data);
-			} catch (error) {
-				console.error("❌ ERROR fetching injured operators:", error);
-			}
-		};
-
 		fetchKIAOperators();
-	}, [dataUpdated]);
-
-	// Toggle expand/collapse
-	const toggleExpand = (index) => {
-		setExpandedOperator(expandedOperator === index ? null : index);
-	};
-
-	// Handle Recovery
-	const handleRevive = async (id) => {
-		try {
-			await reviveOperator(id);
-			// Remove the recovered operator from the UI
-			setKIAOperators((prev) => prev.filter((op) => op._id !== id));
-			refreshData();
-		} catch (error) {
-			console.error("❌ ERROR recovering operator:", error);
-		}
-	};
+	}, [KIAOperators.length]);
 
 	return (
 		<div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
-			<table className='w-full text-sm text-left text-gray-400'>
-				<thead className='text-md text-fontz uppercase bg-linear-to-r/oklch from-blk to-neutral-800 '>
+			<h1 className='flex flex-col items-center text-fontz text-lg font-bold '>
+				Fallen Ghost
+			</h1>
+			<table className='w-full text-sm text-left text-gray-400 '>
+				<thead className='text-md text-fontz uppercase bg-linear-to-r/oklch from-blk to-neutral-800  '>
 					<tr>
 						<th className='px-4 md:px-6 py-3'>Name</th>
 						<th className='px-4 md:px-6 py-3'>Date</th>
@@ -78,13 +55,13 @@ const Memorial = ({ dataUpdated, refreshData }) => {
 										</div>
 									</th>
 									<td className='px-4 md:px-6 py-4'>
-										{entry.dateOfDeath} date
+										{new Date(entry.dateOfDeath).toISOString().split("T")[0]}
 									</td>
 									<td className='px-4 md:px-6 py-4 flex justify-between items-center'>
 										<button
 											onClick={(e) => {
 												e.stopPropagation(); // Prevent row expansion
-												handleRevive(entry._id);
+												reviveOperator(entry._id);
 											}}
 											className='text-lg text-fontz hover:text-white'>
 											<FontAwesomeIcon
@@ -124,7 +101,7 @@ const Memorial = ({ dataUpdated, refreshData }) => {
 							<td
 								colSpan='3'
 								className='text-center py-4 text-gray-400'>
-								No Dead Operators.
+								No Casualties...
 							</td>
 						</tr>
 					)}
@@ -132,6 +109,10 @@ const Memorial = ({ dataUpdated, refreshData }) => {
 			</table>
 		</div>
 	);
+};
+Memorial.propTypes = {
+	dataUpdated: PropTypes.bool,
+	refreshData: PropTypes.func,
 };
 
 export default Memorial;

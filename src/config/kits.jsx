@@ -1,5 +1,3 @@
-/** @format */
-
 export const KITS = {
 	NONE: {
 		name: "None",
@@ -18,11 +16,11 @@ export const KITS = {
 		img: "/gear/Comms.png",
 	},
 	CYBER: {
-		name: "Cyber Warefare(SIGINT) Kit",
+		name: "Cyber Warefare (SIGINT) Kit",
 		img: "/gear/Cyber.png",
 	},
-	DEFAULT: {
-		name: "Default",
+	GHOST: {
+		name: "GHOST",
 		img: "/gear/default.png",
 	},
 	DEMO: {

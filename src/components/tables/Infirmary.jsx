@@ -1,52 +1,30 @@
-/** @format */
+import React, { useEffect } from "react";
 
-import React, { useState, useEffect } from "react";
-import { getInjuredOperators, recoverOperator } from "../../services/api"; // ✅ Import recovery function
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faCaretDown,
 	faCaretUp,
 	faSyringe,
 } from "@fortawesome/free-solid-svg-icons";
+import { PropTypes } from "prop-types";
+import { useToggleExpand } from "@/hooks";
+import { useInfirmaryStore } from "@/zustand";
 
-const Infirmary = ({ dataUpdated, refreshData }) => {
-	const [injuredOperators, setInjuredOperators] = useState([]);
-	const [expandedOperator, setExpandedOperator] = useState(null);
+const Infirmary = () => {
+	const { injuredOperators, fetchInjuredOperators, recoverOperator } =
+		useInfirmaryStore();
+	const [expandedOperator, toggleExpand] = useToggleExpand();
 
 	// Fetch injured operators
 	useEffect(() => {
-		const fetchInjuredOperators = async () => {
-			try {
-				const data = await getInjuredOperators();
-				console.log("DEBUG: Injured Operators Data:", data);
-				setInjuredOperators(data);
-			} catch (error) {
-				console.error("❌ ERROR fetching injured operators:", error);
-			}
-		};
-
 		fetchInjuredOperators();
-	}, [dataUpdated]);
-
-	// Toggle expand/collapse
-	const toggleExpand = (index) => {
-		setExpandedOperator(expandedOperator === index ? null : index);
-	};
-
-	// Handle Recovery
-	const handleRecover = async (id) => {
-		try {
-			await recoverOperator(id);
-			// Remove the recovered operator from the UI
-			setInjuredOperators((prev) => prev.filter((op) => op._id !== id));
-			refreshData();
-		} catch (error) {
-			console.error("❌ ERROR recovering operator:", error);
-		}
-	};
+	}, [injuredOperators.length]);
 
 	return (
 		<div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
+			<h1 className='flex flex-col items-center text-lg text-fontz font-bold'>
+				Infirmary
+			</h1>
 			<table className='w-full text-sm text-left text-gray-400'>
 				<thead className='text-md text-fontz uppercase bg-linear-to-r/oklch from-blk to-neutral-800 '>
 					<tr>
@@ -58,9 +36,11 @@ const Infirmary = ({ dataUpdated, refreshData }) => {
 				<tbody>
 					{injuredOperators.length > 0 ? (
 						injuredOperators.map((entry, index) => (
-							<React.Fragment key={entry._id}>
+							<React.Fragment
+								key={entry.operator?._id || entry.injuredAt || index}>
 								{/* Main Row */}
 								<tr
+									key={`main-${entry.operator?._id || index}`}
 									onClick={() => toggleExpand(index)}
 									className='cursor-pointer bg-transparent border-b hover:bg-highlight transition-all duration-300'>
 									<th
@@ -84,7 +64,7 @@ const Infirmary = ({ dataUpdated, refreshData }) => {
 										<button
 											onClick={(e) => {
 												e.stopPropagation(); // Prevent row expansion
-												handleRecover(entry._id);
+												recoverOperator(entry._id);
 											}}
 											className='text-xl text-fontz hover:text-white'>
 											<FontAwesomeIcon icon={faSyringe} />
@@ -101,7 +81,7 @@ const Infirmary = ({ dataUpdated, refreshData }) => {
 
 								{/* Expanded Row (Injury Details) */}
 								{expandedOperator === index && (
-									<tr>
+									<tr key={`expanded-${entry.operator?._id || index}`}>
 										<td
 											colSpan='3'
 											className='p-4 bg-blk/50 text-gray-400'>
@@ -121,7 +101,7 @@ const Infirmary = ({ dataUpdated, refreshData }) => {
 							<td
 								colSpan='3'
 								className='text-center py-4 text-gray-400'>
-								No injured operators.
+								No Wounded...
 							</td>
 						</tr>
 					)}
@@ -129,6 +109,10 @@ const Infirmary = ({ dataUpdated, refreshData }) => {
 			</table>
 		</div>
 	);
+};
+Infirmary.propTypes = {
+	dataUpdated: PropTypes.bool,
+	refreshData: PropTypes.func,
 };
 
 export default Infirmary;

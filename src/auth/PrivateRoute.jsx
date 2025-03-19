@@ -1,13 +1,12 @@
-/** @format */
 import { Navigate } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
+import { PropTypes } from "prop-types";
 
-// ✅ Redirects to home if user is NOT authenticated
+//Redirects to landing page if user is NOT authenticated
 const PrivateRoute = ({ children }) => {
 	const auth = useAuth();
 
 	if (!auth.isAuthenticated) {
-		console.log("Unauthorized access! Redirecting to Home...");
 		return (
 			<Navigate
 				to='/'
@@ -17,6 +16,9 @@ const PrivateRoute = ({ children }) => {
 	}
 
 	return children;
+};
+PrivateRoute.propTypes = {
+	children: PropTypes.node.isRequired,
 };
 
 export default PrivateRoute;

@@ -1,5 +1,3 @@
-/** @format */
-
 import AuthRedirector from "./AuthRedirector";
 import PrivateRoute from "./PrivateRoute";
 

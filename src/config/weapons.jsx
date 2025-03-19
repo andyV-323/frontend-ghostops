@@ -1,5 +1,3 @@
-/** @format */
-
 export const WEAPONS = {
 	ASR: {
 		name: "Assault Rifle",

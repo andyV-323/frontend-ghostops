@@ -1,5 +1,3 @@
-/** @format */
-
 export const PROVINCES = {
 	Golem1: {
 		coordinates: {
@@ -16,10 +14,10 @@ export const PROVINCES = {
 			{
 				name: "Ancient Harbor",
 				coordinates: [190, 360],
-				description: "Ancient harbor reporpused as a depot by the Wolves.",
+				description: "Ancient harbor repurposed as a depot by the Wolves.",
 			},
 			{
-				name: "Golem Island Sattelite Dish",
+				name: "Golem Island Satellite Dish",
 				coordinates: [250, 460],
 				description:
 					"Skell Facility built to communicate and send data through the world.",
@@ -80,7 +78,7 @@ export const PROVINCES = {
 			{
 				name: "Forgotten Sanctuary",
 				coordinates: [220, 560],
-				description: "Ancient Santuary",
+				description: "Ancient Sanctuary",
 			},
 		],
 	},
@@ -120,7 +118,7 @@ export const PROVINCES = {
 				name: "No Man's Land",
 				coordinates: [430, 995],
 				description:
-					"Cold War training camp obliberated by the 1968 Volcano eruption.",
+					"Cold War training camp obliterated by the 1968 Volcano eruption.",
 			},
 			{
 				name: "Prototype Workshop",
@@ -145,19 +143,19 @@ export const PROVINCES = {
 				name: "Skell Foundation Campus",
 				coordinates: [330, 610],
 				description:
-					"The epicenter of Skell Tech's AI research, this expansive floating campus is nestled in the heart of a rainforest-surrounded lake. It consists of multiple two-story buildings and is partially civilian-operated, supporting PMC activities. The blend of technology and nature, along with its strategic isolation, makes it a critical node for both intelligence operations and direct action missions.",
+					"The epicenter of Skell Tech's AI research, this expansive floating campus is nestled in the heart of a rain forest surrounded lake. It consists of multiple two-story buildings and is partially civilian-operated, supporting PMC activities. The blend of technology and nature, along with its strategic isolation, makes it a critical node for both intelligence operations and direct action missions.",
 			},
 			{
 				name: "Darkwood Island Port",
 				coordinates: [250, 740],
 				description:
-					"Formerly bustling with tourists, this port served as a gateway to the Auroan Islands. Set against a lush rainforest backdrop and accessible by two main roads, its strategic position along vital waterways makes it an ideal location for maritime security operations or covert insertions.",
+					"Formerly bustling with tourists, this port served as a gateway to the Auroan Islands. Set against a lush rain forest backdrop and accessible by two main roads, its strategic position along vital waterways makes it an ideal location for maritime security operations or covert insertions.",
 			},
 			{
 				name: "Bat SAM Site",
 				coordinates: [165, 690],
 				description:
-					"This beach-adjacent SAM launcher site, though lightly manned, is strategically crucial due to its anti-air capabilities. The surrounding rainforest is patrolled by PMC forces, posing a constant threat and making this site a priority target for disabling enemy air defenses.",
+					"This beach-adjacent SAM launcher site, though lightly manned, is strategically crucial due to its anti-air capabilities. The surrounding rain forest is patrolled by PMC forces, posing a constant threat and making this site a priority target for disabling enemy air defenses.",
 			},
 			{
 				name: "Construction Site",
@@ -169,7 +167,7 @@ export const PROVINCES = {
 				name: "Campus Data Farm",
 				coordinates: [410, 550],
 				description:
-					"Deep within the rainforest lies the Campus Data Farm, a high-security facility housing the backup servers for Auroa's data. Heavily guarded by Sentinel, it holds vital intelligence, making it a prime target for data retrieval missions or sabotage.",
+					"Deep within the rain forest lies the Campus Data Farm, a high-security facility housing the backup servers for Auroa's data. Heavily guarded by Sentinel, it holds vital intelligence, making it a prime target for data retrieval missions or sabotage.",
 			},
 			{
 				name: "Underwater Cable Station",
@@ -187,7 +185,7 @@ export const PROVINCES = {
 				name: "A.I Experimental Center",
 				coordinates: [690, 790],
 				description:
-					"Shrouded in the dense foliage of Cape North's rainforest, this facility is at the forefront of AI testing and implementation. Its secluded location on a peninsula makes it a challenging but valuable target for missions aimed at undermining enemy tech advancements.",
+					"Shrouded in the dense foliage of Cape North's rain forest, this facility is at the forefront of AI testing and implementation. Its secluded location on a peninsula makes it a challenging but valuable target for missions aimed at undermining enemy tech advancements.",
 			},
 			{
 				name: "Sentinel Corp. Location",
@@ -219,19 +217,19 @@ export const PROVINCES = {
 				name: "Camp Kodiak",
 				coordinates: [80, 1215],
 				description:
-					"A formidable Wolves base, suspected of detaining captured outcasts. Concealed within the dense rainforest, this heavily defended island base is accessible by a small dock. Its natural camouflage and strategic location make it a daunting challenge to liberate the captives held within. Operations here will require careful planning and stealth, with potential for direct confrontation.",
+					"A formidable Wolves base, suspected of detaining captured outcasts. Concealed within the dense rain forest, this heavily defended island base is accessible by a small dock. Its natural camouflage and strategic location make it a daunting challenge to liberate the captives held within. Operations here will require careful planning and stealth, with potential for direct confrontation.",
 			},
 			{
 				name: "Ancient Sanctuary",
 				coordinates: [300, 1030],
 				description:
-					"Shrouded in mystery, this site holds the remnants of a bygone civilization, now claimed by the jungle's embrace. While the ruins offer historical insights, enemy patrols frequent the area, suggesting a significant interest. Operations in this locale demand navigation through dense rainforest and vigilance for enemy movements, aiming to uncover hidden secrets while avoiding detection.",
+					"Shrouded in mystery, this site holds the remnants of a bygone civilization, now claimed by the jungle's embrace. While the ruins offer historical insights, enemy patrols frequent the area, suggesting a significant interest. Operations in this locale demand navigation through dense rain forest and vigilance for enemy movements, aiming to uncover hidden secrets while avoiding detection.",
 			},
 			{
 				name: "Ancient Cemetery",
 				coordinates: [200, 1155],
 				description:
-					"Amidst the rainforest's heart lies the hauntingly serene ruins of an ancient civilization's cemetery. Despite its peaceful appearance, the area is under the watchful eyes of enemy patrols. Missions here will involve exploration and possibly confrontation. The dual challenge of navigating the treacherous terrain and engaging with patrolling adversaries necessitates a balanced approach to stealth and combat.",
+					"Amidst the rain forest's heart lies the hauntingly serene ruins of an ancient civilization's cemetery. Despite its peaceful appearance, the area is under the watchful eyes of enemy patrols. Missions here will involve exploration and possibly confrontation. The dual challenge of navigating the treacherous terrain and engaging with patrolling adversaries necessitates a balanced approach to stealth and combat.",
 			},
 		],
 	},
@@ -323,7 +321,7 @@ export const PROVINCES = {
 				name: "Storage Depot",
 				coordinates: [310, 730],
 				description:
-					"A crucial waypoint for materials from Whangara, surrounded by cliffs and guarded by enemies. Its strategic positioning requires precise and stealthy operational planning.",
+					"A crucial waypoint for materials , surrounded by cliffs and guarded by enemies. Its strategic positioning requires precise and stealthy operational planning.",
 			},
 			{
 				name: "Checkpoint Tiger Foxtrot",
@@ -403,7 +401,7 @@ export const PROVINCES = {
 				name: "Oleander Station",
 				coordinates: [200, 940],
 				description:
-					"Similar to Foxglove, this Skell Tech site is under PMC lockdown. Securing or liberating this site involves breaching operations under the threat of close-quarters combat, ideal for intense MILSIM engagements.",
+					"Similar to Foxglove, this Skell Tech site is under PMC lock down. Securing or liberating this site involves breaching operations under the threat of close-quarters combat, ideal for intense MILSIM engagements.",
 			},
 			{
 				name: "Polymorph Modeling",
@@ -560,7 +558,7 @@ export const PROVINCES = {
 				name: "Bunker Edgehod South",
 				coordinates: [80, 1012],
 				description:
-					"Renovated Cold War bunkers now serve as fortified strongpoints for Sentinel Corp. These bunkers offer challenging close-quarters combat scenarios, suitable for training in breach and clear tactics.",
+					"Renovated Cold War bunkers now serve as fortified strong points for Sentinel Corp. These bunkers offer challenging close-quarters combat scenarios, suitable for training in breach and clear tactics.",
 			},
 			{
 				name: "Camp Tiger",
@@ -604,7 +602,7 @@ export const PROVINCES = {
 				name: "Storage Depot",
 				coordinates: [550, 890],
 				description:
-					"Central storage facility for materials sourced from Whangara, heavily guarded due to its significance in supply chains. Infiltrating this depot could involve diversion tactics and precise execution to secure or destroy valuable resources.",
+					"Central storage facility for materials , heavily guarded due to its significance in supply chains. Infiltrating this depot could involve diversion tactics and precise execution to secure or destroy valuable resources.",
 			},
 			{
 				name: "Mechanical R&D Center",
@@ -646,7 +644,7 @@ export const PROVINCES = {
 				name: "Blue Cove Station",
 				coordinates: [300, 550],
 				description:
-					"Features remnants of a 19th-century whaler port, offering unique historical and tactical gameplay elements. The area's old structures could serve as hiding spots or defensive positions in skirmishes.",
+					"Features remnants of a 19th-century whaler port, offering unique historical and tactical game play elements. The area's old structures could serve as hiding spots or defensive positions in skirmishes.",
 			},
 			{
 				name: "Ancient Harbor",
@@ -824,7 +822,7 @@ export const PROVINCES = {
 				name: "Control Station Tiger 02",
 				coordinates: [350, 950],
 				description:
-					"This critical control station, established under Operation Citadel, orchestrates lethal drone operations throughout the region. As a nerve center for autonomous warfare capabilities, it is fortified with state-of-the-art defense systems and heavily guarded by elite PMC units. The station's strategic importance makes it a prime target for disabling enemy drone capabilities. Operations here might involve complex cyberwarfare to hijack control systems, stealth infiltration to gather intelligence, or a direct assault to neutralize the facility, disrupting enemy aerial superiority and impacting battlefield dynamics across FenBog.",
+					"This critical control station, established under Operation Citadel, orchestrates lethal drone operations throughout the region. As a nerve center for autonomous warfare capabilities, it is fortified with state-of-the-art defense systems and heavily guarded by elite PMC units. The station's strategic importance makes it a prime target for disabling enemy drone capabilities. Operations here might involve complex cyber warfare to hijack control systems, stealth infiltration to gather intelligence, or a direct assault to neutralize the facility, disrupting enemy aerial superiority and impacting battlefield dynamics across FenBog.",
 			},
 			{
 				name: "Drone Station W051",
@@ -1428,13 +1426,13 @@ export const PROVINCES = {
 				name: "Gate 07",
 				coordinates: [35, 435],
 				description:
-					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hotspots for breaching or defense operations in MILSIM.",
+					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hot spots for breaching or defense operations in MILSIM.",
 			},
 			{
 				name: "Gate 03",
 				coordinates: [275, 1160],
 				description:
-					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hotspots for breaching or defense operations in MILSIM.",
+					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hot spots for breaching or defense operations in MILSIM.",
 			},
 			{
 				name: "Nugget Cliff",
@@ -1463,13 +1461,13 @@ export const PROVINCES = {
 				name: "Gate 06",
 				coordinates: [200, 650],
 				description:
-					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hotspots for breaching or defense operations in MILSIM.",
+					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hot spots for breaching or defense operations in MILSIM.",
 			},
 			{
 				name: "Gate 05",
 				coordinates: [150, 660],
 				description:
-					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hotspots for breaching or defense operations in MILSIM.",
+					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hot spots for breaching or defense operations in MILSIM.",
 			},
 			{
 				name: "Stony Creek Village",
@@ -1480,7 +1478,7 @@ export const PROVINCES = {
 				name: "Gate 04",
 				coordinates: [80, 845],
 				description:
-					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hotspots for breaching or defense operations in MILSIM.",
+					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hot spots for breaching or defense operations in MILSIM.",
 			},
 			{
 				name: "Checkpoint Fox Delta",
@@ -1557,13 +1555,13 @@ export const PROVINCES = {
 				name: "Gate 02",
 				coordinates: [325, 1130],
 				description:
-					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hotspots for breaching or defense operations in MILSIM.",
+					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hot spots for breaching or defense operations in MILSIM.",
 			},
 			{
 				name: "Gate 01",
 				coordinates: [450, 1135],
 				description:
-					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hotspots for breaching or defense operations in MILSIM.",
+					"Various secured entrances to RestrictedArea01, each serving as critical junctures for access control, making them hot spots for breaching or defense operations in MILSIM.",
 			},
 		],
 	},

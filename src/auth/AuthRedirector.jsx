@@ -1,18 +1,16 @@
-/** @format */
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
 
-// Redirect only if the user is on "/" (home), allow all /dashboard/* routes
+// Redirect only if the user is on landing page, allow all /dashboard/* routes
 const AuthRedirector = () => {
 	const auth = useAuth();
 	const navigate = useNavigate();
-	const location = useLocation(); // Get the current page
+	const location = useLocation();
 
 	useEffect(() => {
 		if (auth.isAuthenticated && location.pathname === "/") {
-			console.log("User logged in, redirecting to Dashboard...");
-			navigate("/dashboard"); // Redirect only from "/"
+			navigate("/dashboard");
 		}
 	}, [auth.isAuthenticated, navigate, location.pathname]);
 

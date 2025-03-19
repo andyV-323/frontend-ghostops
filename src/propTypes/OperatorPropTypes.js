@@ -1,0 +1,27 @@
+import PropTypes from "prop-types";
+
+export const OperatorPropTypes = PropTypes.shape({
+	_id: PropTypes.string.isRequired,
+	name: PropTypes.string,
+	callSign: PropTypes.string.isRequired,
+	gear: PropTypes.string,
+	secondaryGear: PropTypes.string,
+	class: PropTypes.string.isRequired,
+	secondaryClass: PropTypes.string,
+	status: PropTypes.oneOf(["Active", "Injured", "KIA"]),
+	bio: PropTypes.string,
+	nationality: PropTypes.string,
+	sf: PropTypes.string,
+	image: PropTypes.string,
+	rank: PropTypes.string,
+	primaryname: PropTypes.string,
+	primaryname2: PropTypes.string,
+	secondaryname: PropTypes.string,
+	secondaryname2: PropTypes.string,
+	primaryWeapon1: PropTypes.string,
+	primaryWeapon2: PropTypes.string,
+	secondaryWeapon1: PropTypes.string,
+	secondaryWeapon2: PropTypes.string,
+	sidearm1: PropTypes.string,
+	sidearm2: PropTypes.string,
+});

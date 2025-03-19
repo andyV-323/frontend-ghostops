@@ -1,65 +1,54 @@
-/** @format */
+// Desc: This component displays the list of operators in a table format.
+//       It allows the user to toggle between primary and secondary classes for each operator.
+//       It also allows the user to add a new operator.
 
-import { useState, useEffect } from "react";
-import { getOperators } from "../../services/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRightLeft, faUserPlus } from "@fortawesome/free-solid-svg-icons";
-import { useNavigate } from "react-router-dom";
+import { useOperatorsStore } from "@/zustand";
+import { PropTypes } from "prop-types";
+import { useEffect } from "react";
+import { NewOperatorForm } from "@/components/forms";
 
 const Roster = ({
+	operators = [],
 	setClickedOperator,
-	setSelectedClass,
 	dataUpdated,
-	refreshData,
+	openSheet,
 }) => {
-	const [operators, setOperators] = useState([]);
-	const [activeClasses, setActiveClasses] = useState({}); // Track active class for each operator
-	const [selectedOperator, setSelectedOperator] = useState(null); // Track clicked operator
-	const navigate = useNavigate();
+	const {
+		activeClasses,
+		selectedOperator,
+		setSelectedOperator,
+		toggleClass,
+		fetchOperators,
+	} = useOperatorsStore();
+
 	useEffect(() => {
-		const fetchOperators = async () => {
-			try {
-				const data = await getOperators();
-				console.log("DEBUG: Operators fetched:", data);
-				setOperators(data);
-			} catch (error) {
-				console.error("Error fetching operators:", error);
-			}
-		};
-
 		fetchOperators();
-	}, [dataUpdated]);
-
-	// 🔀 Toggle between primary and secondary class
-	const toggleClass = (operatorId, primaryClass, secondaryClass) => {
-		setActiveClasses((prev) => ({
-			...prev,
-			[operatorId]:
-				prev[operatorId] === primaryClass ? secondaryClass : primaryClass,
-		}));
-
-		setSelectedClass(
-			activeClasses[operatorId] === primaryClass ? secondaryClass : primaryClass
-		);
-	};
-	refreshData();
+	}, [fetchOperators, dataUpdated]);
 
 	return (
 		<div className='relative  overflow-x-auto shadow-md sm:rounded-lg'>
+			<h1 className='flex flex-col items-center text-lg text-fontz font-bold'>
+				Roster
+			</h1>
 			<table className='w-full text-md text-left text-gray-400 '>
 				<thead className='text-md text-fontz uppercase  bg-linear-to-r/oklch from-blk to-neutral-800 '>
 					<tr>
 						<th className='px-4 md:px-6 py-3  flex flex-row'>
-							&nbsp;
 							<FontAwesomeIcon
 								icon={faUserPlus}
 								className='bg-btn rounded p-1 text-sm text-black hover:bg-highlight hover:text-white'
-								onClick={(e) => {
-									e.stopPropagation(); // Prevent row click from expanding
-									navigate("/dashboard/new", {});
+								onClick={() => {
+									openSheet(
+										"left",
+										<NewOperatorForm />,
+										"New Operator",
+										"Customize an elite operator by selecting their background, class, loadout, and tactical gear for optimal mission performance."
+									);
 								}}
 							/>
-							&nbsp;Name
+							&nbsp;CallSign
 						</th>
 						<th className='px-4 md:px-6 py-3 '>Class</th>
 						<th className='px-4 md:px-6 py-3 '>Status</th>
@@ -67,7 +56,7 @@ const Roster = ({
 				</thead>
 
 				<tbody>
-					{operators.length > 0 ? (
+					{operators ?? [].length > 0 ? (
 						operators.map((operator) => {
 							const activeClass = activeClasses[operator._id] || operator.class;
 
@@ -77,7 +66,7 @@ const Roster = ({
 									className='bg-transparent border-b hover:bg-highlight'
 									onClick={() => {
 										setClickedOperator(operator);
-										setSelectedOperator(operator._id); // Track clicked operator
+										setSelectedOperator(operator._id);
 									}}>
 									<th
 										scope='row'
@@ -101,9 +90,10 @@ const Roster = ({
 										{selectedOperator === operator._id && (
 											<FontAwesomeIcon
 												icon={faRightLeft}
-												className='ml-3 px-3 py-1 text-xs bg-btn text-bckground rounded hover:bg-lines'
+												className='ml-3 px-3 py-1 text-xs bg-btn text-background rounded hover:bg-lines'
 												onClick={(e) => {
-													e.stopPropagation(); // Prevent row click from triggering
+													e.stopPropagation();
+
 													toggleClass(
 														operator._id,
 														operator.class,
@@ -142,6 +132,14 @@ const Roster = ({
 			</table>
 		</div>
 	);
+};
+Roster.propTypes = {
+	operators: PropTypes.array,
+	setClickedOperator: PropTypes.func,
+	setSelectedClass: PropTypes.func,
+	dataUpdated: PropTypes.bool,
+	refreshData: PropTypes.func,
+	openSheet: PropTypes.func,
 };
 
 export default Roster;
