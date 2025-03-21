@@ -15,6 +15,7 @@ const ConfirmDialog = ({
 	confirmAction,
 	title = "Confirm Action",
 	message = "Are you sure you want to proceed?",
+	description,
 }) => {
 	return (
 		<Dialog
@@ -23,6 +24,9 @@ const ConfirmDialog = ({
 			<DialogContent className='max-w-[90%] sm:max-w-md text-fontz z-[1110]'>
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
+					{description && ( // Render description only if provided
+						<p className='text-sm text-gray-400'>{description}</p>
+					)}
 					<DialogDescription>{message}</DialogDescription>
 				</DialogHeader>
 
@@ -54,6 +58,7 @@ ConfirmDialog.propTypes = {
 	confirmAction: PropTypes.func.isRequired,
 	title: PropTypes.string,
 	message: PropTypes.string,
+	description: PropTypes.string, // Add prop validation for description
 };
 
 export default ConfirmDialog;

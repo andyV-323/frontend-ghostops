@@ -6,11 +6,7 @@ import { EditLoadout } from "@/components/forms";
 
 const Loadout = ({ operator, selectedClass, openSheet }) => {
 	if (!operator) {
-		return (
-			<div className='text-gray-400 p-4 text-center'>
-				Select an operator to view loadout
-			</div>
-		);
+		return <div className='text-gray-400 p-4 text-center'></div>;
 	}
 
 	// Determine if the selected class is primary or secondary

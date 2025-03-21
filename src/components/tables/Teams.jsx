@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faPeopleGroup,
@@ -16,17 +16,20 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	const { teams, fetchTeams, assignRandomInjury } = useTeamsStore();
 	const [expandedTeam, toggleExpand] = useToggleExpand();
 	const userId = localStorage.getItem("userId");
+	const [selectedOperator, setSelectedOperator] = useState(null);
 	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
+
+	const handleAssignRandomInjury = (operator) => {
+		if (!operator) return; // Prevents errors if `operator` is undefined
+		setSelectedOperator(operator);
+		openDialog(() => {
+			assignRandomInjury(operator._id, userId);
+		});
+	};
 
 	useEffect(() => {
 		fetchTeams();
 	}, [fetchTeams, dataUpdated]);
-
-	const handleAssignRandomInjury = (operatorId, userId) => {
-		openDialog(() => {
-			assignRandomInjury(operatorId, userId);
-		});
-	};
 
 	return (
 		<div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
@@ -71,6 +74,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 									<td className='px-6 py-4 font-medium text-gray-400 hover:text-white whitespace-nowrap'>
 										{team.name}
 									</td>
+
 									<td className='px-6 py-4 flex flex-row'>
 										<div className='flex -space-x-4 rtl:space-x-reverse'>
 											{team.operators.slice(0, 4).map((operator) => (
@@ -80,9 +84,6 @@ const Teams = ({ dataUpdated, openSheet }) => {
 													src={operator.image}
 													alt={operator.callSign}
 													title={operator.callSign}
-													onClick={() =>
-														handleAssignRandomInjury(operator._id, userId)
-													}
 												/>
 											))}
 											{team.operators.length > 4 && (
@@ -93,6 +94,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 												</a>
 											)}
 										</div>
+
 										<div className='flex justify-end items-end w-full'>
 											<FontAwesomeIcon
 												icon={expandedTeam === index ? faCaretUp : faCaretDown}
@@ -115,7 +117,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 														className='flex flex-col items-center cursor-pointer'
 														onClick={(e) => {
 															e.stopPropagation();
-															handleAssignRandomInjury(operator._id, userId);
+															handleAssignRandomInjury(operator);
 														}}>
 														<img
 															className={
@@ -169,13 +171,16 @@ const Teams = ({ dataUpdated, openSheet }) => {
 					)}
 				</tbody>
 			</table>
-			<ConfirmDialog
-				isOpen={isOpen}
-				closeDialog={closeDialog}
-				confirmAction={confirmAction}
-				title='Delete Team'
-				message='Are you sure you want to delete this team?'
-			/>
+			{isOpen && selectedOperator && (
+				<ConfirmDialog
+					isOpen={isOpen}
+					closeDialog={closeDialog}
+					confirmAction={confirmAction}
+					title='Confirm Operator Casualty'
+					description='Assign a random injury to the selected operator. The severity of the injury will determine whether they are wounded or KIA.'
+					message={`Are you sure you want to proceed? ${selectedOperator.callSign} may suffer injuries requiring recovery time or may be declared KIA.`}
+				/>
+			)}
 		</div>
 	);
 };

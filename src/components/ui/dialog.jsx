@@ -43,7 +43,7 @@ function DialogClose({ ...props }) {
 const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => {
 	return (
 		<DialogPrimitive.Overlay
-			ref={ref} // ✅ Fix: Forward the ref properly
+			ref={ref}
 			data-slot='dialog-overlay'
 			className={cn(
 				"data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-[1100] bg-black/80",
@@ -62,19 +62,18 @@ const DialogContent = React.forwardRef(
 			<DialogPortal>
 				<DialogOverlay />
 				<DialogPrimitive.Content
-					ref={ref} // ✅ Fix: Forward the ref properly
+					ref={ref}
 					data-slot='dialog-content'
-					aria-describedby='dialog-content-description' // ✅ Explicitly set a static ID
+					aria-describedby='dialog-content-description'
 					className={cn(
 						"bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[1200] grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
 						className
 					)}
 					{...props}>
-					{/* ✅ Ensure Radix UI finds a valid `aria-describedby` */}
 					<DialogPrimitive.Description
 						id='dialog-content-description'
 						className='text-muted-foreground text-sm'>
-						This dialog provides additional details.
+						{props.description}
 					</DialogPrimitive.Description>
 
 					{children}

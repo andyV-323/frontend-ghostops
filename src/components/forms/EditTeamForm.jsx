@@ -165,8 +165,9 @@ const EditTeamForm = ({ teamId }) => {
 
 			<ConfirmDialog
 				className='text-fontz'
-				title='Delete Team'
-				message='Are you sure you want to delete this team? This action cannot be undone.'
+				title='Confirm Team Deletion'
+				description='This will permanently remove the team and unassign all its operators. This action cannot be undone.'
+				message={`Are you sure you want to delete ${teamName}? Once deleted, the team and its assignments will be lost forever.`}
 				isOpen={isOpen}
 				closeDialog={closeDialog}
 				confirmAction={confirmAction}

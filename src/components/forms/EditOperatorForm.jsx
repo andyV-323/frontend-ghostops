@@ -156,8 +156,9 @@ const EditOperatorForm = ({ operator }) => {
 				isOpen={isOpen}
 				closeDialog={closeDialog}
 				confirmAction={confirmAction}
-				title='Delete Operator'
-				message='Are you sure you want to delete this operator? This action cannot be undone.'
+				title='Confirm Operator Deletion'
+				description='This will permanently remove the operator and all associated data. This action cannot be undone.'
+				message={`Are you sure you want to delete ${selectedOperator.callSign}? Once deleted, all records of this operator will be lost forever.`}
 			/>
 		</section>
 	);

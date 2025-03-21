@@ -10,21 +10,22 @@ const Footer = () => {
 			prev: null,
 			next: { path: "/dashboard", label: "Dashboard", icon: faArrowRight },
 		},
-		"/dashboard/stats": {
+		/*"/dashboard/stats": {
 			prev: {
 				path: "/dashboard",
 				label: "Dashboard",
 				icon: faArrowLeft,
 			},
 			next: null,
-		},
+		},*/
 		"/dashboard": {
 			prev: {
 				path: "/dashboard/briefing",
 				label: "Briefing",
 				icon: faArrowLeft,
 			},
-			next: { path: "/dashboard/stats", label: "Stats", icon: faArrowRight },
+			/*next: { path: "/dashboard/stats", label: "Stats", icon: faArrowRight },*/
+			next: null,
 		},
 	};
 
