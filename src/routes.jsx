@@ -30,10 +30,8 @@ const AppRoutes = () => {
 						index
 						element={<Home />}
 					/>{" "}
-					{/* ✅ Nested inside MainLayout */}
 				</Route>
-				{/* Private Routes (Require Authentication) */}
-				{/* Dashboard Routes (Wrapped in `DashboardLayout`) */}
+
 				<Route
 					path='/dashboard'
 					element={

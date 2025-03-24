@@ -50,9 +50,9 @@ const EditLoadout = ({ operator }) => {
 					</select>
 				</div>
 				<br />
-				{/*GEAR*/}
+				{/*ROLE*/}
 				<div>
-					<label className='block mb-2 font-medium '>Gear Kit</label>
+					<label className='block mb-2 font-medium '>Role</label>
 					<select
 						name='gear'
 						className='form'
@@ -61,8 +61,9 @@ const EditLoadout = ({ operator }) => {
 								...selectedOperator,
 								gear: e.target.value,
 							})
-						}>
-						<option value=''>select Kit</option>
+						}
+						value={selectedOperator.gear || ""}>
+						<option value=''>Select Role</option>
 						{Object.keys(KITS).map((key) => (
 							<option
 								key={key}
@@ -176,9 +177,9 @@ const EditLoadout = ({ operator }) => {
 					</select>
 				</div>
 				<br />
-				{/*GEAR 2*/}
+				{/*ROLE 2*/}
 				<div>
-					<label className='block mb-2 font-medium'>Gear Kit 2</label>
+					<label className='block mb-2 font-medium'>Role 2</label>
 					<select
 						name='secondaryGear'
 						className='form '
@@ -189,7 +190,7 @@ const EditLoadout = ({ operator }) => {
 							})
 						}
 						value={selectedOperator.secondaryGear || ""}>
-						<option value=''>select Kit</option>
+						<option value=''>select Role</option>
 						{Object.keys(KITS).map((key) => (
 							<option
 								key={key}

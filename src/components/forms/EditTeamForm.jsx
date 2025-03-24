@@ -110,7 +110,8 @@ const EditTeamForm = ({ teamId }) => {
 								<option
 									key={operator._id}
 									value={operator._id}>
-									{operator.callSign} - {operator.class}
+									{operator.callSign} - {operator.class}-
+									{operator.secondaryClass}
 								</option>
 							))}
 						</select>

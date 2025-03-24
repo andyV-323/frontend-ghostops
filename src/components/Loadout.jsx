@@ -10,7 +10,9 @@ const Loadout = ({ operator, selectedClass, openSheet }) => {
 	}
 
 	// Determine if the selected class is primary or secondary
-	const isPrimary = selectedClass === operator.class;
+	const isPrimary =
+		selectedClass === operator.class ||
+		selectedClass === `${operator.class}-Primary`;
 
 	// Extract correct weapon set based on selectedClass
 	const loadoutData = [
@@ -76,7 +78,7 @@ const Loadout = ({ operator, selectedClass, openSheet }) => {
 						key={idx}
 						className='flex flex-col items-center mt-10'>
 						<img
-							className='object-cover bg-blk/50 object-center w-auto rounded-lg h-10 md:h-8 lg:h-10 border border-lines'
+							className='object-cover bg-highlight/50 object-center w-auto rounded-lg h-10 md:h-8 lg:h-10 border border-lines'
 							src={weapon.img}
 							alt={weapon.name}
 						/>

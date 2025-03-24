@@ -72,11 +72,21 @@ const useOperatorsStore = create((set, get) => ({
 	// Toggle between primary and secondary class
 	toggleClass: (operatorId, primaryClass, secondaryClass) => {
 		set((state) => {
-			if (!secondaryClass) return state; // Ensure secondary class exists before toggling
+			if (!secondaryClass) return state;
 
 			const currentClass = state.activeClasses[operatorId] || primaryClass;
-			const newClass =
-				currentClass === primaryClass ? secondaryClass : primaryClass;
+
+			let newClass;
+			if (primaryClass === secondaryClass) {
+				// Special case: both classes are the same
+				newClass =
+					currentClass === `${primaryClass}-Primary`
+						? `${primaryClass}-Secondary`
+						: `${primaryClass}-Primary`;
+			} else {
+				newClass =
+					currentClass === primaryClass ? secondaryClass : primaryClass;
+			}
 
 			return {
 				activeClasses: { ...state.activeClasses, [operatorId]: newClass },
