@@ -19,35 +19,46 @@ export const chatGPTApi = async (feature, data) => {
 				: `The team should be suitable for the following mission: "${data.missionDescription}."`
 		} Consider operator roles, strengths, and mission requirements when selecting the team. Provide a brief justification for each operator chosen.`;
 	} else if (feature === "mission") {
-		messageContent = `Generate a mission briefing based on:
-		- Mission Description: ${data.missionDescription}
-		- Biome: ${data.biome}
-		- Province Description: ${data.provinceDescription}
-		- Map Bounds: ${JSON.stringify(data.bounds)}
-		- Central Mission Coordinates: ${JSON.stringify(data.coordinates)}
-		- Existing Mission Locations: ${JSON.stringify(data.allProvinceCoordinates)}
+		messageContent = `You are a Special Operations Commander. Generate a realistic tactical mission briefing using the information below. Follow ALL instructions.
 
-		**Instructions**:
-		You are a seasoned special operations commander briefing elite operators on an upcoming mission.  
+---
+MISSION PARAMETERS:
+- Objective: ${data.missionDescription}
+- Biome: ${data.biome}
+- Province: ${data.provinceDescription}
+- Mission Coordinates: ${JSON.stringify(data.coordinates)}
+- Other Mission Locations: ${JSON.stringify(data.allProvinceCoordinates)}
+- Map Bounds: ${JSON.stringify(data.bounds)}
 
- Create a **realistic** tactical mission briefing based on the **biome, province details, and mission description**.  - **Equipment recomedations and operator specialties**: recommend what equipment might be useful and what operator specialist or class would be an ideal team for the operation.   
-Walk the team through all phases of the mission:  
+---
+OUTPUT INSTRUCTIONS:
+Your output MUST follow this exact JSON format:
+
+{
+  "briefing": "Write a detailed tactical mission briefing here that includes the following:
   
-	Select **three unique coordinates** for infiltration, exfiltration, and a rally point that:
-			- Are **within** the map bounds.
-			- Are **NOT** in the provided list of mission locations.
-			- The **Infil Point** should be at least **20 units away** from mission coordinates **and** at least **30 units away** from existing mission locations.
-			- The **Exfil Point** should be at least **10 units away** from both the **mission coordinates** and **Infil Point**.
-			- The **Fallback Exfil Point** should be at least **10 units away from **Infil Point** 
-			
+1. Mission Overview — summarize the objective and risks.
+2. Terrain & Biome — explain how the environment affects movement, cover, and visibility.
+3. Insertion Method — recommend one based on the terrain (HALO, vehicle, foot, etc.).
+4. Time of Day — say if this mission should ONLY occur at night or if timing is flexible.
+5. Gear Loadout — recommend headgear, tops, bottoms, gloves, boots, camo or civilian disguise.
+6. Infil Strategy — describe how to approach the target area stealthily.
+7. Exfil Strategy — how to get out safely.
+8. Rally Point — when and why to use it if the mission is compromised.
 
-		**Output JSON Example**:
-		{
-			"briefing": "This mission will require stealth due to dense jungle conditions...",
-			"infilPoint": [x, y],
-			"exfilPoint": [x, y],
-			"fallbackExfil": [x, y] 
-		}
+",
+  "infilPoint": [x, y],
+  "exfilPoint": [x, y],
+  "fallbackExfil": [x, y]
+}
+
+Coordinate rules:
+- All 3 points must be within the map bounds.
+- All 3 points must be UNIQUE.
+- They CANNOT match any in allProvinceCoordinates.
+- \`infilPoint\` must be at least 20 units from missionCoordinates and 30 from allProvinceCoordinates.
+- \`exfilPoint\` must be at least 10 units from both the missionCoordinates and infilPoint.
+- \`fallbackExfil\` must be at least 10 units from infilPoint.
 `;
 	}
 

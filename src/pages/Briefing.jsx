@@ -110,7 +110,7 @@ const Briefing = () => {
 
 				{/* === MAP === */}
 				<div
-					className='bg-background/50 shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px] flex items-center justify-center'
+					className='bg-background/50 shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px]  flex items-center justify-center'
 					style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
 					<MapWrapper
 						mapBounds={mapBounds}

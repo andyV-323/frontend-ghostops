@@ -39,6 +39,9 @@ const Footer = () => {
 					src='/icons/GhostOpsAI.svg'
 					alt='GhostOpsAI Logo'
 					className='h-5 md:h-5 lg:h-10 w-auto'
+					loading='eager'
+					width={160}
+					height={32}
 				/>
 
 				{/* Right - Navigation Buttons */}

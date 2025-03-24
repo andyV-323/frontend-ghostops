@@ -31,17 +31,18 @@ const NoneGeographicalMap = ({
 			zoom: -1,
 			crs: L.CRS.Simple,
 			dragging: true,
-			zoomControl: false,
-			scrollWheelZoom: false,
+			zoomControl: true,
+			scrollWheelZoom: true,
 		});
-		map.setMinZoom(map.getZoom());
-		map.setMaxZoom(map.getZoom());
+		map.setMinZoom(-1);
+		map.setMaxZoom(0);
+		map.setZoom(0);
 		L.imageOverlay(imgURL, bounds).addTo(map);
 
 		locationsInProvince.forEach((mark) => {
 			// Ensure coordinates exist
 			if (!Array.isArray(mark.coordinates) || mark.coordinates.length !== 2) {
-				console.warn("⚠️ Skipping invalid location:", mark);
+				console.warn("Skipping invalid location:", mark);
 				return;
 			}
 
@@ -124,7 +125,7 @@ const NoneGeographicalMap = ({
 			});
 
 			L.marker(fallbackExfil, { icon: fallbackIcon })
-				.bindPopup("<b>Fallback Exfil Point</b>", { maxWidth: 200 })
+				.bindPopup("<b>Rally Point</b>", { maxWidth: 200 })
 				.addTo(map);
 		}
 
@@ -178,7 +179,7 @@ const NoneGeographicalMap = ({
 					opacity: 1,
 					dashArray: "10, 10", // Dashed line
 				})
-					.bindPopup("Fallback Extraction Path")
+					.bindPopup("Rally Point Path")
 					.addTo(map);
 			}
 		}

@@ -14,6 +14,7 @@ import {
 import DashboardLayout from "./layout/DashboardLayout";
 import MainLayout from "./layout/MainLayout";
 import Stats from "./pages/Stats";
+import Login from "./pages/Login";
 
 // Define Routes
 const AppRoutes = () => {
@@ -31,6 +32,10 @@ const AppRoutes = () => {
 						element={<Home />}
 					/>{" "}
 				</Route>
+				<Route
+					path='login'
+					element={<Login />}
+				/>
 
 				<Route
 					path='/dashboard'
