@@ -44,7 +44,7 @@ const Home = () => {
 				{/* Right Section - Image */}
 				<div className='w-full lg:w-1/2 flex items-center justify-center p-6'>
 					<img
-						src='/img/dash.png'
+						src='/img/Dash.png'
 						alt='Auroa Map'
 						className='l-page-image'
 					/>

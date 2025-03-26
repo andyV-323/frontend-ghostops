@@ -127,7 +127,7 @@ const EditTeamForm = ({ teamId }) => {
 									{useTeamsStore.getState().operators.map((opId) => {
 										const operator = useTeamsStore
 											.getState()
-											.allOperators.find((op) => op._id === opId);
+											.fullOperatorList.find((op) => op._id === opId);
 										return (
 											<li
 												key={opId}

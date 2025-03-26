@@ -1,13 +1,19 @@
 // Desc: This component displays the list of operators in a table format.
 //       It allows the user to toggle between primary and secondary classes for each operator.
 //       It also allows the user to add a new operator.
-
+import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faRightLeft, faUserPlus } from "@fortawesome/free-solid-svg-icons";
+import {
+	faRightLeft,
+	faUserPlus,
+	faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 import { useOperatorsStore } from "@/zustand";
 import { PropTypes } from "prop-types";
 import { useEffect } from "react";
 import { NewOperatorForm } from "@/components/forms";
+import { useConfirmDialog } from "@/hooks";
+import { ConfirmDialog } from "@/components";
 
 const Roster = ({
 	operators = [],
@@ -21,7 +27,10 @@ const Roster = ({
 		setSelectedOperator,
 		toggleClass,
 		fetchOperators,
+		deleteOperator,
 	} = useOperatorsStore();
+	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
+	const [removeOperator, setRemoveOperator] = useState(null);
 
 	useEffect(() => {
 		fetchOperators();
@@ -52,6 +61,7 @@ const Roster = ({
 						</th>
 						<th className='px-4 md:px-6 py-3 '>Class</th>
 						<th className='px-4 md:px-6 py-3 '>Status</th>
+						<th className='px-4 md:px-6 py-3'></th>
 					</tr>
 				</thead>
 
@@ -116,6 +126,16 @@ const Roster = ({
 											{operator.status || "KIA"}
 										</div>
 									</td>
+									<td>
+										<FontAwesomeIcon
+											icon={faTrash}
+											className='text-btn text-2xl cursor-pointer hover:text-blk/50'
+											onClick={() => {
+												setRemoveOperator(operator);
+												openDialog(() => deleteOperator(operator._id));
+											}}
+										/>
+									</td>
 								</tr>
 							);
 						})
@@ -130,6 +150,23 @@ const Roster = ({
 					)}
 				</tbody>
 			</table>
+
+			{removeOperator && (
+				<ConfirmDialog
+					isOpen={isOpen}
+					closeDialog={() => {
+						closeDialog();
+						setRemoveOperator(null);
+					}}
+					confirmAction={() => {
+						confirmAction();
+						setRemoveOperator(null);
+					}}
+					title='Confirm Operator Deletion'
+					description='This will permanently remove the operator and all associated data. This action cannot be undone.'
+					message={`Are you sure you want to delete ${removeOperator.callSign}? Once deleted, all records of this operator will be lost forever.`}
+				/>
+			)}
 		</div>
 	);
 };

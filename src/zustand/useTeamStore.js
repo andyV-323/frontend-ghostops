@@ -22,6 +22,7 @@ const useTeamsStore = create((set, get) => ({
 	selectedTeamType: "",
 	missionDescription: "",
 	teamName: "",
+	fullOperatorList: [],
 
 	// Fetch all teams
 	fetchTeams: async () => {
@@ -90,18 +91,50 @@ const useTeamsStore = create((set, get) => ({
 		}
 	},
 
-	// Fetch active operators
 	fetchOperators: async () => {
 		try {
 			const data = await OperatorsApi.getOperators();
-			const activeOperators = data.filter((op) => op.status === "Active");
-			set({ allOperators: activeOperators }); // Store in global state
+			const allTeams = await TeamsApi.getTeams();
+
+			// Save the full list of operators for rendering names
+			set({ fullOperatorList: data });
+
+			// Filter only active + not assigned for the select dropdown
+			const operatorsInTeams = allTeams.flatMap((team) =>
+				team.operators.map((op) => op._id)
+			);
+			const availableOperators = data.filter(
+				(op) => op.status === "Active" && !operatorsInTeams.includes(op._id)
+			);
+
+			set({ allOperators: availableOperators });
 		} catch (error) {
 			console.error("ERROR fetching operators:", error);
-			set({ allOperators: [] }); // Prevent undefined issues
+			set({ allOperators: [], fullOperatorList: [] });
 		}
 	},
 
+	/*fetchOperators: async () => {
+		try {
+			const data = await OperatorsApi.getOperators();
+			const allTeams = await TeamsApi.getTeams();
+
+			// Get IDs of operators already in teams
+			const operatorsInTeams = allTeams.flatMap((team) =>
+				team.operators.map((op) => op._id)
+			);
+
+			// Only keep active operators who are NOT already assigned
+			const availableOperators = data.filter(
+				(op) => op.status === "Active" && !operatorsInTeams.includes(op._id)
+			);
+
+			set({ allOperators: availableOperators });
+		} catch (error) {
+			console.error("ERROR fetching operators:", error);
+			set({ allOperators: [] });
+		}
+	},*/
 	// Add operator to the team
 	addOperator: (operatorId) => {
 		const { operators } = get();

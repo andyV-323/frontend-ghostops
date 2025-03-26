@@ -19,8 +19,7 @@ const Gear = ({ operator, selectedClass }) => {
 	);
 
 	const isPrimary =
-		selectedClass === operator.class ||
-		selectedClass === `${operator.class}-Primary`;
+		selectedClass === operator.class || selectedClass === `${operator.class}-1`;
 
 	const selectedGear = isPrimary ? gearKey : secondaryGearKey;
 

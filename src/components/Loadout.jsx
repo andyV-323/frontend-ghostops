@@ -11,8 +11,7 @@ const Loadout = ({ operator, selectedClass, openSheet }) => {
 
 	// Determine if the selected class is primary or secondary
 	const isPrimary =
-		selectedClass === operator.class ||
-		selectedClass === `${operator.class}-Primary`;
+		selectedClass === operator.class || selectedClass === `${operator.class}-1`;
 
 	// Extract correct weapon set based on selectedClass
 	const loadoutData = [

@@ -8,7 +8,7 @@ const Footer = () => {
 	const navigation = {
 		"/dashboard/briefing": {
 			prev: null,
-			next: { path: "/dashboard", label: "Dashboard", icon: faArrowRight },
+			next: { path: "/dashboard", label: "Operators", icon: faArrowRight },
 		},
 		/*"/dashboard/stats": {
 			prev: {

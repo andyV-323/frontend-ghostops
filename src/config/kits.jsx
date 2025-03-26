@@ -1,16 +1,4 @@
 export const KITS = {
-	NONE: {
-		name: "None",
-		img: "/gear/none.png",
-		perk: null,
-		description: null,
-		perk1: null,
-		percentage1: null,
-		perk2: null,
-		percentage2: null,
-		perk3: null,
-		percentage3: null,
-	},
 	BREACHER: {
 		name: "Breacher",
 		img: "/icons/Breacher.svg",

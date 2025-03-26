@@ -18,7 +18,7 @@ const ClassLoadout = () => {
 					onChange={handleChange}
 					name='class'
 					required>
-					<option value=''>select Class</option>
+					<option value=''>Select Class</option>
 					{CLASS.map((type) => (
 						<option
 							key={type}
@@ -32,7 +32,7 @@ const ClassLoadout = () => {
 
 			{/* GEAR */}
 			<div className='relative w-full'>
-				<label className='block mb-2 font-medium'>Gear Kit</label>
+				<label className='block mb-2 font-medium'>Select Role</label>
 				<select
 					name='gear'
 					className='form '
@@ -43,7 +43,7 @@ const ClassLoadout = () => {
 							gear: e.target.value,
 						})
 					}>
-					<option value=''>select Kit</option>
+					<option value=''>Select Role</option>
 					{Object.keys(KITS).map((key) => (
 						<option
 							key={key}

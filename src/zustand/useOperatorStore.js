@@ -80,9 +80,9 @@ const useOperatorsStore = create((set, get) => ({
 			if (primaryClass === secondaryClass) {
 				// Special case: both classes are the same
 				newClass =
-					currentClass === `${primaryClass}-Primary`
-						? `${primaryClass}-Secondary`
-						: `${primaryClass}-Primary`;
+					currentClass === `${primaryClass}-1`
+						? `${primaryClass}-2`
+						: `${primaryClass}-1`;
 			} else {
 				newClass =
 					currentClass === primaryClass ? secondaryClass : primaryClass;
