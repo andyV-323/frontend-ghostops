@@ -12,7 +12,7 @@ export default defineConfig({
 	plugins: [react(), tailwindcss()],
 	resolve: {
 		alias: {
-			"@": path.resolve(__dirname, "src"), // ✅ Now this works in Vite!
+			"@": path.resolve(__dirname, "src"),
 		},
 	},
 });
