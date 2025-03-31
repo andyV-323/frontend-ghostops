@@ -24,7 +24,7 @@ const Header = () => {
 					<div className='flex space-x-4'>
 						<button
 							onClick={signIn}
-							className='text-white hover:text-gray-300'>
+							className='text-white hover:text-btn'>
 							Sign in
 						</button>
 						<Button

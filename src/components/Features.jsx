@@ -20,7 +20,7 @@ const FeatureCard = ({ title, icon, description }) => {
 				/>
 				<h3>{title}</h3>
 			</CardHeader>
-			<Typography className='text-center text-sm md:text-base'>
+			<Typography className='text-center text-sm md:text-base text-fontz'>
 				{description
 					.slice(0, isExpanded ? description.length : 2)
 					.map((item, index) => (

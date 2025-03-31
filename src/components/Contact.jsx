@@ -76,11 +76,11 @@ const Contact = () => {
 				<div className='w-full lg:w-1/2 flex items-center justify-center p-6 md:p-10'>
 					<div className='flex flex-col items-center text-center lg:text-left max-w-lg'>
 						<h1 className='text-3xl md:text-5xl font-bold text-white mb-4'>
-							Contact Us
+							Contact
 						</h1>
-						<p className='text-md md:text-lg text-gray-300'>
-							Have a question or feedback? Reach out to us, and we’ll get back
-							to you as soon as possible.
+						<p className='text-md md:text-lg text-fontz'>
+							Have a question or feedback? Reach out , and I’ll get back to you
+							as soon as possible.
 						</p>
 					</div>
 				</div>

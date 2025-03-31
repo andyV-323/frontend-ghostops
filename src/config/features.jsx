@@ -1,14 +1,13 @@
 export const features = [
 	{
-		title: "Squad Management System",
-		icon: "/icons/dashboard.svg",
+		title: "Team Management System",
+		icon: "/icons/team.svg",
 		description: [
-			"Manage operators with in-depth stats and unique roles to suit mission needs.",
+			"Manage operators with in-depth info like class and unique roles to suit mission needs.",
 			"Track injuries with realistic recovery times or mark operators as KIA when lost.",
 			"Organize operators into specialized teams for efficient mission planning.",
 			"Access unique abilities and equipment suited to each operator's role.",
-			"Generate dynamic, realistic missions using ChatGPT for immersive scenarios.",
-			"Select hacking missions to locate vulnerable systems, unlocking intel for rescue operations.",
+			"Generate dynamic, realistic teams using artificial intelligence for immersive scenarios.",
 		],
 	},
 	{
@@ -16,9 +15,10 @@ export const features = [
 		icon: "/icons/ai.svg",
 		description: [
 			"Create a wide variety of mission types, including rescue and reconnaissance operations.",
-			"Leverage ChatGPT to generate authentic, immersive military scenarios tailored to your gameplay.",
+			"Leverage artificial intelligence to generate authentic, immersive military scenarios tailored to your gameplay.",
 			"Set specific mission parameters for customized, challenging experiences.",
-			"Take on hacking missions to breach enemy systems and uncover the locations of captured allies.",
+			"AI generates coordinates for insertion and extraction points, enhancing realism.",
+			"Receive detailed mission briefings, including objectives and potential challenges.",
 		],
 	},
 	{
@@ -29,15 +29,17 @@ export const features = [
 			"Identify key terrains and mission areas to develop strategic plans and approaches.",
 			"Zoom into critical areas to understand the tactical layout of each location.",
 			"Each location marker provides detailed descriptions and mission objectives.",
+			"AI generates coordinates for insertion and extraction points, enhancing realism.",
 		],
 	},
 	{
-		title: "User Stats",
-		icon: "/icons/stats.svg",
+		title: "Loadout System",
+		icon: "/icons/rifle.svg",
 		description: [
-			"View all operators Injured or KIA.",
-			"View graph of performance based on missions completed thorugh AI.",
-			"Get AI predictions on mission success rate.",
+			"Customize operator loadouts with a wide range of weapons.",
+			"Select from various weapon classes, including assault rifles, sniper rifles, sidearms, and more.",
+			"Select a special role for each operator to view perks.",
+			"View loadout for classes like Assault, Sharpshooter,Echelon, and more.",
 		],
 	},
 	{
@@ -46,18 +48,20 @@ export const features = [
 		description: [
 			"Simulate injuries with accurate recovery timelines and visual injury indicators.",
 			"Introduce a realistic layer of unpredictability with potential KIA outcomes.",
-			"Display recovery times for each injury to manage operator readiness.",
+			"Display recovery based on in-game time for each injury to manage operator readiness.",
 			"Explore 28 unique injury types that can affect operators in the field.",
-			"Visualize injuries on a 3D anatomical model for a more immersive experience.",
+			"Track operator injuries and recovery times to enhance realism and strategy.",
 		],
 	},
 	{
-		title: "Team Setup",
-		icon: "/icons/team.svg",
+		title: "Roster",
+		icon: "/icons/dashboard.svg",
 		description: [
-			"Form specialized teams by dividing your squadron into groups of up to 4 operators.",
-			"Create Alpha, Bravo, Charlie, and even a dedicated pilot team for richer roleplay.",
-			"Organize assault, support, recon, or sniper teams, tailoring setups to each mission’s needs.",
+			"View a detailed roster of all operators, including their class, and status.",
+			"Access a comprehensive overview of each operator's status, including health and readiness.",
+			"Organize operators into teams for efficient mission planning.",
+			"Track operator class loadouts, roles, and biography.",
+			"Use AI to generate unique operator biographies, enhancing immersion.",
 		],
 	},
 ];
