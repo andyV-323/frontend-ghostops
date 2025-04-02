@@ -26,7 +26,7 @@ const NewOperatorForm = () => {
 
 	return (
 		<section className='bg-transparent text-sm text-fontz'>
-			<div className='py-8 px-4 mx-auto max-w-2xl lg:py-16'>
+			<div className='py-8 px-4 mx-auto w-full max-w-[600px] lg:py-16'>
 				<form>
 					{/*ID*/}
 					{step === 1 && (

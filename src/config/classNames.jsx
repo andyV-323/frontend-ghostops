@@ -6,5 +6,4 @@ export const CLASS = [
 	"Echelon",
 	"Pathfinder",
 	"Panther",
-	"Pilot",
 ];

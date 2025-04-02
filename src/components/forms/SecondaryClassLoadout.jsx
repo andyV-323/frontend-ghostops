@@ -30,28 +30,34 @@ const SecondaryClassLoadout = () => {
 			</div>
 			<br />
 			{/*GEAR 2*/}
-			<div>
-				<label className='block mb-2 font-medium'>Gear Kit 2</label>
-				<select
-					name='secondaryGear'
-					className='form '
-					value={selectedOperator?.secondaryGear || ""}
-					onChange={(e) =>
-						setSelectedOperator({
-							...selectedOperator,
-							secondaryGear: e.target.value,
-						})
-					}>
-					<option value=''>select Kit</option>
-					{Object.keys(KITS).map((key) => (
-						<option
-							key={key}
-							value={KITS[key].img}>
-							{key}
-						</option>
-					))}
-				</select>
-			</div>
+			{selectedOperator?.secondaryClass && (
+				<div>
+					<label className='block mb-2 font-medium'>Select Role 2</label>
+					<select
+						name='secondaryGear'
+						className='form w-full min-w-[320px]'
+						value={selectedOperator?.secondaryGear || ""}
+						onChange={(e) =>
+							setSelectedOperator({
+								...selectedOperator,
+								secondaryGear: e.target.value,
+							})
+						}>
+						<option value=''>Select Role </option>
+						{Object.entries(KITS)
+							.filter(([, kit]) =>
+								kit.class.includes(selectedOperator.secondaryClass)
+							)
+							.map(([key, kit]) => (
+								<option
+									key={key}
+									value={kit.img}>
+									{kit.name}
+								</option>
+							))}
+					</select>
+				</div>
+			)}
 			<br />
 
 			{/*WEAPON 2*/}
@@ -67,7 +73,7 @@ const SecondaryClassLoadout = () => {
 						})
 					}
 					value={selectedOperator?.primaryWeapon2 || ""}>
-					<option value=''>select Weapon Type</option>
+					<option value=''>Select Weapon Type</option>
 					{Object.keys(WEAPONS).map((key) => (
 						<option
 							key={key}
@@ -103,7 +109,7 @@ const SecondaryClassLoadout = () => {
 						})
 					}
 					value={selectedOperator?.secondaryWeapon2 || ""}>
-					<option value=''>select Weapon Type</option>
+					<option value=''>Select Weapon Type</option>
 					{Object.keys(WEAPONS).map((key) => (
 						<option
 							key={key}

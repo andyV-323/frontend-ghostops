@@ -64,13 +64,15 @@ const EditLoadout = ({ operator }) => {
 						}
 						value={selectedOperator.gear || ""}>
 						<option value=''>Select Role</option>
-						{Object.keys(KITS).map((key) => (
-							<option
-								key={key}
-								value={KITS[key].img}>
-								{key}
-							</option>
-						))}
+						{Object.entries(KITS)
+							.filter(([, kit]) => kit.class.includes(selectedOperator.class))
+							.map(([key, kit]) => (
+								<option
+									key={key}
+									value={kit.img}>
+									{kit.name}
+								</option>
+							))}
 					</select>
 				</div>
 				<br />
@@ -191,13 +193,15 @@ const EditLoadout = ({ operator }) => {
 						}
 						value={selectedOperator.secondaryGear || ""}>
 						<option value=''>select Role</option>
-						{Object.keys(KITS).map((key) => (
-							<option
-								key={key}
-								value={KITS[key].img}>
-								{key}
-							</option>
-						))}
+						{Object.entries(KITS)
+							.filter(([, kit]) => kit.class.includes(selectedOperator.class))
+							.map(([key, kit]) => (
+								<option
+									key={key}
+									value={kit.img}>
+									{kit.name}
+								</option>
+							))}
 					</select>
 				</div>
 				<br />

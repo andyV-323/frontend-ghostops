@@ -30,40 +30,49 @@ const Gear = ({ operator, selectedClass }) => {
 				src={KITS[selectedGear]?.img}
 				alt={KITS[selectedGear]?.name}
 			/>
-			<h5 className='mb-2 text-2xl font-bold tracking-tight'>
+			<h5 className='mb-2 text-2xl font-bold tracking-tight text-center'>
 				{KITS[selectedGear]?.name}
 			</h5>
-			<h1 className='mt-1 text-lg font-semibold'>
+			<h1 className='mt-1 text-lg font-semibold text-center'>
 				Perk: {KITS[selectedGear]?.perk}
 			</h1>
-			<h1>{KITS[selectedGear]?.description}</h1>
-			<div className='p-5'>
-				<div className='grid grid-cols-1 gap-4 lg:grid-cols-3 flex-grow '>
-					<div className='flex flex-col items-center mb-3 font-normal text-fontz border border-lines rounded-lg bg-blk/50 p-4'>
-						<h1 className='text-2xl font-bold text-gray-200'>
-							{KITS[selectedGear]?.percentage1}
-						</h1>
-						<h1 className='mt-1 text-sm font-semibold'>
-							{KITS[selectedGear]?.perk1}
-						</h1>
-					</div>
-					<div className='flex flex-col items-center mb-3 font-normal text-fontz border border-lines rounded-lg bg-blk/50 p-4'>
-						<h1 className='text-2xl font-bold text-gray-200'>
-							{KITS[selectedGear]?.percentage2}
-						</h1>
-						<h1 className='mt-1 text-sm font-semibold'>
-							{KITS[selectedGear]?.perk2}
-						</h1>
-					</div>
-					<div className='flex flex-col items-center mb-3 font-normal text-fontz border border-lines rounded-lg bg-blk/50 p-4'>
-						<h1 className='text-2xl font-bold text-gray-200'>
-							{KITS[selectedGear]?.percentage3}
-						</h1>
-						<h1 className='mt-1 text-md font-semibold'>
-							{KITS[selectedGear]?.perk3}
-						</h1>
-					</div>
+			{KITS[selectedGear?.description] !== null && (
+				<div className='text-center'>
+					<h1>{KITS[selectedGear]?.description}</h1>
 				</div>
+			)}
+
+			<div className='p-5'>
+				{(() => {
+					const perkArray = [1, 2, 3]
+						.map((i) => {
+							const perk = KITS[selectedGear]?.[`perk${i}`];
+							const percentage = KITS[selectedGear]?.[`percentage${i}`];
+							if (!perk && !percentage) return null;
+							return { perk, percentage, key: i };
+						})
+						.filter(Boolean); // remove null entries
+
+					const layoutClass =
+						perkArray.length < 3
+							? "flex justify-center gap-4 flex-wrap"
+							: "grid grid-cols-1 gap-4 lg:grid-cols-3";
+
+					return (
+						<div className={layoutClass}>
+							{perkArray.map(({ perk, percentage, key }) => (
+								<div
+									key={key}
+									className='flex flex-col items-center mb-3 font-normal text-fontz border border-lines rounded-lg bg-blk/50 p-4'>
+									<h1 className='text-2xl font-bold text-gray-200'>
+										{percentage}
+									</h1>
+									<h1 className='mt-1 text-sm font-semibold'>{perk}</h1>
+								</div>
+							))}
+						</div>
+					);
+				})()}
 			</div>
 		</div>
 	);

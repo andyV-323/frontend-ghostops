@@ -29,30 +29,35 @@ const ClassLoadout = () => {
 				</select>
 			</div>
 			<br />
+			{/* ROLE */}
 
-			{/* GEAR */}
-			<div className='relative w-full'>
-				<label className='block mb-2 font-medium'>Select Role</label>
-				<select
-					name='gear'
-					className='form '
-					value={selectedOperator?.gear || ""}
-					onChange={(e) =>
-						setSelectedOperator({
-							...selectedOperator,
-							gear: e.target.value,
-						})
-					}>
-					<option value=''>Select Role</option>
-					{Object.keys(KITS).map((key) => (
-						<option
-							key={key}
-							value={KITS[key].img}>
-							{key}
-						</option>
-					))}
-				</select>
-			</div>
+			{selectedOperator?.class && (
+				<div>
+					<label className='block mb-2 font-medium'>Select Role</label>
+
+					<select
+						name='gear'
+						className='form w-full min-w-[320px]'
+						value={selectedOperator?.gear || ""}
+						onChange={(e) =>
+							setSelectedOperator({
+								...selectedOperator,
+								gear: e.target.value,
+							})
+						}>
+						<option value=''>Select Role</option>
+						{Object.entries(KITS)
+							.filter(([, kit]) => kit.class.includes(selectedOperator.class))
+							.map(([key, kit]) => (
+								<option
+									key={key}
+									value={kit.img}>
+									{kit.name}
+								</option>
+							))}
+					</select>
+				</div>
+			)}
 
 			<br />
 
@@ -69,7 +74,7 @@ const ClassLoadout = () => {
 						})
 					}
 					value={selectedOperator?.primaryWeapon1 || ""}>
-					<option value=''>select Weapon Type</option>
+					<option value=''>Select Weapon Type</option>
 					{Object.keys(WEAPONS).map((key) => (
 						<option
 							key={key}
@@ -108,7 +113,7 @@ const ClassLoadout = () => {
 						})
 					}
 					value={selectedOperator?.secondaryWeapon1 || ""}>
-					<option value=''>select Weapon Type</option>
+					<option value=''>Select Weapon Type</option>
 					{Object.keys(WEAPONS).map((key) => (
 						<option
 							key={key}
