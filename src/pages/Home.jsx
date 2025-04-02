@@ -1,8 +1,9 @@
-import { Link } from "react-router-dom";
 import { Button } from "@material-tailwind/react";
 import { useEffect, useState } from "react";
 import { Features, About, Contact } from "@/components";
+import { useAuthService } from "@/services/AuthService";
 const Home = () => {
+	const { signUp } = useAuthService();
 	const [showTopButton, setShowTopButton] = useState(false);
 
 	// Show or hide "Back to Top" button based on scroll position
@@ -37,7 +38,11 @@ const Home = () => {
 							Like to role play or Milsim? Use AI teammates? Now you can manage
 							a full team of ghosts or whatever Spec ops unit you like.
 						</p>
-						<Button className='btn'>Try it Free</Button>
+						<Button
+							className='btn'
+							onClick={signUp}>
+							Try it Free
+						</Button>
 					</div>
 				</div>
 
@@ -71,9 +76,12 @@ const Home = () => {
 						Manage your operators, use AI-generated operations, and explore
 						Auroa with an interactive dashboard.
 					</p>
-					<Link to='/signup'>
-						<Button className='btn'>Get Started Now</Button>
-					</Link>
+
+					<Button
+						className='btn'
+						onClick={signUp}>
+						Get Started Now
+					</Button>
 				</div>
 			</div>
 		</div>
