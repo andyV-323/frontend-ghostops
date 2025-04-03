@@ -69,7 +69,9 @@ const EditLoadout = ({ operator }) => {
 							.map(([key, kit]) => (
 								<option
 									key={key}
-									value={kit.img}>
+									value={key}>
+									{" "}
+									{/* save the unique kit key */}
 									{kit.name}
 								</option>
 							))}
@@ -200,7 +202,9 @@ const EditLoadout = ({ operator }) => {
 							.map(([key, kit]) => (
 								<option
 									key={key}
-									value={kit.img}>
+									value={key}>
+									{" "}
+									{/* save the unique kit key */}
 									{kit.name}
 								</option>
 							))}
