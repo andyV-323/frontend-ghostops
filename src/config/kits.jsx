@@ -1,6 +1,6 @@
 export const KITS = {
 	BREACHER: {
-		name: "Breacher",
+		name: "Explosive Entry Specialist",
 		class: ["Assault"],
 		img: "/icons/Breacher.svg",
 		perk: "Explosive Expert",
@@ -13,7 +13,7 @@ export const KITS = {
 		percentage3: "+60%",
 	},
 	BREACHER2: {
-		name: "Breacher",
+		name: "Combat Shotgun Specialist",
 		class: ["Engineer"],
 		img: "/icons/Breacher.svg",
 		perk: "Guerrilla",
@@ -26,7 +26,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	CBRN: {
-		name: "Chemical, Biological, Radiological, Nuclear",
+		name: "Chemical Defense Specialist",
 		class: ["Engineer"],
 		img: "/icons/CBRN.svg",
 		perk: "Cold Blooded",
@@ -39,7 +39,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	COMMS: {
-		name: "Communications Specialist",
+		name: "Signals Intelligence Operator",
 		class: ["Echelon"],
 		img: "/icons/Comms.svg",
 		perk: "Sixth Sense",
@@ -52,7 +52,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	COMMS2: {
-		name: "Communications Specialist",
+		name: "Field Communications Engineer",
 		class: ["Engineer"],
 		img: "/icons/Comms.svg",
 		perk: "Ballistic Advantage",
@@ -65,7 +65,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	EW: {
-		name: "Electronic Warfare Specialist",
+		name: "Electronic Warfare Operator",
 		class: ["Panther"],
 		img: "/icons/Cyber.svg",
 		perk: "Slime Shadow",
@@ -78,7 +78,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	EW2: {
-		name: "Electronic Warfare Specialist",
+		name: "Drone Warfare Specialist",
 		class: ["Engineer"],
 		img: "/icons/Cyber.svg",
 		perk: "Sensor Hack",
@@ -91,7 +91,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	EW3: {
-		name: "Electronic Warfare Specialist",
+		name: "Cyber Operations Specialist",
 		class: ["Echelon"],
 		img: "/icons/Cyber.svg",
 		perk: "Sixth Sense",
@@ -118,7 +118,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	LEAD2: {
-		name: "Team Leader",
+		name: "Logistics Coordinator",
 		class: ["Engineer"],
 		img: "/icons/default.svg",
 		perk: "Pack Mule",
@@ -131,7 +131,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	LEAD3: {
-		name: "Team Leader",
+		name: "Reconnaissance Team Leader",
 		class: ["Echelon"],
 		img: "/icons/default.svg",
 		perk: "Sixth Sense",
@@ -144,7 +144,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	LEAD4: {
-		name: "Team Leader",
+		name: "Special Operations Team Leader",
 		class: ["Panther"],
 		img: "/icons/default.svg",
 		perk: "Slime Shadow",
@@ -157,11 +157,11 @@ export const KITS = {
 		percentage3: null,
 	},
 	LEAD5: {
-		name: "Team Leader",
+		name: "Reconnaissance Drone Operator",
 		class: ["Pathfinder"],
 		img: "/icons/default.svg",
 		perk: "Recon Mastery",
-		description: "For ever enemy marked with your drone:",
+		description: "For every enemy marked with your drone:",
 		perk1: "Technique Cool-down",
 		percentage1: "-15%",
 		perk2: "XP Gain",
@@ -170,7 +170,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	LEAD6: {
-		name: "Team Leader",
+		name: "Combat Medic Leader",
 		class: ["Medic"],
 		img: "/icons/default.svg",
 		perk: "Revivalist",
@@ -183,7 +183,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	LEAD7: {
-		name: "Team Leader",
+		name: "Sniper Team Leader",
 		class: ["Sharpshooter"],
 		img: "/icons/default.svg",
 		perk: "Ballistic Advantage",
@@ -196,7 +196,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	CE: {
-		name: "Combat Engineer",
+		name: "Demolition Engineer",
 		class: ["Engineer"],
 		img: "/icons/Demo.svg",
 		perk: "Pack Mule",
@@ -209,7 +209,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	DRONE: {
-		name: "Drone Operator",
+		name: "Unmanned Aerial Vehicle Operator",
 		class: ["Engineer"],
 		img: "/icons/Drone.svg",
 		perk: "Sensor Hack",
@@ -222,7 +222,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	DRONE2: {
-		name: "Drone Operator",
+		name: "Advanced Drone Specialist",
 		class: ["Pathfinder"],
 		img: "/icons/Drone.svg",
 		perk: "Drone Hunter",
@@ -236,7 +236,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	EOD: {
-		name: "Explosive Ordnance Disposal",
+		name: "Explosive Ordnance Specialist",
 		class: ["Assault"],
 		img: "/icons/EOD.svg",
 		perk: "Feel No Pain",
@@ -249,7 +249,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	EOD2: {
-		name: "Explosive Ordnance Disposal",
+		name: "Ordnance Disposal Technician",
 		class: ["Engineer"],
 		img: "/icons/EOD.svg",
 		perk: "Explosive Expert",
@@ -262,7 +262,7 @@ export const KITS = {
 		percentage3: "+60%",
 	},
 	GUNNER: {
-		name: "Support Gunner",
+		name: "Heavy Weapons Specialist",
 		class: ["Assault"],
 		img: "/icons/Gunner.svg",
 		perk: "Rolling Thunder",
@@ -275,7 +275,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	JTAC: {
-		name: "Joint Terminal Attack Controller",
+		name: "Joint Fires Observer",
 		class: ["Pathfinder"],
 		img: "/icons/JTAC.svg",
 		perk: "Sixth Sense",
@@ -288,11 +288,11 @@ export const KITS = {
 		percentage3: null,
 	},
 	JTAC2: {
-		name: "Joint Terminal Attack Controller",
+		name: "Forward Air Controller",
 		class: ["Assault"],
 		img: "/icons/JTAC.svg",
 		perk: "Recon Mastery",
-		description: "For ever enemy marked with your drone:",
+		description: "For every enemy marked with your drone:",
 		perk1: "Technique Cool-down",
 		percentage1: "-15%",
 		perk2: "XP Gain",
@@ -301,7 +301,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	JTAC3: {
-		name: "Joint Terminal Attack Controller",
+		name: "Air Support Coordinator",
 		class: ["Echelon"],
 		img: "/icons/JTAC.svg",
 		perk: "Recon Mastery",
@@ -314,7 +314,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	MEDIC: {
-		name: "Medic",
+		name: "Combat Medic",
 		class: ["Medic"],
 		img: "/icons/Medic.svg",
 		perk: "Revivalist",
@@ -327,7 +327,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	MEDIC2: {
-		name: "Medic",
+		name: "Field Medic",
 		class: ["Engineer"],
 		img: "/icons/Medic.svg",
 		perk: "Cold Blooded",
@@ -340,7 +340,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	MEDIC3: {
-		name: "Medic",
+		name: "Tactical Medic",
 		class: ["Assault"],
 		img: "/icons/Medic.svg",
 		perk: "Inspired",
@@ -354,7 +354,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	PILOT: {
-		name: "Pilot",
+		name: "Aviation Operations Specialist",
 		class: ["Engineer"],
 		img: "/icons/Pilot.svg",
 		perk: "Pack Mule",
@@ -367,7 +367,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	PILOT2: {
-		name: "Pilot",
+		name: "Rotary-Wing Pilot",
 		class: ["Pathfinder"],
 		img: "/icons/Pilot.svg",
 		perk: "Pistolero",
@@ -380,7 +380,7 @@ export const KITS = {
 		percentage3: "+40%",
 	},
 	SNIPER: {
-		name: "Sniper",
+		name: "Long-Range Marksman",
 		class: ["Sharpshooter"],
 		img: "/icons/Sniper.svg",
 		perk: "Ballistic Advantage",
@@ -393,7 +393,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	SIGINT: {
-		name: "Signals Intelligence",
+		name: "Signals Intelligence Analyst",
 		class: ["Echelon"],
 		img: "/icons/Sigint.svg",
 		perk: "Recon Mastery",
@@ -406,7 +406,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	SIGINT2: {
-		name: "Signals Intelligence",
+		name: "Electronic Surveillance Operator",
 		class: ["Pathfinder"],
 		img: "/icons/Sigint.svg",
 		perk: "Sixth Sense",
@@ -419,7 +419,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	CQC: {
-		name: "Close Quarters Combat Specialist",
+		name: "Close Quarters Battle Specialist",
 		class: ["Assault"],
 		img: "/icons/CQC.svg",
 		perk: "Adrenaline",
@@ -432,7 +432,7 @@ export const KITS = {
 		percentage3: "+40%",
 	},
 	CQC2: {
-		name: "Close Quarters Combat Specialist",
+		name: "Urban Combat Specialist",
 		class: ["Panther"],
 		img: "/icons/CQC.svg",
 		perk: "Close and Personal",
@@ -445,7 +445,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	INFILTRATOR: {
-		name: "Infiltration Specialist",
+		name: "Covert Operations Specialist",
 		class: ["Panther"],
 		img: "/icons/Infiltrator.svg",
 		perk: "Slime Shadow",
@@ -458,7 +458,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	INFILTRATOR2: {
-		name: "Infiltration Specialist",
+		name: "Stealth Reconnaissance Operator",
 		class: ["Echelon"],
 		img: "/icons/Infiltrator.svg",
 		perk: "Sensor Hack",
@@ -471,7 +471,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	MARKSMAN: {
-		name: "Marksman",
+		name: "Designated Marksman",
 		class: ["Sharpshooter"],
 		img: "/icons/Marksman.svg",
 		perk: "Gunslinger",
@@ -484,7 +484,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	DIVER: {
-		name: "Combat Diver",
+		name: "Amphibious Operations Specialist",
 		class: ["Pathfinder"],
 		img: "/icons/Diver.svg",
 		perk: "Burst Forth",
@@ -497,7 +497,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	DIVER2: {
-		name: "Combat Diver",
+		name: "Underwater Demolitions Expert",
 		class: ["Pathfinder"],
 		img: "/icons/Diver.svg",
 		perk: "Cold Blooded",
@@ -510,7 +510,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	MOUNTAINEER: {
-		name: "Mountaineer",
+		name: "Mountain Warfare Specialist",
 		class: ["Pathfinder"],
 		img: "/icons/Mountaineer.svg",
 		perk: "Burst Forth",
@@ -523,7 +523,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	MOUNTAINEER2: {
-		name: "Mountaineer",
+		name: "High-Altitude Sniper",
 		class: ["Sharpshooter"],
 		img: "/icons/Mountaineer.svg",
 		perk: "Ballistic Advantage",
@@ -537,7 +537,7 @@ export const KITS = {
 	},
 
 	POINTMAN: {
-		name: "Point Man",
+		name: "Vanguard Operator",
 		class: ["Assault"],
 		img: "/icons/PointMan.svg",
 		perk: "Feel No Pain",
@@ -550,7 +550,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	POINTMAN2: {
-		name: "Point Man",
+		name: "Entry Specialist",
 		class: ["Panther"],
 		img: "/icons/PointMan.svg",
 		perk: "Close and Personal",
@@ -563,11 +563,11 @@ export const KITS = {
 		percentage3: null,
 	},
 	RECON: {
-		name: "Recon Specialist",
+		name: "Reconnaissance Specialist",
 		class: ["Pathfinder"],
 		img: "/icons/Recon.svg",
 		perk: "Recon Mastery",
-		description: "For ever enemy marked with your drone:",
+		description: "For every enemy marked with your drone:",
 		perk1: "Technique Cool-down",
 		percentage1: "-15%",
 		perk2: "XP Gain",
@@ -576,7 +576,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	RECON2: {
-		name: "Recon Specialist",
+		name: "Surveillance Operator",
 		class: ["Echelon"],
 		img: "/icons/Recon.svg",
 		perk: "Sixth Sense",
@@ -589,7 +589,7 @@ export const KITS = {
 		percentage3: null,
 	},
 	RECON3: {
-		name: "Recon Specialist",
+		name: "Scout Sniper",
 		class: ["Sharpshooter"],
 		img: "/icons/Recon.svg",
 		perk: "Gunslinger",
