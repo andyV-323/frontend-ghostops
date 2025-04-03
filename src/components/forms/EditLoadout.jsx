@@ -194,7 +194,9 @@ const EditLoadout = ({ operator }) => {
 						value={selectedOperator.secondaryGear || ""}>
 						<option value=''>select Role</option>
 						{Object.entries(KITS)
-							.filter(([, kit]) => kit.class.includes(selectedOperator.class))
+							.filter(([, kit]) =>
+								kit.class.includes(selectedOperator.secondaryClass)
+							)
 							.map(([key, kit]) => (
 								<option
 									key={key}
