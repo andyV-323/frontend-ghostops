@@ -11,12 +11,8 @@ const Gear = ({ operator, selectedClass }) => {
 		);
 	}
 
-	const gearKey = Object.keys(KITS).find(
-		(key) => KITS[key].img === operator.gear
-	);
-	const secondaryGearKey = Object.keys(KITS).find(
-		(key) => KITS[key].img === operator.secondaryGear
-	);
+	const gearKey = operator.gear;
+	const secondaryGearKey = operator.secondaryGear;
 
 	const isPrimary =
 		selectedClass === operator.class || selectedClass === `${operator.class}-1`;
@@ -36,11 +32,10 @@ const Gear = ({ operator, selectedClass }) => {
 			<h1 className='mt-1 text-lg font-semibold text-center'>
 				Perk: {KITS[selectedGear]?.perk}
 			</h1>
-			{KITS[selectedGear?.description] !== null && (
-				<div className='text-center'>
-					<h1>{KITS[selectedGear]?.description}</h1>
-				</div>
-			)}
+
+			<div className='text-center'>
+				<h1>{KITS[selectedGear]?.description}</h1>
+			</div>
 
 			<div className='p-5'>
 				{(() => {

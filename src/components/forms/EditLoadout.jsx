@@ -69,7 +69,7 @@ const EditLoadout = ({ operator }) => {
 							.map(([key, kit]) => (
 								<option
 									key={key}
-									value={kit.img}>
+									value={key}>
 									{kit.name}
 								</option>
 							))}
@@ -200,7 +200,7 @@ const EditLoadout = ({ operator }) => {
 							.map(([key, kit]) => (
 								<option
 									key={key}
-									value={kit.img}>
+									value={key}>
 									{kit.name}
 								</option>
 							))}

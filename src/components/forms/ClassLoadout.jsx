@@ -51,7 +51,7 @@ const ClassLoadout = () => {
 							.map(([key, kit]) => (
 								<option
 									key={key}
-									value={kit.img}>
+									value={key}>
 									{kit.name}
 								</option>
 							))}
