@@ -69,7 +69,7 @@ const Infirmary = () => {
 										</th>
 
 										<td className='px-4 md:px-6 py-4'>
-											{entry.recoveryDays} days
+											{entry.recoveryDays * 2.5} Hours
 											<div className='w-full bg-blk/50 rounded-full h-2.5 dark:bg-gray-700 mt-2'>
 												<div
 													className='bg-highlight h-2.5 rounded-full transition-all duration-500'
