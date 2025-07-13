@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { IdCard, Loadout, Gear, SheetSide } from "@/components";
+import { IdCard, Loadout, Gear, SheetSide, Perk } from "@/components";
 import { Roster, Infirmary, Memorial, Teams } from "@/components/tables";
-import { Bio } from "@/components/ai";
+//import { Bio } from "@/components/ai";
 import { useOperatorsStore, useSheetStore } from "@/zustand";
 
 const OperatorDashboard = () => {
@@ -82,31 +82,11 @@ const OperatorDashboard = () => {
 					</div>
 
 					<div
-						className='bg-bckground/50 shadow-lg shadow-black rounded-3xl overflow-y-auto h-[342px]'
+						className='bg-bckground/50 shadow-lg shadow-black rounded-3xl overflow-y-auto h-[285px] flex flex-col items-center p-10'
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
-						<Bio
+						<Gear
 							operator={clickedOperator}
-							setOperator={setClickedOperator}
-						/>
-					</div>
-					<div
-						className=' shadow-lg shadow-black rounded-3xl overflow-y-auto h-[358px]'
-						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
-						<Infirmary
-							dataUpdated={dataUpdated}
-							refreshData={refreshData}
-						/>
-					</div>
-				</div>
-
-				{/* === INFIRMARY, LOADOUT, GEAR === */}
-				<div className='space-y-4'>
-					<div
-						className=' shadow-lg shadow-black rounded-3xl overflow-y-auto h-[300px]'
-						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
-						<Memorial
-							dataUpdated={dataUpdated}
-							refreshData={refreshData}
+							selectedClass={selectedClass}
 						/>
 					</div>
 					<div
@@ -121,14 +101,34 @@ const OperatorDashboard = () => {
 						{/*when operator clicked show his loadout here*/}
 					</div>
 					<div
-						className='  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[385px]'
+						className='  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[200px]'
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
-						<Gear
+						<Perk
 							operator={clickedOperator}
 							selectedClass={selectedClass}
 						/>
 
 						{/*when operator is clicked show his gear here*/}
+					</div>
+				</div>
+
+				{/* === INFIRMARY, LOADOUT, GEAR === */}
+				<div className='space-y-4'>
+					<div
+						className=' shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px]'
+						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
+						<Infirmary
+							dataUpdated={dataUpdated}
+							refreshData={refreshData}
+						/>
+					</div>
+					<div
+						className=' shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px]'
+						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
+						<Memorial
+							dataUpdated={dataUpdated}
+							refreshData={refreshData}
+						/>
 					</div>
 				</div>
 			</div>

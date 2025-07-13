@@ -12,6 +12,7 @@ import Contact from "./Contact";
 import MainFooter from "./MainFooter";
 import SheetSide from "./SheetSide";
 import ConfirmDialog from "./ConfirmDialog";
+import Perk from "./Perk";
 
 export {
 	Header,
@@ -19,6 +20,7 @@ export {
 	Loadout,
 	IdCard,
 	Gear,
+	Perk,
 	Alert,
 	About,
 	Contact,

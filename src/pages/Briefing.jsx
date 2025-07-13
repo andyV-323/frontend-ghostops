@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MapWrapper, SheetSide, Gear } from "@/components";
+import { MapWrapper, SheetSide, Gear, Perk } from "@/components";
 import { MissionGenerator } from "@/components/ai";
 import { Teams, Roster } from "@/components/tables";
 import { useOperatorsStore, useSheetStore } from "@/zustand";
@@ -168,6 +168,10 @@ const Briefing = () => {
 					className='bg-background/50 shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px]'
 					style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
 					<Gear
+						operator={clickedOperator}
+						selectedClass={selectedClass}
+					/>
+					<Perk
 						operator={clickedOperator}
 						selectedClass={selectedClass}
 					/>
