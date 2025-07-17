@@ -226,19 +226,16 @@ const useTeamsStore = create((set, get) => ({
 	// Assign a random injury to an operator
 	assignRandomInjury: async (operatorId, userId) => {
 		const injury = INJURIES[Math.floor(Math.random() * INJURIES.length)];
-		const status = injury.recoveryDays === "KIA" ? "KIA" : "Injured";
-		let recoveryTime =
-			injury.recoveryDays === "KIA"
-				? 0
-				: Math.round(injury.recoveryHours[0] / 2.5);
+		const status = injury.recoveryHours === "KIA" ? "KIA" : "Injured";
 
 		const infirmaryEntry = {
 			createdBy: userId,
 			operator: operatorId,
 			injuryType: injury.injury,
-			recoveryDays: status === "KIA" ? 0 : recoveryTime,
+			recoveryHours: status === "KIA" ? 0 : injury.recoveryHours,
 			injuredAt: new Date(),
 		};
+
 		const memorialEntry = {
 			createdBy: userId,
 			operator: operatorId,
