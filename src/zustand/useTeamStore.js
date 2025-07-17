@@ -22,6 +22,7 @@ const useTeamsStore = create((set, get) => ({
 	selectedTeamType: "",
 	missionDescription: "",
 	teamName: "",
+	AO: "",
 	fullOperatorList: [],
 
 	// Fetch all teams
@@ -43,30 +44,71 @@ const useTeamsStore = create((set, get) => ({
 		}
 	},
 
-	// Fetch a single team by ID
 	fetchTeamById: async (teamId) => {
 		try {
 			const response = await TeamsApi.getTeamById(teamId);
-			const teamData = response.data;
 
-			set({
+			// The API returns { data: { data: actualTeamData } }
+			let teamData = null;
+
+			if (response.data && response.data.data) {
+				teamData = response.data.data;
+			} else if (response.data) {
+				teamData = response.data;
+			} else {
+				teamData = response;
+			}
+
+			if (!teamData || !teamData._id) {
+				return;
+			}
+
+			let operatorIds = [];
+			if (teamData.operators && Array.isArray(teamData.operators)) {
+				operatorIds = teamData.operators.map((op) => {
+					// If operator is an object with _id, extract the _id
+					if (typeof op === "object" && op._id) {
+						return op._id;
+					}
+					// If operator is already a string ID, use it directly
+					return op;
+				});
+			}
+
+			const stateUpdate = {
 				team: {
 					_id: teamData._id,
 					createdBy: teamData.createdBy || "",
 					name: teamData.name || "",
-					operators: teamData.operators.map((op) => op._id),
+					AO: teamData.AO || "",
+					operators: operatorIds,
 				},
 				teamName: teamData.name || "",
-				operators: teamData.operators.map((op) => op._id),
-			});
+				AO: teamData.AO || "",
+				operators: operatorIds,
+			};
+
+			set(stateUpdate);
+
+			// Verify state was set correctly
+			setTimeout(() => {
+				const currentState = get();
+				console.log("Verified teamName:", currentState.teamName);
+				console.log("Verified AO:", currentState.AO);
+				console.log("Verified operators:", currentState.operators);
+			}, 100);
 		} catch (error) {
 			console.error("ERROR fetching team:", error);
+			console.error("Error message:", error.message);
+			console.error("Error response:", error.response?.data);
 			set({ team: null });
 		}
 	},
 
 	// Set team name
 	setTeamName: (name) => set({ teamName: name }),
+	setAO: (ao) => set({ AO: ao }),
+
 	updateTeam: async (teamData) => {
 		try {
 			if (!teamData._id) {
@@ -78,6 +120,7 @@ const useTeamsStore = create((set, get) => ({
 			await TeamsApi.updateTeam(teamData._id, {
 				createdBy: teamData.createdBy,
 				name: teamData.name,
+				AO: teamData.AO,
 				operators: teamData.operators,
 			});
 
@@ -283,9 +326,11 @@ const useTeamsStore = create((set, get) => ({
 		set({
 			teamName: "",
 			operators: [],
+			AO: "",
 			aiTeam: [],
 			selectedTeamType: "",
 			missionDescription: "",
+			team: null,
 		});
 	},
 }));

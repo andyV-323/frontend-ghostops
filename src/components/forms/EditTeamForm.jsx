@@ -9,13 +9,21 @@ import { useConfirmDialog } from "@/hooks";
 import { ConfirmDialog } from "@/components";
 import { PropTypes } from "prop-types";
 import { toast } from "react-toastify";
+import { PROVINCES } from "@/config";
 
 const EditTeamForm = ({ teamId }) => {
 	const auth = useAuth();
 	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
+
+	// Get reactive store values - these will update when store changes
+	const teamName = useTeamsStore((state) => state.teamName);
+	const AO = useTeamsStore((state) => state.AO);
+	const operators = useTeamsStore((state) => state.operators);
+	const allOperators = useTeamsStore((state) => state.allOperators);
+	const fullOperatorList = useTeamsStore((state) => state.fullOperatorList);
+
+	// Get functions from store
 	const {
-		teamName,
-		operators,
 		fetchOperators,
 		fetchTeamById,
 		setTeamName,
@@ -23,7 +31,10 @@ const EditTeamForm = ({ teamId }) => {
 		deleteTeam,
 		resetStore,
 		fetchTeams,
+		addOperator,
+		removeOperator,
 	} = useTeamsStore();
+
 	const { closeSheet } = useSheetStore();
 
 	useEffect(() => {
@@ -33,6 +44,7 @@ const EditTeamForm = ({ teamId }) => {
 			fetchOperators();
 		}
 	}, [teamId, fetchTeamById, fetchOperators, resetStore]);
+
 	// Set `createdBy` from authentication
 	useEffect(() => {
 		if (auth.isAuthenticated && auth.user) {
@@ -43,12 +55,17 @@ const EditTeamForm = ({ teamId }) => {
 	//handle Update form
 	const handleUpdateTeam = async (e) => {
 		e.preventDefault();
+		const storeState = useTeamsStore.getState();
+
 		const teamData = {
 			_id: teamId,
-			createdBy: useTeamsStore.getState().createdBy,
+			createdBy: storeState.createdBy,
 			name: teamName.trim(),
+			AO: AO || "", // Use reactive AO value
 			operators: operators.length > 0 ? operators : [],
 		};
+
+		console.log("Update team data:", teamData); // Debug log
 
 		try {
 			await updateTeam(teamData);
@@ -89,11 +106,47 @@ const EditTeamForm = ({ teamId }) => {
 								type='text'
 								name='name'
 								className='bg-blk/50 border border-lines text-fontz text-lg rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 flex outline-lines'
-								value={teamName}
+								value={teamName || ""} // Use reactive value with fallback
 								onChange={(e) => setTeamName(e.target.value)}
 								required
 							/>
 						</div>
+
+						{/* Area of Operations (AO) Dropdown */}
+						<div className='sm:col-span-2'>
+							<label className='block mb-2 text-xl font-bold text-fontz'>
+								Area of Operations (AO)
+							</label>
+							<select
+								className='bg-blk/50 border border-lines outline-lines rounded-lg block w-full p-2.5 text-fontz'
+								value={AO || ""} // Use reactive value with fallback
+								onChange={(e) => {
+									useTeamsStore.setState({ AO: e.target.value });
+								}}>
+								<option value=''>-- Select Area of Operations --</option>
+								{Object.entries(PROVINCES).map(([key, province]) => (
+									<option
+										key={key}
+										value={key}>
+										{key} - {province.biome}
+									</option>
+								))}
+							</select>
+						</div>
+
+						{/* Display Selected AO Info */}
+						{AO && PROVINCES[AO] && (
+							<div className='sm:col-span-2'>
+								<div className='bg-blk/50 border border-lines rounded-lg p-3'>
+									<h3 className='text-lg font-semibold text-fontz mb-2'>
+										Selected AO: {AO}
+									</h3>
+									<p className='text-fontz mb-2'>
+										Biome: {PROVINCES[AO].biome}
+									</p>
+								</div>
+							</div>
+						)}
 
 						{/* Operators Dropdown */}
 						<h2 className='mb-4 text-lg font-bold text-fontz'>Operators</h2>
@@ -102,44 +155,42 @@ const EditTeamForm = ({ teamId }) => {
 							onChange={(e) => {
 								const selectedOperator = e.target.value;
 								if (selectedOperator) {
-									useTeamsStore.getState().addOperator(selectedOperator);
+									addOperator(selectedOperator);
+									e.target.value = ""; // Reset select
 								}
 							}}>
 							<option value=''>-- Select an Operator --</option>
-							{useTeamsStore.getState().allOperators.map((operator) => (
+							{allOperators.map((operator) => (
 								<option
 									key={operator._id}
 									value={operator._id}>
-									{operator.callSign} - {operator.class}-
+									{operator.callSign} - {operator.class} -{" "}
 									{operator.secondaryClass}
 								</option>
 							))}
 						</select>
 
 						{/* Display Selected Operators */}
-						{useTeamsStore.getState().operators.length > 0 && (
+						{operators.length > 0 && (
 							<div className='sm:col-span-2'>
 								<h3 className='mb-2 text-lg font-semibold text-fontz'>
 									Selected Operators:
 								</h3>
 
-								<ul className='list-disc pl-4 text-fontz'>
-									{useTeamsStore.getState().operators.map((opId) => {
-										const operator = useTeamsStore
-											.getState()
-											.fullOperatorList.find((op) => op._id === opId);
+								<ul className='list-disc pl-4 text-fontz bg-blk/50 border border-lines rounded-lg p-3'>
+									{operators.map((opId) => {
+										const operator = fullOperatorList.find(
+											(op) => op._id === opId
+										);
 										return (
 											<li
 												key={opId}
-												className='flex justify-between items-center bg-blk/50 text-lg'>
+												className='flex justify-between items-center text-lg py-1'>
 												{operator ? operator.callSign : "Unknown Operator"}
 												<FontAwesomeIcon
 													icon={faXmark}
-													className='text-2xl text-btn hover:text-white'
-													type='button'
-													onClick={() =>
-														useTeamsStore.getState().removeOperator(opId)
-													}
+													className='text-2xl text-btn hover:text-white cursor-pointer'
+													onClick={() => removeOperator(opId)}
 												/>
 											</li>
 										);
@@ -176,6 +227,7 @@ const EditTeamForm = ({ teamId }) => {
 		</section>
 	);
 };
+
 EditTeamForm.propTypes = {
 	teamId: PropTypes.string,
 };

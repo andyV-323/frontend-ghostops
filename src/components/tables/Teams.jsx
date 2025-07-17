@@ -11,6 +11,7 @@ import { PropTypes } from "prop-types";
 import { useToggleExpand, useConfirmDialog } from "@/hooks";
 import { ConfirmDialog } from "@/components";
 import { EditTeamForm, NewTeamForm } from "@/components/forms";
+import { PROVINCES } from "@/config";
 
 const Teams = ({ dataUpdated, openSheet }) => {
 	const { teams, fetchTeams, assignRandomInjury } = useTeamsStore();
@@ -73,6 +74,12 @@ const Teams = ({ dataUpdated, openSheet }) => {
 									className='cursor-pointer bg-transparent border-b hover:bg-highlight transition-all duration-300'>
 									<td className='px-6 py-4 font-medium text-gray-400 hover:text-white whitespace-nowrap'>
 										{team.name}
+										{/* Show AO in the team name row for quick reference */}
+										{team.AO && (
+											<div className='text-xs text-gray-500 mt-1'>
+												AO: {team.AO}
+											</div>
+										)}
 									</td>
 
 									<td className='px-6 py-4 flex flex-row'>
@@ -141,14 +148,26 @@ const Teams = ({ dataUpdated, openSheet }) => {
 									<tr>
 										<td
 											colSpan='3'
-											className='text-center py-2'>
+											className='text-center bg-blk/50 py-2'>
+											{/* Show THIS team's AO, not the global store AO */}
+											{team.AO && PROVINCES[team.AO] && (
+												<div className='mb-4'>
+													<div className='bg-blk/50 rounded-lg p-3'>
+														<h3 className='text-lg font-semibold text-fontz mb-2'>
+															Area Of Operation: {team.AO}
+														</h3>
+														<p className='text-fontz mb-2'>
+															Biome: {PROVINCES[team.AO].biome}
+														</p>
+													</div>
+												</div>
+											)}
 											<FontAwesomeIcon
 												className='cursor-pointer text-xl text-btn hover:text-white transition-all'
 												icon={faUsersGear}
 												onClick={() =>
 													openSheet(
 														"bottom",
-
 														<EditTeamForm teamId={team._id} />,
 														"Edit or Optimize Team",
 														"Modify team details, choose or remove operators, or Generate a team using A.I."
