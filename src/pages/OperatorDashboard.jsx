@@ -81,17 +81,21 @@ const OperatorDashboard = () => {
 						{/*when operator is clicked from roster displayed idcard info*/}
 					</div>
 
-					<div
-						className='bg-bckground/50 shadow-lg shadow-black rounded-3xl overflow-y-auto h-[285px] flex flex-col items-center p-10'
+					{/*<div
+						className='bg-bckground/50 shadow-lg shadow-black rounded-3xl overflow-y-auto h-[185px] flex flex-col items-center'
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
 						<Gear
 							operator={clickedOperator}
 							selectedClass={selectedClass}
 						/>
-					</div>
+					</div>*/}
 					<div
-						className=' flex flex-row  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[200px]'
+						className=' flex flex-col shadow-lg shadow-black rounded-3xl overflow-y-auto h-[500px]'
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
+						<Gear
+							operator={clickedOperator}
+							selectedClass={selectedClass}
+						/>
 						<Loadout
 							operator={clickedOperator}
 							selectedClass={selectedClass}

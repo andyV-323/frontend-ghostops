@@ -11,6 +11,9 @@ export const KITS = {
 		percentage2: "+20%",
 		perk3: null,
 		percentage3: null,
+		item: "C4 Charge",
+		item2: "Flashbang",
+		item3: "Breaching Torch",
 	},
 
 	CBRN: {
@@ -25,6 +28,8 @@ export const KITS = {
 		percentage2: "+100%",
 		perk3: null,
 		percentage3: null,
+		item: "Gas Mask",
+		item2: "Gas Grenade",
 	},
 	COMMS: {
 		name: "Field Communications Engineer",
@@ -38,6 +43,8 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
+		item: "Strike Designator",
+		item2: "Sensor Grenade",
 	},
 	EW: {
 		name: "Electronic Warfare Operator",
@@ -52,9 +59,13 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
+		item: "EMP Grenade",
+		item2: "Sensor Goggles",
+		item3: "Shock Pistol",
+		item4: "Sync Shot Drone",
 	},
 
-	EW2: {
+	/*EW2: {
 		name: "Cyber Operations Specialist",
 		class: ["Echelon"],
 		img: "/icons/Cyber.svg",
@@ -67,7 +78,7 @@ export const KITS = {
 		percentage2: "+10%",
 		perk3: null,
 		percentage3: null,
-	},
+	},*/
 	LEAD: {
 		name: "Team Leader",
 		class: ["Assault"],
@@ -81,9 +92,12 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
+		item: "Gas Grenade",
+		item2: "Frag Grenade",
+		item3: "Grenade Launcher",
 	},
 	LEAD2: {
-		name: "Logistics Coordinator",
+		name: "Sapper",
 		class: ["Engineer"],
 		img: "/icons/default.svg",
 		perk: "Pack Mule",
@@ -94,6 +108,9 @@ export const KITS = {
 		percentage2: "+10%",
 		perk3: null,
 		percentage3: null,
+		item: "C4",
+		item2: "Rocket Launcher",
+		item3: "Mine",
 	},
 	LEAD3: {
 		name: "Reconnaissance Team Leader",
@@ -107,8 +124,12 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
+		item: "Sensor Goggles",
+		item2: "Shock Pistol",
+		item3: "Sensor Grenade",
+		item4: "Sensor Launcher",
 	},
-	LEAD4: {
+	/*LEAD4: {
 		name: "Special Operations Team Leader",
 		class: ["Panther"],
 		img: "/icons/default.svg",
@@ -120,7 +141,7 @@ export const KITS = {
 		percentage2: "+10%",
 		perk3: null,
 		percentage3: null,
-	},
+	},*/
 	LEAD5: {
 		name: "Reconnaissance Drone Operator",
 		class: ["Pathfinder"],
@@ -133,6 +154,8 @@ export const KITS = {
 		percentage2: "+50",
 		perk3: null,
 		percentage3: null,
+		item: "Armaros Drone (Recon)",
+		item2: "Recon Drone",
 	},
 	LEAD6: {
 		name: "Combat Medic Leader",
@@ -146,6 +169,8 @@ export const KITS = {
 		percentage2: "+40%",
 		perk3: null,
 		percentage3: null,
+		item: "Bandages",
+		item3: "Syringe MK2",
 	},
 	LEAD7: {
 		name: "Sniper Team Leader",
@@ -159,8 +184,10 @@ export const KITS = {
 		percentage2: "+30%",
 		perk3: null,
 		percentage3: null,
+		item: "Sensor Launcher",
+		item2: "Binoculars",
 	},
-	CE: {
+	/*CE: {
 		name: "Demolition Engineer",
 		class: ["Engineer"],
 		img: "/icons/Demo.svg",
@@ -172,7 +199,7 @@ export const KITS = {
 		percentage2: "+20%",
 		perk3: "Throw Range",
 		percentage3: "+60%",
-	},
+	},*/
 	DRONE: {
 		name: "Tactical Unmanned Aircraft System Operator",
 		class: ["Engineer"],
@@ -185,9 +212,12 @@ export const KITS = {
 		percentage2: "+10%",
 		perk3: null,
 		percentage3: null,
+		item: "Battle Drone",
+		item2: "Sync Shot Drone",
+		item3: "Armaros Drone",
 	},
 	EOD: {
-		name: "Explosive Ordnance Specialist",
+		name: "Explosive Ordnance Disposal",
 		class: ["Engineer"],
 		img: "/icons/EOD.svg",
 		perk: "Feel No Pain",
@@ -198,6 +228,8 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
+		item: "c4",
+		item2: "Mine",
 	},
 	GUNNER: {
 		name: "Heavy Weapons Specialist",
@@ -211,11 +243,13 @@ export const KITS = {
 		percentage2: "+20%",
 		perk3: null,
 		percentage3: null,
+		item: "Mine",
+		item2: "Rocket Launcher",
 	},
 
 	JTAC: {
 		name: "Joint Terminal Attack Controller",
-		class: ["Assault"],
+		class: ["Pathfinder"],
 		img: "/icons/JTAC.svg",
 		perk: "Sixth Sense",
 		description: null,
@@ -225,8 +259,10 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
+		item: "Armaros Drone",
+		item2: "Sync Shot Drone",
 	},
-	JTAC2: {
+	/*JTAC2: {
 		name: "Combat Controller",
 		class: ["Pathfinder"],
 		img: "/icons/JTAC2.svg",
@@ -238,8 +274,8 @@ export const KITS = {
 		percentage2: "+50",
 		perk3: null,
 		percentage3: null,
-	},
-	MEDIC: {
+	},*/
+	/*MEDIC: {
 		name: "Combat Medic",
 		class: ["Medic"],
 		img: "/icons/Medic.svg",
@@ -251,7 +287,7 @@ export const KITS = {
 		percentage2: "+40%",
 		perk3: null,
 		percentage3: null,
-	},
+	},*/
 	MEDIC2: {
 		name: "Field Medic",
 		class: ["Medic"],
@@ -264,8 +300,11 @@ export const KITS = {
 		percentage2: "+100%",
 		perk3: null,
 		percentage3: null,
+		item: "Recon Drone",
+		item2: "Syringe MK2",
+		item3: "Bandages",
 	},
-	MEDIC3: {
+	/*MEDIC3: {
 		name: "Para Jumper",
 		class: ["Medic"],
 		img: "/icons/Medic3.svg",
@@ -278,7 +317,7 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
-	},
+	},*/
 	PILOT: {
 		name: "Special Operations Pilot",
 		class: ["Assault"],
@@ -291,6 +330,7 @@ export const KITS = {
 		percentage2: "+100%",
 		perk3: null,
 		percentage3: null,
+		item: "Attack Helicopter",
 	},
 	PILOT2: {
 		name: "Rotary-Wing Pilot",
@@ -304,6 +344,7 @@ export const KITS = {
 		percentage2: "-20%",
 		perk3: "XP Bonus",
 		percentage3: "+40%",
+		item: "Transport Helicopter",
 	},
 	SNIPER: {
 		name: "Long-Range Marksman",
@@ -317,6 +358,7 @@ export const KITS = {
 		percentage2: "+30%",
 		perk3: null,
 		percentage3: null,
+		item: "Binoculars",
 	},
 	SIGINT: {
 		name: "Signals Intelligence Analyst",
@@ -330,6 +372,8 @@ export const KITS = {
 		percentage2: "+50",
 		perk3: null,
 		percentage3: null,
+		item: "Sensor Grenade",
+		item2: "Sensor Launcher",
 	},
 	CQC: {
 		name: "Close Quarters combat Specialist",
@@ -343,8 +387,10 @@ export const KITS = {
 		percentage2: "+40%",
 		perk3: "Accuracy",
 		percentage3: "+40%",
+		item: "Flashbang",
+		item2: "Cloak Spray",
 	},
-	INFILTRATOR: {
+	/*INFILTRATOR: {
 		name: "Black Ops Operator",
 		class: ["Panther"],
 		img: "/icons/Infiltrator2.svg",
@@ -356,7 +402,7 @@ export const KITS = {
 		percentage2: "+10%",
 		perk3: null,
 		percentage3: null,
-	},
+	},*/
 	INFILTRATOR2: {
 		name: "Special Reconnaissance Operator",
 		class: ["Panther"],
@@ -369,6 +415,8 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
+		item: "Recon Drone",
+		item2: "Cloaking Spray",
 	},
 	MARKSMAN: {
 		name: "Designated Marksman",
@@ -382,8 +430,9 @@ export const KITS = {
 		percentage2: "+15%",
 		perk3: null,
 		percentage3: null,
+		item: "Sensor Grenade",
 	},
-	DIVER: {
+	/*DIVER: {
 		name: "Amphibious Operations Specialist",
 		class: ["Pathfinder"],
 		img: "/icons/Diver.svg",
@@ -436,19 +485,22 @@ export const KITS = {
 		percentage2: "+50",
 		perk3: null,
 		percentage3: null,
-	},
+	},*/
 
 	RECON2: {
 		name: "Reconnaissance Scout",
 		class: ["Sharpshooter"],
 		img: "/icons/Recon2.svg",
-		perk: "Gunslinger",
+		perk: "Burst Forth",
 		description: null,
-		perk1: "Accuracy",
-		percentage1: "+15%",
-		perk2: "Handling",
-		percentage2: "+15%",
+		perk1: "Movement Speed",
+		percentage1: "+10%",
+		perk2: "Stamina Regen Speed",
+		percentage2: "+50%",
 		perk3: null,
 		percentage3: null,
+		item: "binoculars",
+		item2: "Sensor Launcher",
+		item3: "Recon Drone",
 	},
 };

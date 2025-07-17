@@ -22,11 +22,11 @@ const Gear = ({ operator, selectedClass }) => {
 	return (
 		<div className='  rounded-lg  flex flex-col items-center text-fontz '>
 			<img
-				className='w-[140px] h-[140px] object-cover rounded-md '
+				className='w-[120px] h-[120px] object-cover rounded-md '
 				src={KITS[selectedGear]?.img}
 				alt={KITS[selectedGear]?.name}
 			/>
-			<h5 className='mb-2 text-2xl font-bold tracking-tight text-center'>
+			<h5 className='mb-2 text-md font-bold tracking-tight text-center'>
 				{KITS[selectedGear]?.name}
 			</h5>
 		</div>

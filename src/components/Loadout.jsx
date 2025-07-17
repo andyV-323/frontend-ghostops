@@ -3,11 +3,14 @@ import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPersonRifle } from "@fortawesome/free-solid-svg-icons";
 import { EditLoadout } from "@/components/forms";
+import { KITS } from "@/config";
 
 const Loadout = ({ operator, selectedClass, openSheet }) => {
 	if (!operator) {
 		return <div className='text-gray-400 p-4 text-center'></div>;
 	}
+	const gearKey = operator.gear;
+	const secondaryGearKey = operator.secondaryGear;
 
 	// Determine if the selected class is primary or secondary
 	const isPrimary =
@@ -51,6 +54,23 @@ const Loadout = ({ operator, selectedClass, openSheet }) => {
 		},
 	];
 
+	const selectedGear = isPrimary ? gearKey : secondaryGearKey;
+	const selectedKit = KITS[selectedGear];
+
+	const getKitItems = (kit) => {
+		if (!kit) return [];
+		const items = [];
+
+		let itemIndex = 1;
+		while (kit[`item${itemIndex == 1 ? "" : itemIndex}`]) {
+			items.push(kit[`item${itemIndex == 1 ? "" : itemIndex}`]);
+			itemIndex++;
+		}
+
+		return items;
+	};
+	const kitItems = getKitItems(selectedKit);
+
 	return (
 		<div className='relative flex flex-col items-center text-fontz rounded-lg my-6 w-full max-w-md md:max-w-lg lg:max-w-xl mx-auto overflow-hidden'>
 			{/* Weapons Grid - Dynamic */}
@@ -87,6 +107,21 @@ const Loadout = ({ operator, selectedClass, openSheet }) => {
 					</div>
 				))}
 			</div>
+			{/** Dynamic Kit Items Rendering **/}
+			{kitItems.length > 0 && (
+				<div className='flex flex-col items-center gap-2 mt-4'>
+					<h5 className='text-md font-semibold text-fontz'>Gear Kit</h5>
+					<div className='flex flex-wrap justify-center gap-2'>
+						{kitItems.map((item, index) => (
+							<div
+								key={index}
+								className='text-md text-gray-400'>
+								-{item}
+							</div>
+						))}
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };
