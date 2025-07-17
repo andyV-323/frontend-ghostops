@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faCaretDown,
@@ -36,7 +35,9 @@ const Infirmary = () => {
 				<tbody>
 					{injuredOperators.length > 0 ? (
 						injuredOperators.map((entry, index) => {
-							const recoverySeconds = entry.recoveryDays * 2.5 * 3600;
+							// Use recoveryHours directly (in hours)
+							const recoveryHours = entry.recoveryHours;
+							const recoverySeconds = recoveryHours * 3600; // Convert to seconds for calculation only
 							const injuredAt = new Date(entry.injuredAt);
 							const now = new Date();
 							const elapsedSeconds = Math.floor((now - injuredAt) / 1000);
@@ -48,7 +49,7 @@ const Infirmary = () => {
 							return (
 								<React.Fragment
 									key={entry.operator?._id || entry.injuredAt || index}>
-									{/* Main Row */}
+									{/** Main Row **/}
 									<tr
 										key={`main-${entry.operator?._id || index}`}
 										onClick={() => toggleExpand(index)}
@@ -67,9 +68,8 @@ const Infirmary = () => {
 												</div>
 											</div>
 										</th>
-
 										<td className='px-4 md:px-6 py-4'>
-											{entry.recoveryDays * 2.5} Hours
+											{entry.recoveryHours} Hours
 											<div className='w-full bg-blk/50 rounded-full h-2.5 dark:bg-gray-700 mt-2'>
 												<div
 													className='bg-highlight h-2.5 rounded-full transition-all duration-500'
@@ -79,7 +79,6 @@ const Infirmary = () => {
 												{progressPercent}% recovered
 											</p>
 										</td>
-
 										<td className='px-4 md:px-6 py-4 flex justify-between items-center'>
 											<button
 												onClick={(e) => {
@@ -97,8 +96,7 @@ const Infirmary = () => {
 											/>
 										</td>
 									</tr>
-
-									{/* Expanded Row (Injury Details) */}
+									{/** Expanded Row (Injury Details) **/}
 									{expandedOperator === index && (
 										<tr key={`expanded-${entry.operator?._id || index}`}>
 											<td
@@ -132,6 +130,7 @@ const Infirmary = () => {
 		</div>
 	);
 };
+
 Infirmary.propTypes = {
 	dataUpdated: PropTypes.bool,
 	refreshData: PropTypes.func,
