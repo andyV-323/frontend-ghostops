@@ -230,7 +230,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 								{/* Main Team Row */}
 								<tr
 									className={`cursor-pointer bg-transparent border-b hover:bg-highlight transition-all duration-300 ${
-										dragOverTeam === team._id ? "!bg-btn/35 border-btn " : ""
+										dragOverTeam === team._id ? "!bg-btn/50 border-btn " : ""
 									}`}
 									data-team-id={team._id}
 									onClick={() => !isDragging && toggleExpand(index)}
