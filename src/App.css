@@ -1,44 +1,107 @@
-
-
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+	max-width: 1280px;
+	margin: 0 auto;
+	padding: 2rem;
+	text-align: center;
 }
 
 .logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+	height: 6em;
+	padding: 1.5em;
+	will-change: filter;
+	transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+	filter: drop-shadow(0 0 2em #646cffaa);
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+	filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
 @keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+	a:nth-of-type(2) .logo {
+		animation: logo-spin infinite 20s linear;
+	}
 }
 
 .card {
-  padding: 2em;
+	padding: 2em;
 }
 
 .read-the-docs {
-  color: #888;
+	color: #888;
+}
+
+/* Drag cursor styles */
+.cursor-grab {
+	cursor: grab;
+}
+
+.cursor-grabbing {
+	cursor: grabbing;
+}
+
+/* Drag over team indication */
+.drag-over-team {
+	background-color: rgba(59, 130, 246, 0.1) !important;
+	border-color: #3b82f6 !important;
+	transition: all 0.2s ease-in-out;
+}
+
+/* Dragging operator styles */
+.operator-dragging {
+	opacity: 0.5;
+	transform: rotate(5deg);
+	transition: all 0.2s ease-in-out;
+}
+
+/* Drop zone highlight */
+.drop-zone-active {
+	position: relative;
+}
+
+.drop-zone-active::before {
+	content: "Drop here to transfer operator";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	background: rgba(59, 130, 246, 0.9);
+	color: white;
+	padding: 8px 16px;
+	border-radius: 4px;
+	font-size: 12px;
+	z-index: 10;
+	pointer-events: none;
+}
+
+/* Smooth transitions for all drag interactions */
+.team-row {
+	transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+/* Operator image hover effects */
+.operator-image:hover {
+	transform: scale(1.05);
+	transition: transform 0.2s ease-in-out;
+}
+
+/* Mobile touch improvements */
+@media (max-width: 768px) {
+	.cursor-grab {
+		cursor: pointer;
+	}
+
+	.cursor-grabbing {
+		cursor: pointer;
+	}
 }

@@ -307,6 +307,94 @@ const useTeamsStore = create((set, get) => ({
 		}
 	},
 
+	// Transfer operator between teams via drag and drop
+	transferOperator: async (operatorId, sourceTeamId, targetTeamId) => {
+		try {
+			// Store the original state for potential rollback
+			const originalTeams = get().teams;
+
+			// Find the operator to transfer from the current state
+			const sourceTeam = originalTeams.find(
+				(team) => team._id === sourceTeamId
+			);
+			const operatorToTransfer = sourceTeam?.operators.find(
+				(op) => op._id === operatorId
+			);
+
+			if (!operatorToTransfer) {
+				toast.error("Operator not found");
+				return;
+			}
+
+			// Optimistic update - update UI immediately
+			set((state) => ({
+				teams: state.teams.map((team) => {
+					if (team._id === sourceTeamId) {
+						// Remove operator from source team
+						return {
+							...team,
+							operators: team.operators.filter((op) => op._id !== operatorId),
+						};
+					}
+					if (team._id === targetTeamId) {
+						// Check if operator is already in target team
+						const operatorExists = team.operators.some(
+							(op) => op._id === operatorId
+						);
+						if (!operatorExists) {
+							// Add operator to target team
+							return {
+								...team,
+								operators: [...team.operators, operatorToTransfer],
+							};
+						}
+					}
+					return team;
+				}),
+			}));
+
+			// Get the updated teams state for API calls
+			const currentState = get();
+			const updatedSourceTeam = currentState.teams.find(
+				(team) => team._id === sourceTeamId
+			);
+			const updatedTargetTeam = currentState.teams.find(
+				(team) => team._id === targetTeamId
+			);
+
+			if (updatedSourceTeam && updatedTargetTeam) {
+				// Update source team (remove operator) - send only operator IDs
+				const sourceOperatorIds = updatedSourceTeam.operators.map((op) =>
+					typeof op === "object" ? op._id : op
+				);
+
+				await TeamsApi.updateTeam(sourceTeamId, {
+					name: updatedSourceTeam.name,
+					AO: updatedSourceTeam.AO,
+					operators: sourceOperatorIds,
+				});
+
+				// Update target team (add operator) - send only operator IDs
+				const targetOperatorIds = updatedTargetTeam.operators.map((op) =>
+					typeof op === "object" ? op._id : op
+				);
+
+				await TeamsApi.updateTeam(targetTeamId, {
+					name: updatedTargetTeam.name,
+					AO: updatedTargetTeam.AO,
+					operators: targetOperatorIds,
+				});
+
+				toast.success("Operator transferred successfully!");
+			}
+		} catch (error) {
+			console.error("ERROR transferring operator:", error);
+			toast.error("Failed to transfer operator");
+
+			// Revert optimistic update on error by fetching fresh data
+			get().fetchTeams();
+		}
+	},
 	// Delete a team
 	deleteTeam: async (teamId) => {
 		if (!teamId) {
