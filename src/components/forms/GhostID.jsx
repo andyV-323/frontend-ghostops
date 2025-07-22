@@ -10,7 +10,7 @@ const GhostID = () => {
 			<h2 className='mb-4 text-xl font-bold text-fontz'>I.D</h2>
 			<div>
 				{/* FULLNAME */}
-				<div className='w-full'>
+				{/*<div className='w-full'>
 					<label className='block mb-2 font-medium '>Fullname</label>
 					<input
 						type='text'
@@ -20,7 +20,7 @@ const GhostID = () => {
 						value={selectedOperator?.name || ""}
 						onChange={handleChange}
 					/>
-				</div>
+				</div>*/}
 				<br />
 				{/* I.D IMAGE */}
 				<div className='w-full'>
@@ -79,7 +79,7 @@ const GhostID = () => {
 				<br />
 
 				{/* NATIONALITY */}
-				<div className='w-full'>
+				{/*<div className='w-full'>
 					<label className='block mb-2 font-medium'>Nationality</label>
 					<input
 						type='text'
@@ -89,10 +89,10 @@ const GhostID = () => {
 						value={selectedOperator?.nationality || ""}
 						onChange={handleChange}
 					/>
-				</div>
+				</div>8/}
 				<br />
 				{/* RANK */}
-				<div className='w-full'>
+				{/*	<div className='w-full'>
 					<label className='block mb-2 font-medium '>Rank</label>
 					<input
 						type='text'
@@ -102,7 +102,7 @@ const GhostID = () => {
 						value={selectedOperator?.rank || ""}
 						onChange={handleChange}
 					/>
-				</div>
+				</div>*/}
 			</div>
 		</div>
 	);

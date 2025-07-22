@@ -74,11 +74,7 @@ const Loadout = ({ operator, selectedClass, openSheet }) => {
 	return (
 		<div className='relative flex flex-col items-center text-fontz rounded-lg my-6 w-full max-w-md md:max-w-lg lg:max-w-xl mx-auto overflow-hidden'>
 			{/* Weapons Grid - Dynamic */}
-			<h4 className='text-md font-bold text-fontz'>
-				{isPrimary
-					? `${operator.class} Loadout`
-					: `${operator.secondaryClass} Loadout`}
-			</h4>
+
 			<FontAwesomeIcon
 				className='absolute top-2 right-2 text-xl text-btn cursor-pointer hover:text-white'
 				icon={faPersonRifle}
@@ -91,11 +87,12 @@ const Loadout = ({ operator, selectedClass, openSheet }) => {
 					)
 				}
 			/>
+			<h5 className='text-md font-semibold text-fontz'>Loadout</h5>
 			<div className='flex flex-wrap justify-center gap-6 w-full p-4'>
 				{loadoutData.map((weapon, idx) => (
 					<div
 						key={idx}
-						className='flex flex-col items-center mt-10'>
+						className='flex flex-col items-center'>
 						<img
 							className='object-cover bg-highlight/50 object-center w-auto rounded-lg h-10 md:h-8 lg:h-10 border border-lines'
 							src={weapon.img}
@@ -110,13 +107,18 @@ const Loadout = ({ operator, selectedClass, openSheet }) => {
 			{/** Dynamic Kit Items Rendering **/}
 			{kitItems.length > 0 && (
 				<div className='flex flex-col items-center gap-2 mt-4'>
-					<h5 className='text-md font-semibold text-fontz'>Gear Kit</h5>
+					<h5 className='text-md font-semibold text-fontz'>Items</h5>
 					<div className='flex flex-wrap justify-center gap-2'>
 						{kitItems.map((item, index) => (
 							<div
 								key={index}
-								className='text-md text-gray-400'>
-								-{item}
+								className='text-md text-gray-400 flex flex-col items-center'>
+								<img
+									className='object-cover bg-highlight/50 object-center w-auto rounded-lg h-10 md:h-8 lg:h-10 border border-lines'
+									src={item.img}
+									alt={item.name}
+								/>
+								<span className='p-1 text-xs'>{item.name}</span>
 							</div>
 						))}
 					</div>

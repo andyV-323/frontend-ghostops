@@ -69,15 +69,15 @@ const OperatorDashboard = () => {
 				{/* === ID CARD & BIO (SEPARATED) === */}
 				<div className='space-y-4'>
 					<div
-						className='relative flex flex-col items-center text-gray-400  shadow-lg rounded-3xl overflow-hidden h-[185px] p-4 w-full sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto'
+						className='  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px] '
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
 						{/* Edit Icon in Top Right */}
 
 						{/* ID Card Component */}
-						<IdCard
+						{/*	<IdCard
 							operator={clickedOperator}
 							openSheet={handleOpenSheet}
-						/>
+						/>*/}
 						{/*when operator is clicked from roster displayed idcard info*/}
 					</div>
 
@@ -89,7 +89,7 @@ const OperatorDashboard = () => {
 							selectedClass={selectedClass}
 						/>
 					</div>*/}
-					<div
+					{/*}	<div
 						className=' flex flex-col shadow-lg shadow-black rounded-3xl overflow-y-auto h-[500px]'
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
 						<Gear
@@ -102,14 +102,20 @@ const OperatorDashboard = () => {
 							openSheet={handleOpenSheet}
 						/>
 
-						{/*when operator clicked show his loadout here*/}
-					</div>
+						
+					</div>*/}
 					<div
-						className='  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[200px]'
+						className='  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px] '
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
-						<Perk
+						<IdCard
+							operator={clickedOperator}
+							openSheet={handleOpenSheet}
+							selectedClass={selectedClass}
+						/>
+						<Loadout
 							operator={clickedOperator}
 							selectedClass={selectedClass}
+							openSheet={handleOpenSheet}
 						/>
 
 						{/*when operator is clicked show his gear here*/}

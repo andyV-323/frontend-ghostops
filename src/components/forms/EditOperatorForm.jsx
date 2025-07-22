@@ -61,7 +61,7 @@ const EditOperatorForm = ({ operator }) => {
 					<h2 className='mb-4 text-xl font-bold '>I.D</h2>
 					{/*FULLNAME*/}
 					<div className='flex flex-col items-center'>
-						<div className='w-full'>
+						{/*<div className='w-full'>
 							<label className=' block mb-2  font-medium '>Fullname</label>
 							<input
 								type='text'
@@ -71,7 +71,7 @@ const EditOperatorForm = ({ operator }) => {
 								value={selectedOperator.name || ""}
 								onChange={handleChange}></input>
 						</div>
-						<br />
+						<br />*/}
 						<div className='w-full'>
 							<label className='block mb-2 font-medium'>I.D Image</label>
 							<select
@@ -120,7 +120,7 @@ const EditOperatorForm = ({ operator }) => {
 						</div>
 						<br />
 						{/*NATIONALITY*/}
-						<div className='w-full'>
+						{/*<div className='w-full'>
 							<label className='block mb-2 font-medium'>Nationality</label>
 							<input
 								type='text'
@@ -130,9 +130,9 @@ const EditOperatorForm = ({ operator }) => {
 								value={selectedOperator.nationality || ""}
 								onChange={handleChange}></input>
 						</div>
-						<br />
+						<br />*/}
 						{/*RANK*/}
-						<div className='w-full'>
+						{/*<div className='w-full'>
 							<label className='block mb-2 font-medium '>Rank</label>
 							<input
 								type='text'
@@ -142,7 +142,7 @@ const EditOperatorForm = ({ operator }) => {
 								value={selectedOperator.rank || ""}
 								onChange={handleChange}></input>
 						</div>
-						<br />
+						<br />*/}
 						<Button
 							type='submit'
 							className='btn'

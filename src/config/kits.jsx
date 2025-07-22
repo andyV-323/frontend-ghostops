@@ -1,3 +1,4 @@
+import { ITEMS } from "./items";
 export const KITS = {
 	BREACHER: {
 		name: "Breacher",
@@ -11,9 +12,9 @@ export const KITS = {
 		percentage2: "+20%",
 		perk3: null,
 		percentage3: null,
-		item: "C4 Charge",
-		item2: "Flashbang",
-		item3: "Breaching Torch",
+		item: { name: "C4 Charge", img: ITEMS["C4 Charge"] },
+		item2: { name: "Flashbang", img: ITEMS["Flashbang"] },
+		item3: { name: "Torch", img: ITEMS["Breaching Torch"] },
 	},
 
 	CBRN: {
@@ -28,8 +29,8 @@ export const KITS = {
 		percentage2: "+100%",
 		perk3: null,
 		percentage3: null,
-		item: "Gas Mask",
-		item2: "Gas Grenade",
+		item: { name: "Gas Mask", img: ITEMS["Gas Mask"] },
+		item2: { name: "Gas Grenade", img: ITEMS["Gas Grenade"] },
 	},
 	COMMS: {
 		name: "Field Communications Engineer",
@@ -43,8 +44,8 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
-		item: "Strike Designator",
-		item2: "Sensor Grenade",
+		item: { name: "Strike Designator", img: ITEMS["Strike Designator"] },
+		item2: { name: "Sensor Grenade", img: ITEMS["Sensor Grenade"] },
 	},
 	EW: {
 		name: "Electronic Warfare Operator",
@@ -59,10 +60,10 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
-		item: "EMP Grenade",
-		item2: "Sensor Goggles",
-		item3: "Shock Pistol",
-		item4: "Sync Shot Drone",
+		item: { name: "EMP", img: ITEMS["EMP Grenade"] },
+		item2: { name: "Goggles", img: ITEMS["Sensor Goggles"] },
+		item3: { name: "Shock Pistol", img: ITEMS["Shock Pistol"] },
+		item4: { name: "Sync Shot Drone", img: ITEMS["Sync Shot Drone"] },
 	},
 
 	/*EW2: {
@@ -92,9 +93,9 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
-		item: "Gas Grenade",
-		item2: "Frag Grenade",
-		item3: "Grenade Launcher",
+		item: { name: "Gas Grenade", img: ITEMS["Gas Grenade"] },
+		item2: { name: "Frag Grenade", img: ITEMS["Frag Grenade"] },
+		item3: { name: "Grenade Launcher", img: ITEMS["Grenade Launcher"] },
 	},
 	LEAD2: {
 		name: "Sapper",
@@ -108,9 +109,9 @@ export const KITS = {
 		percentage2: "+10%",
 		perk3: null,
 		percentage3: null,
-		item: "C4",
-		item2: "Rocket Launcher",
-		item3: "Mine",
+		item: { name: "C4", img: ITEMS["C4"] },
+		item2: { name: "Rocket Launcher", img: ITEMS["Rocket Launcher"] },
+		item3: { name: "Mine", img: ITEMS["Mine"] },
 	},
 	LEAD3: {
 		name: "Reconnaissance Team Leader",
@@ -124,10 +125,10 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
-		item: "Sensor Goggles",
-		item2: "Shock Pistol",
-		item3: "Sensor Grenade",
-		item4: "Sensor Launcher",
+		item: { name: "Sensor Goggles", img: ITEMS["Sensor Goggles"] },
+		item2: { name: "Shock Pistol", img: ITEMS["Shock Pistol"] },
+		item3: { name: "Sensor Grenade", img: ITEMS["Sensor Grenade"] },
+		item4: { name: "Sensor Launcher", img: ITEMS["Sensor Launcher"] },
 	},
 	/*LEAD4: {
 		name: "Special Operations Team Leader",
@@ -154,8 +155,11 @@ export const KITS = {
 		percentage2: "+50",
 		perk3: null,
 		percentage3: null,
-		item: "Armaros Drone (Recon)",
-		item2: "Recon Drone",
+		item: {
+			name: "Armaros Drone (Recon)",
+			img: ITEMS["Armaros Drone"],
+		},
+		item2: { name: "Recon Drone", img: ITEMS["Recon Drone"] },
 	},
 	LEAD6: {
 		name: "Combat Medic Leader",
@@ -169,8 +173,8 @@ export const KITS = {
 		percentage2: "+40%",
 		perk3: null,
 		percentage3: null,
-		item: "Bandages",
-		item3: "Syringe MK2",
+		item: { name: "Bandages", img: ITEMS["Bandages"] },
+		item2: { name: "Syringe MK2", img: ITEMS["Syringe MK2"] },
 	},
 	LEAD7: {
 		name: "Sniper Team Leader",
@@ -184,8 +188,8 @@ export const KITS = {
 		percentage2: "+30%",
 		perk3: null,
 		percentage3: null,
-		item: "Sensor Launcher",
-		item2: "Binoculars",
+		item: { name: "Sensor Launcher", img: ITEMS["Sensor Launcher"] },
+		item2: { name: "Binoculars", img: ITEMS["Binoculars"] },
 	},
 	/*CE: {
 		name: "Demolition Engineer",
@@ -212,9 +216,9 @@ export const KITS = {
 		percentage2: "+10%",
 		perk3: null,
 		percentage3: null,
-		item: "Battle Drone",
-		item2: "Sync Shot Drone",
-		item3: "Armaros Drone",
+		item: { name: "Battle Drone", img: ITEMS["Battle Drone"] },
+		item2: { name: "Sync Shot Drone", img: ITEMS["Sync Shot Drone"] },
+		item3: { name: "Armaros Drone", img: ITEMS["Armaros Drone"] },
 	},
 	EOD: {
 		name: "Explosive Ordnance Disposal",
@@ -228,8 +232,8 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
-		item: "c4",
-		item2: "Mine",
+		item: { name: "C4", img: ITEMS["C4"] },
+		item2: { name: "Mine", img: ITEMS["Mine"] },
 	},
 	GUNNER: {
 		name: "Heavy Weapons Specialist",
@@ -243,8 +247,8 @@ export const KITS = {
 		percentage2: "+20%",
 		perk3: null,
 		percentage3: null,
-		item: "Mine",
-		item2: "Rocket Launcher",
+		item: { name: "Mine", img: ITEMS["Mine"] },
+		item2: { name: "Rocket Launcher", img: ITEMS["Rocket Launcher"] },
 	},
 
 	JTAC: {
@@ -259,8 +263,8 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
-		item: "Armaros Drone",
-		item2: "Sync Shot Drone",
+		item: { name: "Armaros Drone", img: ITEMS["Armaros Drone"] },
+		item2: { name: "Sync Shot Drone", img: ITEMS["Sync Shot Drone"] },
 	},
 	/*JTAC2: {
 		name: "Combat Controller",
@@ -300,9 +304,9 @@ export const KITS = {
 		percentage2: "+100%",
 		perk3: null,
 		percentage3: null,
-		item: "Recon Drone",
-		item2: "Syringe MK2",
-		item3: "Bandages",
+		item: { name: "Recon Drone", img: ITEMS["Recon Drone"] },
+		item2: { name: "Syringe MK2", img: ITEMS["Syringe MK2"] },
+		item3: { name: "Bandages", img: ITEMS["Bandages"] },
 	},
 	/*MEDIC3: {
 		name: "Para Jumper",
@@ -330,7 +334,7 @@ export const KITS = {
 		percentage2: "+100%",
 		perk3: null,
 		percentage3: null,
-		item: "Attack Helicopter",
+		item: { name: "Attack Helicopter", img: ITEMS["Attack Helicopter"] },
 	},
 	PILOT2: {
 		name: "Rotary-Wing Pilot",
@@ -344,7 +348,10 @@ export const KITS = {
 		percentage2: "-20%",
 		perk3: "XP Bonus",
 		percentage3: "+40%",
-		item: "Transport Helicopter",
+		item: {
+			name: "Transport Helicopter",
+			img: ITEMS["Transport Helicopter"],
+		},
 	},
 	SNIPER: {
 		name: "Long-Range Marksman",
@@ -358,7 +365,7 @@ export const KITS = {
 		percentage2: "+30%",
 		perk3: null,
 		percentage3: null,
-		item: "Binoculars",
+		item: { name: "Binoculars", img: ITEMS["Binoculars"] },
 	},
 	SIGINT: {
 		name: "Signals Intelligence Analyst",
@@ -372,8 +379,8 @@ export const KITS = {
 		percentage2: "+50",
 		perk3: null,
 		percentage3: null,
-		item: "Sensor Grenade",
-		item2: "Sensor Launcher",
+		item: { name: "Sensor Grenade", img: ITEMS["Sensor Grenade"] },
+		item2: { name: "Sensor Launcher", img: ITEMS["Sensor Launcher"] },
 	},
 	CQC: {
 		name: "Close Quarters combat Specialist",
@@ -387,8 +394,8 @@ export const KITS = {
 		percentage2: "+40%",
 		perk3: "Accuracy",
 		percentage3: "+40%",
-		item: "Flashbang",
-		item2: "Cloak Spray",
+		item: { name: "Flashbang", img: ITEMS["Flashbang"] },
+		item2: { name: "Cloak Spray", img: ITEMS["Cloak Spray"] },
 	},
 	/*INFILTRATOR: {
 		name: "Black Ops Operator",
@@ -415,8 +422,8 @@ export const KITS = {
 		percentage2: null,
 		perk3: null,
 		percentage3: null,
-		item: "Recon Drone",
-		item2: "Cloaking Spray",
+		item: { name: "Recon Drone", img: ITEMS["Recon Drone"] },
+		item2: { name: "Cloaking Spray", img: ITEMS["Cloaking Spray"] },
 	},
 	MARKSMAN: {
 		name: "Designated Marksman",
@@ -430,7 +437,7 @@ export const KITS = {
 		percentage2: "+15%",
 		perk3: null,
 		percentage3: null,
-		item: "Sensor Grenade",
+		item: { name: "Sensor Grenade", img: ITEMS["Sensor Grenade"] },
 	},
 	/*DIVER: {
 		name: "Amphibious Operations Specialist",
@@ -499,8 +506,8 @@ export const KITS = {
 		percentage2: "+50%",
 		perk3: null,
 		percentage3: null,
-		item: "binoculars",
-		item2: "Sensor Launcher",
-		item3: "Recon Drone",
+		item: { name: "Binoculars", img: ITEMS["Binoculars"] },
+		item2: { name: "Sensor Launcher", img: ITEMS["Sensor Launcher"] },
+		item3: { name: "Recon Drone", img: ITEMS["Recon Drone"] },
 	},
 };
