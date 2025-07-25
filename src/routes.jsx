@@ -4,12 +4,20 @@ import { PrivateRoute, AuthRedirector } from "@/auth";
 
 // Import Pages
 import { Home, OperatorDashboard, Briefing } from "@/pages";
-import { Memorial, Roster, Teams, Infirmary } from "@/components/tables";
+import {
+	Memorial,
+	Roster,
+	Teams,
+	Infirmary,
+	Garage,
+} from "@/components/tables";
 import {
 	NewOperatorForm,
 	EditOperatorForm,
 	EditTeamForm,
 	NewTeamForm,
+	NewVehicleForm,
+	EditVehicleForm,
 } from "@/components/forms";
 import DashboardLayout from "./layout/DashboardLayout";
 import MainLayout from "./layout/MainLayout";
@@ -74,6 +82,10 @@ const AppRoutes = () => {
 						element={<Infirmary />}
 					/>
 					<Route
+						path='garage'
+						element={<Garage />}
+					/>
+					<Route
 						path='newOperator'
 						element={<NewOperatorForm />}
 					/>
@@ -88,6 +100,14 @@ const AppRoutes = () => {
 					<Route
 						path='newTeam'
 						element={<NewTeamForm />}
+					/>
+					<Route
+						path='newVehicle'
+						element={<NewVehicleForm />}
+					/>
+					<Route
+						path='editVehicle'
+						element={<EditVehicleForm />}
 					/>
 				</Route>
 			</Routes>

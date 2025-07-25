@@ -6,6 +6,8 @@ import EditTeamForm from "./EditTeamForm";
 import GhostID from "./GhostID";
 import ClassLoadout from "./ClassLoadout";
 import SecondaryClassLoadout from "./SecondaryClassLoadout";
+import NewVehicleForm from "./NewVehicleForm";
+import EditVehicleForm from "./EditVehicleForm";
 
 export {
 	NewOperatorForm,
@@ -16,4 +18,6 @@ export {
 	GhostID,
 	ClassLoadout,
 	SecondaryClassLoadout,
+	NewVehicleForm,
+	EditVehicleForm,
 };

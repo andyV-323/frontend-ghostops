@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { IdCard, Loadout, Gear, SheetSide, Perk } from "@/components";
-import { Roster, Infirmary, Memorial, Teams } from "@/components/tables";
+import {
+	Roster,
+	Infirmary,
+	Memorial,
+	Teams,
+	Garage,
+} from "@/components/tables";
 //import { Bio } from "@/components/ai";
 import { useOperatorsStore, useSheetStore } from "@/zustand";
 
@@ -71,6 +77,11 @@ const OperatorDashboard = () => {
 					<div
 						className='  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px] '
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
+						<Garage
+							dataUpdated={dataUpdated}
+							refreshData={refreshData}
+							openSheet={handleOpenSheet}
+						/>
 						{/* Edit Icon in Top Right */}
 
 						{/* ID Card Component */}

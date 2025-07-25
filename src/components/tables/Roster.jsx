@@ -134,6 +134,7 @@ const Roster = ({
 												setRemoveOperator(operator);
 												openDialog(() => deleteOperator(operator._id));
 											}}
+											title={`Delete ${operator.callSign || operator.name}`}
 										/>
 									</td>
 								</tr>

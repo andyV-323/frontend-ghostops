@@ -7,6 +7,8 @@ import { TEAMS } from "./teams";
 import { KITS } from "./kits";
 import { CLASS } from "./classNames";
 import { WEAPONS } from "./weapons";
+import { GARAGE } from "./garage";
+import { CONDITION } from "./vehicleCondition";
 
 export {
 	about,
@@ -18,4 +20,6 @@ export {
 	KITS,
 	CLASS,
 	WEAPONS,
+	GARAGE,
+	CONDITION,
 };
