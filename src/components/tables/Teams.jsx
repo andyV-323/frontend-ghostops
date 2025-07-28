@@ -680,11 +680,17 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	}, [isDragging]);
 
 	return (
-		<div className='relative overflow-x-auto shadow-md sm:rounded-lg max-h-96 overflow-y-auto'>
+		<div
+			className={`relative shadow-md sm:rounded-lg max-h-96 ${
+				isDragging ? "overflow-hidden" : "overflow-x-auto overflow-y-auto"
+			}`}>
 			<h1 className='flex flex-col items-center text-lg text-fontz font-bold'>
 				Teams
 			</h1>
-			<table className='w-full text-md text-left text-fontz'>
+			<table
+				className={`w-full text-md text-left text-fontz ${
+					isDragging ? "pointer-events-none" : ""
+				}`}>
 				<thead className='text-md text-fontz uppercase bg-linear-to-r/oklch from-blk to-neutral-800'>
 					<tr>
 						<th
