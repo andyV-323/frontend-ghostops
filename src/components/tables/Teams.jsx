@@ -558,38 +558,29 @@ const Teams = ({ dataUpdated, openSheet }) => {
 				});
 			}
 
-			// Handle scrolling the teams table only while dragging
+			// Handle auto-scrolling only at container edges
 			const currentY = touch.clientY;
-			const deltaScrollY = currentY - lastTouchY;
 			setLastTouchY(currentY);
 
 			// Find the scrollable container (the table container)
 			const tableContainer = document.querySelector(".overflow-x-auto");
 			if (tableContainer) {
-				// Auto-scroll when dragging near container edges
 				const containerRect = tableContainer.getBoundingClientRect();
-				const edgeThreshold = 80; // pixels from edge to start auto-scroll
-				const scrollSpeed = 8; // pixels per frame
+				const edgeThreshold = 60; // pixels from edge to start auto-scroll
+				const scrollSpeed = 4; // pixels per frame
 
 				const relativeY = currentY - containerRect.top;
 				const containerHeight = containerRect.height;
 
-				if (relativeY < edgeThreshold && relativeY > 0) {
-					// Near top edge of container - scroll up
-					tableContainer.scrollTop -= scrollSpeed;
-				} else if (
-					relativeY > containerHeight - edgeThreshold &&
-					relativeY < containerHeight
-				) {
-					// Near bottom edge of container - scroll down
-					tableContainer.scrollTop += scrollSpeed;
-				} else if (
-					Math.abs(deltaScrollY) > 3 &&
-					relativeY > 0 &&
-					relativeY < containerHeight
-				) {
-					// Manual scroll by dragging within the container
-					tableContainer.scrollTop -= deltaScrollY * 1.5;
+				// Only auto-scroll when near the very edges of the container
+				if (relativeY > 0 && relativeY < containerHeight) {
+					if (relativeY < edgeThreshold) {
+						// Near top edge of container - scroll up
+						tableContainer.scrollTop -= scrollSpeed;
+					} else if (relativeY > containerHeight - edgeThreshold) {
+						// Near bottom edge of container - scroll down
+						tableContainer.scrollTop += scrollSpeed;
+					}
 				}
 			}
 
