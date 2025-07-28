@@ -462,6 +462,9 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	const [isOverDropTarget, setIsOverDropTarget] = useState(false);
 	const [lastTouchY, setLastTouchY] = useState(0);
 	const [scrollInterval, setScrollInterval] = useState(null);
+	const [selectedOperatorForMove, setSelectedOperatorForMove] = useState(null);
+	const [showMoveModal, setShowMoveModal] = useState(false);
+	const [isMobile, setIsMobile] = useState(false);
 	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
 
 	const handleAssignRandomInjury = (operator) => {
@@ -681,8 +684,8 @@ const Teams = ({ dataUpdated, openSheet }) => {
 
 	return (
 		<div
-			className={`relative shadow-md sm:rounded-lg max-h-96 ${
-				isDragging ? "overflow-hidden" : "overflow-x-auto overflow-y-auto"
+			className={`relative shadow-md sm:rounded-lg max-h-96 overflow-x-auto overflow-y-auto ${
+				isDragging ? "touch-none" : ""
 			}`}>
 			<h1 className='flex flex-col items-center text-lg text-fontz font-bold'>
 				Teams
@@ -749,17 +752,30 @@ const Teams = ({ dataUpdated, openSheet }) => {
 													className='w-10 h-10 min-w-[2.5rem] border-2 border-lines rounded-full bg-highlight flex-shrink-0 cursor-grab active:cursor-grabbing'
 													src={operator.image}
 													alt={operator.callSign}
-													title={`${operator.callSign} - Drag to move to another team`}
-													draggable='true'
-													onDragStart={(e) =>
-														handleDragStart(e, operator, team._id)
+													title={
+														isMobile
+															? `${operator.callSign} - Tap to move or assign injury`
+															: `${operator.callSign} - Drag to move to another team`
 													}
-													onDragEnd={handleDragEnd}
-													onTouchStart={(e) =>
-														handleTouchStart(e, operator, team._id)
+													draggable={!isMobile}
+													onDragStart={
+														!isMobile
+															? (e) => handleDragStart(e, operator, team._id)
+															: undefined
 													}
-													onTouchMove={handleTouchMove}
-													onTouchEnd={handleTouchEnd}
+													onDragEnd={!isMobile ? handleDragEnd : undefined}
+													onTouchStart={
+														!isMobile
+															? (e) => handleTouchStart(e, operator, team._id)
+															: undefined
+													}
+													onTouchMove={!isMobile ? handleTouchMove : undefined}
+													onTouchEnd={!isMobile ? handleTouchEnd : undefined}
+													onClick={
+														isMobile
+															? () => handleOperatorClick(operator, team._id)
+															: undefined
+													}
 													style={{ touchAction: isDragging ? "none" : "auto" }}
 												/>
 											))}
@@ -799,20 +815,26 @@ const Teams = ({ dataUpdated, openSheet }) => {
 													<div
 														key={operator._id}
 														className='flex flex-col items-center cursor-grab active:cursor-grabbing'
-														draggable='true'
-														onDragStart={(e) =>
-															handleDragStart(e, operator, team._id)
+														draggable={!isMobile}
+														onDragStart={
+															!isMobile
+																? (e) => handleDragStart(e, operator, team._id)
+																: undefined
 														}
-														onDragEnd={handleDragEnd}
-														onTouchStart={(e) =>
-															handleTouchStart(e, operator, team._id)
+														onDragEnd={!isMobile ? handleDragEnd : undefined}
+														onTouchStart={
+															!isMobile
+																? (e) => handleTouchStart(e, operator, team._id)
+																: undefined
 														}
-														onTouchMove={handleTouchMove}
-														onTouchEnd={handleTouchEnd}
+														onTouchMove={
+															!isMobile ? handleTouchMove : undefined
+														}
+														onTouchEnd={!isMobile ? handleTouchEnd : undefined}
 														onClick={(e) => {
 															if (!isDragging) {
 																e.stopPropagation();
-																handleAssignRandomInjury(operator);
+																handleOperatorClick(operator, team._id);
 															}
 														}}
 														style={{
@@ -822,7 +844,11 @@ const Teams = ({ dataUpdated, openSheet }) => {
 															className='w-16 h-16 border-2 border-lines hover:border-highlight/50 bg-highlight rounded-full hover:bg-highlight/50 transition-all'
 															src={operator.image}
 															alt={operator.callSign}
-															title={`${operator.callSign} - Hold and drag to move or tap to assign injury`}
+															title={
+																isMobile
+																	? `${operator.callSign} - Tap to move or assign injury`
+																	: `${operator.callSign} - Hold and drag to move or tap to assign injury`
+															}
 														/>
 														<span className='text-sm mt-2'>
 															{operator.callSign}
@@ -880,8 +906,65 @@ const Teams = ({ dataUpdated, openSheet }) => {
 				</tbody>
 			</table>
 
-			{/* Scroll Zones - Only visible during drag */}
-			{isDragging && (
+			{/* Mobile Move Modal */}
+			{showMoveModal && selectedOperatorForMove && (
+				<div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
+					<div className='bg-blk border border-lines rounded-lg max-w-md w-full max-h-96 overflow-y-auto'>
+						<div className='p-4 border-b border-lines'>
+							<h3 className='text-lg font-semibold text-fontz'>
+								Move {selectedOperatorForMove.operator.callSign}
+							</h3>
+							<p className='text-sm text-gray-400 mt-1'>
+								Select a team to move this operator to:
+							</p>
+						</div>
+
+						<div className='p-4 space-y-2'>
+							{teams
+								.filter(
+									(team) => team._id !== selectedOperatorForMove.sourceTeamId
+								)
+								.map((team) => (
+									<button
+										key={team._id}
+										onClick={() => handleMoveOperatorToTeam(team._id)}
+										className='w-full text-left p-3 rounded-lg border border-lines hover:bg-highlight/20 transition-all'>
+										<div className='font-medium text-fontz'>{team.name}</div>
+										{team.AO && (
+											<div className='text-xs text-gray-500 mt-1'>
+												AO: {team.AO}
+											</div>
+										)}
+										<div className='text-xs text-gray-400 mt-1'>
+											{team.operators.length} operators
+										</div>
+									</button>
+								))}
+						</div>
+
+						<div className='p-4 border-t border-lines flex gap-2'>
+							<button
+								onClick={() =>
+									handleAssignRandomInjury(selectedOperatorForMove.operator)
+								}
+								className='flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all'>
+								Assign Injury
+							</button>
+							<button
+								onClick={() => {
+									setShowMoveModal(false);
+									setSelectedOperatorForMove(null);
+								}}
+								className='flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all'>
+								Cancel
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Scroll Zones - Only visible during drag on desktop */}
+			{isDragging && !isMobile && (
 				<>
 					{/* Scroll Up Zone */}
 					<div className='scroll-up-zone fixed top-0 left-0 right-0 h-16 bg-blue-500/30 border-b-2 border-blue-400 z-40 flex items-center justify-center'>
