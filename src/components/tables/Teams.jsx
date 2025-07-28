@@ -461,7 +461,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 });
 	const [isOverDropTarget, setIsOverDropTarget] = useState(false);
 	const [lastTouchY, setLastTouchY] = useState(0);
-	const [scrollVelocity, setScrollVelocity] = useState(0);
+	const [scrollInterval, setScrollInterval] = useState(null);
 	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
 
 	const handleAssignRandomInjury = (operator) => {
@@ -558,39 +558,44 @@ const Teams = ({ dataUpdated, openSheet }) => {
 				});
 			}
 
-			// Handle auto-scrolling only at container edges
-			const currentY = touch.clientY;
-			setLastTouchY(currentY);
-
-			// Find the scrollable container (the table container)
-			const tableContainer = document.querySelector(".overflow-x-auto");
-			if (tableContainer) {
-				const containerRect = tableContainer.getBoundingClientRect();
-				const edgeThreshold = 60; // pixels from edge to start auto-scroll
-				const scrollSpeed = 4; // pixels per frame
-
-				const relativeY = currentY - containerRect.top;
-				const containerHeight = containerRect.height;
-
-				// Only auto-scroll when near the very edges of the container
-				if (relativeY > 0 && relativeY < containerHeight) {
-					if (relativeY < edgeThreshold) {
-						// Near top edge of container - scroll up
-						tableContainer.scrollTop -= scrollSpeed;
-					} else if (relativeY > containerHeight - edgeThreshold) {
-						// Near bottom edge of container - scroll down
-						tableContainer.scrollTop += scrollSpeed;
-					}
-				}
-			}
-
 			setTouchPosition({ x: touch.clientX, y: touch.clientY });
 
-			// Find element under touch point
+			// Check if dragging over scroll zones
+			const scrollUpZone = document.querySelector(".scroll-up-zone");
+			const scrollDownZone = document.querySelector(".scroll-down-zone");
+			const tableContainer = document.querySelector(".overflow-x-auto");
+
+			// Clear any existing scroll interval
+			if (scrollInterval) {
+				clearInterval(scrollInterval);
+				setScrollInterval(null);
+			}
+
+			// Check if touch is over scroll zones
 			const elementBelow = document.elementFromPoint(
 				touch.clientX,
 				touch.clientY
 			);
+
+			if (scrollUpZone && scrollUpZone.contains(elementBelow)) {
+				// Start scrolling up
+				const interval = setInterval(() => {
+					if (tableContainer) {
+						tableContainer.scrollTop -= 5;
+					}
+				}, 16); // ~60fps
+				setScrollInterval(interval);
+			} else if (scrollDownZone && scrollDownZone.contains(elementBelow)) {
+				// Start scrolling down
+				const interval = setInterval(() => {
+					if (tableContainer) {
+						tableContainer.scrollTop += 5;
+					}
+				}, 16); // ~60fps
+				setScrollInterval(interval);
+			}
+
+			// Find team element under touch point (excluding scroll zones)
 			const teamRow = elementBelow?.closest("[data-team-id]");
 
 			if (teamRow) {
@@ -639,7 +644,12 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		setTouchPosition({ x: 0, y: 0 });
 		setIsOverDropTarget(false);
 		setLastTouchY(0);
-		setScrollVelocity(0);
+
+		// Clear scroll interval
+		if (scrollInterval) {
+			clearInterval(scrollInterval);
+			setScrollInterval(null);
+		}
 	};
 
 	useEffect(() => {
@@ -864,7 +874,24 @@ const Teams = ({ dataUpdated, openSheet }) => {
 				</tbody>
 			</table>
 
-			{/* Enhanced Drop Zone Indicator for Mobile */}
+			{/* Scroll Zones - Only visible during drag */}
+			{isDragging && (
+				<>
+					{/* Scroll Up Zone */}
+					<div className='scroll-up-zone fixed top-0 left-0 right-0 h-16 bg-blue-500/30 border-b-2 border-blue-400 z-40 flex items-center justify-center'>
+						<div className='text-white font-semibold text-sm'>
+							↑ Drag here to scroll up ↑
+						</div>
+					</div>
+
+					{/* Scroll Down Zone */}
+					<div className='scroll-down-zone fixed bottom-0 left-0 right-0 h-16 bg-blue-500/30 border-t-2 border-blue-400 z-40 flex items-center justify-center'>
+						<div className='text-white font-semibold text-sm'>
+							↓ Drag here to scroll down ↓
+						</div>
+					</div>
+				</>
+			)}
 			{draggedOperator && (
 				<div className='fixed top-4 left-4 bg-black text-white px-3 py-1 rounded-lg shadow-lg z-50'>
 					Moving {draggedOperator.operator.callSign} -{" "}
