@@ -266,11 +266,6 @@ const Garage = ({ dataUpdated, openSheet }) => {
 							className='px-6 py-3'>
 							Fuel
 						</th>
-						<th
-							scope='col'
-							className='px-6 py-3 text-center'>
-							Actions
-						</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -312,15 +307,6 @@ const Garage = ({ dataUpdated, openSheet }) => {
 												className='text-gray-400 text-lg hover:text-white transition-all'
 											/>
 										</div>
-									</td>
-
-									<td className='px-6 py-4 text-center'>
-										<FontAwesomeIcon
-											icon={faTrash}
-											className='text-btn text-2xl cursor-pointer hover:text-blk/50'
-											onClick={(e) => handleDeleteClick(vehicle, e)}
-											title={`Delete ${vehicle.nickname || vehicle.nickName}`}
-										/>
 									</td>
 								</tr>
 
@@ -400,7 +386,6 @@ const Garage = ({ dataUpdated, openSheet }) => {
 														: "Manage your vehicle's fuel and condition"}
 												</p>
 											</div>
-
 											<div className='flex justify-center gap-3 mb-3'>
 												{/* Only show Calculate Trip and Refuel buttons if vehicle is NOT being repaired */}
 												{!isVehicleBeingRepaired(vehicle) ? (
@@ -409,7 +394,7 @@ const Garage = ({ dataUpdated, openSheet }) => {
 															className='btn text-sm px-4 py-2'
 															onClick={() => {
 																openSheet(
-																	"bottom",
+																	"top",
 																	<TripCalculatorComponent
 																		vehicle={vehicle}
 																		onTripComplete={handleTripComplete}
@@ -469,7 +454,6 @@ const Garage = ({ dataUpdated, openSheet }) => {
 													</Button>
 												)}
 											</div>
-
 											{/* Edit Vehicle Button - always visible */}
 											<FontAwesomeIcon
 												className='cursor-pointer text-xl text-btn hover:text-white transition-all'
@@ -482,6 +466,12 @@ const Garage = ({ dataUpdated, openSheet }) => {
 														"Modify vehicle details, condition, and fuel level."
 													)
 												}
+											/>{" "}
+											<FontAwesomeIcon
+												icon={faTrash}
+												className='text-btn text-xl cursor-pointer hover:text-white'
+												onClick={(e) => handleDeleteClick(vehicle, e)}
+												title={`Delete ${vehicle.nickname || vehicle.nickName}`}
 											/>
 										</td>
 									</tr>
