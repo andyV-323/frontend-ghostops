@@ -133,8 +133,24 @@ const useTeamsStore = create((set, get) => ({
 			toast.error("Failed to update team.");
 		}
 	},
-
 	fetchOperators: async () => {
+		try {
+			const data = await OperatorsApi.getOperators();
+
+			// Save the full list of operators for rendering names
+			set({ fullOperatorList: data });
+
+			// Show ALL active operators in dropdown (including those in teams)
+			// This allows users to transfer operators between teams
+			const availableOperators = data.filter((op) => op.status === "Active");
+
+			set({ allOperators: availableOperators });
+		} catch (error) {
+			console.error("ERROR fetching operators:", error);
+			set({ allOperators: [], fullOperatorList: [] });
+		}
+	},
+	/*fetchOperators: async () => {
 		try {
 			const data = await OperatorsApi.getOperators();
 			const allTeams = await TeamsApi.getTeams();
@@ -143,11 +159,12 @@ const useTeamsStore = create((set, get) => ({
 			set({ fullOperatorList: data });
 
 			// Filter only active + not assigned for the select dropdown
-			const operatorsInTeams = allTeams.flatMap((team) =>
+			/*	const operatorsInTeams = allTeams.flatMap((team) =>
 				team.operators.map((op) => op._id)
 			);
 			const availableOperators = data.filter(
-				(op) => op.status === "Active" && !operatorsInTeams.includes(op._id)
+				(op) => op.status === "Active"
+				//&& !operatorsInTeams.includes(op._id)
 			);
 
 			set({ allOperators: availableOperators });
@@ -155,8 +172,7 @@ const useTeamsStore = create((set, get) => ({
 			console.error("ERROR fetching operators:", error);
 			set({ allOperators: [], fullOperatorList: [] });
 		}
-	},
-
+	},*/
 	/*fetchOperators: async () => {
 		try {
 			const data = await OperatorsApi.getOperators();
@@ -178,7 +194,108 @@ const useTeamsStore = create((set, get) => ({
 			set({ allOperators: [] });
 		}
 	},*/
-	// Add operator to the team
+	addOperatorToTeam: async (operatorId, targetTeamId) => {
+		try {
+			const { teams, fullOperatorList } = get();
+
+			// Find the target team
+			const targetTeam = teams.find((team) => team._id === targetTeamId);
+			if (!targetTeam) {
+				toast.error("Target team not found");
+				return;
+			}
+
+			// Check if operator is already in the target team
+			const operatorAlreadyInTarget = targetTeam.operators.some(
+				(op) => op._id === operatorId
+			);
+			if (operatorAlreadyInTarget) {
+				toast.warning("Operator is already in this team");
+				return;
+			}
+
+			// Find if operator is currently in another team
+			const sourceTeam = teams.find(
+				(team) =>
+					team._id !== targetTeamId &&
+					team.operators.some((op) => op._id === operatorId)
+			);
+
+			// Get the operator details
+			const operatorToMove = fullOperatorList.find(
+				(op) => op._id === operatorId
+			);
+			if (!operatorToMove) {
+				toast.error("Operator not found");
+				return;
+			}
+
+			// Optimistic update - update UI immediately
+			set((state) => ({
+				teams: state.teams.map((team) => {
+					// Remove operator from source team (if exists)
+					if (sourceTeam && team._id === sourceTeam._id) {
+						return {
+							...team,
+							operators: team.operators.filter((op) => op._id !== operatorId),
+						};
+					}
+					// Add operator to target team
+					if (team._id === targetTeamId) {
+						return {
+							...team,
+							operators: [...team.operators, operatorToMove],
+						};
+					}
+					return team;
+				}),
+			}));
+
+			// Update target team on server
+			const updatedTargetOperatorIds = [
+				...targetTeam.operators.map((op) => op._id),
+				operatorId,
+			];
+			await TeamsApi.updateTeam(targetTeamId, {
+				name: targetTeam.name,
+				AO: targetTeam.AO,
+				operators: updatedTargetOperatorIds,
+			});
+
+			// Update source team on server (if operator was in another team)
+			if (sourceTeam) {
+				const updatedSourceOperatorIds = sourceTeam.operators
+					.filter((op) => op._id !== operatorId)
+					.map((op) => op._id);
+
+				await TeamsApi.updateTeam(sourceTeam._id, {
+					name: sourceTeam.name,
+					AO: sourceTeam.AO,
+					operators: updatedSourceOperatorIds,
+				});
+
+				toast.success(
+					`${operatorToMove.callSign} transferred from ${sourceTeam.name} to ${targetTeam.name}!`
+				);
+			} else {
+				toast.success(
+					`${operatorToMove.callSign} added to ${targetTeam.name}!`
+				);
+			}
+
+			// Refresh operators list to update availability
+			await get().fetchOperators();
+		} catch (error) {
+			console.error("ERROR adding/transferring operator:", error);
+			toast.error("Failed to transfer operator");
+
+			// Revert optimistic update on error
+			get().fetchTeams();
+		}
+	},
+
+	// Also update your existing addOperator function to be more clear about its purpose
+	// This one is for the form state (EditTeamForm)
 	addOperator: (operatorId) => {
 		const { operators } = get();
 		if (!operators.includes(operatorId)) {
