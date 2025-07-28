@@ -21,6 +21,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		assignRandomInjury,
 		transferOperator,
 		addOperatorToTeam,
+		updateTeam, // Add this if not already imported
 	} = useTeamsStore();
 	const [expandedTeam, toggleExpand] = useToggleExpand();
 	const userId = localStorage.getItem("userId");
@@ -49,6 +50,28 @@ const Teams = ({ dataUpdated, openSheet }) => {
 			team.operators.some((op) => op._id === operatorId)
 		);
 		return team ? team.name : "Unassigned";
+	};
+
+	// Handle AO change for specific team
+	const handleAOChange = async (teamId, newAO) => {
+		try {
+			const team = teams.find((t) => t._id === teamId);
+			if (!team) return;
+
+			// Update team's AO
+			const updatedTeamData = {
+				_id: teamId,
+				createdBy: team.createdBy,
+				name: team.name,
+				AO: newAO,
+				operators: team.operators.map((op) => op._id),
+			};
+
+			await updateTeam(updatedTeamData);
+			await fetchTeams(); // Refresh teams list
+		} catch (error) {
+			console.error("Error updating team AO:", error);
+		}
 	};
 
 	// Desktop-only Drag and Drop Handlers
@@ -290,60 +313,78 @@ const Teams = ({ dataUpdated, openSheet }) => {
 										<td
 											colSpan='3'
 											className='text-center bg-blk/50 py-2'>
-											{/* AO Information Section */}
-											{team.AO && PROVINCES[team.AO] && (
-												<div className='mb-4'>
-													<div className='bg-blk/50 rounded-lg p-3'>
-														<h4 className='text-lg font-semibold text-fontz mb-2'>
-															Area Of Operation: {team.AO}
-														</h4>
-														<p className='text-fontz mb-2'>
-															Biome: {PROVINCES[team.AO].biome}
-														</p>
-													</div>
-												</div>
-											)}
-
 											{/* Operators Dropdown Section */}
-											<div className='mb-4'>
-												<h2 className='mb-4 text-lg font-bold text-fontz'>
+											<div className='mb-4 text-xs'>
+												<h2 className='mb-4 text-xs font-bold text-fontz'>
 													{isMobile
 														? "Add/Transfer Operators"
 														: "Add Operators"}
 												</h2>
 												{isMobile && (
-													<p className='text-sm text-gray-400 mb-2'>
+													<p className='text-xs text-gray-400 mb-2'>
 														Use the dropdown below to move operators between
 														teams
 													</p>
 												)}
+											</div>
+											<select
+												className='bg-blk/50 border border-lines rounded-lg block w-full p-2.5 text-fontz outline-lines text-xs'
+												onChange={(e) => {
+													const selectedOperator = e.target.value;
+													if (selectedOperator) {
+														addOperatorToTeam(selectedOperator, team._id);
+														e.target.value = ""; // Reset select
+													}
+												}}>
+												<option value=''>-- Select an Operator --</option>
+												{allOperators
+													.filter(
+														(operator) =>
+															// Filter out operators already in this team
+															!team.operators.some(
+																(teamOp) => teamOp._id === operator._id
+															)
+													)
+													.map((operator) => (
+														<option
+															key={operator._id}
+															value={operator._id}>
+															{operator.callSign} - {operator.class} -{" "}
+															{operator.secondaryClass} - Team:{" "}
+															{getOperatorTeam(operator._id)}
+														</option>
+													))}
+											</select>
+											{/* AO Change Section */}
+											<div className='mb-4 text-xs'>
+												{/* Display Current AO Info */}
+												{team.AO && PROVINCES[team.AO] && (
+													<div className='bg-blk/30 rounded-lg p-2 mt-2'>
+														<p className='text-fontz text-xs'>
+															<strong>Current AO:</strong> {team.AO} -{" "}
+															{PROVINCES[team.AO].biome}
+														</p>
+													</div>
+												)}
+												<h4 className='font-semibold text-fontz mb-2'>
+													Change Area Of Operation
+												</h4>
 												<select
-													className='bg-blk/50 border border-lines rounded-lg block w-full p-2.5 text-fontz outline-lines'
+													className='bg-blk/50 border border-lines outline-lines rounded-lg block w-full p-2.5 text-fontz text-xs'
+													value={team.AO || ""}
 													onChange={(e) => {
-														const selectedOperator = e.target.value;
-														if (selectedOperator) {
-															addOperatorToTeam(selectedOperator, team._id);
-															e.target.value = ""; // Reset select
-														}
+														handleAOChange(team._id, e.target.value);
 													}}>
-													<option value=''>-- Select an Operator --</option>
-													{allOperators
-														.filter(
-															(operator) =>
-																// Filter out operators already in this team
-																!team.operators.some(
-																	(teamOp) => teamOp._id === operator._id
-																)
-														)
-														.map((operator) => (
-															<option
-																key={operator._id}
-																value={operator._id}>
-																{operator.callSign} - {operator.class} -{" "}
-																{operator.secondaryClass} - Team:{" "}
-																{getOperatorTeam(operator._id)}
-															</option>
-														))}
+													<option value=''>
+														-- Select Area of Operations --
+													</option>
+													{Object.entries(PROVINCES).map(([key, province]) => (
+														<option
+															key={key}
+															value={key}>
+															{key} - {province.biome}
+														</option>
+													))}
 												</select>
 											</div>
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { IdCard, Loadout, Gear, SheetSide, Perk } from "@/components";
+import { IdCard, Loadout, SheetSide } from "@/components";
 import {
 	Roster,
 	Infirmary,
