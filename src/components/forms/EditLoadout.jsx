@@ -181,7 +181,7 @@ const EditLoadout = ({ operator }) => {
 				<br />
 				{/*ROLE 2*/}
 				<div>
-					<label className='block mb-2 font-medium'>Role 2</label>
+					<label className='block mb-2 font-medium'>Perk 2</label>
 					<select
 						name='secondaryGear'
 						className='form '
@@ -192,7 +192,7 @@ const EditLoadout = ({ operator }) => {
 							})
 						}
 						value={selectedOperator.secondaryGear || ""}>
-						<option value=''>select Role</option>
+						<option value=''>select Perk</option>
 						{Object.entries(KITS)
 							.filter(([, kit]) =>
 								kit.class.includes(selectedOperator.secondaryClass)
@@ -201,7 +201,7 @@ const EditLoadout = ({ operator }) => {
 								<option
 									key={key}
 									value={key}>
-									{kit.name}
+									{kit.perk}
 								</option>
 							))}
 					</select>
