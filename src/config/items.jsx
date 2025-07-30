@@ -24,4 +24,5 @@ export const ITEMS = {
 	"Transport Helicopter": "/icons/TransportHelicopter.svg",
 	"Cloak Spray": "/icons/CloakSpray.svg",
 	"Battle Drone": "/icons/BattleDrone.svg",
+	"Shot Gun": "/icons/STG.svg",
 };

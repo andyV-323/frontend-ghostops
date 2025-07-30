@@ -33,7 +33,7 @@ const ClassLoadout = () => {
 
 			{selectedOperator?.class && (
 				<div>
-					<label className='block mb-2 font-medium'>Select Role</label>
+					<label className='block mb-2 font-medium'>Select Perk</label>
 
 					<select
 						name='gear'
@@ -45,14 +45,14 @@ const ClassLoadout = () => {
 								gear: e.target.value,
 							})
 						}>
-						<option value=''>Select Role</option>
+						<option value=''>Select Perk</option>
 						{Object.entries(KITS)
 							.filter(([, kit]) => kit.class.includes(selectedOperator.class))
 							.map(([key, kit]) => (
 								<option
 									key={key}
 									value={key}>
-									{kit.name}
+									{kit.perk}
 								</option>
 							))}
 					</select>

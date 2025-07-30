@@ -52,7 +52,7 @@ const EditLoadout = ({ operator }) => {
 				<br />
 				{/*ROLE*/}
 				<div>
-					<label className='block mb-2 font-medium '>Role</label>
+					<label className='block mb-2 font-medium '>Perk</label>
 					<select
 						name='gear'
 						className='form'
@@ -63,14 +63,14 @@ const EditLoadout = ({ operator }) => {
 							})
 						}
 						value={selectedOperator.gear || ""}>
-						<option value=''>Select Role</option>
+						<option value=''>Select Perk</option>
 						{Object.entries(KITS)
 							.filter(([, kit]) => kit.class.includes(selectedOperator.class))
 							.map(([key, kit]) => (
 								<option
 									key={key}
 									value={key}>
-									{kit.name}
+									{kit.perk}
 								</option>
 							))}
 					</select>

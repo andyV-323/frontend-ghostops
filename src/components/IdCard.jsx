@@ -43,9 +43,6 @@ const IdCard = ({ operator, openSheet, selectedClass }) => {
 							<strong>Perk:</strong>
 							{KITS[selectedGear]?.perk}
 						</li>
-						<li>
-							<strong>Role:</strong> {KITS[selectedGear]?.name}
-						</li>
 					</ul>
 				</div>
 
