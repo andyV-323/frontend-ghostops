@@ -76,13 +76,13 @@ function MissionGenerator({
 					: selectedLocations,
 			allProvinceCoordinates: allProvinceCoordinates,
 		};
-
+		// Fixed version - just change 'Response' to 'result'
 		try {
 			const aiResponse = await chatGPTApi("mission", missionData);
 
-			if (aiResponse && aiResponse.Response) {
+			if (aiResponse && aiResponse.result) {
 				// Remove code block markers (```json ... ```) from response
-				const cleanedResponse = aiResponse.Response.replace(
+				const cleanedResponse = aiResponse.result.replace(
 					/```json\n|\n```/g,
 					""
 				);
@@ -94,6 +94,8 @@ function MissionGenerator({
 				setInfilPoint(parsedResponse.infilPoint || [0, 0]);
 				setExfilPoint(parsedResponse.exfilPoint || [0, 0]);
 				setFallbackExfil(parsedResponse.fallbackExfil || [0, 0]);
+
+				toast.success("Mission briefing generated successfully!");
 			} else {
 				toast.error("AI Response is invalid or empty!");
 			}
@@ -102,6 +104,7 @@ function MissionGenerator({
 				"AI Mission Generation Failed:",
 				error.response?.data || error
 			);
+			toast.error("Failed to generate mission briefing.");
 		}
 	};
 

@@ -5,14 +5,9 @@ import axios from "axios";
 export const chatGPTApi = async (feature, data) => {
 	let messageContent = "";
 
-	if (feature === "bio") {
-		messageContent = `Generate a detailed military biography for ${data.name}, call sign ${data.callSign},\
-		 nationality ${data.nationality}, role ${data.class}, elite special forces group ${data.sf}, and status${data.status}\
-		 (if KIA then say he died in Auroa during a mission). Background, training, and\
-		  combat experience should be realistic and concise.Make sure to keep it short. `;
-	} else if (feature === "team") {
+	if (feature === "team") {
 		messageContent = `Given the available operators: ${data.availableOperators
-			.map((op) => `${op.name} (${op.role}, ${op.secondaryRole})`)
+			.map((op) => `${op.name} `)
 			.join(", ")}, generate a mission-ready team. ${
 			data.teamType
 				? `The team should be suitable for a ${data.teamType} operation.`
@@ -63,14 +58,13 @@ Coordinate rules:
 	}
 
 	try {
-		const host = import.meta.env.VITE_RAPIDAPI_HOST;
 		const key = import.meta.env.VITE_RAPIDAPI_KEY;
+
 		const response = await axios.post(
-			//Endpoint for chatGPT
-			`https://${host}/api/ai/`,
+			// New endpoint
+			"https://open-ai21.p.rapidapi.com/chatgpt",
 			{
-				//Model for chatGPT
-				model: "gpt-3.5-turbo",
+				// Updated payload structure for new API
 				messages: [
 					{
 						role: "user",
@@ -82,14 +76,16 @@ Coordinate rules:
 			{
 				headers: {
 					"x-rapidapi-key": key,
-					"x-rapidapi-host": host,
+					"x-rapidapi-host": "open-ai21.p.rapidapi.com",
 					"Content-Type": "application/json",
 				},
 			}
 		);
+
 		return response.data;
 	} catch (error) {
-		toast.error("ERROR generating response:", error);
+		console.error("ERROR generating response:", error);
+		toast.error("Failed to generate response. Please try again.");
 		throw error;
 	}
 };

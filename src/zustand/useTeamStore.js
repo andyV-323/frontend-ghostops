@@ -332,8 +332,8 @@ const useTeamsStore = create((set, get) => ({
 				})),
 			});
 
-			if (response && response.Response) {
-				const generatedTeam = response.Response;
+			if (response && response.result) {
+				const generatedTeam = response.result;
 				const suggestedOperators = allOperators.filter((op) =>
 					generatedTeam.includes(op.callSign)
 				);
