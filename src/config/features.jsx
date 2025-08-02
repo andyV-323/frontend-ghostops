@@ -3,10 +3,10 @@ export const features = [
 		title: "Team Management System",
 		icon: "/icons/team.svg",
 		description: [
-			"Manage operators with in-depth info like class and unique roles to suit mission needs.",
+			"Manage operators with in-depth info like class to suit mission needs.",
 			"Track injuries with realistic recovery times or mark operators as KIA when lost.",
 			"Organize operators into specialized teams for efficient mission planning.",
-			"Access unique abilities and equipment suited to each operator's role.",
+			"Customize teammates with class and perks suited to each operator.",
 			"Generate dynamic, realistic teams using artificial intelligence for immersive scenarios.",
 		],
 	},
@@ -54,14 +54,14 @@ export const features = [
 		],
 	},
 	{
-		title: "Roster",
-		icon: "/icons/dashboard.svg",
+		title: "Vehicle Simulator",
+		icon: "/icons/helicopter.svg",
 		description: [
-			"View a detailed roster of all operators, including their class, and status.",
-			"Access a comprehensive overview of each operator's status, including health and readiness.",
+			"The vehicle simulator allows users to simulate trips and see how much fuel will be consumed.",
+			"Automatically degrades vehicle condition with each refuel (simulating wear and tear).",
 			"Organize operators into teams for efficient mission planning.",
-			"Track operator class loadouts, roles, and biography.",
-			"Use AI to generate unique operator biographies, enhancing immersion.",
+			"Track Vehicle fuel level and create unique vehicles by giving them a nickname.",
+			"Initiates repair processes to restore vehicle condition to Optimal in real time.",
 		],
 	},
 ];

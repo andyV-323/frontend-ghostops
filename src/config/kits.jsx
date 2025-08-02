@@ -4,11 +4,15 @@ export const KITS = {
 		name: "Assaulter/Rifleman",
 		class: ["Assault", "Pathfinder"],
 		perk: "Burst Forth",
+		item: { name: "Gas Grenade", img: ITEMS["Gas Grenade"] },
+		item2: { name: "Frag Grenade", img: ITEMS["Frag Grenade"] },
 	},
 	ASSAULTER2: {
 		name: "Assaulter/Rifleman",
 		class: ["Assault", "Pathfinder"],
 		perk: "Feel No Pain",
+		item: { name: "Gas Grenade", img: ITEMS["Gas Grenade"] },
+		item2: { name: "Syringe MK2", img: ITEMS["Syringe MK2"] },
 	},
 	BREACHER: {
 		name: "Breacher",
@@ -16,106 +20,117 @@ export const KITS = {
 		img: "/icons/Breacher.svg",
 		perk: "Guerrilla",
 		item: { name: "STG", img: ITEMS["Shot Gun"] },
+		item2: { name: "Flashbang", img: ITEMS["Flashbang"] },
 	},
 	COMMS: {
 		name: "Comms Specialist",
 		class: ["Echelon"],
 		perk: "Sixth Sense",
 		item: { name: "Sync Shot Drone", img: ITEMS["Sync Shot Drone"] },
-	},
-	CYBER: {
-		name: "Cyber/Electronic Warfare",
-		class: ["Echelon", "Sharpshooter"],
-		perk: "Drone Hunter",
-		item: { name: "EMP", img: ITEMS["EMP Grenade"] },
-	},
-	CYBER2: {
-		name: "Cyber/Electronic Warfare",
-		class: ["Echelon"],
-		perk: "Slim Shadow",
-		item: { name: "Sensor Grenade", img: ITEMS["Sensor Grenade"] },
-	},
+		item2: { name: "Strike Designator", img: ITEMS["Strike Designator"] },
+		CYBER: {
+			name: "Cyber/Electronic Warfare",
+			class: ["Echelon", "Sharpshooter"],
+			perk: "Drone Hunter",
+			item: { name: "EMP", img: ITEMS["EMP Grenade"] },
+		},
+		CYBER2: {
+			name: "Cyber/Electronic Warfare",
+			class: ["Echelon"],
+			perk: "Slim Shadow",
+			item: { name: "Sensor Grenade", img: ITEMS["Sensor Grenade"] },
+		},
 
-	DEMO: {
-		name: "Demolition/EOD",
-		class: ["Engineer"],
-		perk: "Explosive Expert",
-		item: { name: "C4", img: ITEMS["C4"] },
-		item2: { name: "Torch", img: ITEMS["Breaching Torch"] },
-		item3: { name: "Frag Grenade", img: ITEMS["Frag Grenade"] },
-	},
-	GUNNER: {
-		name: "Machine Gunner",
-		class: ["Assault", "Engineer"],
-		perk: "Pack Mule",
-		item: { name: "Mine", img: ITEMS["Mine"] },
-		item2: { name: "Rocket Launcher", img: ITEMS["Rocket Launcher"] },
-		item3: { name: "Grenade Launcher", img: ITEMS["Grenade Launcher"] },
-	},
+		DEMO: {
+			name: "Demolition/EOD",
+			class: ["Engineer"],
+			perk: "Explosive Expert",
+			item: { name: "C4", img: ITEMS["C4"] },
+			item2: { name: "Torch", img: ITEMS["Breaching Torch"] },
+			item3: { name: "Frag Grenade", img: ITEMS["Frag Grenade"] },
+		},
+		GUNNER: {
+			name: "Machine Gunner",
+			class: ["Assault", "Engineer"],
+			perk: "Pack Mule",
+			item: { name: "Mine", img: ITEMS["Mine"] },
+			item2: { name: "Rocket Launcher", img: ITEMS["Rocket Launcher"] },
+			item3: { name: "Grenade Launcher", img: ITEMS["Grenade Launcher"] },
+		},
 
-	JTAC: {
-		name: "Joint Terminal Attack Controller",
-		class: ["Engineer", "Pathfinder"],
-		perk: "Recon Mastery",
-		item: { name: "Recon Drone", img: ITEMS["Recon Drone"] },
-	},
-	MEDIC: {
-		name: "Combat Medic",
-		class: ["Medic"],
-		perk: "Revivalist",
-		item: { name: "Syringe MK2", img: ITEMS["Syringe MK2"] },
-	},
-	PJ: {
-		name: "Para Jumper",
-		class: ["Medic"],
-		perk: "Inspired",
-	},
-	PILOT: {
-		name: "Special Operations Pilot",
-		class: ["Panther"],
-		perk: "Pistolero",
-		item: { name: "Cloak Spray", img: ITEMS["Cloak Spray"] },
-	},
+		JTAC: {
+			name: "Joint Terminal Attack Controller",
+			class: ["Engineer", "Pathfinder"],
+			perk: "Recon Mastery",
+			item: { name: "Recon Drone", img: ITEMS["Recon Drone"] },
+			item2: { name: "Strike Designator", img: ITEMS["Strike Designator"] },
+		},
+		MEDIC: {
+			name: "Combat Medic",
+			class: ["Medic"],
+			perk: "Revivalist",
+			item: { name: "Syringe MK2", img: ITEMS["Syringe MK2"] },
+		},
+		PJ: {
+			name: "Para Jumper",
+			class: ["Medic"],
+			perk: "Inspired",
+			item: { name: "Syringe MK2", img: ITEMS["Syringe MK2"] },
+		},
+		PILOT: {
+			name: "Special Operations Pilot",
+			class: ["Panther"],
+			perk: "Pistolero",
+			item: { name: "Cloak Spray", img: ITEMS["Cloak Spray"] },
+		},
 
-	POINTMAN: {
-		name: "Point Man",
-		class: ["Assault", "Panther"],
-		perk: "Adrenaline",
+		POINTMAN: {
+			name: "Point Man",
+			class: ["Assault", "Panther"],
+			perk: "Adrenaline",
+			item1: { name: "Frag Grenade", img: ITEMS["Frag Grenade"] },
+		},
+		POINTMAN2: {
+			name: "Point Man",
+			class: ["Panther"],
+			perk: "Close and Personal  ",
+			item: { name: "Flashbang", img: ITEMS["Flashbang"] },
+		},
+		SIGINT: {
+			name: "Signals Intelligence ",
+			class: ["Echelon"],
+			perk: "Sensor Hack",
+			item: { name: "EMP", img: ITEMS["EMP Grenade"] },
+		},
+		SNIPER: {
+			name: "Sniper/Marksman",
+			class: ["Sharpshooter"],
+			perk: "Ballistic Advantage",
+			item: { name: "Sensor Launcher", img: ITEMS["Sensor Launcher"] },
+		},
+		SNIPE2: {
+			name: "Sniper/Marksman",
+			class: ["Sharpshooter"],
+			perk: "Gunslinger",
+			item: { name: "Flashbang", img: ITEMS["Flashbang"] },
+		},
+		SNIPE3: {
+			name: "Sniper/Marksman",
+			class: ["Sharpshooter"],
+			perk: "Rolling Thunder",
+			item: { name: "Strike Designator", img: ITEMS["Strike Designator"] },
+			item2: { name: "Binoculars", img: ITEMS["Binoculars"] },
+		},
+		LEAD: {
+			name: "Team Leader",
+			class: ["Assault"],
+			perk: "Cold Blooded",
+			item: { name: "Strike Designator", img: ITEMS["Strike Designator"] },
+		},
 	},
-	POINTMAN2: {
-		name: "Point Man",
-		class: ["Panther"],
-		perk: "Close and Personal  ",
-		item: { name: "Flashbang", img: ITEMS["Flashbang"] },
-	},
-	SIGINT: {
-		name: "Signals Intelligence ",
-		class: ["Echelon"],
-		perk: "Sensor Hack",
-		item: { name: "EMP", img: ITEMS["EMP Grenade"] },
-	},
-	SNIPER: {
-		name: "Sniper/Marksman",
-		class: ["Sharpshooter"],
-		perk: "Ballistic Advantage",
-	},
-	SNIPE2: {
-		name: "Sniper/Marksman",
-		class: ["Sharpshooter"],
-		perk: "Gunslinger",
-	},
-	SNIPE3: {
-		name: "Sniper/Marksman",
-		class: ["Sharpshooter"],
-		perk: "Rolling Thunder",
-	},
-	LEAD: {
-		name: "Team Leader",
-		class: ["Assault"],
-		perk: "Cold Blooded",
-	},
+};
 
-	/* item: { name: "Armaros Drone", img: ITEMS["Armaros Drone"] },
+/* item: { name: "Armaros Drone", img: ITEMS["Armaros Drone"] },
 		item2: { name: "Sync Shot Drone", img: ITEMS["Sync Shot Drone"] },
 		item3: { name: "Strike Designator", img: ITEMS["Strike Designator"] },
 		item4: { name: "Binoculars", img: ITEMS["Binoculars"] },item: { name: "EMP", img: ITEMS["EMP Grenade"] },
@@ -289,7 +304,7 @@ export const KITS = {
 		perk3: null,
 		percentage3: null,
 	},*/
-	/*MEDIC: {
+/*MEDIC: {
 		name: "Combat Medic",
 		class: ["Medic"],
 		img: "/icons/Medic.svg",
@@ -437,8 +452,8 @@ export const KITS = {
 		item: { name: "Binoculars", img: ITEMS["Binoculars"] },
 		item2: { name: "Sensor Launcher", img: ITEMS["Sensor Launcher"] },
 		item3: { name: "Recon Drone", img: ITEMS["Recon Drone"] },
-	},*/
-};
+	},
+};*/
 //Feel No Pain	Relentless, +50% Injury Resistance
 /*item4: { name: "Mine", img: ITEMS["Mine"] },
 		item5: { name: "Gas Grenade", img: ITEMS["Gas Grenade"] }

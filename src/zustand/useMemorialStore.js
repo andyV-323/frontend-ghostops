@@ -30,9 +30,31 @@ const useMemorialStore = create((set) => ({
 	},
 	// Add an operator to Memorial
 	addKIAOperator: (newOperator) => {
-		set((state) => ({
-			KIAOperators: [...state.KIAOperators, newOperator],
-		}));
+		set((state) => {
+			// Ensure the operator has an ID
+			if (!newOperator._id && !newOperator.id) {
+				newOperator._id = `memorial-${Date.now()}-${Math.random()
+					.toString(36)
+					.substr(2, 9)}`;
+			}
+
+			// Check for duplicates
+			const operatorId = newOperator._id || newOperator.id;
+			const exists = state.KIAOperators.some((existing) => {
+				const existingId = existing._id || existing.id;
+				return existingId === operatorId;
+			});
+
+			if (exists) {
+				return state;
+			}
+
+			// Add to array
+			const newKIAOperators = [...state.KIAOperators, newOperator];
+			return {
+				KIAOperators: newKIAOperators,
+			};
+		});
 	},
 }));
 

@@ -19,30 +19,37 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		fetchTeams,
 		fetchOperators,
 		assignRandomInjury,
+		assignRandomKIAInjury,
 		transferOperator,
 		addOperatorToTeam,
-		updateTeam, // Add this if not already imported
+		updateTeam,
 	} = useTeamsStore();
 	const [expandedTeam, toggleExpand] = useToggleExpand();
 	const userId = localStorage.getItem("userId");
 	const [selectedOperator, setSelectedOperator] = useState(null);
 	const [draggedOperator, setDraggedOperator] = useState(null);
 	const [dragOverTeam, setDragOverTeam] = useState(null);
-	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
+	const { isOpen, openDialog, closeDialog } = useConfirmDialog();
 	const allOperators = useTeamsStore((state) => state.allOperators);
-
+	const [injuryType, setInjuryType] = useState("choice");
 	// Check if device is mobile
 	const isMobile =
 		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
 			navigator.userAgent
 		);
-
-	const handleAssignRandomInjury = (operator) => {
+	const handleOperatorClick = (operator, e) => {
+		e.stopPropagation();
 		if (!operator) return;
 		setSelectedOperator(operator);
-		openDialog(() => {
-			assignRandomInjury(operator._id, userId);
-		});
+		setInjuryType("choice");
+		openDialog();
+	};
+	const handleAssignRandomInjury = (operatorId) => {
+		assignRandomInjury(operatorId, userId);
+	};
+
+	const handleAssignRandomKIAInjury = (operatorId) => {
+		assignRandomKIAInjury(operatorId, userId);
 	};
 
 	const getOperatorTeam = (operatorId) => {
@@ -68,7 +75,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 			};
 
 			await updateTeam(updatedTeamData);
-			await fetchTeams(); // Refresh teams list
+			await fetchTeams();
 		} catch (error) {
 			console.error("Error updating team AO:", error);
 		}
@@ -76,7 +83,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 
 	// Desktop-only Drag and Drop Handlers
 	const handleDragStart = (e, operator, sourceTeamId) => {
-		if (isMobile) return; // Disable on mobile
+		if (isMobile) return;
 		e.stopPropagation();
 		setDraggedOperator({ operator, sourceTeamId });
 		e.dataTransfer.effectAllowed = "move";
@@ -85,20 +92,20 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	};
 
 	const handleDragEnd = (e) => {
-		if (isMobile) return; // Disable on mobile
+		if (isMobile) return;
 		e.target.style.opacity = "1";
 		setDraggedOperator(null);
 		setDragOverTeam(null);
 	};
 
 	const handleDragOver = (e) => {
-		if (isMobile) return; // Disable on mobile
+		if (isMobile) return;
 		e.preventDefault();
 		e.dataTransfer.dropEffect = "move";
 	};
 
 	const handleDragEnter = (e, teamId) => {
-		if (isMobile) return; // Disable on mobile
+		if (isMobile) return;
 		e.preventDefault();
 		if (draggedOperator && draggedOperator.sourceTeamId !== teamId) {
 			setDragOverTeam(teamId);
@@ -224,11 +231,12 @@ const Teams = ({ dataUpdated, openSheet }) => {
 															: undefined
 													}
 													onDragEnd={!isMobile ? handleDragEnd : undefined}
-													onClick={
-														isMobile
-															? () => handleAssignRandomInjury(operator)
-															: undefined
-													}
+													onClick={(e) => {
+														e.stopPropagation();
+														if (isMobile) {
+															handleOperatorClick(operator, e);
+														}
+													}}
 												/>
 											))}
 											{team.operators.length > 4 && (
@@ -284,10 +292,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 																: undefined
 														}
 														onDragEnd={!isMobile ? handleDragEnd : undefined}
-														onClick={(e) => {
-															e.stopPropagation();
-															handleAssignRandomInjury(operator);
-														}}>
+														onClick={(e) => handleOperatorClick(operator, e)}>
 														<img
 															className='w-16 h-16 border-2 border-lines hover:border-highlight/50 bg-highlight rounded-full hover:bg-highlight/50 transition-all'
 															src={operator.image}
@@ -429,10 +434,16 @@ const Teams = ({ dataUpdated, openSheet }) => {
 				<ConfirmDialog
 					isOpen={isOpen}
 					closeDialog={closeDialog}
-					confirmAction={confirmAction}
-					title='Confirm Operator Casualty'
-					description='Assign a random injury to the selected operator. The severity of the injury will determine whether they are wounded or KIA.'
-					message={`Are you sure you want to proceed? ${selectedOperator.callSign} may suffer injuries requiring recovery time or may be declared KIA.`}
+					selectedOperator={selectedOperator}
+					onRandomInjury={() => {
+						handleAssignRandomInjury(selectedOperator._id);
+						closeDialog();
+					}}
+					onKIAInjury={() => {
+						handleAssignRandomKIAInjury(selectedOperator._id);
+						closeDialog();
+					}}
+					injuryType={injuryType}
 				/>
 			)}
 		</div>

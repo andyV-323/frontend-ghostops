@@ -424,6 +424,59 @@ const useTeamsStore = create((set, get) => ({
 		}
 	},
 
+	assignRandomKIAInjury: async (operatorId, userId) => {
+		// Filter to only get KIA injuries
+		const kiaInjuries = INJURIES.filter(
+			(injury) => injury.recoveryHours === "KIA"
+		);
+
+		const injury = kiaInjuries[Math.floor(Math.random() * kiaInjuries.length)];
+
+		const status = "KIA";
+
+		// Get the full operator data before creating memorial entry
+		const state = get();
+		let operator = null;
+
+		if (state.allOperators && state.allOperators.length > 0) {
+			operator = state.allOperators.find((op) => op._id === operatorId);
+		}
+
+		if (!operator && state.teams) {
+			for (const team of state.teams) {
+				if (team.operators) {
+					operator = team.operators.find((op) => op._id === operatorId);
+					if (operator) break;
+				}
+			}
+		}
+
+		const memorialEntry = {
+			createdBy: userId,
+			operator: operator || {
+				_id: operatorId,
+				callSign: "Unknown Operator",
+				image: "/ghost/Default.png",
+			},
+			name: injury.injury,
+			dateOfDeath: new Date(),
+		};
+
+		try {
+			await OperatorsApi.updateOperatorStatus(operatorId, status);
+			await TeamsApi.removeOperatorFromTeams(operatorId);
+
+			await MemorialApi.addMemorialEntry(memorialEntry);
+			toast.info("Operator was killed in action");
+			useMemorialStore.getState().addKIAOperator(memorialEntry);
+
+			state.fetchTeams();
+			useOperatorsStore.getState().fetchOperators();
+		} catch (error) {
+			console.error("ERROR processing injury:", error);
+		}
+	},
+
 	// Transfer operator between teams via drag and drop
 	transferOperator: async (operatorId, sourceTeamId, targetTeamId) => {
 		try {
