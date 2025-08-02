@@ -76,18 +76,19 @@ function MissionGenerator({
 					: selectedLocations,
 			allProvinceCoordinates: allProvinceCoordinates,
 		};
-		// Fixed version - just change 'Response' to 'result'
+
 		try {
 			const aiResponse = await chatGPTApi("mission", missionData);
 
 			if (aiResponse && aiResponse.result) {
-				// Remove code block markers (```json ... ```) from response
-				const cleanedResponse = aiResponse.result.replace(
-					/```json\n|\n```/g,
-					""
-				);
+				// More robust cleaning
+				const cleanedResponse = aiResponse.result
+					.replace(/```json\n?/g, "")
+					.replace(/\n?```/g, "")
+					.replace(/```/g, "")
+					.replace(/,(\s*[}\]])/g, "$1") // Remove trailing commas
+					.trim();
 
-				// Parse it into JSON
 				const parsedResponse = JSON.parse(cleanedResponse);
 
 				setMissionBriefing(parsedResponse.briefing || "No briefing provided.");

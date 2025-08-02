@@ -25,12 +25,10 @@ const Garage = ({ dataUpdated, openSheet }) => {
 		updateVehicle,
 		deleteVehicle,
 		repairVehicle,
+		refuelVehicle, // Add this if it exists in your store
 	} = useVehicleStore();
 	const [expandedVehicle, toggleExpand] = useToggleExpand();
-
 	const [selectedVehicle, setSelectedVehicle] = useState(null);
-	// Track vehicles that have had repair initiated
-	const [vehiclesUnderRepair, setVehiclesUnderRepair] = useState(new Set());
 
 	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
 
@@ -97,25 +95,27 @@ const Garage = ({ dataUpdated, openSheet }) => {
 	};
 
 	const canRepair = (vehicle) => {
-		return vehicle.condition !== "Optimal";
+		return vehicle.condition !== "Optimal" && !vehicle.isRepairing;
 	};
 
-	// Check if vehicle can be refueled (based on condition only)
+	// Check if vehicle can be refueled (based on condition and repair status)
 	const canRefuel = (vehicle) => {
 		const conditionData = getConditionData(vehicle.condition);
-		return conditionData.canRefuel;
+		return conditionData.canRefuel && !vehicle.isRepairing;
 	};
 
-	// Check if vehicle is currently being repaired (repair button was pressed and condition is not optimal)
-	const isVehicleBeingRepaired = (vehicle) => {
-		return (
-			vehiclesUnderRepair.has(vehicle._id) && vehicle.condition !== "Optimal"
-		);
+	// Check if vehicle is available for use (not repairing)
+	const isVehicleAvailable = (vehicle) => {
+		return !vehicle.isRepairing;
 	};
 
-	// Handle refuel with condition degradation and repair time update
+	// Handle refuel with new backend endpoint
 	const handleRefuel = async (vehicle) => {
 		if (!canRefuel(vehicle)) {
+			if (vehicle.isRepairing) {
+				toast.error("Cannot refuel vehicle while it's being repaired!");
+				return;
+			}
 			toast.error(
 				`Cannot refuel! Vehicle is in Critical condition and needs repair first.`
 			);
@@ -123,25 +123,30 @@ const Garage = ({ dataUpdated, openSheet }) => {
 		}
 
 		try {
-			const newCondition = getNextWorseCondition(vehicle.condition);
-			const newRepairTime = getRepairTimeForCondition(newCondition);
+			// Use the new refuel endpoint if available in your store
+			if (refuelVehicle) {
+				await refuelVehicle(vehicle._id, 25); // Refuel with 25 fuel
+			} else {
+				// Fallback to old method with condition degradation
+				const newCondition = getNextWorseCondition(vehicle.condition);
+				const newRepairTime = getRepairTimeForCondition(newCondition);
 
-			// Update both condition and repairTime
-			await updateVehicle(vehicle._id, {
-				remainingFuel: 100,
-				condition: newCondition,
-				repairTime: newRepairTime,
-			});
+				await updateVehicle(vehicle._id, {
+					remainingFuel: 100,
+					condition: newCondition,
+					repairTime: newRepairTime,
+				});
+
+				if (newCondition !== vehicle.condition) {
+					toast.warning(
+						`Vehicle refueled but condition degraded to ${newCondition}. Repair time: ${newRepairTime}h`
+					);
+				} else {
+					toast.success("Vehicle refueled successfully!");
+				}
+			}
 
 			fetchVehicles();
-
-			if (newCondition !== vehicle.condition) {
-				toast.warning(
-					`Vehicle refueled but condition degraded to ${newCondition}. Repair time: ${newRepairTime}h`
-				);
-			} else {
-				toast.success("Vehicle refueled successfully!");
-			}
 		} catch (error) {
 			console.error("Error refueling vehicle:", error);
 			toast.error("Failed to refuel vehicle");
@@ -150,11 +155,13 @@ const Garage = ({ dataUpdated, openSheet }) => {
 
 	// Handle vehicle repair
 	const handleRepair = async (vehicle) => {
+		if (vehicle.isRepairing) {
+			toast.warning("Vehicle is already being repaired!");
+			return;
+		}
+
 		try {
 			console.log("Starting repair for vehicle:", vehicle._id);
-
-			// Add vehicle to repair tracking set
-			setVehiclesUnderRepair((prev) => new Set(prev).add(vehicle._id));
 
 			toast.info(
 				`Starting repair for ${
@@ -165,6 +172,9 @@ const Garage = ({ dataUpdated, openSheet }) => {
 			// Trigger the AWS EventBridge repair workflow
 			await repairVehicle(vehicle._id);
 
+			// Refresh vehicles to get updated isRepairing status
+			fetchVehicles();
+
 			toast.success(
 				`Repair initiated for ${
 					vehicle.nickname || vehicle.nickName
@@ -172,14 +182,6 @@ const Garage = ({ dataUpdated, openSheet }) => {
 			);
 		} catch (error) {
 			console.error("Error starting repair:", error);
-
-			// Remove from repair tracking if the repair failed to start
-			setVehiclesUnderRepair((prev) => {
-				const newSet = new Set(prev);
-				newSet.delete(vehicle._id);
-				return newSet;
-			});
-
 			toast.error("Failed to start repair process");
 		}
 	};
@@ -215,26 +217,15 @@ const Garage = ({ dataUpdated, openSheet }) => {
 		fetchVehicles();
 	}, [fetchVehicles, dataUpdated]);
 
-	// Clean up repair tracking when vehicles become optimal
+	// Show success message when repair completes
 	useEffect(() => {
 		vehicles.forEach((vehicle) => {
-			if (
-				vehicle.condition === "Optimal" &&
-				vehiclesUnderRepair.has(vehicle._id)
-			) {
-				setVehiclesUnderRepair((prev) => {
-					const newSet = new Set(prev);
-					newSet.delete(vehicle._id);
-					return newSet;
-				});
-				toast.success(
-					`${
-						vehicle.nickname || vehicle.nickName
-					} repair completed! Vehicle is now in optimal condition.`
-				);
+			if (vehicle.condition === "Optimal" && !vehicle.isRepairing) {
+				// You might want to track which vehicles just completed repair
+				// to avoid showing this message repeatedly
 			}
 		});
-	}, [vehicles, vehiclesUnderRepair]);
+	}, [vehicles]);
 
 	return (
 		<div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
@@ -278,8 +269,8 @@ const Garage = ({ dataUpdated, openSheet }) => {
 									onClick={() => toggleExpand(index)}>
 									<td className='px-6 py-4 font-medium text-gray-400 hover:text-white whitespace-nowrap'>
 										{vehicle.nickname || vehicle.nickName || "Unnamed Vehicle"}
-										{isVehicleBeingRepaired(vehicle) && (
-											<span className='ml-2 text-xs bg-orange-600 text-white px-2 py-1 rounded'>
+										{vehicle.isRepairing && (
+											<span className='ml-2 text-xs bg-btn text-white px-2 py-1 rounded animate-pulse'>
 												Repair In Progress
 											</span>
 										)}
@@ -292,7 +283,11 @@ const Garage = ({ dataUpdated, openSheet }) => {
 										<div className='flex items-center gap-2'>
 											<div className='w-full bg-blk/50 rounded-full h-2.5 dark:bg-gray-700'>
 												<div
-													className='bg-highlight h-2.5 rounded-full transition-all duration-500'
+													className={`h-2.5 rounded-full transition-all duration-500 ${
+														vehicle.isRepairing
+															? "bg-btn animate-pulse"
+															: "bg-highlight"
+													}`}
 													style={{
 														width: `${getFuelPercentage(vehicle)}%`,
 													}}></div>
@@ -319,14 +314,20 @@ const Garage = ({ dataUpdated, openSheet }) => {
 											<div className='flex flex-wrap gap-4 p-2'>
 												{/* Vehicle Image */}
 												<div className='flex justify-center w-full'>
-													<img
-														src={getVehicleImage(vehicle)}
-														alt={vehicle.nickname || "Vehicle"}
-														className='w-100 h-24 object-cover rounded-lg '
-														onError={(e) => {
-															e.target.src = "/img/default-vehicle.png";
-														}}
-													/>
+													<div className='relative'>
+														<img
+															src={getVehicleImage(vehicle)}
+															alt={vehicle.nickname || "Vehicle"}
+															className={`w-100 h-24 object-cover rounded-lg transition-all ${
+																vehicle.isRepairing
+																	? "opacity-75 grayscale-50"
+																	: ""
+															}`}
+															onError={(e) => {
+																e.target.src = "/img/default-vehicle.png";
+															}}
+														/>
+													</div>
 												</div>
 
 												{/* Vehicle Details */}
@@ -346,11 +347,10 @@ const Garage = ({ dataUpdated, openSheet }) => {
 																${vehicle.condition === "Operational" ? "text-yellow-400" : ""}
 																${vehicle.condition === "Compromised" ? "text-orange-400" : ""}
 																${vehicle.condition === "Critical" ? "text-red-400" : ""}
+																${vehicle.isRepairing ? "animate-pulse" : ""}
 															`}>
-																{vehicle.condition || "Unknown"}
-																{!canRefuel(vehicle) &&
-																	vehicle.condition !== "Optimal"}
-																{isVehicleBeingRepaired(vehicle)}
+																{vehicle.condition}
+																{vehicle.isRepairing && " Repairing"}
 															</span>
 														</div>
 														<div>
@@ -381,14 +381,14 @@ const Garage = ({ dataUpdated, openSheet }) => {
 													Vehicle Simulator
 												</h4>
 												<p className='text-xs text-gray-500'>
-													{isVehicleBeingRepaired(vehicle)
-														? "Vehicle repair in progress - some functions are disabled"
+													{vehicle.isRepairing
+														? "Vehicle repair in progress - functions are disabled"
 														: "Manage your vehicle's fuel and condition"}
 												</p>
 											</div>
 											<div className='flex justify-center gap-3 mb-3'>
-												{/* Only show Calculate Trip and Refuel buttons if vehicle is NOT being repaired */}
-												{!isVehicleBeingRepaired(vehicle) ? (
+												{/* Only show Calculate Trip and Refuel buttons if vehicle is available */}
+												{isVehicleAvailable(vehicle) ? (
 													<>
 														<Button
 															className='btn text-sm px-4 py-2'
@@ -418,60 +418,96 @@ const Garage = ({ dataUpdated, openSheet }) => {
 															disabled={!canRefuel(vehicle)}
 															title={
 																canRefuel(vehicle)
-																	? "Refuel vehicle (condition will degrade)"
+																	? "Refuel vehicle"
 																	: `Cannot refuel - vehicle needs repair (${vehicle.condition})`
 															}>
 															{canRefuel(vehicle) ? "Refuel" : "Needs Repair"}
 														</Button>
 													</>
 												) : (
-													<div className='text-sm text-orange-400 px-4 py-2 bg-orange-900/20 rounded'>
-														Not Avaiable
+													<div className='text-sm px-4 py-2 bg-blk rounded flex items-center'>
+														Not Available
 													</div>
 												)}
 
-												{/* Show repair button only if vehicle needs repair and not currently being repaired */}
-												{canRepair(vehicle) &&
-													!isVehicleBeingRepaired(vehicle) && (
-														<Button
-															className='btn bg-blue-600 hover:bg-blue-700 text-sm px-4 py-2'
-															onClick={() => handleRepair(vehicle)}
-															title={`Repair vehicle to Optimal condition (${
-																vehicle.repairTime || 2
-															}h)`}>
-															{vehicle.condition === "Critical"
-																? "Emergency Repair"
-																: "Repair Vehicle"}
-														</Button>
-													)}
+												{/* Show repair button only if vehicle needs repair and is available */}
+												{canRepair(vehicle) && (
+													<Button
+														className='btn bg-blue-600 hover:bg-blue-700 text-sm px-4 py-2'
+														onClick={() => handleRepair(vehicle)}
+														disabled={vehicle.isRepairing}
+														title={
+															vehicle.isRepairing
+																? "Repair already in progress"
+																: `Repair vehicle to Optimal condition (${
+																		vehicle.repairTime || 2
+																  }h)`
+														}>
+														{vehicle.condition === "Critical"
+															? "Emergency Repair"
+															: "Repair Vehicle"}
+													</Button>
+												)}
 
 												{/* Show repair status if vehicle is being repaired */}
-												{isVehicleBeingRepaired(vehicle) && (
+												{vehicle.isRepairing && (
 													<Button
-														className='bg-orange-600 text-white text-sm px-4 py-2 cursor-not-allowed opacity-75'
+														className='bg-blk text-white text-sm px-4 py-2 cursor-not-allowed flex items-center'
 														disabled>
-														Repair In Progress...
+														Repair In Progress
 													</Button>
 												)}
 											</div>
-											{/* Edit Vehicle Button - always visible */}
+											{/* Edit Vehicle Button - always visible but may be disabled */}
 											<FontAwesomeIcon
-												className='cursor-pointer text-xl text-btn hover:text-white transition-all'
+												className={`cursor-pointer text-xl transition-all ${
+													vehicle.isRepairing
+														? "text-gray-600 cursor-not-allowed"
+														: "text-btn hover:text-white"
+												}`}
 												icon={faGear}
-												onClick={() =>
-													openSheet(
-														"bottom",
-														<EditVehicleForm vehicleId={vehicle._id} />,
-														"Edit Vehicle",
-														"Modify vehicle details, condition, and fuel level."
-													)
+												onClick={() => {
+													if (!vehicle.isRepairing) {
+														openSheet(
+															"bottom",
+															<EditVehicleForm vehicleId={vehicle._id} />,
+															"Edit Vehicle",
+															"Modify vehicle details, condition, and fuel level."
+														);
+													} else {
+														toast.warning(
+															"Cannot edit vehicle while it's being repaired"
+														);
+													}
+												}}
+												title={
+													vehicle.isRepairing
+														? "Cannot edit while repairing"
+														: "Edit vehicle"
 												}
 											/>{" "}
 											<FontAwesomeIcon
 												icon={faTrash}
-												className='text-btn text-xl cursor-pointer hover:text-white'
-												onClick={(e) => handleDeleteClick(vehicle, e)}
-												title={`Delete ${vehicle.nickname || vehicle.nickName}`}
+												className={`text-xl cursor-pointer transition-all ${
+													vehicle.isRepairing
+														? "text-gray-600 cursor-not-allowed"
+														: "text-btn hover:text-white"
+												}`}
+												onClick={(e) => {
+													if (!vehicle.isRepairing) {
+														handleDeleteClick(vehicle, e);
+													} else {
+														e.stopPropagation();
+														toast.warning(
+															"Cannot delete vehicle while it's being repaired"
+														);
+													}
+												}}
+												title={
+													vehicle.isRepairing
+														? "Cannot delete while repairing"
+														: `Delete ${vehicle.nickname || vehicle.nickName}`
+												}
 											/>
 										</td>
 									</tr>

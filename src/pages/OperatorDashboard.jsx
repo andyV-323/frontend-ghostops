@@ -68,11 +68,10 @@ const OperatorDashboard = () => {
 							refreshData={refreshData}
 							openSheet={handleOpenSheet}
 						/>
-						{/*Clickable*/}
 					</div>
 				</div>
 
-				{/* === ID CARD & BIO (SEPARATED) === */}
+				{/* === GARAGE === */}
 				<div className='space-y-4'>
 					<div
 						className='  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px] '
@@ -82,39 +81,8 @@ const OperatorDashboard = () => {
 							refreshData={refreshData}
 							openSheet={handleOpenSheet}
 						/>
-						{/* Edit Icon in Top Right */}
-
-						{/* ID Card Component */}
-						{/*	<IdCard
-							operator={clickedOperator}
-							openSheet={handleOpenSheet}
-						/>*/}
-						{/*when operator is clicked from roster displayed idcard info*/}
 					</div>
-
-					{/*<div
-						className='bg-bckground/50 shadow-lg shadow-black rounded-3xl overflow-y-auto h-[185px] flex flex-col items-center'
-						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
-						<Gear
-							operator={clickedOperator}
-							selectedClass={selectedClass}
-						/>
-					</div>*/}
-					{/*}	<div
-						className=' flex flex-col shadow-lg shadow-black rounded-3xl overflow-y-auto h-[500px]'
-						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
-						<Gear
-							operator={clickedOperator}
-							selectedClass={selectedClass}
-						/>
-						<Loadout
-							operator={clickedOperator}
-							selectedClass={selectedClass}
-							openSheet={handleOpenSheet}
-						/>
-
-						
-					</div>*/}
+					{/* ===ID CARD & LOADOUT=== */}
 					<div
 						className='  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px] '
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
@@ -128,8 +96,6 @@ const OperatorDashboard = () => {
 							selectedClass={selectedClass}
 							openSheet={handleOpenSheet}
 						/>
-
-						{/*when operator is clicked show his gear here*/}
 					</div>
 				</div>
 

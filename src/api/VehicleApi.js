@@ -32,13 +32,37 @@ export const updateVehicleCondition = async (vehicleId, condition) => {
 	return api.put(`/vehicles/${vehicleId}/condition`, { condition });
 };
 
-// Repair a vehicle - NEW FUNCTION
+// Repair a vehicle
 export const repairVehicle = async (vehicleId) => {
 	try {
 		const response = await api.post(`/vehicles/${vehicleId}/repair`);
 		return response.data;
 	} catch (error) {
 		console.error("ERROR repairing vehicle from API:", error);
+		throw error;
+	}
+};
+
+// Refuel a vehicle - NEW FUNCTION
+export const refuelVehicle = async (vehicleId, fuelAmount = 25) => {
+	try {
+		const response = await api.post(`/vehicles/${vehicleId}/refuel`, {
+			fuelAmount,
+		});
+		return response.data;
+	} catch (error) {
+		console.error("ERROR refueling vehicle from API:", error);
+		throw error;
+	}
+};
+
+// Check vehicle availability - NEW FUNCTION
+export const checkVehicleAvailability = async (vehicleId) => {
+	try {
+		const response = await api.get(`/vehicles/${vehicleId}/availability`);
+		return response.data;
+	} catch (error) {
+		console.error("ERROR checking vehicle availability from API:", error);
 		throw error;
 	}
 };
