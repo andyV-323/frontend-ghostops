@@ -32,7 +32,7 @@ const SecondaryClassLoadout = () => {
 			{/*GEAR 2*/}
 			{selectedOperator?.secondaryClass && (
 				<div>
-					<label className='block mb-2 font-medium'>Select Role 2</label>
+					<label className='block mb-2 font-medium'>Select Perk</label>
 					<select
 						name='secondaryGear'
 						className='form w-full min-w-[320px]'
@@ -43,7 +43,7 @@ const SecondaryClassLoadout = () => {
 								secondaryGear: e.target.value,
 							})
 						}>
-						<option value=''>Select Role </option>
+						<option value=''>Select Perk </option>
 						{Object.entries(KITS)
 							.filter(([, kit]) =>
 								kit.class.includes(selectedOperator.secondaryClass)
@@ -52,7 +52,7 @@ const SecondaryClassLoadout = () => {
 								<option
 									key={key}
 									value={key}>
-									{kit.name}
+									{kit.perk}
 								</option>
 							))}
 					</select>
