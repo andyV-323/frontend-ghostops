@@ -9,7 +9,7 @@ const IdCard = ({ operator, openSheet, selectedClass }) => {
 	if (!operator) {
 		return (
 			<div className='text-center text-gray-400'>
-				Select an operator to view details
+				Select an operator from your roster to view their details.
 			</div>
 		);
 	}

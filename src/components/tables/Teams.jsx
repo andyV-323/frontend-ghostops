@@ -416,7 +416,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 							<td
 								colSpan='3'
 								className='text-center py-4 text-gray-400'>
-								Loading teams...
+								Click the PeopleGroup icon to add your first team.
 							</td>
 						</tr>
 					)}

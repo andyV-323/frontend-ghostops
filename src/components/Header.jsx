@@ -81,13 +81,13 @@ const Header = () => {
 										Briefing
 									</Link>
 								</li>
-								<li>
-									<Link
+								{/*<li>
+								<Link
 										to='/dashboard/stats'
 										className='hover:underline hover:text-white'>
 										Tutorial
 									</Link>
-								</li>
+								</li>*/}
 								<li>
 									<Link
 										to='/dashboard/newOperator'

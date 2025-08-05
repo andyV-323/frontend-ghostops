@@ -145,7 +145,7 @@ const Roster = ({
 							<td
 								colSpan='3'
 								className='text-center py-4 text-gray-400'>
-								Loading operators...
+								Click the UserPlus icon to add your first Operator
 							</td>
 						</tr>
 					)}
