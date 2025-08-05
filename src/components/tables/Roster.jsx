@@ -53,7 +53,7 @@ const Roster = ({
 										"left",
 										<NewOperatorForm />,
 										"New Operator",
-										"Customize an elite operator by selecting their background, class, loadout, and tactical gear for optimal mission performance."
+										"Customize an elite operator by selecting their background, class, loadout, and perks for optimal mission performance."
 									);
 								}}
 							/>

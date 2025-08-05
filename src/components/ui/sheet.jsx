@@ -43,7 +43,7 @@ function SheetPortal({ ...props }) {
 const SheetOverlay = React.forwardRef(({ className, ...props }, ref) => {
 	return (
 		<SheetPrimitive.Overlay
-			ref={ref} // ✅ Fix: Forward the ref properly
+			ref={ref}
 			data-slot='sheet-overlay'
 			className={cn(
 				"data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-[1050] bg-black/80",
@@ -62,9 +62,9 @@ const SheetContent = React.forwardRef(
 			<SheetPortal>
 				<SheetOverlay />
 				<SheetPrimitive.Content
-					ref={ref} // ✅ Ensure the ref is forwarded
+					ref={ref}
 					data-slot='sheet-content'
-					aria-describedby='sheet-description' // ✅ Fix the missing description
+					aria-describedby='sheet-description'
 					className={cn(
 						"bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-[1050] flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
 						side === "right" &&
