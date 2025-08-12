@@ -7,6 +7,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [400, 950],
 		imgURL: "/maps/GolemIsland.png",
 		biome: "Volcanic Rain Forest",
 
@@ -49,6 +50,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [360, 1080],
 		imgURL: "/maps/GolemIsland.png",
 		biome: "Volcanic Rain Forest",
 
@@ -90,6 +92,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [580, 1235],
 		imgURL: "/maps/GolemIsland.png",
 		biome: "Volcanic Dessert",
 
@@ -135,6 +138,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [650, 690],
 		imgURL: "/maps/capenorthMap.png",
 		biome: "Rain Forest",
 
@@ -203,6 +207,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [610, 800],
 		imgURL: "/maps/capenorthMap.png",
 		biome: "Rain Forest",
 
@@ -241,6 +246,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [510, 430],
 		imgURL: "/maps/WildCoast.png",
 		biome: "High Cliffs",
 
@@ -345,6 +351,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [590, 560],
 		imgURL: "/maps/SmugglersCove.png",
 		biome: "High Cliffs",
 
@@ -455,6 +462,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [570, 690],
 		imgURL: "/maps/SinkingCountry.png",
 		biome: "Salt Marsh",
 
@@ -576,6 +584,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [420, 400],
 		imgURL: "/maps/WhalersBay.png",
 		biome: "High Cliffs",
 
@@ -680,6 +689,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [515, 540],
 		imgURL: "/maps/MountHudgson.png",
 		biome: "High Thundra",
 
@@ -730,6 +740,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [445, 620],
 		imgURL: "/maps/Fenbog.png",
 		biome: "Salt Marsh",
 
@@ -852,6 +863,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [390, 440],
 		imgURL: "/maps/GoodHopeMt.png",
 		biome: "High Thundra",
 
@@ -932,6 +944,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [450, 470],
 		imgURL: "/maps/SilentMt.png",
 		biome: "High Thundra",
 
@@ -1006,6 +1019,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [430, 560],
 		imgURL: "/maps/NewArgyll.png",
 		biome: "Rain Shadows",
 
@@ -1092,6 +1106,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [400, 620],
 		imgURL: "/maps/Infinity.png",
 		biome: "Meadow Lands",
 
@@ -1232,6 +1247,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [300, 300],
 		imgURL: "/maps/Channels.png",
 		biome: "Fjordlands",
 
@@ -1336,6 +1352,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [300, 480],
 		imgURL: "/maps/RestrictedArea.png",
 		biome: "High Thundra and Rain Shadows",
 
@@ -1573,6 +1590,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [380, 540],
 		imgURL: "/maps/LakeCountry.png",
 		biome: "Rain SHadows",
 
@@ -1659,6 +1677,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [290, 590],
 		imgURL: "/maps/NewStirling.png",
 		biome: "Mead Lands",
 
@@ -1817,6 +1836,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [220, 380],
 		imgURL: "/maps/SealIslands.png",
 		biome: "Fjordlands",
 
@@ -1933,6 +1953,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [190, 470],
 		imgURL: "/maps/Liberty.png",
 		biome: "Meadow Lands and Urban City",
 
@@ -2151,6 +2172,7 @@ export const PROVINCES = {
 				[768, 1366],
 			],
 		},
+		AOO: [80, 380],
 		imgURL: "/maps/WindyIslands.png",
 		biome: "Meadow Lands",
 

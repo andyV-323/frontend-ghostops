@@ -8,12 +8,13 @@ import {
 	Garage,
 } from "@/components/tables";
 //import { Bio } from "@/components/ai";
-import { useOperatorsStore, useSheetStore } from "@/zustand";
+import { useOperatorsStore, useSheetStore, useTeamsStore } from "@/zustand";
+import AuroaMap from "@/components/AuroaMap";
 
 const OperatorDashboard = () => {
 	const { activeClasses, setSelectedOperator, operators, fetchOperators } =
 		useOperatorsStore();
-
+	const { teams } = useTeamsStore();
 	const [clickedOperator, setClickedOperator] = useState(null);
 	const selectedClass =
 		activeClasses[clickedOperator?._id] || clickedOperator?.class;
@@ -39,7 +40,13 @@ const OperatorDashboard = () => {
 		setSheetTitle(title);
 		setSheetDescription(description);
 	};
-
+	// Get all active AOs from teams
+	const getActiveAOs = () => {
+		return teams
+			.filter((team) => team.AO) // Only teams with an AO assigned
+			.map((team) => team.AO)
+			.filter((ao, index, self) => self.indexOf(ao) === index); // Remove duplicates
+	};
 	return (
 		<div className='bg-transparent flex flex-col p-4 space-y-4'>
 			{/* === GRID LAYOUT === */}
@@ -86,11 +93,12 @@ const OperatorDashboard = () => {
 					<div
 						className='  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px] '
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
-						<IdCard
+						{/*<IdCard
 							operator={clickedOperator}
 							openSheet={handleOpenSheet}
 							selectedClass={selectedClass}
-						/>
+						/>*/}
+						<AuroaMap selectedAOs={getActiveAOs()} />
 						<Loadout
 							operator={clickedOperator}
 							selectedClass={selectedClass}
