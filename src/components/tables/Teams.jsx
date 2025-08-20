@@ -355,6 +355,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 															key={operator._id}
 															value={operator._id}>
 															{operator.callSign} - {operator.class} -{" "}
+															{operator.specialization}{" "}
 															{operator.secondaryClass} - Team:{" "}
 															{getOperatorTeam(operator._id)}
 														</option>

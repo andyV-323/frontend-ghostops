@@ -26,6 +26,9 @@ const defaultOperator = {
 	secondaryname2: "",
 	image: "",
 	bio: "",
+	// ADD THESE MISSING FIELDS:
+	specialist: false,
+	specialization: "",
 };
 
 const useOperatorsStore = create((set, get) => ({
@@ -38,7 +41,7 @@ const useOperatorsStore = create((set, get) => ({
 	fetchOperators: async () => {
 		try {
 			const data = await OperatorsApi.getOperators();
-
+			console.log("Fetched operators:", data); // DEBUG: Check what data is returned
 			set({ operators: data });
 		} catch (error) {
 			console.error("ERROR fetching operators:", error);
@@ -53,9 +56,10 @@ const useOperatorsStore = create((set, get) => ({
 	// Create new operator
 	createOperator: async (operatorData) => {
 		try {
+			console.log("Creating operator with data:", operatorData); // DEBUG: Check what's being sent
 			await OperatorsApi.createOperator(operatorData);
 			toast.success("Operator created successfully!");
-			get().fetchOperators(); // Refresh operators list
+			await get().fetchOperators(); // Make sure this completes before continuing
 		} catch (error) {
 			console.error("ERROR creating operator:", error);
 			toast.error("Failed to create operator.");
@@ -73,9 +77,7 @@ const useOperatorsStore = create((set, get) => ({
 	toggleClass: (operatorId, primaryClass, secondaryClass) => {
 		set((state) => {
 			if (!secondaryClass) return state;
-
 			const currentClass = state.activeClasses[operatorId] || primaryClass;
-
 			let newClass;
 			if (primaryClass === secondaryClass) {
 				// Special case: both classes are the same
@@ -87,7 +89,6 @@ const useOperatorsStore = create((set, get) => ({
 				newClass =
 					currentClass === primaryClass ? secondaryClass : primaryClass;
 			}
-
 			return {
 				activeClasses: { ...state.activeClasses, [operatorId]: newClass },
 				selectedClass: newClass,
@@ -112,9 +113,10 @@ const useOperatorsStore = create((set, get) => ({
 	updateOperator: async (operatorId, updatedData) => {
 		if (!operatorId) return;
 		try {
+			console.log("Updating operator with data:", updatedData); // DEBUG
 			await OperatorsApi.updateOperator(operatorId, updatedData);
 			toast.success("Operator updated successfully!");
-			get().fetchOperators(); // Refresh operators list
+			await get().fetchOperators(); // Refresh operators list
 		} catch (error) {
 			console.error("ERROR updating operator:", error);
 			toast.error("Failed to update operator.");
@@ -124,11 +126,10 @@ const useOperatorsStore = create((set, get) => ({
 	// Delete an operator
 	deleteOperator: async (operatorId) => {
 		if (!operatorId) return;
-
 		try {
 			await OperatorsApi.deleteOperator(operatorId);
 			toast.success("Operator deleted successfully!");
-			get().fetchOperators(); // Refresh operator list
+			await get().fetchOperators(); // Refresh operator list
 		} catch (error) {
 			console.error("ERROR deleting operator:", error);
 		}

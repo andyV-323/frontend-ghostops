@@ -1,28 +1,27 @@
 import { useHandleChange } from "@/hooks";
 import { useOperatorsStore } from "@/zustand";
-import { ghostID } from "@/config";
+import { ghostID, CLASS } from "@/config";
 
 const GhostID = () => {
 	const handleChange = useHandleChange();
 	const { selectedOperator, setSelectedOperator } = useOperatorsStore();
+
+	// Handle specialist toggle
+	const handleSpecialistChange = (e) => {
+		const isSpecialist = e.target.checked;
+		setSelectedOperator({
+			...selectedOperator,
+			specialist: isSpecialist,
+			// Clear specialization if no longer a specialist
+			specialization: isSpecialist ? selectedOperator?.specialization : "",
+		});
+	};
+
 	return (
 		<div>
 			<h2 className='mb-4 text-xl font-bold text-fontz'>I.D</h2>
 			<div>
-				{/* FULLNAME */}
-				{/*<div className='w-full'>
-					<label className='block mb-2 font-medium '>Fullname</label>
-					<input
-						type='text'
-						name='name'
-						className='form'
-						placeholder='Last name, First name'
-						value={selectedOperator?.name || ""}
-						onChange={handleChange}
-					/>
-				</div>*/}
-				<br />
-				{/* I.D IMAGE */}
+				{/** I.D IMAGE **/}
 				<div className='w-full'>
 					<label className='block mb-2 font-medium '>I.D Image</label>
 					<select
@@ -47,9 +46,9 @@ const GhostID = () => {
 				</div>
 				<br />
 
-				{/* CALL SIGN */}
+				{/** CALL SIGN **/}
 				<div className='w-full'>
-					<label className='block mb-2  font-medium '>
+					<label className='block mb-2 font-medium '>
 						Call Sign<span className='text-red-500'>*</span>
 					</label>
 					<input
@@ -64,45 +63,72 @@ const GhostID = () => {
 				</div>
 				<br />
 
-				{/* ELITE UNIT NAME */}
-				<div className='w-full'>
-					<label className='block mb-2  font-medium'>Elite Unit Name</label>
-					<input
-						type='text'
-						name='sf'
+				{/** CLASS **/}
+				<div>
+					<label className='block mb-2 font-medium '>Class</label>
+					<select
 						className='form'
-						placeholder='e.g., Ghost Recon, Navy Seal, SAS'
-						value={selectedOperator?.sf || ""}
+						value={selectedOperator?.class || ""}
 						onChange={handleChange}
-					/>
+						name='class'
+						required>
+						<option value=''>Select Class</option>
+						{CLASS.map((type) => (
+							<option
+								key={type}
+								value={type}>
+								{type}
+							</option>
+						))}
+					</select>
 				</div>
 				<br />
 
-				{/* NATIONALITY */}
-				{/*<div className='w-full'>
-					<label className='block mb-2 font-medium'>Nationality</label>
-					<input
-						type='text'
-						name='nationality'
-						className='form'
-						placeholder='Nationality (e.g., USA, Canada)'
-						value={selectedOperator?.nationality || ""}
-						onChange={handleChange}
-					/>
-				</div>8/}
-				<br />
-				{/* RANK */}
-				{/*	<div className='w-full'>
-					<label className='block mb-2 font-medium '>Rank</label>
-					<input
-						type='text'
-						name='rank'
-						className='form'
-						placeholder='Rank'
-						value={selectedOperator?.rank || ""}
-						onChange={handleChange}
-					/>
-				</div>*/}
+				{/** SPECIALIST SECTION **/}
+				<div className='bg-highlight/10 p-4 rounded-lg border border-lines'>
+					<h3 className='text-lg font-semibold text-fontz mb-3'>
+						Specialist Status
+					</h3>
+
+					{/** SPECIALIST CHECKBOX **/}
+					<div className='flex items-center mb-4'>
+						<input
+							type='checkbox'
+							id='specialist'
+							name='specialist'
+							className='w-4 h-4 text-btn bg-gray-700 border-lines rounded focus:ring-btn focus:ring-2'
+							checked={selectedOperator?.specialist || false}
+							onChange={handleSpecialistChange}
+						/>
+						<label
+							htmlFor='specialist'
+							className='ml-2 text-sm font-medium text-gray-300'>
+							This operator is a specialist
+						</label>
+					</div>
+
+					{/** SPECIALIZATION INPUT - Only show if specialist is checked **/}
+					{selectedOperator?.specialist && (
+						<div className='w-full'>
+							<label className='block mb-2 font-medium text-fontz'>
+								Specialization<span className='text-red-500'>*</span>
+							</label>
+							<input
+								type='text'
+								name='specialization'
+								className='form'
+								placeholder='Enter specialization (e.g., Sniper, Medic, Demolitions Expert, Cyber Warfare)'
+								value={selectedOperator?.specialization || ""}
+								onChange={handleChange}
+								required={selectedOperator?.specialist}
+							/>
+							<p className='mt-1 text-xs text-gray-400'>
+								Define this operator's unique specialty and advanced training.
+								Be creative!
+							</p>
+						</div>
+					)}
+				</div>
 			</div>
 		</div>
 	);

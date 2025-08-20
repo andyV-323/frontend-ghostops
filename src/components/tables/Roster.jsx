@@ -1,50 +1,140 @@
-// Desc: This component displays the list of operators in a table format.
-//       It allows the user to toggle between primary and secondary classes for each operator.
-//       It also allows the user to add a new operator.
-import { useState } from "react";
+// Desc: This component displays operators in a tabbed interface.
+// Users can switch between viewing regular operators and specialist operators only.
+
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-	faRightLeft,
-	faUserPlus,
-	faTrash,
-} from "@fortawesome/free-solid-svg-icons";
+import { faUserPlus, faUserPen } from "@fortawesome/free-solid-svg-icons";
 import { useOperatorsStore } from "@/zustand";
 import { PropTypes } from "prop-types";
-import { useEffect } from "react";
-import { NewOperatorForm } from "@/components/forms";
-import { useConfirmDialog } from "@/hooks";
-import { ConfirmDialog } from "@/components";
+import { useEffect, useState } from "react";
+import { NewOperatorForm, EditOperatorForm } from "@/components/forms";
 
-const Roster = ({
+const TabbedRoster = ({
 	operators = [],
 	setClickedOperator,
 	dataUpdated,
 	openSheet,
 }) => {
-	const {
-		activeClasses,
-		selectedOperator,
-		setSelectedOperator,
-		toggleClass,
-		fetchOperators,
-		deleteOperator,
-	} = useOperatorsStore();
-	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
-	const [removeOperator, setRemoveOperator] = useState(null);
+	const [activeTab, setActiveTab] = useState("roster");
+	const { activeClasses, setSelectedOperator, fetchOperators } =
+		useOperatorsStore();
 
 	useEffect(() => {
 		fetchOperators();
 	}, [fetchOperators, dataUpdated]);
 
+	// Filter operators: specialists go to specialist tab, non-specialists to roster tab
+	const specialistOperators = operators.filter(
+		(operator) => operator.specialist === true
+	);
+
+	const regularOperators = operators.filter(
+		(operator) => operator.specialist !== true
+	);
+
+	const currentOperators =
+		activeTab === "roster" ? regularOperators : specialistOperators;
+	const isSpecialistTab = activeTab === "specialist";
+
+	const renderOperatorRow = (operator) => {
+		const activeClass = activeClasses[operator._id] || operator.class;
+
+		return (
+			<tr
+				key={operator._id}
+				className='bg-transparent border-b hover:bg-highlight'
+				onClick={() => {
+					setClickedOperator(operator);
+					setSelectedOperator(operator._id);
+				}}>
+				<th
+					scope='row'
+					className='flex items-center px-4 md:px-6 py-4 text-gray-400 hover:text-fontz whitespace-nowrap'>
+					<img
+						className='w-8 h-8 rounded-full border border-lines bg-highlight md:w-10 md:h-10'
+						src={operator.image || "/ghost/Default.png"}
+						alt={operator.name || "Operator"}
+						onError={(e) => (e.target.src = "/ghost/Default.png")}
+					/>
+					<div className='pl-3'>
+						<div className='text-sm md:text-base font-semibold'>
+							{operator.callSign || "Unknown Operator"}
+						</div>
+					</div>
+				</th>
+				<td className='px-4 md:px-6 py-4'>{activeClass || "Unknown"}</td>
+				{isSpecialistTab && (
+					<td className='px-4 md:px-6 py-4'>
+						<span className=' text-gray-400 text-md font-medium px-2.5 py-0.5 rounded'>
+							{operator.specialization || "No Specialization"}
+						</span>
+					</td>
+				)}
+				<td className='px-4 md:px-6 py-4'>
+					<div className='flex items-center'>
+						<div
+							className={`h-2.5 w-2.5 rounded-full ${
+								operator.status === "Active"
+									? "bg-green-500"
+									: operator.status === "Injured"
+									? "bg-yellow-500"
+									: "bg-red-500"
+							} me-2`}></div>
+						{operator.status || "KIA"}
+					</div>
+				</td>
+				<td>
+					<FontAwesomeIcon
+						className='text-btn text-lg cursor-pointer hover:text-blk/50'
+						icon={faUserPen}
+						onClick={() =>
+							openSheet(
+								"right",
+								<EditOperatorForm operator={operator} />,
+								isSpecialistTab ? "Edit Specialist" : "Edit Operator",
+								isSpecialistTab
+									? "Edit the specialist operator's info and specialization."
+									: "Edit the operator's info."
+							)
+						}
+					/>
+				</td>
+			</tr>
+		);
+	};
+
 	return (
-		<div className='relative  overflow-x-auto shadow-md sm:rounded-lg'>
-			<h1 className='flex flex-col items-center text-lg text-fontz font-bold'>
-				Roster
+		<div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
+			{/** Tab Navigation **/}
+			<div className='flex border-b border-lines'>
+				<button
+					className={`px-4 py-2 font-medium text-sm ${
+						activeTab === "roster"
+							? "text-fontz border-b-2 border-btn bg-highlight/20"
+							: "text-gray-400 hover:text-fontz"
+					}`}
+					onClick={() => setActiveTab("roster")}>
+					Roster ({regularOperators.length})
+				</button>
+				<button
+					className={`px-4 py-2 font-medium text-sm ${
+						activeTab === "specialist"
+							? "text-fontz border-b-2 border-btn bg-highlight/20"
+							: "text-gray-400 hover:text-fontz"
+					}`}
+					onClick={() => setActiveTab("specialist")}>
+					Specialists ({specialistOperators.length})
+				</button>
+			</div>
+
+			{/** Table Header **/}
+			<h1 className='flex flex-col items-center text-lg text-fontz font-bold py-2'>
+				{isSpecialistTab ? "Specialist Roster" : "Roster"}
 			</h1>
-			<table className='w-full text-md text-left text-gray-400 '>
-				<thead className='text-md text-fontz uppercase  bg-linear-to-r/oklch from-blk to-neutral-800 '>
+
+			<table className='w-full text-md text-left text-gray-400'>
+				<thead className='text-md text-fontz uppercase bg-linear-to-r/oklch from-blk to-neutral-800'>
 					<tr>
-						<th className='px-4 md:px-6 py-3  flex flex-row'>
+						<th className='px-4 md:px-6 py-3 flex flex-row'>
 							<FontAwesomeIcon
 								icon={faUserPlus}
 								className='bg-btn rounded p-1 text-sm text-black hover:bg-highlight hover:text-white'
@@ -52,126 +142,45 @@ const Roster = ({
 									openSheet(
 										"left",
 										<NewOperatorForm />,
-										"New Operator",
-										"Customize an elite operator by selecting their background, class, loadout, and perks for optimal mission performance."
+										isSpecialistTab ? "New Specialist" : "New Operator",
+										isSpecialistTab
+											? "Create a new specialist operator with advanced capabilities and specialized training."
+											: "Customize an elite operator by selecting their background, class, loadout, and perks for optimal mission performance."
 									);
 								}}
 							/>
 							&nbsp;CallSign
 						</th>
-						<th className='px-4 md:px-6 py-3 '>Class</th>
-						<th className='px-4 md:px-6 py-3 '>Status</th>
+						<th className='px-4 md:px-6 py-3'>Class</th>
+						{isSpecialistTab && (
+							<th className='px-4 md:px-6 py-3'>Specialization</th>
+						)}
+						<th className='px-4 md:px-6 py-3'>Status</th>
 						<th className='px-4 md:px-6 py-3'></th>
 					</tr>
 				</thead>
 
 				<tbody>
-					{operators ?? [].length > 0 ? (
-						operators.map((operator) => {
-							const activeClass = activeClasses[operator._id] || operator.class;
-
-							return (
-								<tr
-									key={operator._id}
-									className='bg-transparent border-b hover:bg-highlight'
-									onClick={() => {
-										setClickedOperator(operator);
-										setSelectedOperator(operator._id);
-									}}>
-									<th
-										scope='row'
-										className='flex items-center px-4 md:px-6 py-4 text-gray-400 hover:text-fontz whitespace-nowrap'>
-										<img
-											className='w-8 h-8 rounded-full border border-lines bg-highlight md:w-10 md:h-10'
-											src={operator.image || "/ghost/Default.png"}
-											alt={operator.name || "Operator"}
-											onError={(e) => (e.target.src = "/ghost/Default.png")}
-										/>
-										<div className='pl-3'>
-											<div className='text-sm md:text-base font-semibold'>
-												{operator.callSign || "Unknown Operator"}
-											</div>
-										</div>
-									</th>
-									<td className='px-4 md:px-6 py-4'>
-										{activeClass || "Unknown"}
-
-										{/* Show Switch Button ONLY if the operator is selected */}
-										{selectedOperator === operator._id && (
-											<FontAwesomeIcon
-												icon={faRightLeft}
-												className='ml-3 px-3 py-1 text-xs bg-btn text-background rounded hover:bg-lines'
-												onClick={(e) => {
-													e.stopPropagation();
-
-													toggleClass(
-														operator._id,
-														operator.class,
-														operator.secondaryClass
-													);
-												}}
-											/>
-										)}
-									</td>
-									<td className='px-4 md:px-6 py-4'>
-										<div className='flex items-center'>
-											<div
-												className={`h-2.5 w-2.5 rounded-full ${
-													operator.status === "Active"
-														? "bg-green-500"
-														: operator.status === "Injured"
-														? "bg-yellow-500"
-														: "bg-red-500"
-												} me-2`}></div>
-											{operator.status || "KIA"}
-										</div>
-									</td>
-									<td>
-										<FontAwesomeIcon
-											icon={faTrash}
-											className='text-btn text-2xl cursor-pointer hover:text-blk/50'
-											onClick={() => {
-												setRemoveOperator(operator);
-												openDialog(() => deleteOperator(operator._id));
-											}}
-											title={`Delete ${operator.callSign || operator.name}`}
-										/>
-									</td>
-								</tr>
-							);
-						})
+					{currentOperators.length > 0 ? (
+						currentOperators.map(renderOperatorRow)
 					) : (
 						<tr>
 							<td
-								colSpan='3'
+								colSpan={isSpecialistTab ? "5" : "4"}
 								className='text-center py-4 text-gray-400'>
-								Click the UserPlus icon to add your first Operator
+								{isSpecialistTab
+									? "No specialist operators found. Promote operators to specialist status or add new specialists."
+									: "Click the UserPlus icon to add your first Operator"}
 							</td>
 						</tr>
 					)}
 				</tbody>
 			</table>
-
-			{removeOperator && (
-				<ConfirmDialog
-					isOpen={isOpen}
-					closeDialog={() => {
-						closeDialog();
-						setRemoveOperator(null);
-					}}
-					confirmAction={() => {
-						confirmAction();
-						setRemoveOperator(null);
-					}}
-					title='Confirm Operator Deletion'
-					description='This will permanently remove the operator and all associated data. This action cannot be undone.'
-					message={`Are you sure you want to delete ${removeOperator.callSign}? Once deleted, all records of this operator will be lost forever.`}
-				/>
-			)}
 		</div>
 	);
 };
-Roster.propTypes = {
+
+TabbedRoster.propTypes = {
 	operators: PropTypes.array,
 	setClickedOperator: PropTypes.func,
 	setSelectedClass: PropTypes.func,
@@ -180,4 +189,4 @@ Roster.propTypes = {
 	openSheet: PropTypes.func,
 };
 
-export default Roster;
+export default TabbedRoster;

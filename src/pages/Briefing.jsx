@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { MapWrapper, SheetSide, IdCard, Loadout } from "@/components";
+import { MapWrapper, SheetSide, Loadout, AuroaMap } from "@/components";
 import { MissionGenerator } from "@/components/ai";
 import { Teams, Roster } from "@/components/tables";
-import { useOperatorsStore, useSheetStore } from "@/zustand";
+import { useOperatorsStore, useSheetStore, useTeamsStore } from "@/zustand";
 
 const Briefing = () => {
 	const [randomLocationSelection, setRandomLocationSelection] = useState([]);
@@ -27,6 +27,7 @@ const Briefing = () => {
 	const [clickedOperator, setClickedOperator] = useState(null);
 	const selectedClass =
 		activeClasses[clickedOperator?._id] || clickedOperator?.class;
+	const { teams } = useTeamsStore();
 
 	useEffect(() => {
 		fetchOperators();
@@ -84,6 +85,13 @@ const Briefing = () => {
 		setLocationSelection(data.randomSelection);
 		setMapBounds(data.bounds);
 		setImgURL(data.imgURL);
+	};
+	// Get all active AOs from teams
+	const getActiveAOs = () => {
+		return teams
+			.filter((team) => team.AO) // Only teams with an AO assigned
+			.map((team) => team.AO)
+			.filter((ao, index, self) => self.indexOf(ao) === index); // Remove duplicates
 	};
 	return (
 		<div className='bg-transparent flex flex-col p-4 space-y-4'>
@@ -167,11 +175,7 @@ const Briefing = () => {
 				<div
 					className='bg-background/50 shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px]'
 					style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
-					<IdCard
-						operator={clickedOperator}
-						openSheet={handleOpenSheet}
-						selectedClass={selectedClass}
-					/>
+					<AuroaMap selectedAOs={getActiveAOs()} />
 					<Loadout
 						operator={clickedOperator}
 						selectedClass={selectedClass}

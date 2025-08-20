@@ -2,16 +2,12 @@ import { Button } from "@material-tailwind/react";
 import { useEffect } from "react";
 import { useOperatorsStore } from "@/zustand";
 import { useFormActions, useActionButtons } from "@/hooks";
-import {
-	GhostID,
-	ClassLoadout,
-	SecondaryClassLoadout,
-} from "@/components/forms";
+import { GhostID } from "@/components/forms";
 
 const NewOperatorForm = () => {
 	const { handleCreateOperator } = useFormActions();
 	const { initializeNewOperator, loading } = useOperatorsStore();
-	const { nextStep, prevStep, step } = useActionButtons();
+	const { step } = useActionButtons();
 
 	useEffect(() => {
 		initializeNewOperator();
@@ -33,46 +29,6 @@ const NewOperatorForm = () => {
 						<div>
 							<GhostID />
 							<br />
-							<Button
-								className='btn mt-4 ml-2 '
-								onClick={() => nextStep(3)}>
-								Skip to submit
-							</Button>{" "}
-							<Button
-								className='btn mt-4'
-								onClick={() => nextStep(2)}>
-								Next
-							</Button>
-						</div>
-					)}
-					{step === 2 && (
-						<div>
-							{/* Class Loadout Setup */}
-							<ClassLoadout />
-							<br />
-
-							<Button
-								className='btn mt-4 ml-2'
-								onClick={prevStep}>
-								Previous
-							</Button>
-							<Button
-								className='btn mt-4 ml-2'
-								onClick={() => nextStep(3)}>
-								Next
-							</Button>
-						</div>
-					)}
-					{step === 3 && (
-						<div>
-							<SecondaryClassLoadout />
-							<br />
-							{/* Navigation */}
-							<Button
-								className='btn mt-4 ml-2'
-								onClick={prevStep}>
-								Previous
-							</Button>
 
 							<Button
 								type='submit'

@@ -13,6 +13,7 @@ import MainFooter from "./MainFooter";
 import SheetSide from "./SheetSide";
 import ConfirmDialog from "./ConfirmDialog";
 import Perk from "./Perk";
+import AuroaMap from "./AuroaMap";
 
 export {
 	Header,
@@ -30,4 +31,5 @@ export {
 	ConfirmDialog,
 	NoneGeographicalMap,
 	MapWrapper,
+	AuroaMap,
 };

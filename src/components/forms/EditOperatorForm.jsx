@@ -1,6 +1,6 @@
 import { Button } from "@material-tailwind/react";
 import { useEffect } from "react";
-import { ghostID } from "@/config";
+import { ghostID, CLASS } from "@/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useOperatorsStore, useSheetStore } from "@/zustand";
@@ -108,15 +108,23 @@ const EditOperatorForm = ({ operator }) => {
 								required></input>
 						</div>
 						<br />
-						<div className='w-full'>
-							<label className='block mb-2 font-medium'>Elite Unit Name</label>
-							<input
-								type='text'
-								name='sf'
-								className='form'
-								placeholder='sf (e.g., Ghost Recon, Navy Seal, SAS)'
-								value={selectedOperator.sf || ""}
-								onChange={handleChange}></input>
+						<div>
+							<label className='block mb-2 font-medium'>Class</label>
+							<select
+								className='form '
+								value={selectedOperator.class || ""}
+								onChange={handleChange}
+								name='class'
+								required>
+								<option value=''>Select Class</option>
+								{CLASS.map((type) => (
+									<option
+										key={type}
+										value={type}>
+										{type}
+									</option>
+								))}
+							</select>
 						</div>
 						<br />
 						{/*NATIONALITY*/}

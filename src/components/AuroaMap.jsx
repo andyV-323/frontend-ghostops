@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet/dist/leaflet.js";
@@ -7,7 +7,7 @@ import { useTeamsStore } from "@/zustand";
 
 const AuroraMap = ({ selectedAOs = [] }) => {
 	const mapRef = useRef(null);
-	const coordinatesRef = useRef(null);
+
 	const markersRef = useRef([]);
 	const mapInstanceRef = useRef(null);
 	const bounds = [
@@ -39,10 +39,6 @@ const AuroraMap = ({ selectedAOs = [] }) => {
 			return;
 		}
 
-		const coordinatesControl = L.control({
-			position: "bottomright",
-		});
-
 		const map = L.map(mapRef.current, {
 			center: [bounds[1][0] / 2, bounds[1][1] / 2],
 			zoom: -1,
@@ -59,38 +55,6 @@ const AuroraMap = ({ selectedAOs = [] }) => {
 		map.setZoom(-1);
 
 		L.imageOverlay("/maps/AuroaMap.png", bounds).addTo(map);
-
-		coordinatesControl.onAdd = () => {
-			const container = L.DomUtil.create("div", "coordinates-container");
-			// Add styling to make coordinates visible
-			container.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
-			container.style.color = "white";
-			container.style.padding = "8px 12px";
-			container.style.border = "2px solid #00ff00";
-			container.style.borderRadius = "4px";
-			container.style.fontFamily = "monospace";
-			container.style.fontSize = "12px";
-			container.style.fontWeight = "bold";
-			container.style.boxShadow = "0 2px 4px rgba(0,0,0,0.5)";
-			container.style.minWidth = "180px";
-			container.textContent = "Move mouse over map...";
-			coordinatesRef.current = container;
-			return container;
-		};
-
-		coordinatesControl.updateCoordinates = (latlng) => {
-			if (coordinatesRef.current) {
-				coordinatesRef.current.textContent = `Latitude: ${latlng.lat.toFixed(
-					0
-				)}, Longitude: ${latlng.lng.toFixed(0)}`;
-			}
-		};
-
-		coordinatesControl.addTo(map);
-
-		map.on("mousemove", (e) => {
-			coordinatesControl.updateCoordinates(e.latlng);
-		});
 
 		return () => {
 			if (mapInstanceRef.current) {
