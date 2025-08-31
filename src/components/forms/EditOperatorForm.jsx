@@ -127,6 +127,51 @@ const EditOperatorForm = ({ operator }) => {
 							</select>
 						</div>
 						<br />
+						{/** SPECIALIST SECTION **/}
+						<div className=' p-4 rounded-lg'>
+							<h3 className='text-lg font-semibold text-fontz mb-3'>
+								Specialist Status
+							</h3>
+
+							{/** SPECIALIST CHECKBOX **/}
+							<div className='flex items-center mb-4'>
+								<input
+									type='checkbox'
+									id='specialist'
+									name='specialist'
+									className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
+									checked={selectedOperator?.specialist || false}
+									onChange={handleChange}
+								/>
+								<label
+									htmlFor='specialist'
+									className='ml-2 text-sm font-medium text-gray-300'>
+									This operator is a specialist
+								</label>
+							</div>
+
+							{/** SPECIALIZATION INPUT - Only show if specialist is checked **/}
+							{selectedOperator?.specialist && (
+								<div className='w-full'>
+									<label className='block mb-2 font-medium text-fontz'>
+										Specialization<span className='text-red-500'>*</span>
+									</label>
+									<input
+										type='text'
+										name='specialization'
+										className='form'
+										placeholder='Enter specialization (e.g., Sniper, Medic, Demolitions Expert, Cyber Warfare)'
+										value={selectedOperator?.specialization || ""}
+										onChange={handleChange}
+										required={selectedOperator?.specialist}
+									/>
+									<p className='mt-1 text-xs text-gray-400'>
+										Define this operator's unique specialty and advanced
+										training. Be creative!
+									</p>
+								</div>
+							)}
+						</div>
 						{/*NATIONALITY*/}
 						{/*<div className='w-full'>
 							<label className='block mb-2 font-medium'>Nationality</label>

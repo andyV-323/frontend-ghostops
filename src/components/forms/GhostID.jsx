@@ -85,10 +85,8 @@ const GhostID = () => {
 				<br />
 
 				{/** SPECIALIST SECTION **/}
-				<div className='bg-highlight/10 p-4 rounded-lg border border-lines'>
-					<h3 className='text-lg font-semibold text-fontz mb-3'>
-						Specialist Status
-					</h3>
+				<div className=' p-4 rounded-lg '>
+					<h3 className='text-lg font-semibold text-fontz mb-3'>Specialist</h3>
 
 					{/** SPECIALIST CHECKBOX **/}
 					<div className='flex items-center mb-4'>
@@ -96,7 +94,7 @@ const GhostID = () => {
 							type='checkbox'
 							id='specialist'
 							name='specialist'
-							className='w-4 h-4 text-btn bg-gray-700 border-lines rounded focus:ring-btn focus:ring-2'
+							className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
 							checked={selectedOperator?.specialist || false}
 							onChange={handleSpecialistChange}
 						/>

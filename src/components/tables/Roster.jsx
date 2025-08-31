@@ -105,21 +105,21 @@ const TabbedRoster = ({
 	return (
 		<div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
 			{/** Tab Navigation **/}
-			<div className='flex border-b border-lines'>
+			<div className='flex'>
 				<button
-					className={`px-4 py-2 font-medium text-sm ${
+					className={`px-4 py-2 font-medium text-sm bg-btn rounded-l-lg ${
 						activeTab === "roster"
-							? "text-fontz border-b-2 border-btn bg-highlight/20"
-							: "text-gray-400 hover:text-fontz"
+							? "text-white  bg-highlight/40"
+							: "font-medium text-black hover:bg-highlight hover:text-white"
 					}`}
 					onClick={() => setActiveTab("roster")}>
 					Roster ({regularOperators.length})
 				</button>
 				<button
-					className={`px-4 py-2 font-medium text-sm ${
+					className={`px-4 py-2 font-medium text-sm bg-btn rounded-r-lg ${
 						activeTab === "specialist"
-							? "text-fontz border-b-2 border-btn bg-highlight/20"
-							: "text-gray-400 hover:text-fontz"
+							? "text-white  bg-highlight/40"
+							: " text-black hover:bg-highlight hover:text-white"
 					}`}
 					onClick={() => setActiveTab("specialist")}>
 					Specialists ({specialistOperators.length})

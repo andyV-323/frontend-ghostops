@@ -24,6 +24,7 @@ const EditTeamForm = ({ teamId }) => {
 
 	// Get functions from store
 	const {
+		teams,
 		fetchOperators,
 		fetchTeamById,
 		setTeamName,
@@ -83,6 +84,12 @@ const EditTeamForm = ({ teamId }) => {
 			await fetchTeams();
 			await closeSheet();
 		});
+	};
+	const getOperatorTeam = (operatorId) => {
+		const team = teams.find((team) =>
+			team.operators.some((op) => op._id === operatorId)
+		);
+		return team ? team.name : "Unassigned";
 	};
 
 	return (
@@ -165,7 +172,8 @@ const EditTeamForm = ({ teamId }) => {
 									key={operator._id}
 									value={operator._id}>
 									{operator.callSign} - {operator.class} -{" "}
-									{operator.secondaryClass}
+									{operator.specialization} {operator.secondaryClass} - Team:{" "}
+									{getOperatorTeam(operator._id)}
 								</option>
 							))}
 						</select>
