@@ -41,7 +41,7 @@ const useOperatorsStore = create((set, get) => ({
 	fetchOperators: async () => {
 		try {
 			const data = await OperatorsApi.getOperators();
-			console.log("Fetched operators:", data); // DEBUG: Check what data is returned
+
 			set({ operators: data });
 		} catch (error) {
 			console.error("ERROR fetching operators:", error);
@@ -56,7 +56,6 @@ const useOperatorsStore = create((set, get) => ({
 	// Create new operator
 	createOperator: async (operatorData) => {
 		try {
-			console.log("Creating operator with data:", operatorData); // DEBUG: Check what's being sent
 			await OperatorsApi.createOperator(operatorData);
 			toast.success("Operator created successfully!");
 			await get().fetchOperators(); // Make sure this completes before continuing
@@ -113,7 +112,6 @@ const useOperatorsStore = create((set, get) => ({
 	updateOperator: async (operatorId, updatedData) => {
 		if (!operatorId) return;
 		try {
-			console.log("Updating operator with data:", updatedData); // DEBUG
 			await OperatorsApi.updateOperator(operatorId, updatedData);
 			toast.success("Operator updated successfully!");
 			await get().fetchOperators(); // Refresh operators list
