@@ -10,22 +10,25 @@ const Footer = () => {
 			prev: null,
 			next: { path: "/dashboard", label: "Operators", icon: faArrowRight },
 		},
-		/*"/dashboard/stats": {
+		"/dashboard/VehicleSimulator": {
 			prev: {
 				path: "/dashboard",
-				label: "Dashboard",
+				label: "Operators",
 				icon: faArrowLeft,
 			},
 			next: null,
-		},*/
+		},
 		"/dashboard": {
 			prev: {
 				path: "/dashboard/briefing",
-				label: "Briefing",
+				label: "Mission Generator",
 				icon: faArrowLeft,
 			},
-			/*next: { path: "/dashboard/stats", label: "Stats", icon: faArrowRight },*/
-			next: null,
+			next: {
+				path: "/dashboard/VehicleSimulator",
+				label: "Garage",
+				icon: faArrowRight,
+			},
 		},
 	};
 

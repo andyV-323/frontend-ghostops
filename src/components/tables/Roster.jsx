@@ -96,7 +96,7 @@ const TabbedRoster = ({
 									: "Edit the operator's info."
 							)
 						}
-					/>
+					/>{" "}
 				</td>
 			</tr>
 		);
@@ -131,10 +131,10 @@ const TabbedRoster = ({
 				{isSpecialistTab ? "Specialist Roster" : "Roster"}
 			</h1>
 
-			<table className='w-full text-md text-left text-gray-400'>
-				<thead className='text-md text-fontz uppercase bg-linear-to-r/oklch from-blk to-neutral-800'>
+			<table className='w-full  text-left text-gray-400'>
+				<thead className=' text-fontz uppercase bg-linear-to-r/oklch from-blk to-neutral-800'>
 					<tr>
-						<th className='px-4 md:px-6 py-3 flex flex-row'>
+						<th className=' px-4 md:px-6 py-3 flex flex-row'>
 							<FontAwesomeIcon
 								icon={faUserPlus}
 								className='bg-btn rounded p-1 text-sm text-black hover:bg-highlight hover:text-white'
@@ -156,7 +156,7 @@ const TabbedRoster = ({
 							<th className='px-4 md:px-6 py-3'>Specialization</th>
 						)}
 						<th className='px-4 md:px-6 py-3'>Status</th>
-						<th className='px-4 md:px-6 py-3'></th>
+						<th>Edit</th>
 					</tr>
 				</thead>
 

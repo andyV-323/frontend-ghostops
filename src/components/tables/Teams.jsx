@@ -200,11 +200,6 @@ const Teams = ({ dataUpdated, openSheet }) => {
 									}>
 									<td className='px-6 py-4 font-medium text-gray-400 hover:text-white whitespace-nowrap'>
 										{team.name}
-										{team.AO && (
-											<div className='text-xs text-gray-500 mt-1'>
-												AO: {team.AO}
-											</div>
-										)}
 									</td>
 
 									<td className='px-6 py-4 flex flex-row'>

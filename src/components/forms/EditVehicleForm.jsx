@@ -149,7 +149,7 @@ const EditVehicleForm = ({ vehicleId }) => {
 						<Button
 							type='button'
 							variant='outlined'
-							className='mt-4'
+							className='btn mt-4'
 							onClick={closeSheet}>
 							Cancel
 						</Button>

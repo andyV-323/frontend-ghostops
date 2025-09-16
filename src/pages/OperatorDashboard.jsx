@@ -1,20 +1,13 @@
 import { useEffect, useState } from "react";
-import { IdCard, Loadout, SheetSide } from "@/components";
-import {
-	Roster,
-	Infirmary,
-	Memorial,
-	Teams,
-	Garage,
-} from "@/components/tables";
+import { SheetSide } from "@/components";
+import { Roster, Infirmary, Memorial, Teams } from "@/components/tables";
 //import { Bio } from "@/components/ai";
-import { useOperatorsStore, useSheetStore, useTeamsStore } from "@/zustand";
-import AuroaMap from "@/components/AuroaMap";
+import { useOperatorsStore, useSheetStore } from "@/zustand";
 
 const OperatorDashboard = () => {
 	const { activeClasses, setSelectedOperator, operators, fetchOperators } =
 		useOperatorsStore();
-	const { teams } = useTeamsStore();
+
 	const [clickedOperator, setClickedOperator] = useState(null);
 	const selectedClass =
 		activeClasses[clickedOperator?._id] || clickedOperator?.class;
@@ -40,18 +33,13 @@ const OperatorDashboard = () => {
 		setSheetTitle(title);
 		setSheetDescription(description);
 	};
-	// Get all active AOs from teams
-	const getActiveAOs = () => {
-		return teams
-			.filter((team) => team.AO) // Only teams with an AO assigned
-			.map((team) => team.AO)
-			.filter((ao, index, self) => self.indexOf(ao) === index); // Remove duplicates
-	};
+
 	return (
 		<div className='bg-transparent flex flex-col p-4 space-y-4'>
 			{/* === GRID LAYOUT === */}
-			<div className='grid grid-cols-1 gap-4 lg:grid-cols-3 flex-grow'>
+			<div className='grid grid-cols-1 gap-4 lg:grid-cols-2 flex-grow'>
 				{/* === TEAMS & ROSTER === */}
+
 				<div className='space-y-4'>
 					<div
 						className=' shadow-lg shadow-black  rounded-3xl overflow-y-auto h-[450px]'
@@ -79,7 +67,7 @@ const OperatorDashboard = () => {
 				</div>
 
 				{/* === GARAGE === */}
-				<div className='space-y-4'>
+				{/*}	<div className='space-y-4'>
 					<div
 						className='  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px] '
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
@@ -88,9 +76,9 @@ const OperatorDashboard = () => {
 							refreshData={refreshData}
 							openSheet={handleOpenSheet}
 						/>
-					</div>
-					{/* ===ID CARD & LOADOUT=== */}
-					<div
+					</div>*/}
+				{/* ===ID CARD & LOADOUT=== */}
+				{/*	<div
 						className='  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px] '
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
 						{/*<IdCard
@@ -98,14 +86,14 @@ const OperatorDashboard = () => {
 							openSheet={handleOpenSheet}
 							selectedClass={selectedClass}
 						/>*/}
-						<AuroaMap selectedAOs={getActiveAOs()} />
+				{/*<AuroaMap selectedAOs={getActiveAOs()} />
 						<Loadout
 							operator={clickedOperator}
 							selectedClass={selectedClass}
 							openSheet={handleOpenSheet}
 						/>
 					</div>
-				</div>
+				</div>*/}
 
 				{/* === INFIRMARY, LOADOUT, GEAR === */}
 				<div className='space-y-4'>

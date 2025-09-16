@@ -1,8 +1,5 @@
-/** @format */
 import { Routes, Route } from "react-router-dom";
 import { PrivateRoute, AuthRedirector } from "@/auth";
-
-// Import Pages
 import { Home, OperatorDashboard, Briefing } from "@/pages";
 import {
 	Memorial,
@@ -21,8 +18,8 @@ import {
 } from "@/components/forms";
 import DashboardLayout from "./layout/DashboardLayout";
 import MainLayout from "./layout/MainLayout";
-import Stats from "./pages/Stats";
 import Login from "./pages/Login";
+import VehicleSimulator from "./pages/VehicleSimulator";
 
 // Define Routes
 const AppRoutes = () => {
@@ -62,8 +59,8 @@ const AppRoutes = () => {
 						element={<Briefing />}
 					/>
 					<Route
-						path='stats'
-						element={<Stats />}
+						path='vehicleSimulator'
+						element={<VehicleSimulator />}
 					/>
 					<Route
 						path='memorial'
