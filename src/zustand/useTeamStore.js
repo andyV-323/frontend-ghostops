@@ -565,6 +565,23 @@ const useTeamsStore = create((set, get) => ({
 			get().fetchTeams();
 		}
 	},
+	// Remove all operators from all teams
+	removeAllOperatorsFromTeams: async () => {
+		try {
+			const { teams, updateTeam, fetchTeams } = get();
+
+			// Update each team to have empty operators array
+			await Promise.all(
+				teams.map((team) => updateTeam({ ...team, operators: [] }))
+			);
+
+			await fetchTeams();
+			toast.success("All operators removed from teams!");
+		} catch (error) {
+			console.error("Error removing operators:", error);
+			toast.error("Failed to remove operators from teams.");
+		}
+	},
 	// Delete a team
 	deleteTeam: async (teamId) => {
 		if (!teamId) {

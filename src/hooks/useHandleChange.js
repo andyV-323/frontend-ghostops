@@ -10,9 +10,9 @@ const useHandleChange = () => {
 			return;
 		}
 
-		const { name, value } = e.target;
+		const { name, value, type, checked } = e.target;
 
-		let updatedValue = value;
+		let updatedValue = type === "checkbox" ? checked : value;
 
 		// Handle gear selection (store image URL)
 		if (name === "gear" || name === "secondaryGear") {
@@ -27,6 +27,15 @@ const useHandleChange = () => {
 			name === "secondaryWeapon2"
 		) {
 			updatedValue = WEAPONS[value]?.imgUrl || "/icons/default_weapon.svg";
+		}
+
+		if (name === "specialist" && !checked) {
+			setSelectedOperator({
+				...selectedOperator,
+				specialist: false,
+				specialization: "",
+			});
+			return;
 		}
 
 		setSelectedOperator({ ...selectedOperator, [name]: updatedValue });

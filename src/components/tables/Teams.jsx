@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Button } from "@material-tailwind/react";
 import {
 	faPeopleGroup,
 	faCaretDown,
@@ -23,6 +24,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		transferOperator,
 		addOperatorToTeam,
 		updateTeam,
+		removeAllOperatorsFromTeams,
 	} = useTeamsStore();
 	const [expandedTeam, toggleExpand] = useToggleExpand();
 	const userId = localStorage.getItem("userId");
@@ -30,6 +32,12 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	const [draggedOperator, setDraggedOperator] = useState(null);
 	const [dragOverTeam, setDragOverTeam] = useState(null);
 	const { isOpen, openDialog, closeDialog } = useConfirmDialog();
+	const {
+		isOpen: isRemoveAllOpen,
+		openDialog: openRemoveAllDialog,
+		closeDialog: closeRemoveAllDialog,
+		confirmAction: confirmRemoveAll,
+	} = useConfirmDialog();
 	const allOperators = useTeamsStore((state) => state.allOperators);
 	const [injuryType, setInjuryType] = useState("choice");
 	// Check if device is mobile
@@ -172,6 +180,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 							/>
 							&nbsp; Team
 						</th>
+
 						<th
 							scope='col'
 							className='px-6 py-3'>
@@ -442,6 +451,27 @@ const Teams = ({ dataUpdated, openSheet }) => {
 					injuryType={injuryType}
 				/>
 			)}
+			{/* Remove All Operators Confirmation */}
+			<ConfirmDialog
+				isOpen={isRemoveAllOpen}
+				closeDialog={closeRemoveAllDialog}
+				confirmAction={confirmRemoveAll}
+				title='Remove All Operators'
+				description='This will remove all operators from every team.'
+				message="Are you sure? All team assignments will be cleared. Operators won't be deleted, just unassigned."
+			/>
+			<div className='flex justify-center'>
+				<Button
+					type='button'
+					className='btn hover:bg-red-800 text-xs'
+					onClick={() =>
+						openRemoveAllDialog(async () => {
+							await removeAllOperatorsFromTeams();
+						})
+					}>
+					Clear All Teams
+				</Button>
+			</div>
 		</div>
 	);
 };
