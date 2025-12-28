@@ -26,8 +26,8 @@ const defaultOperator = {
 	secondaryname2: "",
 	image: "",
 	bio: "",
-	// ADD THESE MISSING FIELDS:
 	specialist: false,
+	aviator: false,
 	specialization: "",
 };
 
@@ -66,10 +66,19 @@ const useOperatorsStore = create((set, get) => ({
 		}
 	},
 
-	// Set selected operator
-	setSelectedOperator: (operatorId) => set({ selectedOperator: operatorId }),
+	// Set selected operator - FIXED: accepts operator object or ID string
+	setSelectedOperator: (operatorOrId) => {
+		// If it's a string, treat it as an ID and find the operator
+		if (typeof operatorOrId === "string") {
+			const operator = get().operators.find((op) => op._id === operatorOrId);
+			set({ selectedOperator: operator || null });
+		} else {
+			// Otherwise, it's an operator object
+			set({ selectedOperator: operatorOrId });
+		}
+	},
 
-	// Set clicked operator
+	// Set clicked operator (kept for backwards compatibility)
 	setClickedOperator: (operator) => set({ selectedOperator: operator }),
 
 	// Toggle between primary and secondary class

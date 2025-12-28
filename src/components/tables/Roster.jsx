@@ -1,5 +1,5 @@
 // Desc: This component displays operators in a tabbed interface.
-// Users can switch between viewing regular operators and specialist operators only.
+// Users can switch between viewing regular operators, specialist operators, and aviators.
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUserPlus, faUserPen } from "@fortawesome/free-solid-svg-icons";
@@ -35,18 +35,27 @@ const TabbedRoster = ({
 		return team ? team.name : "Unassigned";
 	};
 
-	// Filter operators: specialists go to specialist tab, non-specialists to roster tab
+	// Filter operators: aviators, specialists, and regular operators
+	const aviatorOperators = operators.filter(
+		(operator) => operator.aviator === true
+	);
+
 	const specialistOperators = operators.filter(
-		(operator) => operator.specialist === true
+		(operator) => operator.specialist === true && operator.aviator !== true
 	);
 
 	const regularOperators = operators.filter(
-		(operator) => operator.specialist !== true
+		(operator) => operator.specialist !== true && operator.aviator !== true
 	);
 
 	const currentOperators =
-		activeTab === "roster" ? regularOperators : specialistOperators;
+		activeTab === "roster"
+			? regularOperators
+			: activeTab === "specialist"
+			? specialistOperators
+			: aviatorOperators;
 	const isSpecialistTab = activeTab === "specialist";
+	const isAviatorTab = activeTab === "aviator";
 
 	const renderOperatorRow = (operator) => {
 		const activeClass = activeClasses[operator._id] || operator.class;
@@ -80,6 +89,13 @@ const TabbedRoster = ({
 					<td className='px-4 md:px-6 py-4'>
 						<span className='text-gray-400 text-md font-medium px-2.5 py-0.5 rounded'>
 							{operator.specialization || "No Specialization"}
+						</span>
+					</td>
+				)}
+				{isAviatorTab && (
+					<td className='px-4 md:px-6 py-4'>
+						<span className='text-gray-400 text-md font-medium px-2.5 py-0.5 rounded'>
+							{operator.specialization}
 						</span>
 					</td>
 				)}
@@ -130,9 +146,15 @@ const TabbedRoster = ({
 							openSheet(
 								"right",
 								<EditOperatorForm operator={operator} />,
-								isSpecialistTab ? "Edit Specialist" : "Edit Operator",
+								isSpecialistTab
+									? "Edit Specialist"
+									: isAviatorTab
+									? "Edit Aviator"
+									: "Edit Operator",
 								isSpecialistTab
 									? "Edit the specialist operator's info and specialization."
+									: isAviatorTab
+									? "Edit the aviator's info and aircraft assignment."
 									: "Edit the operator's info."
 							);
 						}}
@@ -147,28 +169,41 @@ const TabbedRoster = ({
 			{/** Tab Navigation **/}
 			<div className='flex'>
 				<button
-					className={`px-4 py-2 font-medium text-sm bg-btn rounded-l-lg ${
+					className={`px-4 py-2 font-medium text-sm bg-blk/80 border-4 border-highlight/80 rounded-l-lg ${
 						activeTab === "roster"
-							? "text-white bg-highlight/40"
-							: "font-medium text-black hover:bg-highlight hover:text-white"
+							? "text-black bg-btn"
+							: "font-medium text-white hover:bg-highlight/40 hover:text-white"
 					}`}
 					onClick={() => setActiveTab("roster")}>
-					Roster ({regularOperators.length})
+					Operators ({regularOperators.length})
 				</button>
 				<button
-					className={`px-4 py-2 font-medium text-sm bg-btn rounded-r-lg ${
+					className={`px-4 py-2 font-medium text-sm bg-blk/80 border-4 border-highlight/80 ${
 						activeTab === "specialist"
-							? "text-white bg-highlight/40"
-							: "text-black hover:bg-highlight hover:text-white"
+							? "text-black bg-btn"
+							: "font-medium text-white hover:bg-highlight/40 hover:text-white"
 					}`}
 					onClick={() => setActiveTab("specialist")}>
 					Specialists ({specialistOperators.length})
+				</button>
+				<button
+					className={`px-4 py-2 font-medium text-sm bg-blk/80 border-4 border-highlight/80 rounded-r-lg ${
+						activeTab === "aviator"
+							? "text-black bg-btn"
+							: "font-medium text-white hover:bg-highlight/40 hover:text-white"
+					}`}
+					onClick={() => setActiveTab("aviator")}>
+					Aviators ({aviatorOperators.length})
 				</button>
 			</div>
 
 			{/** Table Header **/}
 			<h1 className='flex flex-col items-center text-lg text-fontz font-bold py-2'>
-				{isSpecialistTab ? "Specialist Roster" : "Roster"}
+				{isSpecialistTab
+					? "Specialist Roster"
+					: isAviatorTab
+					? "Aviator Roster"
+					: "Operator Roster"}
 			</h1>
 
 			<table className='w-full text-left text-gray-400'>
@@ -182,9 +217,15 @@ const TabbedRoster = ({
 									openSheet(
 										"left",
 										<NewOperatorForm />,
-										isSpecialistTab ? "New Specialist" : "New Operator",
+										isSpecialistTab
+											? "New Specialist"
+											: isAviatorTab
+											? "New Aviator"
+											: "New Operator",
 										isSpecialistTab
 											? "Create a new specialist operator with advanced capabilities and specialized training."
+											: isAviatorTab
+											? "Create a new aviator with flight training and aircraft assignments."
 											: "Customize an elite operator by selecting their background, class, loadout, and perks for optimal mission performance."
 									);
 								}}
@@ -193,6 +234,9 @@ const TabbedRoster = ({
 						</th>
 						<th className='px-4 md:px-6 py-3'>Class</th>
 						{isSpecialistTab && (
+							<th className='px-4 md:px-6 py-3'>Specialization</th>
+						)}
+						{isAviatorTab && (
 							<th className='px-4 md:px-6 py-3'>Specialization</th>
 						)}
 						<th className='px-4 md:px-6 py-3'>Team</th>
@@ -207,10 +251,12 @@ const TabbedRoster = ({
 					) : (
 						<tr>
 							<td
-								colSpan={isSpecialistTab ? "6" : "5"}
+								colSpan={isSpecialistTab || isAviatorTab ? "6" : "5"}
 								className='text-center py-4 text-gray-400'>
 								{isSpecialistTab
 									? "No specialist operators found. Promote operators to specialist status or add new specialists."
+									: isAviatorTab
+									? "No aviators found. Add operators with aviator designation to see them here."
 									: "Click the UserPlus icon to add your first Operator"}
 							</td>
 						</tr>

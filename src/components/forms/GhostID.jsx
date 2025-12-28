@@ -16,7 +16,14 @@ const GhostID = () => {
 			specialization: isSpecialist ? selectedOperator?.specialization : "",
 		});
 	};
-
+	const handleAviatorChange = (e) => {
+		const isAviator = e.target.checked;
+		setSelectedOperator({
+			...selectedOperator,
+			aviator: isAviator,
+			specialization: isAviator ? selectedOperator?.specialization : "",
+		});
+	};
 	return (
 		<div>
 			<h2 className='mb-4 text-xl font-bold text-fontz'>I.D</h2>
@@ -121,8 +128,51 @@ const GhostID = () => {
 								required={selectedOperator?.specialist}
 							/>
 							<p className='mt-1 text-xs text-gray-400'>
-								Define this operator's unique specialty and advanced training.
-								Be creative!
+								Define this operator`&apos;`s unique specialty and advanced
+								training. Be creative!
+							</p>
+						</div>
+					)}
+				</div>
+				{/** AVIATOR SECTION **/}
+				<div className=' p-4 rounded-lg '>
+					<h3 className='text-lg font-semibold text-fontz mb-3'>Aviator</h3>
+
+					{/** AVIATOR CHECKBOX **/}
+					<div className='flex items-center mb-4'>
+						<input
+							type='checkbox'
+							id='aviator'
+							name='aviator'
+							className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
+							checked={selectedOperator?.aviator || false}
+							onChange={handleAviatorChange}
+						/>
+						<label
+							htmlFor='aviator'
+							className='ml-2 text-sm font-medium text-gray-300'>
+							This operator is an Aviator
+						</label>
+					</div>
+
+					{/** SPECIALIZATION INPUT - Only show if specialist is checked **/}
+					{selectedOperator?.aviator && (
+						<div className='w-full'>
+							<label className='block mb-2 font-medium text-fontz'>
+								Specialization<span className='text-red-500'>*</span>
+							</label>
+							<input
+								type='text'
+								name='specialization'
+								className='form'
+								placeholder='Enter specialization (e.g., Sniper, Medic, Demolitions Expert, Cyber Warfare)'
+								value={selectedOperator?.specialization || ""}
+								onChange={handleChange}
+								required={selectedOperator?.aviator}
+							/>
+							<p className='mt-1 text-xs text-gray-400'>
+								Define this operator`&apos;`s unique specialty and advanced
+								training. Be creative!
 							</p>
 						</div>
 					)}

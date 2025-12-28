@@ -29,6 +29,7 @@ const useHandleChange = () => {
 			updatedValue = WEAPONS[value]?.imgUrl || "/icons/default_weapon.svg";
 		}
 
+		// Handle specialist checkbox - clear specialization when unchecked
 		if (name === "specialist" && !checked) {
 			setSelectedOperator({
 				...selectedOperator,
@@ -38,6 +39,17 @@ const useHandleChange = () => {
 			return;
 		}
 
+		// Handle aviator checkbox - clear specialization when unchecked
+		if (name === "aviator" && !checked) {
+			setSelectedOperator({
+				...selectedOperator,
+				aviator: false,
+				specialization: "",
+			});
+			return;
+		}
+
+		// Default: update the field
 		setSelectedOperator({ ...selectedOperator, [name]: updatedValue });
 	};
 

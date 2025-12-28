@@ -166,7 +166,53 @@ const EditOperatorForm = ({ operator }) => {
 										required={selectedOperator?.specialist}
 									/>
 									<p className='mt-1 text-xs text-gray-400'>
-										Define this operator's unique specialty and advanced
+										Define this operator`&apos;` unique specialty and advanced
+										training. Be creative!
+									</p>
+								</div>
+							)}
+						</div>
+						<br />
+						{/** AVIATOR SECTION **/}
+						<div className=' p-4 rounded-lg'>
+							<h3 className='text-lg font-semibold text-fontz mb-3'>
+								Aviator Status
+							</h3>
+
+							{/** AVIATOR CHECKBOX **/}
+							<div className='flex items-center mb-4'>
+								<input
+									type='checkbox'
+									id='aviator'
+									name='aviator'
+									className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
+									checked={selectedOperator?.aviator || false}
+									onChange={handleChange}
+								/>
+								<label
+									htmlFor='specialist'
+									className='ml-2 text-sm font-medium text-gray-300'>
+									This operator is an aviator
+								</label>
+							</div>
+
+							{/** SPECIALIZATION INPUT - Only show if specialist is checked **/}
+							{selectedOperator?.aviator && (
+								<div className='w-full'>
+									<label className='block mb-2 font-medium text-fontz'>
+										Specialization<span className='text-red-500'>*</span>
+									</label>
+									<input
+										type='text'
+										name='specialization'
+										className='form'
+										placeholder='Enter specialization (e.g., Sniper, Medic, Demolitions Expert, Cyber Warfare)'
+										value={selectedOperator?.specialization || ""}
+										onChange={handleChange}
+										required={selectedOperator?.aviator}
+									/>
+									<p className='mt-1 text-xs text-gray-400'>
+										Define this operator`&apos;`s unique specialty and advanced
 										training. Be creative!
 									</p>
 								</div>
