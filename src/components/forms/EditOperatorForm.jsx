@@ -166,7 +166,7 @@ const EditOperatorForm = ({ operator }) => {
 										required={selectedOperator?.specialist}
 									/>
 									<p className='mt-1 text-xs text-gray-400'>
-										Define this operator`&apos;` unique specialty and advanced
+										Define this operator&apos;s unique specialty and advanced
 										training. Be creative!
 									</p>
 								</div>
@@ -212,7 +212,7 @@ const EditOperatorForm = ({ operator }) => {
 										required={selectedOperator?.aviator}
 									/>
 									<p className='mt-1 text-xs text-gray-400'>
-										Define this operator`&apos;`s unique specialty and advanced
+										Define this operator&apos;s unique specialty and advanced
 										training. Be creative!
 									</p>
 								</div>

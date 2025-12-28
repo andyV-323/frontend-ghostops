@@ -10,7 +10,12 @@ const AssignTeamSheet = ({ operator, onComplete }) => {
 		team.operators.some((op) => op._id === operator._id)
 	);
 
+	// Check if operator can be assigned
+	const isOperatorUnavailable =
+		operator.status === "KIA" || operator.status === "Injured";
+
 	const handleAssign = async (teamId) => {
+		if (isOperatorUnavailable) return;
 		await addOperatorToTeam(operator._id, teamId);
 		if (onComplete) onComplete();
 	};
@@ -52,19 +57,34 @@ const AssignTeamSheet = ({ operator, onComplete }) => {
 				</div>
 			</div>
 
+			{isOperatorUnavailable && (
+				<div className='mb-4 p-3 rounded-lg bg-red-600/20 border border-red-600/50 text-red-400'>
+					<p className='text-sm font-medium'>
+						{operator.status === "KIA"
+							? "KIA operators cannot be assigned to teams"
+							: "Injured operators cannot be assigned to teams"}
+					</p>
+				</div>
+			)}
+
 			<ul className='space-y-2'>
 				{teams.map((team) => {
 					const isCurrentTeam = currentTeam?._id === team._id;
 					const operatorCount = team.operators.length;
+					const isDisabled = isOperatorUnavailable && !isCurrentTeam;
 
 					return (
 						<li
 							key={team._id}
-							onClick={() => !isCurrentTeam && handleAssign(team._id)}
-							className={`p-3 rounded-lg border cursor-pointer transition-all ${
+							onClick={() =>
+								!isCurrentTeam && !isDisabled && handleAssign(team._id)
+							}
+							className={`p-3 rounded-lg border transition-all ${
 								isCurrentTeam
 									? "border-btn bg-btn/20 text-fontz cursor-default"
-									: "border-lines hover:border-btn hover:bg-highlight/50 text-gray-400 hover:text-fontz"
+									: isDisabled
+									? "border-lines bg-highlight/20 text-gray-600 cursor-not-allowed opacity-50"
+									: "border-lines hover:border-btn hover:bg-highlight/50 text-gray-400 hover:text-fontz cursor-pointer"
 							}`}>
 							<div className='flex justify-between items-center gap-4'>
 								<span className='font-medium'>{team.name}</span>
