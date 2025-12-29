@@ -1,12 +1,17 @@
 // components/forms/EditMissionForm.jsx
 import { useState, useEffect } from "react";
 import { PropTypes } from "prop-types";
-import { useMissionsStore, useTeamsStore } from "@/zustand";
+import { useMissionsStore, useTeamsStore, useSheetStore } from "@/zustand";
+import { Button } from "@material-tailwind/react";
+import { useConfirmDialog } from "@/hooks";
+import { ConfirmDialog } from "@/components";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrash } from "@fortawesome/free-solid-svg-icons";
 
 const EditMissionForm = ({ mission, onComplete }) => {
-	const { updateMission } = useMissionsStore();
+	const { updateMission, deleteMission } = useMissionsStore();
 	const { teams, fetchTeams } = useTeamsStore();
-
+	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
 	const [formData, setFormData] = useState({
 		name: mission.name || "",
 		teams: mission.teams?.map((team) => team._id || team) || [],
@@ -15,15 +20,14 @@ const EditMissionForm = ({ mission, onComplete }) => {
 				teamId: tr.teamId?._id || tr.teamId,
 				role: tr.role || "",
 			})) || [],
-		status: mission.status || "In Progress",
+		status: mission.status || "Recon",
 		location: mission.location || "",
-		notes: mission.notes || "",
 	});
 
 	useEffect(() => {
 		fetchTeams();
 	}, []);
-
+	const { closeSheet } = useSheetStore();
 	const handleChange = (e) => {
 		const { name, value } = e.target;
 		setFormData((prev) => ({
@@ -65,22 +69,41 @@ const EditMissionForm = ({ mission, onComplete }) => {
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
-		const result = await updateMission(mission._id, formData);
-		if (result && onComplete) {
+		await updateMission(mission._id, formData);
+		closeSheet();
+		if (onComplete) {
 			onComplete();
 		}
+	};
+
+	const handleDeleteMission = () => {
+		openDialog(async () => {
+			await deleteMission(mission._id);
+			closeSheet();
+			if (onComplete) {
+				onComplete();
+			}
+		});
 	};
 
 	return (
 		<form
 			onSubmit={handleSubmit}
 			className='p-4 space-y-4'>
+			<div className='flex flex-col items-end'>
+				<FontAwesomeIcon
+					icon={faTrash}
+					className=' text-red-600 text-2xl cursor-pointer hover:text-red-800'
+					onClick={handleDeleteMission}
+					title='Delete Team'
+				/>
+			</div>
 			<h2 className='text-xl font-bold text-fontz mb-4'>Edit Mission</h2>
 
 			{/* Mission Name */}
 			<div>
 				<label className='block text-sm font-medium text-gray-400 mb-2'>
-					Mission Name *
+					Mission Name <span className='text-red-500'>*</span>
 				</label>
 				<input
 					type='text'
@@ -89,7 +112,7 @@ const EditMissionForm = ({ mission, onComplete }) => {
 					onChange={handleChange}
 					required
 					placeholder='Enter mission name'
-					className='w-full px-3 py-2 bg-highlight border border-lines rounded-lg text-fontz focus:outline-none focus:border-btn'
+					className='form'
 				/>
 			</div>
 
@@ -102,28 +125,14 @@ const EditMissionForm = ({ mission, onComplete }) => {
 					name='status'
 					value={formData.status}
 					onChange={handleChange}
-					className='w-full px-3 py-2 bg-highlight border border-lines rounded-lg text-fontz focus:outline-none focus:border-btn'>
-					<option value='In Progress'>In Progress</option>
-					<option value='Planning'>Planning</option>
-					<option value='Completed'>Completed</option>
+					className='form'>
+					<option value='Recon'>Recon</option>
+					<option value='Infil'>Infil</option>
+					<option value='Assault'>Assault</option>
+					<option value='Extracted'>Extracted</option>
 					<option value='Failed'>Failed</option>
 					<option value='Aborted'>Aborted</option>
 				</select>
-			</div>
-
-			{/* Location */}
-			<div>
-				<label className='block text-sm font-medium text-gray-400 mb-2'>
-					Location
-				</label>
-				<input
-					type='text'
-					name='location'
-					value={formData.location}
-					onChange={handleChange}
-					placeholder='Enter mission location'
-					className='w-full px-3 py-2 bg-highlight border border-lines rounded-lg text-fontz focus:outline-none focus:border-btn'
-				/>
 			</div>
 
 			{/* Teams */}
@@ -131,7 +140,7 @@ const EditMissionForm = ({ mission, onComplete }) => {
 				<label className='block text-sm font-medium text-gray-400 mb-2'>
 					Assign Teams & Roles
 				</label>
-				<div className='space-y-2 max-h-96 overflow-y-auto p-2 bg-highlight/50 rounded-lg border border-lines'>
+				<div className='form'>
 					{teams.length > 0 ? (
 						teams.map((team) => {
 							const isSelected = formData.teams.includes(team._id);
@@ -190,37 +199,23 @@ const EditMissionForm = ({ mission, onComplete }) => {
 				</div>
 			</div>
 
-			{/* Notes */}
-			<div>
-				<label className='block text-sm font-medium text-gray-400 mb-2'>
-					Notes
-				</label>
-				<textarea
-					name='notes'
-					value={formData.notes}
-					onChange={handleChange}
-					placeholder='Additional mission details...'
-					rows={4}
-					className='w-full px-3 py-2 bg-highlight border border-lines rounded-lg text-fontz focus:outline-none focus:border-btn resize-none'
-				/>
-			</div>
-
 			{/* Submit Button */}
-			<div className='flex gap-2 pt-4'>
-				<button
+			<div className='flex flex-col items-center'>
+				<Button
 					type='submit'
-					className='flex-1 px-4 py-2 bg-btn hover:bg-btn/80 text-white font-medium rounded-lg transition-all'>
+					className='btn'>
 					Update Mission
-				</button>
-				{onComplete && (
-					<button
-						type='button'
-						onClick={onComplete}
-						className='px-4 py-2 bg-highlight hover:bg-highlight/80 text-gray-400 hover:text-fontz font-medium rounded-lg border border-lines transition-all'>
-						Cancel
-					</button>
-				)}
+				</Button>
 			</div>
+			<ConfirmDialog
+				className='text-fontz'
+				title='Confirm Mission Deletion'
+				description='This will permanently remove the mission andv all its assignments. This action cannot be undone.'
+				message={`Are you sure you want to delete ${mission.name}? Once deleted, the mission and its assignments will be lost forever.`}
+				isOpen={isOpen}
+				closeDialog={closeDialog}
+				confirmAction={confirmAction}
+			/>
 		</form>
 	);
 };

@@ -36,8 +36,6 @@ const NewTeamForm = () => {
 			operators: storeState.operators.length > 0 ? storeState.operators : [],
 		};
 
-		console.log("Team data being submitted:", teamData); // Debug log
-
 		await createTeam(teamData);
 		await fetchTeams();
 		await closeSheet();

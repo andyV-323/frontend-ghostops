@@ -11,6 +11,7 @@ import {
 	EditOperatorForm,
 	AssignTeamSheet,
 } from "@/components/forms";
+import { Button } from "@material-tailwind/react";
 
 const TabbedRoster = ({
 	operators = [],
@@ -117,12 +118,14 @@ const TabbedRoster = ({
 							`Assign ${operator.callSign} to a team or remove from current team.`
 						);
 					}}>
-					<span
+					<Button
 						className={
-							teamName === "Unassigned" ? "text-gray-500" : "text-btn"
+							teamName === "Unassigned"
+								? "text-gray-400 bg-blk/40 hover:text-black hover:bg-btn"
+								: "text-gray-400 bg-highlight/40 hover:text-black hover:bg-btn"
 						}>
 						{teamName}
-					</span>
+					</Button>
 				</td>
 				<td className='px-4 md:px-6 py-4'>
 					<div className='flex items-center'>

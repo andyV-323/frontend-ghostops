@@ -475,7 +475,19 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		</div>
 	);
 };
-
+// In ConfirmDialog.jsx
+ConfirmDialog.propTypes = {
+	isOpen: PropTypes.bool.isRequired,
+	closeDialog: PropTypes.func.isRequired,
+	confirmAction: PropTypes.func,
+	title: PropTypes.string,
+	description: PropTypes.string,
+	message: PropTypes.string,
+	selectedOperator: PropTypes.object,
+	onRandomInjury: PropTypes.func, // Remove .isRequired
+	onKIAInjury: PropTypes.func, // Remove .isRequired
+	injuryType: PropTypes.string,
+};
 Teams.propTypes = {
 	dataUpdated: PropTypes.bool,
 	refreshData: PropTypes.func,

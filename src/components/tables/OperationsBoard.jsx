@@ -3,9 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faCaretDown,
 	faCaretUp,
-	faCheck,
-	faXmark,
-	faPenSquare,
+	faUserPen,
 	faPersonRifle,
 } from "@fortawesome/free-solid-svg-icons";
 import { PropTypes } from "prop-types";
@@ -63,8 +61,7 @@ const OperationsBoard = ({ dataUpdated, openSheet }) => {
 							/>
 							&nbsp; Name
 						</th>
-						<th className='px-4 md:px-6 py-3'>Status</th>
-						<th className='px-4 md:px-6 py-3'>Location</th>
+						<th className='px-4 md:px-6 py-3'>Phase</th>
 						<th className='px-4 md:px-6 py-3'>Teams</th>
 						<th className='px-4 md:px-6 py-3'>Action</th>
 					</tr>
@@ -85,14 +82,24 @@ const OperationsBoard = ({ dataUpdated, openSheet }) => {
 												{mission.name}
 											</div>
 										</th>
-										<td
-											className={`px-4 md:px-6 py-4 font-medium ${getStatusColor(
-												mission.status
-											)}`}>
-											{mission.status}
-										</td>
-										<td className='px-4 md:px-6 py-4'>
-											{mission.location || "N/A"}
+										<td className='px-4 md:px-6 py-4 font-medium'>
+											<div className='flex items-center'>
+												<div
+													className={`h-2.5 w-2.5 rounded-full   ${
+														mission.status === "Recon"
+															? "bg-emerald-400"
+															: mission.status === "Infil"
+															? "bg-cyan-500"
+															: mission.status === "Assault"
+															? "bg-blue-500"
+															: mission.status === "Extracted"
+															? "bg-violet-500"
+															: mission.status === "Aborted"
+															? "bg-pink-500"
+															: "bg-amber-500"
+													} me-2`}></div>
+												{mission.status || "Failed"}
+											</div>
 										</td>
 										<td className='px-4 md:px-6 py-4'>
 											{mission.teams?.length || 0} Team
@@ -114,30 +121,10 @@ const OperationsBoard = ({ dataUpdated, openSheet }) => {
 														"Update mission details, teams, and roles."
 													);
 												}}
-												className='text-lg text-blue-400 hover:text-blue-300'>
-												<FontAwesomeIcon icon={faPenSquare} />
+												className='text-btn text-lg cursor-pointer hover:text-blk/50'>
+												<FontAwesomeIcon icon={faUserPen} />
 											</button>
-											<button
-												onClick={(e) => {
-													e.stopPropagation();
-													updateMission(mission._id, {
-														...mission,
-														teams: mission.teams.map((t) => t._id || t),
-														teamRoles: mission.teamRoles || [],
-														status: "Completed",
-													});
-												}}
-												className='text-lg text-green-400 hover:text-green-300'>
-												<FontAwesomeIcon icon={faCheck} />
-											</button>
-											<button
-												onClick={(e) => {
-													e.stopPropagation();
-													deleteMission(mission._id);
-												}}
-												className='text-lg text-red-400 hover:text-red-300'>
-												<FontAwesomeIcon icon={faXmark} />
-											</button>
+
 											<FontAwesomeIcon
 												icon={
 													expandedMission === index ? faCaretUp : faCaretDown
@@ -156,18 +143,12 @@ const OperationsBoard = ({ dataUpdated, openSheet }) => {
 													{/* Mission Status and Location */}
 													<div className='flex gap-6 text-sm'>
 														<div>
-															<span className='text-gray-500'>Status: </span>
+															<span className='text-gray-500'>Phase: </span>
 															<span
 																className={`font-semibold ${getStatusColor(
 																	mission.status
 																)}`}>
 																{mission.status}
-															</span>
-														</div>
-														<div>
-															<span className='text-gray-500'>Location: </span>
-															<span className='text-fontz'>
-																{mission.location || "N/A"}
 															</span>
 														</div>
 													</div>

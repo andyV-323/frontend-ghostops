@@ -1,7 +1,8 @@
 // components/forms/NewMissionForm.jsx
 import { useState, useEffect } from "react";
 import { PropTypes } from "prop-types";
-import { useMissionsStore, useTeamsStore } from "@/zustand";
+import { useMissionsStore, useTeamsStore, useSheetStore } from "@/zustand";
+import { Button } from "@material-tailwind/react";
 
 const NewMissionForm = ({ onComplete }) => {
 	const { createMission } = useMissionsStore();
@@ -11,7 +12,7 @@ const NewMissionForm = ({ onComplete }) => {
 		name: "",
 		teams: [],
 		teamRoles: [], // Store roles for each team
-		status: "In Progress",
+		status: "Recon",
 		location: "",
 		notes: "",
 	});
@@ -58,16 +59,15 @@ const NewMissionForm = ({ onComplete }) => {
 			),
 		}));
 	};
-
+	const { closeSheet } = useSheetStore();
 	const handleSubmit = async (e) => {
 		e.preventDefault();
-
-		const result = await createMission(formData);
-		if (result && onComplete) {
+		await createMission(formData);
+		closeSheet();
+		if (onComplete) {
 			onComplete();
 		}
 	};
-
 	return (
 		<form
 			onSubmit={handleSubmit}
@@ -77,7 +77,7 @@ const NewMissionForm = ({ onComplete }) => {
 			{/* Mission Name */}
 			<div>
 				<label className='block text-sm font-medium text-gray-400 mb-2'>
-					Mission Name *
+					Mission Name <span className='text-red-500'>*</span>
 				</label>
 				<input
 					type='text'
@@ -86,7 +86,7 @@ const NewMissionForm = ({ onComplete }) => {
 					onChange={handleChange}
 					required
 					placeholder='Enter mission name'
-					className='w-full px-3 py-2 bg-highlight border border-lines rounded-lg text-fontz focus:outline-none focus:border-btn'
+					className='form'
 				/>
 			</div>
 
@@ -99,28 +99,14 @@ const NewMissionForm = ({ onComplete }) => {
 					name='status'
 					value={formData.status}
 					onChange={handleChange}
-					className='w-full px-3 py-2 bg-highlight border border-lines rounded-lg text-fontz focus:outline-none focus:border-btn'>
-					<option value='Planning'>Planning</option>
-					<option value='In Progress'>In Progress</option>
-					<option value='Completed'>Completed</option>
+					className='form'>
+					<option value='Recon'>Recon</option>
+					<option value='Infil'>Infil</option>
+					<option value='Assault'>Assault</option>
+					<option value='Extracted'>Extracted</option>
 					<option value='Failed'>Failed</option>
 					<option value='Aborted'>Aborted</option>
 				</select>
-			</div>
-
-			{/* Location */}
-			<div>
-				<label className='block text-sm font-medium text-gray-400 mb-2'>
-					Location
-				</label>
-				<input
-					type='text'
-					name='location'
-					value={formData.location}
-					onChange={handleChange}
-					placeholder='Enter mission location'
-					className='w-full px-3 py-2 bg-highlight border border-lines rounded-lg text-fontz focus:outline-none focus:border-btn'
-				/>
 			</div>
 
 			{/* Teams */}
@@ -128,7 +114,7 @@ const NewMissionForm = ({ onComplete }) => {
 				<label className='block text-sm font-medium text-gray-400 mb-2'>
 					Assign Teams & Roles
 				</label>
-				<div className='space-y-2 max-h-96 overflow-y-auto p-2 bg-highlight/50 rounded-lg border border-lines'>
+				<div className='form'>
 					{teams.length > 0 ? (
 						teams.map((team) => {
 							const isSelected = formData.teams.includes(team._id);
@@ -187,36 +173,13 @@ const NewMissionForm = ({ onComplete }) => {
 				</div>
 			</div>
 
-			{/* Notes */}
-			<div>
-				<label className='block text-sm font-medium text-gray-400 mb-2'>
-					Notes
-				</label>
-				<textarea
-					name='notes'
-					value={formData.notes}
-					onChange={handleChange}
-					placeholder='Additional mission details...'
-					rows={4}
-					className='w-full px-3 py-2 bg-highlight border border-lines rounded-lg text-fontz focus:outline-none focus:border-btn resize-none'
-				/>
-			</div>
-
 			{/* Submit Button */}
-			<div className='flex gap-2 pt-4'>
-				<button
+			<div className='flex flex-col items-center'>
+				<Button
 					type='submit'
-					className='flex-1 px-4 py-2 bg-btn hover:bg-btn/80 text-white font-medium rounded-lg transition-all'>
+					className='btn '>
 					Create Mission
-				</button>
-				{onComplete && (
-					<button
-						type='button'
-						onClick={onComplete}
-						className='px-4 py-2 bg-highlight hover:bg-highlight/80 text-gray-400 hover:text-fontz font-medium rounded-lg border border-lines transition-all'>
-						Cancel
-					</button>
-				)}
+				</Button>
 			</div>
 		</form>
 	);
