@@ -9,6 +9,8 @@ import SecondaryClassLoadout from "./SecondaryClassLoadout";
 import NewVehicleForm from "./NewVehicleForm";
 import EditVehicleForm from "./EditVehicleForm";
 import AssignTeamSheet from "./AssignTeamSheet";
+import NewMissionForm from "./NewMissionForm";
+import EditMissionForm from "./EditMissionForm";
 
 export {
 	NewOperatorForm,
@@ -22,4 +24,6 @@ export {
 	NewVehicleForm,
 	EditVehicleForm,
 	AssignTeamSheet,
+	NewMissionForm,
+	EditMissionForm,
 };

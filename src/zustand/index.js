@@ -4,6 +4,7 @@ import useMemorialStore from "./useMemorialStore";
 import useSheetStore from "./useSheetStore";
 import useTeamsStore from "./useTeamStore";
 import useVehicleStore from "./useVehicleStore";
+import useMissionsStore from "./useMissionsStore";
 
 export {
 	useInfirmaryStore,
@@ -12,4 +13,5 @@ export {
 	useSheetStore,
 	useTeamsStore,
 	useVehicleStore,
+	useMissionsStore,
 };

@@ -3,6 +3,7 @@ import { SheetSide } from "@/components";
 import { Roster, Infirmary, Memorial, Teams } from "@/components/tables";
 //import { Bio } from "@/components/ai";
 import { useOperatorsStore, useSheetStore } from "@/zustand";
+import OperationsBoard from "@/components/tables/OperationsBoard";
 
 const OperatorDashboard = () => {
 	const { activeClasses, setSelectedOperator, operators, fetchOperators } =
@@ -100,14 +101,19 @@ const OperatorDashboard = () => {
 					<div
 						className=' shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px]'
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
-						<Infirmary
+						<OperationsBoard
 							dataUpdated={dataUpdated}
 							refreshData={refreshData}
+							openSheet={handleOpenSheet}
 						/>
 					</div>
 					<div
 						className=' shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px]'
 						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
+						<Infirmary
+							dataUpdated={dataUpdated}
+							refreshData={refreshData}
+						/>
 						<Memorial
 							dataUpdated={dataUpdated}
 							refreshData={refreshData}
