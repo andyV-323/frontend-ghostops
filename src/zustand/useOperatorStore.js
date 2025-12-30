@@ -26,9 +26,10 @@ const defaultOperator = {
 	secondaryname2: "",
 	image: "",
 	bio: "",
-	specialist: false,
+	recon: false,
+	technical: false,
 	aviator: false,
-	specialization: "",
+	role: "",
 };
 
 const useOperatorsStore = create((set, get) => ({

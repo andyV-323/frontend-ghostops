@@ -5,52 +5,49 @@ const useHandleChange = () => {
 	const { selectedOperator, setSelectedOperator } = useOperatorsStore();
 
 	const handleChange = (e) => {
-		if (!e || !e.target) {
-			console.error("useChangeLoadout called without an event.");
+		const { name, value, type, checked } = e.target;
+
+		if (!selectedOperator) return;
+
+		if (["recon", "technical", "aviator"].includes(name)) {
+			setSelectedOperator({
+				...selectedOperator,
+				recon: false,
+				technical: false,
+				aviator: false,
+				[name]: checked,
+			});
 			return;
 		}
 
-		const { name, value, type, checked } = e.target;
-
-		let updatedValue = type === "checkbox" ? checked : value;
-
-		// Handle gear selection (store image URL)
+		// Gear images
 		if (name === "gear" || name === "secondaryGear") {
-			updatedValue = KITS[value]?.img || "/gear/default.png";
+			setSelectedOperator({
+				...selectedOperator,
+				[name]: KITS[value]?.img || "/gear/default.png",
+			});
+			return;
 		}
 
-		// Handle weapon selection (store image URL)
+		// Weapon images
 		if (
 			name === "primaryWeapon1" ||
 			name === "secondaryWeapon1" ||
 			name === "primaryWeapon2" ||
 			name === "secondaryWeapon2"
 		) {
-			updatedValue = WEAPONS[value]?.imgUrl || "/icons/default_weapon.svg";
-		}
-
-		// Handle specialist checkbox - clear specialization when unchecked
-		if (name === "specialist" && !checked) {
 			setSelectedOperator({
 				...selectedOperator,
-				specialist: false,
-				specialization: "",
+				[name]: WEAPONS[value]?.imgUrl || "/icons/default_weapon.svg",
 			});
 			return;
 		}
 
-		// Handle aviator checkbox - clear specialization when unchecked
-		if (name === "aviator" && !checked) {
-			setSelectedOperator({
-				...selectedOperator,
-				aviator: false,
-				specialization: "",
-			});
-			return;
-		}
-
-		// Default: update the field
-		setSelectedOperator({ ...selectedOperator, [name]: updatedValue });
+		// Default handler
+		setSelectedOperator({
+			...selectedOperator,
+			[name]: type === "checkbox" ? checked : value,
+		});
 	};
 
 	return handleChange;

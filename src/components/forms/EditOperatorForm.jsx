@@ -94,10 +94,13 @@ const EditOperatorForm = ({ operator }) => {
 								))}
 							</select>
 						</div>
+						<br />
 
 						{/*CALL SIGN*/}
 						<div className='w-full'>
-							<label className='block mb-2 font-medium'>Call Sign</label>
+							<label className='block mb-2 font-medium'>
+								Call Sign <span className='text-red-500'>*</span>
+							</label>
 							<input
 								type='text'
 								name='callSign'
@@ -108,7 +111,7 @@ const EditOperatorForm = ({ operator }) => {
 								required></input>
 						</div>
 						<br />
-						<div>
+						<div className='w-full'>
 							<label className='block mb-2 font-medium'>Class</label>
 							<select
 								className='form '
@@ -127,127 +130,105 @@ const EditOperatorForm = ({ operator }) => {
 							</select>
 						</div>
 						<br />
-						{/** SPECIALIST SECTION **/}
-						<div className=' p-4 rounded-lg'>
-							<h3 className='text-lg font-semibold text-fontz mb-3'>
-								Specialist Status
-							</h3>
-
-							{/** SPECIALIST CHECKBOX **/}
-							<div className='flex items-center mb-4'>
-								<input
-									type='checkbox'
-									id='specialist'
-									name='specialist'
-									className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
-									checked={selectedOperator?.specialist || false}
-									onChange={handleChange}
-								/>
-								<label
-									htmlFor='specialist'
-									className='ml-2 text-sm font-medium text-gray-300'>
-									This operator is a specialist
-								</label>
-							</div>
-
-							{/** SPECIALIZATION INPUT - Only show if specialist is checked **/}
-							{selectedOperator?.specialist && (
-								<div className='w-full'>
-									<label className='block mb-2 font-medium text-fontz'>
-										Specialization<span className='text-red-500'>*</span>
-									</label>
-									<input
-										type='text'
-										name='specialization'
-										className='form'
-										placeholder='Enter specialization (e.g., Sniper, Medic, Demolitions Expert, Cyber Warfare)'
-										value={selectedOperator?.specialization || ""}
-										onChange={handleChange}
-										required={selectedOperator?.specialist}
-									/>
-									<p className='mt-1 text-xs text-gray-400'>
-										Define this operator&apos;s unique specialty and advanced
-										training. Be creative!
-									</p>
-								</div>
-							)}
+						{/*Role*/}
+						<div className='w-full'>
+							<label className='block mb-2 font-medium text-fontz'>Role</label>
+							<input
+								type='text'
+								name='role'
+								className='form'
+								placeholder='Enter role (e.g., Sniper, Medic, Demolitions Expert, Cyber Warfare)'
+								value={selectedOperator?.role || ""}
+								onChange={handleChange}
+							/>
+							<p className='mt-1 text-xs text-gray-400'>
+								Define this operator&apos;s unique role and advanced training.
+								Be creative!
+							</p>
 						</div>
+
 						<br />
-						{/** AVIATOR SECTION **/}
-						<div className=' p-4 rounded-lg'>
-							<h3 className='text-lg font-semibold text-fontz mb-3'>
-								Aviator Status
-							</h3>
-
-							{/** AVIATOR CHECKBOX **/}
-							<div className='flex items-center mb-4'>
+						{/** RECON SECTION **/}
+						<div className='flex flex-col w-full'>
+							{/** RECON CHECKBOX **/}
+							<div className='flex items-center gap-3 mb-4'>
 								<input
 									type='checkbox'
-									id='aviator'
-									name='aviator'
+									id='recon'
+									name='recon'
 									className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
-									checked={selectedOperator?.aviator || false}
+									checked={selectedOperator?.recon || false}
 									onChange={handleChange}
 								/>
 								<label
-									htmlFor='specialist'
-									className='ml-2 text-sm font-medium text-gray-300'>
-									This operator is an aviator
+									htmlFor='recon'
+									className='text-sm font-medium text-gray-300 cursor-pointer'>
+									<h3
+										className='text-lg
+											font-semibold
+											text-fontz
+											'>
+										Recon
+									</h3>
 								</label>
 							</div>
 
-							{/** SPECIALIZATION INPUT - Only show if specialist is checked **/}
-							{selectedOperator?.aviator && (
-								<div className='w-full'>
-									<label className='block mb-2 font-medium text-fontz'>
-										Specialization<span className='text-red-500'>*</span>
-									</label>
+							{/** TECHNICAL SECTION **/}
+							<div className=' rounded-lg'>
+								{/** TECHNICAL CHECKBOX **/}
+								<div className='flex items-center gap-3 mb-4'>
 									<input
-										type='text'
-										name='specialization'
-										className='form'
-										placeholder='Enter specialization (e.g., Sniper, Medic, Demolitions Expert, Cyber Warfare)'
-										value={selectedOperator?.specialization || ""}
+										type='checkbox'
+										id='technical'
+										name='technical'
+										className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
+										checked={selectedOperator?.technical || false}
 										onChange={handleChange}
-										required={selectedOperator?.aviator}
 									/>
-									<p className='mt-1 text-xs text-gray-400'>
-										Define this operator&apos;s unique specialty and advanced
-										training. Be creative!
-									</p>
+									<label
+										htmlFor='technical'
+										className='text-sm font-medium text-gray-300 cursor-pointer'>
+										<h3
+											className='text-lg
+											font-semibold
+											text-fontz
+											'>
+											Technical
+										</h3>
+									</label>
 								</div>
-							)}
+
+								{/** AVIATOR SECTION **/}
+								<div className='flex items-center gap-3 mb-4'>
+									<input
+										type='checkbox'
+										id='aviator'
+										name='aviator'
+										className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
+										checked={selectedOperator?.aviator || false}
+										onChange={handleChange}
+									/>
+									<label
+										htmlFor='aviator'
+										className='text-sm font-medium text-gray-300 cursor-pointer'>
+										<h3
+											className='text-lg
+											font-semibold
+											text-fontz
+											'>
+											Aviator
+										</h3>
+									</label>
+								</div>
+
+								<Button
+									type='submit'
+									className='btn'
+									onClick={(e) => handleUpdateOperator(e, operatorId)}>
+									Update
+								</Button>
+							</div>
 						</div>
-						{/*NATIONALITY*/}
-						{/*<div className='w-full'>
-							<label className='block mb-2 font-medium'>Nationality</label>
-							<input
-								type='text'
-								name='nationality'
-								className='form'
-								placeholder='Nationality (e.g., USA, Canada)'
-								value={selectedOperator.nationality || ""}
-								onChange={handleChange}></input>
-						</div>
-						<br />*/}
-						{/*RANK*/}
-						{/*<div className='w-full'>
-							<label className='block mb-2 font-medium '>Rank</label>
-							<input
-								type='text'
-								className='form'
-								placeholder='Rank'
-								name='rank'
-								value={selectedOperator.rank || ""}
-								onChange={handleChange}></input>
-						</div>
-						<br />*/}
-						<Button
-							type='submit'
-							className='btn'
-							onClick={(e) => handleUpdateOperator(e, operatorId)}>
-							Update
-						</Button>
 					</div>
 				</form>
 			</div>
