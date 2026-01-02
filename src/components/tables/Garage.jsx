@@ -230,7 +230,7 @@ const Garage = ({ dataUpdated, openSheet }) => {
 	return (
 		<div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
 			<h1 className='flex flex-col items-center text-lg text-fontz font-bold'>
-				Garage
+				Assets
 			</h1>
 			<table className='w-full text-md text-left text-fontz'>
 				<thead className='text-md text-fontz uppercase bg-linear-to-r/oklch from-blk to-neutral-800'>

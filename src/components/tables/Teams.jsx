@@ -19,12 +19,15 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		teams,
 		fetchTeams,
 		fetchOperators,
+		fetchVehiclesForTeams,
 		assignRandomInjury,
 		assignRandomKIAInjury,
 		transferOperator,
 		addOperatorToTeam,
 		updateTeam,
 		removeAllOperatorsFromTeams,
+		addVehicleToTeam,
+		removeVehicleFromTeam,
 	} = useTeamsStore();
 	const [expandedTeam, toggleExpand] = useToggleExpand();
 	const userId = localStorage.getItem("userId");
@@ -39,6 +42,8 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		confirmAction: confirmRemoveAll,
 	} = useConfirmDialog();
 	const allOperators = useTeamsStore((state) => state.allOperators);
+	const allVehicles = useTeamsStore((s) => s.allVehicles);
+	const fullVehicleList = useTeamsStore((s) => s.fullVehicleList);
 	const [injuryType, setInjuryType] = useState("choice");
 	// Check if device is mobile
 	const isMobile =
@@ -153,7 +158,8 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	useEffect(() => {
 		fetchTeams();
 		fetchOperators();
-	}, [fetchTeams, dataUpdated, fetchOperators]);
+		fetchVehiclesForTeams();
+	}, [fetchTeams, dataUpdated, fetchOperators, fetchVehiclesForTeams]);
 
 	return (
 		<div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
@@ -365,6 +371,96 @@ const Teams = ({ dataUpdated, openSheet }) => {
 														</option>
 													))}
 											</select>
+											{/*ASSETS SECTION}
+{/* ASSETS SECTION */}
+											<div className='mt-6'>
+												<h2 className='mb-3 text-xs font-bold text-fontz'>
+													Assets (Vehicles)
+												</h2>
+
+												{/* Assigned assets list */}
+												<div className='flex flex-wrap gap-2 mb-3'>
+													{(team.assets || []).length === 0 ? (
+														<p className='text-xs text-gray-400'>
+															No assets assigned.
+														</p>
+													) : (
+														(team.assets || []).map((asset) => {
+															const assetId =
+																typeof asset === "object" ? asset._id : asset;
+															const assetObj =
+																typeof asset === "object"
+																	? asset
+																	: fullVehicleList.find(
+																			(v) => v._id === assetId
+																	  );
+
+															return (
+																<div
+																	key={assetId}
+																	className='flex items-center gap-2 bg-blk/40 border border-lines rounded-lg px-2 py-1'>
+																	<span className='text-xs text-fontz'>
+																		{assetObj?.nickName &&
+																		assetObj.nickName !== "None"
+																			? assetObj.nickName
+																			: assetObj?.vehicle || "Unknown Vehicle"}
+																		{assetObj?.condition
+																			? ` • ${assetObj.condition}`
+																			: ""}
+																		{typeof assetObj?.remainingFuel === "number"
+																			? ` • Fuel ${assetObj.remainingFuel}%`
+																			: ""}
+																	</span>
+
+																	<button
+																		type='button'
+																		className='text-xs text-red-400 hover:text-red-200 transition-all'
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			removeVehicleFromTeam(assetId, team._id);
+																		}}
+																		title='Remove asset'>
+																		✕
+																	</button>
+																</div>
+															);
+														})
+													)}
+												</div>
+
+												{/* Add asset dropdown (available vehicles only) */}
+												<select
+													className='bg-blk/50 border border-lines rounded-lg block w-full p-2.5 text-fontz outline-lines text-xs'
+													onChange={(e) => {
+														const selectedVehicleId = e.target.value;
+														if (selectedVehicleId) {
+															addVehicleToTeam(selectedVehicleId, team._id);
+															e.target.value = "";
+														}
+													}}>
+													<option value=''>
+														-- Add an Asset (Available Vehicles) --
+													</option>
+													{allVehicles.map((v) => (
+														<option
+															key={v._id}
+															value={v._id}>
+															{v.nickName && v.nickName !== "None"
+																? `${v.nickName} - `
+																: ""}
+															{v.vehicle} • {v.condition} • Fuel{" "}
+															{v.remainingFuel}%
+															{v.isRepairing ? " • Repairing" : ""}
+														</option>
+													))}
+												</select>
+
+												<p className='text-[10px] text-gray-400 mt-2'>
+													Vehicles are exclusive: assigning to a team removes
+													them from the available pool.
+												</p>
+											</div>
+
 											{/* AO Change Section */}
 											<div className='mb-4 text-xs'>
 												{/* Display Current AO Info */}

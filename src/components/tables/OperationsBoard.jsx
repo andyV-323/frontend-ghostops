@@ -12,8 +12,7 @@ import { useMissionsStore } from "@/zustand";
 import { NewMissionForm, EditMissionForm } from "../forms";
 
 const OperationsBoard = ({ dataUpdated, openSheet }) => {
-	const { missions, fetchMissions, updateMission, deleteMission } =
-		useMissionsStore();
+	const { missions, fetchMissions } = useMissionsStore();
 	const [expandedMission, toggleExpand] = useToggleExpand();
 
 	// Fetch missions
@@ -197,7 +196,7 @@ const OperationsBoard = ({ dataUpdated, openSheet }) => {
 																						Location:{" "}
 																					</span>
 																					<span className='text-gray-400'>
-																						{team.AO || "N/A"}
+																						{team.AO || ""}
 																					</span>
 																				</div>
 																				<div className='text-xs'>
@@ -213,6 +212,24 @@ const OperationsBoard = ({ dataUpdated, openSheet }) => {
 																									)
 																									.join(", ")
 																							: "None assigned"}
+																					</span>
+																				</div>
+																				<div className='text-xs'>
+																					<span className='text-gray-500'>
+																						Assets:{" "}
+																					</span>
+																					<span className='text-gray-400'>
+																						{team.assets &&
+																						team.assets.length > 0
+																							? team.assets
+																									.map((v) =>
+																										v.nickName &&
+																										v.nickName !== "None"
+																											? v.nickName
+																											: v.vehicle
+																									)
+																									.join(", ")
+																							: ""}
 																					</span>
 																				</div>
 																			</div>

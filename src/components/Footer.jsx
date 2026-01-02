@@ -26,7 +26,7 @@ const Footer = () => {
 			},
 			next: {
 				path: "/dashboard/VehicleSimulator",
-				label: "Garage",
+				label: "Assets",
 				icon: faArrowRight,
 			},
 		},

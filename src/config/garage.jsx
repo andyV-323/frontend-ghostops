@@ -219,4 +219,23 @@ export const GARAGE = [
 		type: "Aircraft",
 		imgUrl: "/img/blacklist.png",
 	},
+	{
+		name: "RQ-9 Reaper",
+		timer: 900,
+		type: "UAV",
+		imgUrl: "/img/Drone.png",
+	},
+	{
+		name: "JLTV",
+		type: "Heavy",
+		fuelCapacity: 38,
+		efficiency: 2.2,
+		imgUrl: "/img/JLTV.png",
+	},
+	{
+		name: "UH-60 Blackhawk",
+		timer: 720,
+		type: "Aircraft",
+		imgUrl: "/img/Blackhawk.png",
+	},
 ];

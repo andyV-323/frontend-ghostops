@@ -27,6 +27,7 @@ const EditTeamForm = ({ teamId }) => {
 		teams,
 		fetchOperators,
 		fetchTeamById,
+
 		setTeamName,
 		updateTeam,
 		deleteTeam,
@@ -34,17 +35,23 @@ const EditTeamForm = ({ teamId }) => {
 		fetchTeams,
 		addOperator,
 		removeOperator,
+		addAsset,
+		removeAsset,
 	} = useTeamsStore();
 
 	const { closeSheet } = useSheetStore();
+	const assets = useTeamsStore((state) => state.assets);
+	const allVehicles = useTeamsStore((state) => state.allVehicles);
+	const fullVehicleList = useTeamsStore((state) => state.fullVehicleList);
 
 	useEffect(() => {
 		resetStore();
 		if (teamId) {
+			fetchTeams();
 			fetchTeamById(teamId);
 			fetchOperators();
 		}
-	}, [teamId, fetchTeamById, fetchOperators, resetStore]);
+	}, [teamId, fetchTeams, fetchTeamById, fetchOperators, resetStore]);
 
 	// Set `createdBy` from authentication
 	useEffect(() => {
@@ -64,9 +71,8 @@ const EditTeamForm = ({ teamId }) => {
 			name: teamName.trim(),
 			AO: AO || "", // Use reactive AO value
 			operators: operators.length > 0 ? operators : [],
+			assets: storeState.assets.length ? storeState.assets : [],
 		};
-
-		console.log("Update team data:", teamData); // Debug log
 
 		try {
 			await updateTeam(teamData);
@@ -118,6 +124,74 @@ const EditTeamForm = ({ teamId }) => {
 								required
 							/>
 						</div>
+						{/* Assets (Vehicles) Dropdown */}
+						<h2 className='mb-4 text-lg font-bold text-fontz'>
+							Assets (Vehicles)
+						</h2>
+
+						<select
+							className='bg-blk/50 border border-lines rounded-lg block w-full p-2.5 text-fontz outline-lines'
+							onChange={(e) => {
+								const selectedVehicleId = e.target.value;
+								if (selectedVehicleId) {
+									addAsset(selectedVehicleId);
+									e.target.value = "";
+								}
+							}}>
+							<option value=''>
+								-- Select an Asset (Available Vehicles) --
+							</option>
+
+							{allVehicles
+								.filter((v) => !assets.includes(v._id)) // extra safety
+								.map((v) => (
+									<option
+										key={v._id}
+										value={v._id}
+										disabled={v.isRepairing}>
+										{v.nickName && v.nickName !== "None"
+											? `${v.nickName} - `
+											: ""}
+										{v.vehicle} • {v.condition} • Fuel {v.remainingFuel}%
+										{v.isRepairing ? " • Repairing" : ""}
+									</option>
+								))}
+						</select>
+
+						{/* Display Selected Assets */}
+						{assets.length > 0 && (
+							<div className='sm:col-span-2'>
+								<h3 className='mb-2 text-lg font-semibold text-fontz'>
+									Selected Assets:
+								</h3>
+
+								<ul className='list-disc pl-4 text-fontz bg-blk/50 border border-lines rounded-lg p-3'>
+									{assets.map((vehId) => {
+										const vehicle = fullVehicleList.find(
+											(v) => v._id === vehId
+										);
+										return (
+											<li
+												key={vehId}
+												className='flex justify-between items-center text-lg py-1'>
+												{vehicle
+													? `${
+															vehicle.nickName && vehicle.nickName !== "None"
+																? vehicle.nickName + " - "
+																: ""
+													  }${vehicle.vehicle}`
+													: "Unknown Vehicle"}
+												<FontAwesomeIcon
+													icon={faXmark}
+													className='text-2xl text-btn hover:text-white cursor-pointer'
+													onClick={() => removeAsset(vehId)}
+												/>
+											</li>
+										);
+									})}
+								</ul>
+							</div>
+						)}
 
 						{/* Area of Operations (AO) Dropdown */}
 						<div className='sm:col-span-2'>

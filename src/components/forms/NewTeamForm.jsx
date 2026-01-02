@@ -9,14 +9,36 @@ import { PROVINCES } from "@/config";
 
 const NewTeamForm = () => {
 	const auth = useAuth();
-	const { fetchOperators, resetStore, createTeam, fetchTeams } =
-		useTeamsStore();
 	const { closeSheet } = useSheetStore();
+
+	const teamName = useTeamsStore((s) => s.teamName);
+	const AO = useTeamsStore((s) => s.AO);
+	const operators = useTeamsStore((s) => s.operators);
+	const allOperators = useTeamsStore((s) => s.allOperators);
+
+	const assets = useTeamsStore((s) => s.assets);
+	const allVehicles = useTeamsStore((s) => s.allVehicles);
+	const fullVehicleList = useTeamsStore((s) => s.fullVehicleList);
+
+	// actions
+	const {
+		fetchOperators,
+		fetchVehiclesForTeams,
+		resetStore,
+		createTeam,
+		fetchTeams,
+		addAsset,
+		removeAsset,
+		addOperator,
+		removeOperator,
+		setTeamName, // if you have it, otherwise keep useTeamsStore.setState below
+	} = useTeamsStore();
 
 	useEffect(() => {
 		resetStore();
 		fetchOperators();
-	}, [fetchOperators, resetStore]);
+		fetchVehiclesForTeams();
+	}, [fetchOperators, fetchVehiclesForTeams, resetStore]);
 
 	useEffect(() => {
 		if (auth.isAuthenticated && auth.user) {
@@ -24,16 +46,16 @@ const NewTeamForm = () => {
 		}
 	}, [auth.isAuthenticated, auth.user]);
 
-	// Handle form submission
 	const handleCreateTeam = async (e) => {
 		e.preventDefault();
 		const storeState = useTeamsStore.getState();
 
 		const teamData = {
 			createdBy: storeState.createdBy,
-			name: storeState.teamName.trim(), // Use teamName instead of name
-			AO: storeState.AO || "", // Include AO from store
-			operators: storeState.operators.length > 0 ? storeState.operators : [],
+			name: storeState.teamName.trim(),
+			AO: storeState.AO || "",
+			operators: storeState.operators.length ? storeState.operators : [],
+			assets: storeState.assets.length ? storeState.assets : [],
 		};
 
 		await createTeam(teamData);
@@ -42,11 +64,11 @@ const NewTeamForm = () => {
 	};
 
 	return (
-		<section className=' bg-transparent'>
+		<section className='bg-transparent'>
 			<div className='py-8 px-4 mx-auto max-w-2xl lg:py-16'>
 				<form onSubmit={handleCreateTeam}>
 					<div className='grid gap-4 sm:grid-cols-2 sm:gap-6'>
-						{/* Team Name Input */}
+						{/* Team Name */}
 						<div className='sm:col-span-2'>
 							<label className='block mb-2 text-xl font-bold text-fontz'>
 								Team Name
@@ -54,27 +76,90 @@ const NewTeamForm = () => {
 							<input
 								type='text'
 								name='name'
-								className='bg-blk/50 border border-lines text-fontz text-lg rounded-lg outline-lines focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5'
+								className='bg-blk/50 border border-lines text-fontz text-lg rounded-lg outline-lines block w-full p-2.5'
 								placeholder='Enter team name'
-								value={useTeamsStore.getState().teamName}
+								value={teamName || ""}
 								onChange={(e) =>
-									useTeamsStore.setState({ teamName: e.target.value })
+									setTeamName
+										? setTeamName(e.target.value)
+										: useTeamsStore.setState({ teamName: e.target.value })
 								}
 								required
 							/>
 						</div>
 
-						{/* Area of Operations (AO) Dropdown */}
+						{/* Assets */}
+						<div className='sm:col-span-2'>
+							<h2 className='mb-4 text-xl font-bold text-fontz'>
+								Assets (Vehicles)
+							</h2>
+
+							<select
+								className='bg-blk/50 border border-lines outline-lines rounded-lg block w-full p-2.5 text-fontz'
+								onChange={(e) => {
+									const vid = e.target.value;
+									if (vid) {
+										addAsset(vid);
+										e.target.value = "";
+									}
+								}}>
+								<option value=''>
+									-- Select an Asset (Available Vehicles) --
+								</option>
+								{allVehicles
+									.filter((v) => !assets.includes(v._id))
+									.map((v) => (
+										<option
+											key={v._id}
+											value={v._id}
+											disabled={v.isRepairing}>
+											{v.nickName && v.nickName !== "None"
+												? `${v.nickName} - `
+												: ""}
+											{v.vehicle} • {v.condition} • Fuel {v.remainingFuel}%
+											{v.isRepairing ? " • Repairing" : ""}
+										</option>
+									))}
+							</select>
+
+							{assets.length > 0 && (
+								<ul className='list-disc pl-4 text-fontz text-lg bg-blk/50 border border-lines rounded-lg p-3 mt-3'>
+									{assets.map((vehId) => {
+										const v = fullVehicleList.find((x) => x._id === vehId);
+										return (
+											<li
+												key={vehId}
+												className='flex justify-between items-center py-1'>
+												{v
+													? `${
+															v.nickName && v.nickName !== "None"
+																? v.nickName + " - "
+																: ""
+													  }${v.vehicle}`
+													: "Unknown Vehicle"}
+												<FontAwesomeIcon
+													icon={faXmark}
+													className='text-2xl text-btn hover:text-white cursor-pointer'
+													onClick={() => removeAsset(vehId)}
+												/>
+											</li>
+										);
+									})}
+								</ul>
+							)}
+						</div>
+
+						{/* AO */}
 						<div className='sm:col-span-2'>
 							<label className='block mb-2 text-xl font-bold text-fontz'>
 								Area of Operations (AO)
 							</label>
 							<select
 								className='bg-blk/50 border border-lines outline-lines rounded-lg block w-full p-2.5 text-fontz'
-								value={useTeamsStore.getState().AO}
-								onChange={(e) => {
-									useTeamsStore.setState({ AO: e.target.value });
-								}}>
+								value={AO || ""}
+								onChange={(e) =>
+									useTeamsStore.setState({ AO: e.target.value })
+								}>
 								<option value=''>-- Select Area of Operations --</option>
 								{Object.entries(PROVINCES).map(([key, province]) => (
 									<option
@@ -86,21 +171,20 @@ const NewTeamForm = () => {
 							</select>
 						</div>
 
-						{/* Operators Section */}
+						{/* Operators */}
 						<div className='sm:col-span-2'>
 							<h2 className='mb-4 text-xl font-bold text-fontz'>Operators</h2>
 							<select
 								className='bg-blk/50 border border-lines outline-lines rounded-lg block w-full p-2.5 text-fontz'
 								onChange={(e) => {
-									const selectedOperator = e.target.value;
-									if (selectedOperator) {
-										useTeamsStore.getState().addOperator(selectedOperator);
-										// Reset the select to default after adding
+									const opId = e.target.value;
+									if (opId) {
+										addOperator(opId);
 										e.target.value = "";
 									}
 								}}>
 								<option value=''>-- Select an Operator --</option>
-								{useTeamsStore.getState().allOperators.map((operator) => (
+								{allOperators.map((operator) => (
 									<option
 										key={operator._id}
 										value={operator._id}>
@@ -109,47 +193,41 @@ const NewTeamForm = () => {
 									</option>
 								))}
 							</select>
-						</div>
 
-						{/* Display Selected Operators */}
-						{useTeamsStore.getState().operators.length > 0 && (
-							<div className='sm:col-span-2'>
-								<h3 className='mb-2 text-lg font-semibold text-fontz'>
-									Selected Operators:
-								</h3>
-								<ul className='list-disc pl-4 text-fontz text-lg bg-blk/50 border border-lines rounded-lg p-3'>
-									{useTeamsStore.getState().operators.map((opId) => {
-										const operator = useTeamsStore
-											.getState()
-											.allOperators.find((op) => op._id === opId);
-										return (
-											<li
-												key={opId}
-												className='flex justify-between items-center py-1'>
-												{operator ? operator.callSign : "Unknown Operator"}
-												<FontAwesomeIcon
-													icon={faXmark}
-													className='text-2xl text-btn hover:text-white cursor-pointer'
-													onClick={() =>
-														useTeamsStore.getState().removeOperator(opId)
-													}
-												/>
-											</li>
-										);
-									})}
-								</ul>
-							</div>
-						)}
+							{operators.length > 0 && (
+								<div className='sm:col-span-2 mt-3'>
+									<h3 className='mb-2 text-lg font-semibold text-fontz'>
+										Selected Operators:
+									</h3>
+									<ul className='list-disc pl-4 text-fontz text-lg bg-blk/50 border border-lines rounded-lg p-3'>
+										{operators.map((opId) => {
+											const op = allOperators.find((x) => x._id === opId);
+											return (
+												<li
+													key={opId}
+													className='flex justify-between items-center py-1'>
+													{op ? op.callSign : "Unknown Operator"}
+													<FontAwesomeIcon
+														icon={faXmark}
+														className='text-2xl text-btn hover:text-white cursor-pointer'
+														onClick={() => removeOperator(opId)}
+													/>
+												</li>
+											);
+										})}
+									</ul>
+								</div>
+							)}
+						</div>
 					</div>
+
 					<br />
-					{/* AI Team Generator */}
 					<h1 className='text-lg font-bold flex flex-col items-center'>
 						A.I Team Generator
 					</h1>
 					<AITeamGenerator />
 					<br />
 
-					{/* Submit Button */}
 					<Button
 						type='submit'
 						className='btn'>

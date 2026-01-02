@@ -6,11 +6,13 @@ import {
 	InfirmaryApi,
 	MemorialApi,
 	chatGPTApi,
+	VehicleAPI,
 } from "../api";
 import { INJURIES } from "../config";
 import useInfirmaryStore from "./useInfirmaryStore";
 import useMemorialStore from "./useMemorialStore";
 import useOperatorsStore from "./useOperatorStore";
+
 import { toast } from "react-toastify";
 const useTeamsStore = create((set, get) => ({
 	teams: [],
@@ -24,6 +26,9 @@ const useTeamsStore = create((set, get) => ({
 	teamName: "",
 	AO: "",
 	fullOperatorList: [],
+	assets: [],
+	allVehicles: [],
+	fullVehicleList: [],
 
 	// Fetch all teams
 	fetchTeams: async () => {
@@ -37,10 +42,30 @@ const useTeamsStore = create((set, get) => ({
 				),
 			}));
 			set({ teams: filteredTeams });
+			await get().fetchVehiclesForTeams();
 		} catch (error) {
 			console.error("ERROR fetching teams:", error);
 		} finally {
 			set({ loading: false });
+		}
+	},
+	fetchVehiclesForTeams: async () => {
+		try {
+			const all = await VehicleAPI.getVehicles();
+			set({ fullVehicleList: all });
+
+			const teams = get().teams || [];
+			const assignedIds = new Set(
+				teams.flatMap((t) =>
+					(t.assets || []).map((v) => (typeof v === "object" ? v._id : v))
+				)
+			);
+
+			const available = all.filter((v) => !assignedIds.has(v._id));
+			set({ allVehicles: available });
+		} catch (error) {
+			console.error("ERROR fetching vehicles for teams:", error);
+			set({ allVehicles: [], fullVehicleList: [] });
 		}
 	},
 
@@ -75,6 +100,13 @@ const useTeamsStore = create((set, get) => ({
 				});
 			}
 
+			let assetIds = [];
+			if (teamData.assets && Array.isArray(teamData.assets)) {
+				assetIds = teamData.assets.map((v) =>
+					typeof v === "object" && v._id ? v._id : v
+				);
+			}
+
 			const stateUpdate = {
 				team: {
 					_id: teamData._id,
@@ -82,10 +114,12 @@ const useTeamsStore = create((set, get) => ({
 					name: teamData.name || "",
 					AO: teamData.AO || "",
 					operators: operatorIds,
+					assets: assetIds,
 				},
 				teamName: teamData.name || "",
 				AO: teamData.AO || "",
 				operators: operatorIds,
+				assets: assetIds,
 			};
 
 			set(stateUpdate);
@@ -122,6 +156,7 @@ const useTeamsStore = create((set, get) => ({
 				name: teamData.name,
 				AO: teamData.AO,
 				operators: teamData.operators,
+				assets: teamData.assets,
 			});
 
 			toast.success("Team updated successfully!");
@@ -582,6 +617,149 @@ const useTeamsStore = create((set, get) => ({
 			toast.error("Failed to remove operators from teams.");
 		}
 	},
+	addVehicleToTeam: async (vehicleId, targetTeamId) => {
+		try {
+			const { teams, fullVehicleList } = get();
+
+			const targetTeam = teams.find((t) => t._id === targetTeamId);
+			if (!targetTeam) return toast.error("Target team not found");
+
+			const alreadyInTarget = (targetTeam.assets || []).some(
+				(v) => (typeof v === "object" ? v._id : v) === vehicleId
+			);
+			if (alreadyInTarget) return toast.warning("Vehicle already in this team");
+
+			const sourceTeam = teams.find(
+				(t) =>
+					t._id !== targetTeamId &&
+					(t.assets || []).some(
+						(v) => (typeof v === "object" ? v._id : v) === vehicleId
+					)
+			);
+
+			const vehicleObj = fullVehicleList.find((v) => v._id === vehicleId);
+			if (!vehicleObj) return toast.error("Vehicle not found");
+
+			// optimistic UI
+			set((state) => ({
+				teams: state.teams.map((t) => {
+					if (sourceTeam && t._id === sourceTeam._id) {
+						return {
+							...t,
+							assets: (t.assets || []).filter(
+								(v) => (typeof v === "object" ? v._id : v) !== vehicleId
+							),
+						};
+					}
+					if (t._id === targetTeamId) {
+						return { ...t, assets: [...(t.assets || []), vehicleObj] };
+					}
+					return t;
+				}),
+			}));
+
+			// IDs only for backend
+			const targetAssetIds = [
+				...(targetTeam.assets || []).map((v) =>
+					typeof v === "object" ? v._id : v
+				),
+				vehicleId,
+			];
+
+			await TeamsApi.updateTeam(targetTeamId, {
+				name: targetTeam.name,
+				AO: targetTeam.AO,
+				operators: (targetTeam.operators || []).map((op) =>
+					typeof op === "object" ? op._id : op
+				),
+				assets: targetAssetIds,
+			});
+
+			if (sourceTeam) {
+				const sourceAssetIds = (sourceTeam.assets || [])
+					.filter((v) => (typeof v === "object" ? v._id : v) !== vehicleId)
+					.map((v) => (typeof v === "object" ? v._id : v));
+
+				await TeamsApi.updateTeam(sourceTeam._id, {
+					name: sourceTeam.name,
+					AO: sourceTeam.AO,
+					operators: (sourceTeam.operators || []).map((op) =>
+						typeof op === "object" ? op._id : op
+					),
+					assets: sourceAssetIds,
+				});
+
+				toast.success(
+					`Vehicle transferred from ${sourceTeam.name} to ${targetTeam.name}!`
+				);
+			} else {
+				toast.success(`Vehicle added to ${targetTeam.name}!`);
+			}
+
+			await get().fetchVehiclesForTeams();
+		} catch (error) {
+			console.error("ERROR assigning vehicle:", error);
+			toast.error("Failed to assign vehicle");
+			get().fetchTeams(); // rollback
+		}
+	},
+
+	removeVehicleFromTeam: async (vehicleId, teamId) => {
+		try {
+			const { teams } = get();
+			const team = teams.find((t) => t._id === teamId);
+			if (!team) return toast.error("Team not found");
+
+			// optimistic
+			set((state) => ({
+				teams: state.teams.map((t) =>
+					t._id === teamId
+						? {
+								...t,
+								assets: (t.assets || []).filter(
+									(v) => (typeof v === "object" ? v._id : v) !== vehicleId
+								),
+						  }
+						: t
+				),
+			}));
+
+			const assetIds = (team.assets || [])
+				.filter((v) => (typeof v === "object" ? v._id : v) !== vehicleId)
+				.map((v) => (typeof v === "object" ? v._id : v));
+
+			await TeamsApi.updateTeam(teamId, {
+				name: team.name,
+				AO: team.AO,
+				operators: (team.operators || []).map((op) =>
+					typeof op === "object" ? op._id : op
+				),
+				assets: assetIds,
+			});
+
+			toast.success("Vehicle removed from team!");
+			await get().fetchVehiclesForTeams();
+		} catch (error) {
+			console.error("ERROR removing vehicle:", error);
+			toast.error("Failed to remove vehicle");
+			get().fetchTeams();
+		}
+	},
+	// Form state: add/remove assets (NewTeamForm/EditTeamForm)
+	addAsset: (vehicleId) => {
+		set((state) => {
+			if (!vehicleId) return state;
+			if (state.assets.includes(vehicleId)) return state;
+			return { assets: [...state.assets, vehicleId] };
+		});
+	},
+
+	removeAsset: (vehicleId) => {
+		set((state) => ({
+			assets: state.assets.filter((id) => id !== vehicleId),
+		}));
+	},
+
 	// Delete a team
 	deleteTeam: async (teamId) => {
 		if (!teamId) {
@@ -601,6 +779,7 @@ const useTeamsStore = create((set, get) => ({
 		set({
 			teamName: "",
 			operators: [],
+			assets: [],
 			AO: "",
 			aiTeam: [],
 			selectedTeamType: "",
