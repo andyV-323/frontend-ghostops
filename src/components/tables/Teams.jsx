@@ -316,6 +316,9 @@ const Teams = ({ dataUpdated, openSheet }) => {
 														<span className='text-sm mt-2'>
 															{operator.callSign}
 														</span>
+														<span className='text-sm mt-2'>
+															{operator.role}
+														</span>
 													</div>
 												))}
 											</div>

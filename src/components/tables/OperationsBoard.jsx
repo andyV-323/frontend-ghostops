@@ -208,12 +208,17 @@ const OperationsBoard = ({ dataUpdated, openSheet }) => {
 																						team.operators.length > 0
 																							? team.operators
 																									.map(
-																										(op) => op.callSign || op
+																										(op) =>
+																											`${op.callSign} (${
+																												op.role?.name ||
+																												"Unassigned"
+																											})`
 																									)
 																									.join(", ")
 																							: "None assigned"}
 																					</span>
 																				</div>
+
 																				<div className='text-xs'>
 																					<span className='text-gray-500'>
 																						Assets:{" "}
