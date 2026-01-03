@@ -209,10 +209,7 @@ const OperationsBoard = ({ dataUpdated, openSheet }) => {
 																							? team.operators
 																									.map(
 																										(op) =>
-																											`${op.callSign} (${
-																												op.role?.name ||
-																												"Unassigned"
-																											})`
+																											`${op.callSign} (${op.role})`
 																									)
 																									.join(", ")
 																							: "None assigned"}
