@@ -1,23 +1,17 @@
 import { useEffect, useState } from "react";
 import { SheetSide } from "@/components";
 import { Roster, Infirmary, Memorial, Teams } from "@/components/tables";
-//import { Bio } from "@/components/ai";
 import { useOperatorsStore, useSheetStore } from "@/zustand";
 import OperationsBoard from "@/components/tables/OperationsBoard";
 
 const OperatorDashboard = () => {
-	const { activeClasses, setSelectedOperator, operators, fetchOperators } =
+	const { setSelectedOperator, operators, fetchOperators } =
 		useOperatorsStore();
 
-	const [clickedOperator, setClickedOperator] = useState(null);
-	const selectedClass =
-		activeClasses[clickedOperator?._id] || clickedOperator?.class;
+	const [setClickedOperator] = useState(null);
 
 	const [dataUpdated, setDataUpdated] = useState(false);
-
-	const refreshData = () => {
-		setDataUpdated((prev) => !prev); // Toggles state to trigger useEffect in children
-	};
+	const refreshData = () => setDataUpdated((prev) => !prev);
 
 	const { openSheet, setOpenSheet, closeSheet } = useSheetStore();
 	const [sheetContent, setSheetContent] = useState(null);
@@ -35,25 +29,30 @@ const OperatorDashboard = () => {
 		setSheetDescription(description);
 	};
 
-	return (
-		<div className='bg-transparent flex flex-col p-4 space-y-4'>
-			{/* === GRID LAYOUT === */}
-			<div className='grid grid-cols-1 gap-4 lg:grid-cols-2 flex-grow'>
-				{/* === TEAMS & ROSTER === */}
+	// Shared panel styles
+	const panelClass =
+		"flex-1 min-h-0 overflow-y-auto rounded-3xl shadow-lg shadow-black";
+	const panelShadow = { boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" };
 
-				<div className='space-y-4'>
+	return (
+		<div className='bg-transparent flex flex-col flex-grow p-4 min-h-0'>
+			{/* GRID fills remaining height */}
+			<div className='grid grid-cols-1 lg:grid-cols-2 gap-4 flex-grow min-h-0'>
+				{/* LEFT COLUMN */}
+				<div className='flex flex-col gap-4 min-h-0'>
 					<div
-						className=' shadow-lg shadow-black  rounded-3xl overflow-y-auto h-[450px]'
-						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
+						className={panelClass}
+						style={panelShadow}>
 						<Teams
 							dataUpdated={dataUpdated}
 							refreshData={refreshData}
 							openSheet={handleOpenSheet}
 						/>
 					</div>
+
 					<div
-						className=' shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px]'
-						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
+						className={panelClass}
+						style={panelShadow}>
 						<Roster
 							operators={operators}
 							setClickedOperator={(op) => {
@@ -67,49 +66,21 @@ const OperatorDashboard = () => {
 					</div>
 				</div>
 
-				{/* === GARAGE === */}
-				{/*}	<div className='space-y-4'>
+				{/* RIGHT COLUMN */}
+				<div className='flex flex-col gap-4 min-h-0'>
 					<div
-						className='  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px] '
-						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
-						<Garage
-							dataUpdated={dataUpdated}
-							refreshData={refreshData}
-							openSheet={handleOpenSheet}
-						/>
-					</div>*/}
-				{/* ===ID CARD & LOADOUT=== */}
-				{/*	<div
-						className='  shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px] '
-						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
-						{/*<IdCard
-							operator={clickedOperator}
-							openSheet={handleOpenSheet}
-							selectedClass={selectedClass}
-						/>*/}
-				{/*<AuroaMap selectedAOs={getActiveAOs()} />
-						<Loadout
-							operator={clickedOperator}
-							selectedClass={selectedClass}
-							openSheet={handleOpenSheet}
-						/>
-					</div>
-				</div>*/}
-
-				{/* === INFIRMARY, LOADOUT, GEAR === */}
-				<div className='space-y-4'>
-					<div
-						className=' shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px]'
-						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
+						className={panelClass}
+						style={panelShadow}>
 						<OperationsBoard
 							dataUpdated={dataUpdated}
 							refreshData={refreshData}
 							openSheet={handleOpenSheet}
 						/>
 					</div>
+
 					<div
-						className=' shadow-lg shadow-black rounded-3xl overflow-y-auto h-[450px]'
-						style={{ boxShadow: "-4px 4px 16px rgba(0, 0, 0, 0.99)" }}>
+						className={panelClass}
+						style={panelShadow}>
 						<Infirmary
 							dataUpdated={dataUpdated}
 							refreshData={refreshData}
@@ -121,6 +92,7 @@ const OperatorDashboard = () => {
 					</div>
 				</div>
 			</div>
+
 			{openSheet && (
 				<SheetSide
 					openSheet={openSheet}

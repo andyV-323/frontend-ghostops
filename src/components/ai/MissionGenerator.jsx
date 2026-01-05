@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import { Button } from "@material-tailwind/react";
 import { chatGPTApi } from "@/api";
 import { toast } from "react-toastify";
+import { generateInsertionExtractionPoints } from "@/utils/generatePoints";
 
 function MissionGenerator({
 	onGenerateRandomOps,
@@ -24,6 +25,7 @@ function MissionGenerator({
 	const [generationMode, setGenerationMode] = useState("random");
 	const [missionDescription, setMissionDescription] = useState("");
 	const [loading, setLoading] = useState(false);
+	const [aiLoading, setAiLoading] = useState(false);
 
 	useEffect(() => {
 		// Reset selections when switching modes
@@ -38,11 +40,7 @@ function MissionGenerator({
 		setFallbackExfil(null);
 		setMissionBriefing("");
 	}, [generationMode]);
-	useEffect(() => {
-		if (randomLocationSelection.length > 0) {
-			generateAIMission();
-		}
-	}, [randomLocationSelection]);
+
 	const allProvinceCoordinates = selectedProvince
 		? PROVINCES[selectedProvince].locations.map((loc) => loc.coordinates)
 		: [];
@@ -53,56 +51,46 @@ function MissionGenerator({
 		selectedProvince && PROVINCES[selectedProvince]
 			? PROVINCES[selectedProvince].locations
 			: [];
-	const generateAIMission = async () => {
+	const generateAIBriefing = async () => {
 		if (
 			!selectedProvince ||
 			(!randomLocationSelection.length && !selectedLocations.length)
 		) {
 			toast.warn("Select a province and at least one location first.");
-			toast.error("No province or locations selected.");
 			return;
 		}
 
 		const provinceData = PROVINCES[selectedProvince];
 
-		const missionData = {
-			missionDescription: missionDescription || null,
+		const briefingData = {
+			missionDescription: missionDescription || "",
 			biome: provinceData.biome,
 			provinceDescription: provinceData.description || "unknown",
-			bounds: provinceData.coordinates.bounds,
-			coordinates:
-				randomLocationSelection.length > 0
-					? randomLocationSelection
-					: selectedLocations,
-			allProvinceCoordinates: allProvinceCoordinates,
 		};
 
 		try {
-			const aiResponse = await chatGPTApi("mission", missionData);
+			const aiResponse = await chatGPTApi("briefing", briefingData);
 
-			if (aiResponse && aiResponse.result) {
-				// More robust cleaning
-				const cleanedResponse = aiResponse.result
-					.replace(/```json\n?/g, "")
-					.replace(/\n?```/g, "")
-					.replace(/```/g, "")
-					.replace(/,(\s*[}\]])/g, "$1") // Remove trailing commas
-					.trim();
+			// RapidAPI wrappers vary: support multiple response shapes
+			const rawText =
+				aiResponse?.result ??
+				aiResponse?.choices?.[0]?.message?.content ??
+				aiResponse?.output ??
+				"";
 
-				const parsedResponse = JSON.parse(cleanedResponse);
-
-				setMissionBriefing(parsedResponse.briefing || "No briefing provided.");
-				setInfilPoint(parsedResponse.infilPoint || [0, 0]);
-				setExfilPoint(parsedResponse.exfilPoint || [0, 0]);
-				setFallbackExfil(parsedResponse.fallbackExfil || [0, 0]);
-
-				toast.success("Mission briefing generated successfully!");
-			} else {
-				toast.error("AI Response is invalid or empty!");
+			if (!rawText || typeof rawText !== "string") {
+				toast.error("AI briefing response is empty.");
+				return;
 			}
+
+			// Clean any accidental code fences
+			const cleaned = rawText.replace(/```/g, "").trim();
+
+			setMissionBriefing(cleaned);
+			toast.success("Mission briefing generated!");
 		} catch (error) {
 			console.error(
-				"AI Mission Generation Failed:",
+				"AI Briefing Generation Failed:",
 				error.response?.data || error
 			);
 			toast.error("Failed to generate mission briefing.");
@@ -111,69 +99,51 @@ function MissionGenerator({
 
 	//Province selection and number of locations
 	const generateRandomOps = async () => {
-		// Check if valid selections were made
 		if (!selectedProvince || numberOfLocations <= 0) {
-			let message = "";
-			if (!selectedProvince) {
-				message += toast.warn("Please select a province. ");
-			}
-			if (numberOfLocations <= 0) {
-				message += toast.warn(
-					"The number of locations must be greater than 0."
-				);
-			}
-			setErrMsg(message);
-			return Promise.reject(); // Stop execution if validation fails
+			if (!selectedProvince) toast.warn("Please select a province.");
+			if (numberOfLocations <= 0)
+				toast.warn("The number of locations must be > 0.");
+			throw new Error("Invalid selections");
 		}
 
-		setErrMsg("");
+		const provinceData = PROVINCES[selectedProvince];
+		let locationsInProvince = [...provinceData.locations];
 
-		return new Promise((resolve) => {
-			if (selectedProvince && numberOfLocations > 0) {
-				const provinceData = PROVINCES[selectedProvince];
-				let locationsInProvince = [...provinceData.locations];
-				const ops = [];
+		// Shuffle
+		for (let i = locationsInProvince.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[locationsInProvince[i], locationsInProvince[j]] = [
+				locationsInProvince[j],
+				locationsInProvince[i],
+			];
+		}
 
-				// Shuffle locations
-				for (let i = locationsInProvince.length - 1; i > 0; i--) {
-					const j = Math.floor(Math.random() * (i + 1));
-					[locationsInProvince[i], locationsInProvince[j]] = [
-						locationsInProvince[j],
-						locationsInProvince[i],
-					];
-				}
+		// Pick subset
+		const ops = locationsInProvince.slice(
+			0,
+			Math.min(numberOfLocations, locationsInProvince.length)
+		);
 
-				// Pick a subset of locations
-				for (
-					let i = 0;
-					i < Math.min(numberOfLocations, locationsInProvince.length);
-					i++
-				) {
-					ops.push(locationsInProvince[i]);
-				}
+		const bounds = provinceData.coordinates.bounds;
+		const coordinates = ops.map((loc) => loc.coordinates);
+		const imgURL = provinceData.imgURL;
+		const biome = provinceData.biome;
 
-				// Set bounds and coordinates for the selected province
-				const bounds = provinceData.coordinates.bounds;
-				const coordinates = ops.map((location) => location.coordinates);
-				const imgURL = provinceData.imgURL;
-				const biome = provinceData.biome;
-
-				// Pass the generated data to the parent component
-				onGenerateRandomOps({
-					selectedProvince,
-					allProvinceCoordinates,
-					bounds,
-					coordinates,
-					randomSelection: ops,
-					imgURL,
-					biome,
-				});
-
-				// **Set state and resolve promise after state updates**
-				setRandomSelection(ops);
-				resolve();
-			}
+		onGenerateRandomOps({
+			selectedProvince,
+			allProvinceCoordinates,
+			bounds,
+			coordinates,
+			randomSelection: ops,
+			imgURL,
+			biome,
 		});
+
+		// keep state for UI
+		setRandomSelection(ops);
+
+		// ✅ return ops so caller can use immediately
+		return ops;
 	};
 
 	const generateOps = async () => {
@@ -213,9 +183,6 @@ function MissionGenerator({
 			imgURL,
 			biome,
 		});
-
-		// Update the state
-		setSelectedLocations(validLocations);
 	};
 
 	// Function to handle incrementing the number of locations
@@ -228,21 +195,44 @@ function MissionGenerator({
 		setNumberOfLocations((prevCount) => Math.max(0, prevCount - 1)); // Prevent negative values
 	};
 	// Handles the function selection between "Random Generator" and "Generate Ops"
-	const handleGenerate = async () => {
+	const handleGenerateMission = async () => {
 		setLoading(true);
+
+		// clear map + points (optional)
 		setMapBounds(null);
 		setImgURL("");
 		setErrMsg("");
-		setSelectedLocations([]);
-		setRandomSelection([]);
+		setInfilPoint(null);
+		setExfilPoint(null);
+		setFallbackExfil(null);
 
-		if (generationMode === "random") {
-			await generateRandomOps();
-		} else {
-			await generateOps();
-			await generateAIMission();
+		try {
+			if (generationMode === "random") {
+				const ops = await generateRandomOps();
+				generateNonAIPoints(ops);
+			} else {
+				await generateOps();
+				generateNonAIPoints();
+			}
+		} catch (e) {
+			console.error(e);
+		} finally {
+			setLoading(false);
 		}
-		setTimeout(() => setLoading(false), 5000); // Ensures a smooth transition
+	};
+	const handleGenerateBriefing = async () => {
+		// do not require locations if you truly don’t want to
+		if (!selectedProvince) {
+			toast.error("Select a province first.");
+			return;
+		}
+		setAiLoading(true);
+
+		try {
+			await generateAIBriefing();
+		} finally {
+			setAiLoading(false);
+		}
 	};
 
 	const handleModeChange = (mode) => {
@@ -254,6 +244,54 @@ function MissionGenerator({
 		setImgURL("");
 
 		setErrMsg("");
+	};
+	const generateNonAIPoints = (pickedLocations = null) => {
+		if (!selectedProvince) {
+			toast.error("Please select a province first.");
+			return;
+		}
+
+		const provinceData = PROVINCES[selectedProvince];
+
+		let missionCoordinates = [];
+
+		// ✅ if caller provided fresh random picks, use them
+		if (pickedLocations && pickedLocations.length > 0) {
+			missionCoordinates = pickedLocations.map((loc) => loc.coordinates);
+		} else if (randomLocationSelection.length > 0) {
+			missionCoordinates = randomLocationSelection.map(
+				(loc) => loc.coordinates
+			);
+		} else if (selectedLocations.length > 0) {
+			missionCoordinates = selectedLocations
+				.map((name) => provinceData.locations.find((l) => l.name === name))
+				.filter(Boolean)
+				.map((loc) => loc.coordinates);
+		}
+
+		if (missionCoordinates.length === 0) {
+			toast.error("Pick at least one mission location first.");
+			return;
+		}
+
+		try {
+			const { infilPoint, exfilPoint, fallbackExfil } =
+				generateInsertionExtractionPoints({
+					bounds: provinceData.coordinates.bounds,
+					missionCoordinates,
+					allProvinceCoordinates,
+					maxAttempts: 20000,
+				});
+
+			setInfilPoint(infilPoint);
+			setExfilPoint(exfilPoint);
+			setFallbackExfil(fallbackExfil);
+
+			toast.success("Generated infil/exfil/rally points!");
+		} catch (err) {
+			console.error(err);
+			toast.error(err.message || "Failed to generate points.");
+		}
 	};
 
 	return (
@@ -388,15 +426,27 @@ function MissionGenerator({
 							{loading ? (
 								<div className='w-10 h-10 border-4 border-gray-300 border-t-highlight rounded-full animate-spin'></div>
 							) : (
-								<Button
-									className='bg-transparent text-white font-semibold py-3 px-8 rounded-lg  mt-6'
-									onClick={handleGenerate}>
-									<img
-										src='/icons/ai.svg'
-										alt='AI Icon'
-										className='bg-blk/50 hover:bg-highlight rounded'
-									/>
-								</Button>
+								<div className='flex flex-col items-center bg-transparent gap-3 mt-6'>
+									<Button
+										className='btn'
+										onClick={handleGenerateMission}
+										disabled={loading}>
+										Generate Mission
+									</Button>
+
+									<Button
+										className='bg-transparent py-3 px-8 rounded-lg  mt-6 flex flex-col items-center text-font'
+										onClick={handleGenerateBriefing}
+										disabled={aiLoading}>
+										<img
+											src='/icons/ai.svg'
+											alt='AI Icon'
+											className='bg-blk/50 hover:bg-highlight rounded '
+										/>
+										<br />
+										Generate Briefing
+									</Button>
+								</div>
 							)}
 						</>
 					</div>
