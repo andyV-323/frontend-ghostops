@@ -226,6 +226,24 @@ export const GARAGE = [
 		imgUrl: "/img/Drone.png",
 	},
 	{
+		name: "RQ-7 Shadow",
+		timer: 900,
+		type: "UAV",
+		imgUrl: "/img/rq-7.png",
+	},
+	{
+		name: "AC-130 Gunship",
+		timer: 900,
+		type: "Aircraft",
+		imgUrl: "/img/ac-130.png",
+	},
+	{
+		name: "A-10 Warthog",
+		timer: 900,
+		type: "Aircraft",
+		imgUrl: "/img/a-10.png",
+	},
+	{
 		name: "JLTV",
 		type: "Heavy",
 		fuelCapacity: 38,

@@ -10,6 +10,10 @@ import { PropTypes } from "prop-types";
 import { useToggleExpand } from "@/hooks";
 import { useMissionsStore } from "@/zustand";
 import { NewMissionForm, EditMissionForm } from "../forms";
+import { GARAGE } from "@/config/GARAGE"; // adjust path
+const GARAGE_BY_NAME = Object.fromEntries(
+	GARAGE.map((g) => [g.name.toLowerCase(), g])
+);
 
 const OperationsBoard = ({ dataUpdated, openSheet }) => {
 	const { missions, fetchMissions } = useMissionsStore();
@@ -31,6 +35,33 @@ const OperationsBoard = ({ dataUpdated, openSheet }) => {
 			default:
 				return "text-gray-400";
 		}
+	};
+
+	const getAssetDisplay = (asset) => {
+		// asset could be string like "Abider"
+		if (typeof asset === "string") {
+			const g = GARAGE_BY_NAME[asset.toLowerCase()];
+			return {
+				key: asset,
+				label: asset,
+				imgUrl: g?.imgUrl,
+			};
+		}
+
+		// asset object (from DB populate)
+		const vehicleName = asset?.vehicle || asset?.name || "";
+		const label =
+			asset?.nickName && asset.nickName !== "None"
+				? asset.nickName
+				: vehicleName;
+
+		// try direct imgUrl from DB, else fall back to GARAGE config by vehicle name
+		const g = GARAGE_BY_NAME[(vehicleName || "").toLowerCase()];
+		return {
+			key: asset?._id || label || vehicleName || Math.random().toString(36),
+			label: label || "Unknown",
+			imgUrl: asset?.imgUrl || g?.imgUrl,
+		};
 	};
 
 	return (
@@ -216,23 +247,40 @@ const OperationsBoard = ({ dataUpdated, openSheet }) => {
 																					</span>
 																				</div>
 
-																				<div className='text-xs'>
-																					<span className='text-gray-500'>
-																						Assets:{" "}
-																					</span>
-																					<span className='text-gray-400'>
-																						{team.assets &&
-																						team.assets.length > 0
-																							? team.assets
-																									.map((v) =>
-																										v.nickName &&
-																										v.nickName !== "None"
-																											? v.nickName
-																											: v.vehicle
-																									)
-																									.join(", ")
-																							: ""}
-																					</span>
+																				<div className='flex flex-wrap items-center gap-2'>
+																					{team.assets &&
+																					team.assets.length > 0 ? (
+																						team.assets.map((a) => {
+																							const { key, label, imgUrl } =
+																								getAssetDisplay(a);
+
+																							return (
+																								<div
+																									key={key}
+																									className='flex items-center gap-2 rounded-md border border-lines/30 bg-blk/40 px-2 py-1'
+																									title={label}>
+																									{imgUrl ? (
+																										<img
+																											src={imgUrl}
+																											alt={label}
+																											className='h-30 w-30 rounded object-contain'
+																											loading='lazy'
+																										/>
+																									) : (
+																										<div className='h-6 w-6 rounded bg-gray-700/50' />
+																									)}
+
+																									<span className='text-xs text-gray-300'>
+																										{label}
+																									</span>
+																								</div>
+																							);
+																						})
+																					) : (
+																						<span className='text-xs text-gray-500'>
+																							None
+																						</span>
+																					)}
 																				</div>
 																			</div>
 																		);

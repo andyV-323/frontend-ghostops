@@ -23,7 +23,6 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		assignRandomInjury,
 		assignRandomKIAInjury,
 		transferOperator,
-		addOperatorToTeam,
 		updateTeam,
 		removeAllOperatorsFromTeams,
 		addVehicleToTeam,
@@ -41,7 +40,6 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		closeDialog: closeRemoveAllDialog,
 		confirmAction: confirmRemoveAll,
 	} = useConfirmDialog();
-	const allOperators = useTeamsStore((state) => state.allOperators);
 	const allVehicles = useTeamsStore((s) => s.allVehicles);
 	const fullVehicleList = useTeamsStore((s) => s.fullVehicleList);
 	const [injuryType, setInjuryType] = useState("choice");
@@ -63,13 +61,6 @@ const Teams = ({ dataUpdated, openSheet }) => {
 
 	const handleAssignRandomKIAInjury = (operatorId) => {
 		assignRandomKIAInjury(operatorId, userId);
-	};
-
-	const getOperatorTeam = (operatorId) => {
-		const team = teams.find((team) =>
-			team.operators.some((op) => op._id === operatorId)
-		);
-		return team ? team.name : "Unassigned";
 	};
 
 	// Handle AO change for specific team
@@ -331,51 +322,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 										<td
 											colSpan='3'
 											className='text-center bg-blk/50 py-2'>
-											{/* Operators Dropdown Section */}
-											<div className='mb-4 text-xs'>
-												<h2 className='mb-4 text-xs font-bold text-fontz'>
-													{isMobile
-														? "Add/Transfer Operators"
-														: "Add Operators"}
-												</h2>
-												{isMobile && (
-													<p className='text-xs text-gray-400 mb-2'>
-														Use the dropdown below to move operators between
-														teams
-													</p>
-												)}
-											</div>
-											<select
-												className='bg-blk/50 border border-lines rounded-lg block w-full p-2.5 text-fontz outline-lines text-xs'
-												onChange={(e) => {
-													const selectedOperator = e.target.value;
-													if (selectedOperator) {
-														addOperatorToTeam(selectedOperator, team._id);
-														e.target.value = ""; // Reset select
-													}
-												}}>
-												<option value=''>-- Select an Operator --</option>
-												{allOperators
-													.filter(
-														(operator) =>
-															// Filter out operators already in this team
-															!team.operators.some(
-																(teamOp) => teamOp._id === operator._id
-															)
-													)
-													.map((operator) => (
-														<option
-															key={operator._id}
-															value={operator._id}>
-															{operator.callSign} - {operator.class} -{" "}
-															{operator.specialization}{" "}
-															{operator.secondaryClass} - Team:{" "}
-															{getOperatorTeam(operator._id)}
-														</option>
-													))}
-											</select>
-											{/*ASSETS SECTION}
-{/* ASSETS SECTION */}
+											{/* ASSETS SECTION */}
 											<div className='mt-6'>
 												<h2 className='mb-3 text-xs font-bold text-fontz'>
 													Assets (Vehicles)
