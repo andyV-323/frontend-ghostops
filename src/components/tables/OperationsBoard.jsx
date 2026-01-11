@@ -10,7 +10,7 @@ import { PropTypes } from "prop-types";
 import { useToggleExpand } from "@/hooks";
 import { useMissionsStore } from "@/zustand";
 import { NewMissionForm, EditMissionForm } from "../forms";
-import { GARAGE } from "@/config/GARAGE"; // adjust path
+import { GARAGE } from "@/config";
 const GARAGE_BY_NAME = Object.fromEntries(
 	GARAGE.map((g) => [g.name.toLowerCase(), g])
 );
