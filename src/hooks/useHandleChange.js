@@ -9,11 +9,10 @@ const useHandleChange = () => {
 
 		if (!selectedOperator) return;
 
-		if (["recon", "technical", "aviator"].includes(name)) {
+		if (["support", "aviator"].includes(name)) {
 			setSelectedOperator({
 				...selectedOperator,
-				recon: false,
-				technical: false,
+				support: false,
 				aviator: false,
 				[name]: checked,
 			});

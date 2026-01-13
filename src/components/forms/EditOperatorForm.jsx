@@ -148,86 +148,60 @@ const EditOperatorForm = ({ operator }) => {
 						</div>
 
 						<br />
-						{/** RECON SECTION **/}
+						{/** SUPPORT SECTION **/}
 						<div className='flex flex-col w-full'>
-							{/** RECON CHECKBOX **/}
+							{/** SUPPORT CHECKBOX **/}
 							<div className='flex items-center gap-3 mb-4'>
 								<input
 									type='checkbox'
-									id='recon'
-									name='recon'
+									id='support'
+									name='support'
 									className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
-									checked={selectedOperator?.recon || false}
+									checked={selectedOperator?.support || false}
 									onChange={handleChange}
 								/>
 								<label
-									htmlFor='recon'
+									htmlFor='support'
 									className='text-sm font-medium text-gray-300 cursor-pointer'>
 									<h3
 										className='text-lg
 											font-semibold
 											text-fontz
 											'>
-										Recon
+										Support
 									</h3>
 								</label>
 							</div>
 
-							{/** TECHNICAL SECTION **/}
-							<div className=' rounded-lg'>
-								{/** TECHNICAL CHECKBOX **/}
-								<div className='flex items-center gap-3 mb-4'>
-									<input
-										type='checkbox'
-										id='technical'
-										name='technical'
-										className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
-										checked={selectedOperator?.technical || false}
-										onChange={handleChange}
-									/>
-									<label
-										htmlFor='technical'
-										className='text-sm font-medium text-gray-300 cursor-pointer'>
-										<h3
-											className='text-lg
+							{/** AVIATOR SECTION **/}
+							<div className='flex items-center gap-3 mb-4'>
+								<input
+									type='checkbox'
+									id='aviator'
+									name='aviator'
+									className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
+									checked={selectedOperator?.aviator || false}
+									onChange={handleChange}
+								/>
+								<label
+									htmlFor='aviator'
+									className='text-sm font-medium text-gray-300 cursor-pointer'>
+									<h3
+										className='text-lg
 											font-semibold
 											text-fontz
 											'>
-											Technical
-										</h3>
-									</label>
-								</div>
-
-								{/** AVIATOR SECTION **/}
-								<div className='flex items-center gap-3 mb-4'>
-									<input
-										type='checkbox'
-										id='aviator'
-										name='aviator'
-										className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
-										checked={selectedOperator?.aviator || false}
-										onChange={handleChange}
-									/>
-									<label
-										htmlFor='aviator'
-										className='text-sm font-medium text-gray-300 cursor-pointer'>
-										<h3
-											className='text-lg
-											font-semibold
-											text-fontz
-											'>
-											Aviator
-										</h3>
-									</label>
-								</div>
-
-								<Button
-									type='submit'
-									className='btn'
-									onClick={(e) => handleUpdateOperator(e, operatorId)}>
-									Update
-								</Button>
+										Aviator
+									</h3>
+								</label>
 							</div>
+
+							<Button
+								type='submit'
+								className='btn'
+								onClick={(e) => handleUpdateOperator(e, operatorId)}>
+								Update
+							</Button>
 						</div>
 					</div>
 				</form>

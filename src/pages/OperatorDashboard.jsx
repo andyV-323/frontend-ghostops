@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { SheetSide } from "@/components";
 import { Roster, Infirmary, Memorial, Teams } from "@/components/tables";
 import { useOperatorsStore, useSheetStore } from "@/zustand";
-import OperationsBoard from "@/components/tables/OperationsBoard";
 
 const OperatorDashboard = () => {
 	const { setSelectedOperator, operators, fetchOperators } =
@@ -43,16 +42,6 @@ const OperatorDashboard = () => {
 					<div
 						className={panelClass}
 						style={panelShadow}>
-						<Teams
-							dataUpdated={dataUpdated}
-							refreshData={refreshData}
-							openSheet={handleOpenSheet}
-						/>
-					</div>
-
-					<div
-						className={panelClass}
-						style={panelShadow}>
 						<Roster
 							operators={operators}
 							setClickedOperator={(op) => {
@@ -64,6 +53,12 @@ const OperatorDashboard = () => {
 							openSheet={handleOpenSheet}
 						/>
 					</div>
+
+					<div
+						className={panelClass}
+						style={panelShadow}>
+						placeholder
+					</div>
 				</div>
 
 				{/* RIGHT COLUMN */}
@@ -71,7 +66,7 @@ const OperatorDashboard = () => {
 					<div
 						className={panelClass}
 						style={panelShadow}>
-						<OperationsBoard
+						<Teams
 							dataUpdated={dataUpdated}
 							refreshData={refreshData}
 							openSheet={handleOpenSheet}

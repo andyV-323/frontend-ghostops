@@ -6,32 +6,6 @@ const GhostID = () => {
 	const handleChange = useHandleChange();
 	const { selectedOperator, setSelectedOperator } = useOperatorsStore();
 
-	// Handle recon toggle
-	const handleReconChange = (e) => {
-		const isRecon = e.target.checked;
-		setSelectedOperator({
-			...selectedOperator,
-			recon: isRecon,
-			// Clear role if no longer a recon
-			role: isRecon ? selectedOperator?.role : "",
-		});
-	};
-	const handleTechnicalChange = (e) => {
-		const isTechnical = e.target.checked;
-		setSelectedOperator({
-			...selectedOperator,
-			technical: isTechnical,
-			role: isTechnical ? selectedOperator?.role : "",
-		});
-	};
-	const handleAviatorChange = (e) => {
-		const isAviator = e.target.checked;
-		setSelectedOperator({
-			...selectedOperator,
-			aviator: isAviator,
-			role: isAviator ? selectedOperator?.role : "",
-		});
-	};
 	return (
 		<div>
 			<h2 className='mb-4 text-xl font-bold text-fontz'>I.D</h2>
@@ -115,78 +89,52 @@ const GhostID = () => {
 					</p>
 				</div>
 				<br />
-				{/** RECON SECTION **/}
+				{/** SUPPORT SECTION **/}
 				<div className='flex flex-col w-full'>
-					{/** RECON CHECKBOX **/}
+					{/** SUPPORT CHECKBOX **/}
 					<div className='flex items-center gap-3 mb-4'>
 						<input
 							type='checkbox'
-							id='recon'
-							name='recon'
+							id='support'
+							name='support'
 							className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
-							checked={selectedOperator?.recon || false}
+							checked={selectedOperator?.support || false}
 							onChange={handleChange}
 						/>
 						<label
-							htmlFor='recon'
+							htmlFor='support'
 							className='text-sm font-medium text-gray-300 cursor-pointer'>
 							<h3
 								className='text-lg
 														font-semibold
 														text-fontz
 														'>
-								Recon
+								Support
 							</h3>
 						</label>
 					</div>
 
-					{/** TECHNICAL SECTION **/}
-					<div className=' rounded-lg'>
-						{/** TECHNICAL CHECKBOX **/}
-						<div className='flex items-center gap-3 mb-4'>
-							<input
-								type='checkbox'
-								id='technical'
-								name='technical'
-								className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
-								checked={selectedOperator?.technical || false}
-								onChange={handleChange}
-							/>
-							<label
-								htmlFor='technical'
-								className='text-sm font-medium text-gray-300 cursor-pointer'>
-								<h3
-									className='text-lg
+					{/** AVIATOR SECTION **/}
+					<div className='flex items-center gap-3 mb-4'>
+						<input
+							type='checkbox'
+							id='aviator'
+							name='aviator'
+							className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
+							checked={selectedOperator?.aviator || false}
+							onChange={handleChange}
+						/>
+						<label
+							htmlFor='aviator'
+							className='text-sm font-medium text-gray-300 cursor-pointer'>
+							<h3
+								className='text-lg
 														font-semibold
 														text-fontz
 														'>
-									Technical
-								</h3>
-							</label>
-						</div>
-
-						{/** AVIATOR SECTION **/}
-						<div className='flex items-center gap-3 mb-4'>
-							<input
-								type='checkbox'
-								id='aviator'
-								name='aviator'
-								className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
-								checked={selectedOperator?.aviator || false}
-								onChange={handleChange}
-							/>
-							<label
-								htmlFor='aviator'
-								className='text-sm font-medium text-gray-300 cursor-pointer'>
-								<h3
-									className='text-lg
-														font-semibold
-														text-fontz
-														'>
-									Aviator
-								</h3>
-							</label>
-						</div>
+								Aviator
+							</h3>
+						</label>
 					</div>
 				</div>
 			</div>

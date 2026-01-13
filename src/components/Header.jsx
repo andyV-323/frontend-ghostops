@@ -6,7 +6,7 @@ import { faBars, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
 
 const Header = () => {
-	//AWS Cognito
+	// AWS Cognito
 	const { isAuthenticated, user, signIn, signUp, signOut } = useAuthService();
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -14,7 +14,7 @@ const Header = () => {
 		<>
 			{/* === TOP NAVBAR (VISIBLE ONLY WHEN NOT LOGGED IN) === */}
 			{!isAuthenticated && (
-				<header className='fixed top-0 left-0 w-full bg-black backdrop-blur-lg p-4 flex justify-between items-center'>
+				<header className='fixed top-0 left-0 w-full bg-black backdrop-blur-lg p-4 flex justify-between items-center z-[1002]'>
 					<img
 						src='/icons/GhostOpsAI.svg'
 						alt='GhostOpsAI Logo'
@@ -41,13 +41,21 @@ const Header = () => {
 				<>
 					{/* Sidebar Toggle Button */}
 					<button
-						onClick={() => setSidebarOpen(!sidebarOpen)}
-						className='fixed top-1 left-1 z-[1001] hover:text-white text-black bg-btn p-2 rounded-lg shadow-lg focus:outline-none hover:bg-highlight'>
+						onClick={() => setSidebarOpen((prev) => !prev)}
+						className='fixed top-1 left-1 z-[1001] hover:text-black text-white bg-blk p-2 rounded-lg shadow-lg focus:outline-none hover:bg-lines'>
 						<FontAwesomeIcon
 							icon={sidebarOpen ? faTimes : faBars}
-							className='text-lg '
+							className='text-lg'
 						/>
 					</button>
+
+					{/* Click-outside overlay (only when open) */}
+					{sidebarOpen && (
+						<div
+							onClick={() => setSidebarOpen(false)}
+							className='fixed inset-0 bg-black/40 z-[999]'
+						/>
+					)}
 
 					{/* Sidebar Panel */}
 					<div
@@ -57,20 +65,20 @@ const Header = () => {
 						{/* User Info */}
 						<div className='flex flex-col items-center'>
 							<img
-								src={user?.profile.picture || "/icons/GhostOpsAI.svg"}
+								src={user?.profile?.picture || "/icons/GhostOpsAI.svg"}
 								className='mt-10'
 								alt='User Avatar'
 							/>
-							<p className='mt-2 text-sm'>{user?.profile.email || "User"}</p>
+							<p className='mt-2 text-sm'>{user?.profile?.email || "User"}</p>
 						</div>
 
 						{/* Quick Links */}
-						<div className='flex flex-col items-center text-fontz '>
-							<ul>
+						<div className='flex flex-col items-center text-fontz'>
+							<ul className='space-y-3'>
 								<li>
 									<Link
 										to='/dashboard'
-										className='hover:underline hover:text-white '>
+										className='hover:underline hover:text-white'>
 										Home
 									</Link>
 								</li>
@@ -78,28 +86,35 @@ const Header = () => {
 									<Link
 										to='/dashboard/briefing'
 										className='hover:underline hover:text-white'>
-										Briefing
+										Mission Generator
 									</Link>
 								</li>
-								{/*<li>
-								<Link
-										to='/dashboard/stats'
-										className='hover:underline hover:text-white'>
-										Tutorial
-									</Link>
-								</li>*/}
 								<li>
 									<Link
 										to='/dashboard/newOperator'
 										className='hover:underline hover:text-white'>
-										Create Operator
+										New Operator
 									</Link>
 								</li>
 								<li>
 									<Link
 										to='/dashboard/newTeam'
 										className='hover:underline hover:text-white'>
-										Create Team
+										New Team
+									</Link>
+								</li>
+								<li>
+									<Link
+										to='/dashboard/vehicleSimulator'
+										className='hover:underline hover:text-white'>
+										Assets
+									</Link>
+								</li>
+								<li>
+									<Link
+										to='/dashboard/newVehicle'
+										className='hover:underline hover:text-white'>
+										New Asset
 									</Link>
 								</li>
 							</ul>

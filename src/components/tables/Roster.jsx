@@ -1,5 +1,5 @@
 // Desc: This component displays operators in a tabbed interface.
-// Users can switch between viewing regular operators, recon operators, and aviators.
+// Users can switch between viewing regular operators, support operators, and aviators.
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUserPlus, faUserPen } from "@fortawesome/free-solid-svg-icons";
@@ -36,24 +36,19 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 	// Filter operators: aviators, specialists, and regular operators
 	const aviatorOperators = operators.filter((op) => op.aviator === true);
 
-	const technicalOperators = operators.filter((op) => op.technical === true);
-
-	const reconOperators = operators.filter((op) => op.recon === true);
+	const supportOperators = operators.filter((op) => op.support === true);
 
 	const regularOperators = operators.filter(
-		(op) => op.recon !== true && op.technical !== true && op.aviator !== true
+		(op) => op.support !== true && op.aviator !== true
 	);
 
 	const currentOperators =
 		activeTab === "roster"
 			? regularOperators
-			: activeTab === "recon"
-			? reconOperators
-			: activeTab === "technical"
-			? technicalOperators
+			: activeTab === "support"
+			? supportOperators
 			: aviatorOperators;
-	const isReconTab = activeTab === "recon";
-	const isTechnicalTab = activeTab === "technical";
+	const isSupportTab = activeTab === "support";
 	const isAviatorTab = activeTab === "aviator";
 
 	const renderOperatorRow = (operator) => {
@@ -135,13 +130,13 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 							openSheet(
 								"right",
 								<EditOperatorForm operator={operator} />,
-								isReconTab
-									? "Edit Recon"
+								isSupportTab
+									? "Edit Support"
 									: isAviatorTab
 									? "Edit Aviator"
 									: "Edit Operator",
-								isReconTab
-									? "Edit the recon operator's info and role."
+								isSupportTab
+									? "Edit the support operator's info and role."
 									: isAviatorTab
 									? "Edit the aviator's info and aircraft assignment."
 									: "Edit the operator's info."
@@ -156,7 +151,7 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 	return (
 		<div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
 			{/** Tab Navigation **/}
-			<div className='flex'>
+			<div className='flex items-center justify-center w-full'>
 				<button
 					className={`px-4 py-2 font-medium text-sm bg-blk/80 border-4 border-highlight/80 rounded-l-lg ${
 						activeTab === "roster"
@@ -168,22 +163,14 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 				</button>
 				<button
 					className={`px-4 py-2 font-medium text-sm bg-blk/80 border-4 border-highlight/80 ${
-						activeTab === "recon"
+						activeTab === "support"
 							? "text-black bg-btn"
 							: "font-medium text-white hover:bg-highlight/40 hover:text-white"
 					}`}
-					onClick={() => setActiveTab("recon")}>
-					Recon ({reconOperators.length})
+					onClick={() => setActiveTab("support")}>
+					Support ({supportOperators.length})
 				</button>
-				<button
-					className={`px-4 py-2 font-medium text-sm bg-blk/80 border-4 border-highlight/80 ${
-						activeTab === "technical"
-							? "text-black bg-btn"
-							: "font-medium text-white hover:bg-highlight/40 hover:text-white"
-					}`}
-					onClick={() => setActiveTab("technical")}>
-					Technical ({technicalOperators.length})
-				</button>
+
 				<button
 					className={`px-4 py-2 font-medium text-sm bg-blk/80 border-4 border-highlight/80 rounded-r-lg ${
 						activeTab === "aviator"
@@ -197,10 +184,8 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 
 			{/** Table Header **/}
 			<h1 className='flex flex-col items-center text-lg text-fontz font-bold py-2'>
-				{isReconTab
-					? "Recon Roster"
-					: isTechnicalTab
-					? "Technical Roster"
+				{isSupportTab
+					? "Support Roster"
 					: isAviatorTab
 					? "Aviator Roster"
 					: "Operator Roster"}
@@ -217,17 +202,13 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 									openSheet(
 										"left",
 										<NewOperatorForm />,
-										isReconTab
-											? "New Recon"
-											: isTechnicalTab
-											? "New Technical"
+										isSupportTab
+											? "New Support"
 											: isAviatorTab
 											? "New Aviator"
 											: "New Operator",
-										isReconTab
-											? "Create a new recon operator with advanced capabilities and specialized training."
-											: isTechnicalTab
-											? "Create a new Technical with advanced equipment and specialized training."
+										isSupportTab
+											? "Create a new support operator with advanced capabilities and specialized training."
 											: isAviatorTab
 											? "Create a new aviator with flight training and aircraft assignments."
 											: "Customize an elite operator by selecting their background, class, loadout, and perks for optimal mission performance."
@@ -250,12 +231,10 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 					) : (
 						<tr>
 							<td
-								colSpan={isReconTab || isAviatorTab ? "6" : "5"}
+								colSpan={isSupportTab || isAviatorTab ? "6" : "5"}
 								className='text-center py-4 text-gray-400'>
-								{isReconTab
-									? "No recon operators found. Promote operators to recon status or add new specialists."
-									: isTechnicalTab
-									? "No technical operator found. Add operators with Technical skills"
+								{isSupportTab
+									? "No support operators found. Promote operators to support status or add new specialists."
 									: isAviatorTab
 									? "No aviators found. Add operators with aviator designation to see them here."
 									: "Click the UserPlus icon to add your first Operator"}

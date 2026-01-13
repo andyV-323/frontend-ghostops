@@ -26,8 +26,7 @@ const defaultOperator = {
 	secondaryname2: "",
 	image: "",
 	bio: "",
-	recon: false,
-	technical: false,
+	support: false,
 	aviator: false,
 	role: "",
 };
