@@ -22,7 +22,7 @@ const VehicleSimulator = () => {
 		setSheetDescription(description);
 	};
 	return (
-		<div>
+		<div className='flex flex-col p-10'>
 			<Garage
 				dataUpdated={dataUpdated}
 				refreshData={refreshData}

@@ -117,7 +117,7 @@ const Garage = ({ dataUpdated, openSheet }) => {
 				return;
 			}
 			toast.error(
-				`Cannot refuel! Vehicle is in Critical condition and needs repair first.`
+				`Cannot refuel! Vehicle is in Critical condition and needs repair first.`,
 			);
 			return;
 		}
@@ -139,7 +139,7 @@ const Garage = ({ dataUpdated, openSheet }) => {
 
 				if (newCondition !== vehicle.condition) {
 					toast.warning(
-						`Vehicle refueled but condition degraded to ${newCondition}. Repair time: ${newRepairTime}h`
+						`Vehicle refueled but condition degraded to ${newCondition}. Repair time: ${newRepairTime}h`,
 					);
 				} else {
 					toast.success("Vehicle refueled successfully!");
@@ -166,7 +166,7 @@ const Garage = ({ dataUpdated, openSheet }) => {
 			toast.info(
 				`Starting repair for ${
 					vehicle.nickname || vehicle.nickName
-				}. This may take a few moments...`
+				}. This may take a few moments...`,
 			);
 
 			// Trigger the AWS EventBridge repair workflow
@@ -178,7 +178,7 @@ const Garage = ({ dataUpdated, openSheet }) => {
 			toast.success(
 				`Repair initiated for ${
 					vehicle.nickname || vehicle.nickName
-				}. The vehicle will be updated once the repair completes.`
+				}. The vehicle will be updated once the repair completes.`,
 			);
 		} catch (error) {
 			console.error("Error starting repair:", error);
@@ -228,312 +228,365 @@ const Garage = ({ dataUpdated, openSheet }) => {
 	}, [vehicles]);
 
 	return (
-		<div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
-			<h1 className='flex flex-col items-center text-lg text-fontz font-bold'>
-				Assets
-			</h1>
-			<table className='w-full text-md text-left text-fontz'>
-				<thead className='text-md text-fontz uppercase bg-linear-to-r/oklch from-blk to-neutral-800'>
-					<tr>
-						<th
-							scope='col'
-							className='px-6 py-3'>
-							<FontAwesomeIcon
-								className='text-xl text-black rounded hover:text-white bg-btn hover:bg-highlight transition-all p-0.5'
-								icon={faParking}
-								onClick={() => {
-									openSheet(
-										"top",
-										<NewVehicleForm />,
-										"New Vehicle",
-										"Add a new vehicle to your garage."
-									);
-								}}
-							/>
-							&nbsp; Nickname
-						</th>
-						<th
-							scope='col'
-							className='px-6 py-3'>
-							Fuel
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					{vehicles.length > 0 ? (
-						vehicles.map((vehicle, index) => (
-							<React.Fragment key={vehicle._id || vehicle.nickname || index}>
-								{/* Main Vehicle Row */}
-								<tr
-									className='cursor-pointer bg-transparent border-b hover:bg-highlight transition-all duration-300'
-									onClick={() => toggleExpand(index)}>
-									<td className='px-6 py-4 font-medium text-gray-400 hover:text-white whitespace-nowrap'>
-										{vehicle.nickname || vehicle.nickName || "Unnamed Vehicle"}
-										{vehicle.isRepairing && (
-											<span className='ml-2 text-xs bg-btn text-white px-2 py-1 rounded animate-pulse'>
-												Repair In Progress
-											</span>
-										)}
-										<div className='text-xs text-gray-500 mt-1'>
-											{vehicle.vehicle || "Unknown"}
-										</div>
-									</td>
+		// PANEL SHELL: fills dashboard cell, clips overflow, header fixed, body scrolls
+		<div className='h-full min-h-0 rounded-3xl shadow-lg shadow-black flex flex-col overflow-hidden bg-transparent'>
+			{/* HEADER (non-scrolling) */}
+			<div className='shrink-0 px-4 py-3 bg-linear-to-r/oklch from-blk to-neutral-800'>
+				<div className='flex items-center justify-between'>
+					<h1 className='text-lg text-fontz font-bold'>Assets</h1>
 
-									<td className='px-6 py-4'>
-										<div className='flex items-center gap-2'>
-											<div className='w-full bg-blk/50 rounded-full h-2.5 dark:bg-gray-700'>
-												<div
-													className={`h-2.5 rounded-full transition-all duration-500 ${
-														vehicle.isRepairing
-															? "bg-btn animate-pulse"
-															: "bg-highlight"
-													}`}
-													style={{
-														width: `${getFuelPercentage(vehicle)}%`,
-													}}></div>
-											</div>
-											<p className='text-xs text-gray-500 min-w-[40px]'>
-												{getFuelDisplay(vehicle)}
-											</p>
-											<FontAwesomeIcon
-												icon={
-													expandedVehicle === index ? faCaretUp : faCaretDown
-												}
-												className='text-gray-400 text-lg hover:text-white transition-all'
-											/>
-										</div>
-									</td>
-								</tr>
+					<FontAwesomeIcon
+						className='text-xl text-black rounded hover:text-white bg-btn hover:bg-highlight transition-all p-0.5 cursor-pointer'
+						icon={faParking}
+						onClick={() => {
+							openSheet(
+								"top",
+								<NewVehicleForm />,
+								"New Vehicle",
+								"Add a new vehicle to your garage.",
+							);
+						}}
+						title='Add Vehicle'
+					/>
+				</div>
+			</div>
 
-								{/* Expanded Section - Vehicle Image */}
-								{expandedVehicle === index && (
-									<tr key={`expanded-${index}`}>
-										<td
-											colSpan='3'
-											className='px-6 py-4'>
-											<div className='flex flex-wrap gap-4 p-2'>
-												{/* Vehicle Image */}
-												<div className='flex justify-center w-full'>
-													<div className='relative'>
-														<img
-															src={getVehicleImage(vehicle)}
-															alt={vehicle.nickname || "Vehicle"}
-															className={`w-100 h-24 object-cover rounded-lg transition-all ${
-																vehicle.isRepairing
-																	? "opacity-75 grayscale-50"
-																	: ""
+			{/* SCROLL AREA (only this scrolls) */}
+			<div className='flex-1 min-h-0 overflow-auto'>
+				{/* Optional: keeps table from feeling stretched on very wide screens */}
+				<div className='max-w-5xl mx-auto px-2 sm:px-4 py-2'>
+					<table className='w-full table-fixed text-md text-left text-fontz'>
+						<thead className='sticky top-0 z-10 text-md text-fontz uppercase bg-linear-to-r/oklch from-blk to-neutral-800'>
+							<tr>
+								<th
+									scope='col'
+									className='w-[65%] px-4 sm:px-6 py-3'>
+									Nickname
+								</th>
+								<th
+									scope='col'
+									className='w-[35%] px-4 sm:px-6 py-3'>
+									Fuel
+								</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							{vehicles.length > 0 ?
+								vehicles.map((vehicle, index) => (
+									<React.Fragment
+										key={
+											vehicle._id ||
+											vehicle.nickname ||
+											vehicle.nickName ||
+											index
+										}>
+										{/* Main Vehicle Row */}
+										<tr
+											className='cursor-pointer bg-transparent border-b border-white/10 hover:bg-highlight/20 transition-all duration-300'
+											onClick={() => toggleExpand(index)}>
+											<td className='px-4 sm:px-6 py-4 font-medium text-gray-400 hover:text-white whitespace-nowrap overflow-hidden text-ellipsis'>
+												<div className='flex items-center gap-2'>
+													<span className='truncate'>
+														{vehicle.nickname ||
+															vehicle.nickName ||
+															"Unnamed Vehicle"}
+													</span>
+
+													{vehicle.isRepairing && (
+														<span className='text-xs bg-btn text-white px-2 py-1 rounded animate-pulse shrink-0'>
+															Repairing
+														</span>
+													)}
+												</div>
+
+												<div className='text-xs text-gray-500 mt-1 truncate'>
+													{vehicle.vehicle || "Unknown"}
+												</div>
+											</td>
+
+											<td className='px-4 sm:px-6 py-4'>
+												<div className='flex items-center gap-2'>
+													<div className='flex-1 bg-blk/50 rounded-full h-2.5 dark:bg-gray-700 overflow-hidden'>
+														<div
+															className={`h-2.5 rounded-full transition-all duration-500 ${
+																vehicle.isRepairing ?
+																	"bg-btn animate-pulse"
+																:	"bg-highlight"
 															}`}
-															onError={(e) => {
-																e.target.src = "/img/default-vehicle.png";
+															style={{
+																width: `${getFuelPercentage(vehicle)}%`,
 															}}
 														/>
 													</div>
-												</div>
 
-												{/* Vehicle Details */}
-												<div className='w-full text-sm text-gray-400 mt-2'>
-													<div className='grid grid-cols-2 gap-2'>
-														<div>
-															<span className='font-semibold'>
-																Vehicle Type:
-															</span>{" "}
-															{getVehicleType(vehicle)}
+													<p className='text-xs text-gray-500 w-[52px] text-right shrink-0'>
+														{getFuelDisplay(vehicle)}
+													</p>
+
+													<FontAwesomeIcon
+														icon={
+															expandedVehicle === index ? faCaretUp : (
+																faCaretDown
+															)
+														}
+														className='text-gray-400 text-lg hover:text-white transition-all shrink-0'
+													/>
+												</div>
+											</td>
+										</tr>
+
+										{/* Expanded Section - Details */}
+										{expandedVehicle === index && (
+											<tr key={`expanded-${index}`}>
+												<td
+													colSpan='2'
+													className='px-4 sm:px-6 py-4 bg-blk/20 border-b border-white/10'>
+													<div className='grid grid-cols-1 md:grid-cols-[320px_1fr] gap-4 items-start'>
+														{/* Vehicle Image */}
+														<div className='flex justify-center md:justify-start'>
+															<img
+																src={getVehicleImage(vehicle)}
+																alt={
+																	vehicle.nickname ||
+																	vehicle.nickName ||
+																	"Vehicle"
+																}
+																className={`w-full max-w-[420px] md:max-w-[320px] h-32 md:h-40 object-cover rounded-xl transition-all ${
+																	vehicle.isRepairing ?
+																		"opacity-75 grayscale"
+																	:	""
+																}`}
+																onError={(e) => {
+																	e.target.src = "/img/default-vehicle.png";
+																}}
+															/>
 														</div>
-														<div>
-															<span className='font-semibold'>Condition:</span>{" "}
-															<span
-																className={`
-																${vehicle.condition === "Optimal" ? "text-green-400" : ""}
-																${vehicle.condition === "Operational" ? "text-yellow-400" : ""}
-																${vehicle.condition === "Compromised" ? "text-orange-400" : ""}
-																${vehicle.condition === "Critical" ? "text-red-400" : ""}
-																${vehicle.isRepairing ? "animate-pulse" : ""}
-															`}>
-																{vehicle.condition}
-																{vehicle.isRepairing && " Repairing"}
-															</span>
-														</div>
-														<div>
-															<span className='font-semibold'>Fuel Level:</span>{" "}
-															{getFuelDisplay(vehicle)}
-														</div>
-														<div>
-															<span className='font-semibold'>
-																Repair Time:
-															</span>{" "}
-															{vehicle.repairTime || 0}h
+
+														{/* Vehicle Details */}
+														<div className='text-sm text-gray-300'>
+															<div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+																<div className='bg-blk/40 rounded-lg p-3'>
+																	<span className='font-semibold text-gray-200'>
+																		Vehicle Type:
+																	</span>{" "}
+																	<span className='text-gray-400'>
+																		{getVehicleType(vehicle)}
+																	</span>
+																</div>
+
+																<div className='bg-blk/40 rounded-lg p-3'>
+																	<span className='font-semibold text-gray-200'>
+																		Condition:
+																	</span>{" "}
+																	<span
+																		className={`
+																			${vehicle.condition === "Optimal" ? "text-green-400" : ""}
+																			${vehicle.condition === "Operational" ? "text-yellow-400" : ""}
+																			${vehicle.condition === "Compromised" ? "text-orange-400" : ""}
+																			${vehicle.condition === "Critical" ? "text-red-400" : ""}
+																			${vehicle.isRepairing ? "animate-pulse" : ""}
+																		`}>
+																		{vehicle.condition}
+																		{vehicle.isRepairing && " (Repairing)"}
+																	</span>
+																</div>
+
+																<div className='bg-blk/40 rounded-lg p-3'>
+																	<span className='font-semibold text-gray-200'>
+																		Fuel Level:
+																	</span>{" "}
+																	<span className='text-gray-400'>
+																		{getFuelDisplay(vehicle)}
+																	</span>
+																</div>
+
+																<div className='bg-blk/40 rounded-lg p-3'>
+																	<span className='font-semibold text-gray-200'>
+																		Repair Time:
+																	</span>{" "}
+																	<span className='text-gray-400'>
+																		{vehicle.repairTime || 0}h
+																	</span>
+																</div>
+															</div>
+
+															{/* Controls */}
+															<div className='mt-4 rounded-xl bg-blk/40 p-4'>
+																<div className='mb-3'>
+																	<h4 className='text-sm font-semibold text-gray-200'>
+																		Vehicle Simulator
+																	</h4>
+																	<p className='text-xs text-gray-500 mt-1'>
+																		{vehicle.isRepairing ?
+																			"Vehicle repair in progress — functions are disabled."
+																		:	"Manage fuel, trips, and repairs."}
+																	</p>
+																</div>
+
+																<div className='flex flex-wrap justify-start gap-3'>
+																	{/* Calculate Trip + Refuel only if available */}
+																	{isVehicleAvailable(vehicle) ?
+																		<>
+																			<Button
+																				className='btn text-sm px-4 py-2'
+																				onClick={() => {
+																					openSheet(
+																						"top",
+																						<TripCalculatorComponent
+																							vehicle={vehicle}
+																							onTripComplete={
+																								handleTripComplete
+																							}
+																						/>,
+																						"Trip Calculator",
+																						`Plan your trip with ${
+																							vehicle.nickname ||
+																							vehicle.nickName
+																						}`,
+																					);
+																				}}>
+																				Calculate Trip
+																			</Button>
+
+																			<Button
+																				className={`text-sm px-4 py-2 ${
+																					canRefuel(vehicle) ? "btn" : (
+																						"bg-gray-600 text-gray-400 cursor-not-allowed"
+																					)
+																				}`}
+																				onClick={() => handleRefuel(vehicle)}
+																				disabled={!canRefuel(vehicle)}
+																				title={
+																					canRefuel(vehicle) ? "Refuel vehicle"
+																					:	`Cannot refuel — vehicle needs repair (${vehicle.condition})`
+																				}>
+																				{canRefuel(vehicle) ?
+																					"Refuel"
+																				:	"Needs Repair"}
+																			</Button>
+																		</>
+																	:	<div className='text-sm px-4 py-2 bg-blk rounded flex items-center'>
+																			Not Available
+																		</div>
+																	}
+
+																	{/* Repair button if needed */}
+																	{canRepair(vehicle) && (
+																		<Button
+																			className='text-sm px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white'
+																			onClick={() => handleRepair(vehicle)}
+																			disabled={vehicle.isRepairing}
+																			title={
+																				vehicle.isRepairing ?
+																					"Repair already in progress"
+																				:	`Repair vehicle to Optimal (${
+																						vehicle.repairTime || 2
+																					}h)`
+																			}>
+																			{vehicle.condition === "Critical" ?
+																				"Emergency Repair"
+																			:	"Repair Vehicle"}
+																		</Button>
+																	)}
+
+																	{/* Repair status */}
+																	{vehicle.isRepairing && (
+																		<Button
+																			className='bg-blk text-white text-sm px-4 py-2 cursor-not-allowed flex items-center'
+																			disabled>
+																			Repair In Progress
+																		</Button>
+																	)}
+																</div>
+
+																{/* Actions */}
+																<div className='mt-4 flex items-center gap-4'>
+																	<FontAwesomeIcon
+																		className={`text-xl transition-all ${
+																			vehicle.isRepairing ?
+																				"text-gray-600 cursor-not-allowed"
+																			:	"text-btn hover:text-white cursor-pointer"
+																		}`}
+																		icon={faGear}
+																		onClick={() => {
+																			if (!vehicle.isRepairing) {
+																				openSheet(
+																					"bottom",
+																					<EditVehicleForm
+																						vehicleId={vehicle._id}
+																					/>,
+																					"Edit Vehicle",
+																					"Modify vehicle details, condition, and fuel level.",
+																				);
+																			} else {
+																				toast.warning(
+																					"Cannot edit vehicle while it's being repaired",
+																				);
+																			}
+																		}}
+																		title={
+																			vehicle.isRepairing ?
+																				"Cannot edit while repairing"
+																			:	"Edit vehicle"
+																		}
+																	/>
+
+																	<FontAwesomeIcon
+																		icon={faTrash}
+																		className={`text-xl transition-all ${
+																			vehicle.isRepairing ?
+																				"text-gray-600 cursor-not-allowed"
+																			:	"text-btn hover:text-white cursor-pointer"
+																		}`}
+																		onClick={(e) => {
+																			if (!vehicle.isRepairing) {
+																				handleDeleteClick(vehicle, e);
+																			} else {
+																				e.stopPropagation();
+																				toast.warning(
+																					"Cannot delete vehicle while it's being repaired",
+																				);
+																			}
+																		}}
+																		title={
+																			vehicle.isRepairing ?
+																				"Cannot delete while repairing"
+																			:	`Delete ${
+																					vehicle.nickname || vehicle.nickName
+																				}`
+																		}
+																	/>
+																</div>
+															</div>
 														</div>
 													</div>
-												</div>
-											</div>
-										</td>
-									</tr>
-								)}
-
-								{/* Expanded Section - Controls */}
-								{expandedVehicle === index && (
-									<tr>
-										<td
-											colSpan='3'
-											className='text-center bg-blk/50 py-4'>
-											<div className='mb-3'>
-												<h4 className='text-sm font-semibold text-gray-300 mb-2'>
-													Vehicle Simulator
-												</h4>
-												<p className='text-xs text-gray-500'>
-													{vehicle.isRepairing
-														? "Vehicle repair in progress - functions are disabled"
-														: "Manage your vehicle's fuel and condition"}
-												</p>
-											</div>
-											<div className='flex justify-center gap-3 mb-3'>
-												{/* Only show Calculate Trip and Refuel buttons if vehicle is available */}
-												{isVehicleAvailable(vehicle) ? (
-													<>
-														<Button
-															className='btn text-sm px-4 py-2'
-															onClick={() => {
-																openSheet(
-																	"top",
-																	<TripCalculatorComponent
-																		vehicle={vehicle}
-																		onTripComplete={handleTripComplete}
-																	/>,
-																	"Trip Calculator",
-																	`Plan your trip with ${
-																		vehicle.nickname || vehicle.nickName
-																	}`
-																);
-															}}>
-															Calculate Trip
-														</Button>
-
-														<Button
-															className={`text-sm px-4 py-2 ${
-																canRefuel(vehicle)
-																	? "btn"
-																	: "bg-gray-600 text-gray-400 cursor-not-allowed"
-															}`}
-															onClick={() => handleRefuel(vehicle)}
-															disabled={!canRefuel(vehicle)}
-															title={
-																canRefuel(vehicle)
-																	? "Refuel vehicle"
-																	: `Cannot refuel - vehicle needs repair (${vehicle.condition})`
-															}>
-															{canRefuel(vehicle) ? "Refuel" : "Needs Repair"}
-														</Button>
-													</>
-												) : (
-													<div className='text-sm px-4 py-2 bg-blk rounded flex items-center'>
-														Not Available
-													</div>
-												)}
-
-												{/* Show repair button only if vehicle needs repair and is available */}
-												{canRepair(vehicle) && (
-													<Button
-														className='btn bg-blue-600 hover:bg-blue-700 text-sm px-4 py-2'
-														onClick={() => handleRepair(vehicle)}
-														disabled={vehicle.isRepairing}
-														title={
-															vehicle.isRepairing
-																? "Repair already in progress"
-																: `Repair vehicle to Optimal condition (${
-																		vehicle.repairTime || 2
-																  }h)`
-														}>
-														{vehicle.condition === "Critical"
-															? "Emergency Repair"
-															: "Repair Vehicle"}
-													</Button>
-												)}
-
-												{/* Show repair status if vehicle is being repaired */}
-												{vehicle.isRepairing && (
-													<Button
-														className='bg-blk text-white text-sm px-4 py-2 cursor-not-allowed flex items-center'
-														disabled>
-														Repair In Progress
-													</Button>
-												)}
-											</div>
-											{/* Edit Vehicle Button - always visible but may be disabled */}
+												</td>
+											</tr>
+										)}
+									</React.Fragment>
+								))
+							:	<tr>
+									<td
+										colSpan='2'
+										className='text-center py-10 text-gray-400'>
+										<div className='flex flex-col items-center'>
 											<FontAwesomeIcon
-												className={`cursor-pointer text-xl transition-all ${
-													vehicle.isRepairing
-														? "text-gray-600 cursor-not-allowed"
-														: "text-btn hover:text-white"
-												}`}
-												icon={faGear}
-												onClick={() => {
-													if (!vehicle.isRepairing) {
-														openSheet(
-															"bottom",
-															<EditVehicleForm vehicleId={vehicle._id} />,
-															"Edit Vehicle",
-															"Modify vehicle details, condition, and fuel level."
-														);
-													} else {
-														toast.warning(
-															"Cannot edit vehicle while it's being repaired"
-														);
-													}
-												}}
-												title={
-													vehicle.isRepairing
-														? "Cannot edit while repairing"
-														: "Edit vehicle"
-												}
-											/>{" "}
-											<FontAwesomeIcon
-												icon={faTrash}
-												className={`text-xl cursor-pointer transition-all ${
-													vehicle.isRepairing
-														? "text-gray-600 cursor-not-allowed"
-														: "text-btn hover:text-white"
-												}`}
-												onClick={(e) => {
-													if (!vehicle.isRepairing) {
-														handleDeleteClick(vehicle, e);
-													} else {
-														e.stopPropagation();
-														toast.warning(
-															"Cannot delete vehicle while it's being repaired"
-														);
-													}
-												}}
-												title={
-													vehicle.isRepairing
-														? "Cannot delete while repairing"
-														: `Delete ${vehicle.nickname || vehicle.nickName}`
-												}
+												icon={faParking}
+												className='text-4xl mb-2 text-gray-600'
 											/>
-										</td>
-									</tr>
-								)}
-							</React.Fragment>
-						))
-					) : (
-						<tr>
-							<td
-								colSpan='3'
-								className='text-center py-8 text-gray-400'>
-								<div className='flex flex-col items-center'>
-									<FontAwesomeIcon
-										icon={faParking}
-										className='text-4xl mb-2 text-gray-600'
-									/>
-									<p className='text-lg mb-1'>No vehicles in garage</p>
-									<p className='text-sm'>
-										Click the parking icon to add your first vehicle
-									</p>
-								</div>
-							</td>
-						</tr>
-					)}
-				</tbody>
-			</table>
+											<p className='text-lg mb-1'>No vehicles in garage</p>
+											<p className='text-sm'>
+												Click the parking icon to add your first vehicle
+											</p>
+										</div>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
 
 			{/* Confirm Dialog for Delete */}
 			{isOpen && selectedVehicle && (

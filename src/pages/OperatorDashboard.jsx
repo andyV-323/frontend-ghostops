@@ -53,12 +53,6 @@ const OperatorDashboard = () => {
 							openSheet={handleOpenSheet}
 						/>
 					</div>
-
-					<div
-						className={panelClass}
-						style={panelShadow}>
-						placeholder
-					</div>
 				</div>
 
 				{/* RIGHT COLUMN */}
