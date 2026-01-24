@@ -1,121 +1,104 @@
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
+import { useOperatorsStore } from "@/zustand";
+import { useEffect } from "react";
 
 const OperatorImageView = ({ operator }) => {
-	// Get the full image URL - prioritize imageKey (full body) over image (thumbnail)
-	const getImageUrl = (imagePath) => {
-		if (!imagePath) {
-			return null;
+	const { selectedOperator, fetchOperatorById } = useOperatorsStore();
+
+	// Fetch fresh operator when sheet opens
+	useEffect(() => {
+		if (operator?._id) {
+			fetchOperatorById(operator._id);
 		}
+	}, [operator?._id, fetchOperatorById]);
 
-		// If it's an uploaded image (starts with /uploads/), prepend the API base URL
-		if (imagePath.startsWith("/uploads/")) {
-			const API_BASE_URL =
-				import.meta.env.VITE_API_URL || "http://localhost:8080";
+	if (!selectedOperator) {
+		return (
+			<div className='p-6 text-center text-gray-400'>
+				Loading operator profile...
+			</div>
+		);
+	}
 
-			// Remove /api from the end of API_BASE_URL if it exists
-			const cleanBaseUrl = API_BASE_URL.replace(/\/api\/?$/, "");
-
-			return `${cleanBaseUrl}${imagePath}`;
-		}
-
-		// Otherwise it's a preset Ghost image
-		return imagePath;
-	};
-
-	// Use imageKey (full body) if available, otherwise fall back to image (thumbnail)
-	const fullBodyImageUrl = getImageUrl(operator?.imageKey);
-	const thumbnailImageUrl =
-		getImageUrl(operator?.image) || "/ghost/Default.png";
-
-	// Decide which image to show
-	const displayImageUrl = fullBodyImageUrl || thumbnailImageUrl;
-	const hasFullBodyImage = !!fullBodyImageUrl;
-
-	// Debug logging
-	console.log("Debug - imageKey from DB:", operator?.imageKey);
-	console.log("Debug - Full body URL:", fullBodyImageUrl);
-	console.log("Debug - Display URL:", displayImageUrl);
+	// Prefer full body image (S3), fallback to thumbnail, then default
+	const displayImage =
+		selectedOperator.imageKey || selectedOperator.image || "/ghost/Default.png";
 
 	return (
-		<section className='bg-transparent text-md text-fontz p-4'>
+		<section className='bg-transparent text-fontz p-4'>
 			<div className='flex flex-col items-center'>
-				{/* Operator Info Header */}
+				{/* HEADER */}
 				<div className='mb-6 text-center'>
-					<h2 className='text-2xl font-bold text-fontz mb-2'>
-						{operator?.callSign || "Unknown Operator"}
+					<h2 className='text-2xl font-bold mb-1'>
+						{selectedOperator.callSign || "Unknown Operator"}
 					</h2>
+
 					<p className='text-gray-400'>
-						{operator?.class || "No Class"}{" "}
-						{operator?.role && `• ${operator.role}`}
+						{selectedOperator.class || "No Class"}
+						{selectedOperator.role && ` • ${selectedOperator.role}`}
 					</p>
+
 					<div className='flex items-center justify-center mt-2'>
 						<div
-							className={`h-3 w-3 rounded-full ${
-								operator?.status === "Active" ? "bg-green-500"
-								: operator?.status === "Injured" ? "bg-yellow-500"
+							className={`h-3 w-3 rounded-full me-2 ${
+								selectedOperator.status === "Active" ? "bg-green-500"
+								: selectedOperator.status === "Injured" ? "bg-yellow-500"
 								: "bg-red-500"
-							} me-2`}
+							}`}
 						/>
 						<span className='text-sm text-gray-400'>
-							{operator?.status || "Unknown Status"}
+							{selectedOperator.status || "Unknown Status"}
 						</span>
 					</div>
 				</div>
 
-				{/* Image Display */}
-				<div className='w-full flex justify-center mb-4'>
-					<div className='relative group'>
-						<img
-							src={displayImageUrl}
-							alt={operator?.callSign || "Operator"}
-							className='max-w-full max-h-[600px] rounded-lg shadow-lg border-2 border-gray-700 object-contain bg-gray-800'
-							onError={(e) => {
-								console.error("Image failed to load:", displayImageUrl);
-								e.target.src = "/ghost/Default.png";
-							}}
-						/>
-						{/* Overlay with callsign on hover */}
-						<div className='absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 rounded-lg flex items-end justify-center pb-4'>
-							<span className='text-white text-xl font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300'>
-								{operator?.callSign}
-							</span>
-						</div>
-					</div>
+				{/* IMAGE */}
+				<div className='w-full flex justify-center mb-6'>
+					<img
+						src={displayImage}
+						alt={selectedOperator.callSign}
+						className='max-w-full max-h-[600px] object-contain rounded-xl border-2 border-gray-700 shadow-lg'
+						onError={(e) => {
+							console.error("Image failed to load:", displayImage);
+							e.currentTarget.src = "/ghost/Default.png";
+						}}
+					/>
 				</div>
 
-				{/* Additional Info */}
-				<div className='w-full space-y-3 mt-4 text-sm'>
-					{operator?.support && (
-						<div className='flex items-center justify-center gap-2 bg-blue-900/20 border border-blue-700 rounded-lg px-4 py-2'>
+				{/* TAGS */}
+				<div className='w-full space-y-3 text-sm'>
+					{selectedOperator.support && (
+						<div className='text-center bg-blue-900/20 border border-blue-700 rounded-lg py-2'>
 							<span className='text-blue-400 font-semibold'>
 								⚡ SUPPORT SPECIALIST
 							</span>
 						</div>
 					)}
 
-					{operator?.aviator && (
-						<div className='flex items-center justify-center gap-2 bg-sky-900/20 border border-sky-700 rounded-lg px-4 py-2'>
+					{selectedOperator.aviator && (
+						<div className='text-center bg-sky-900/20 border border-sky-700 rounded-lg py-2'>
 							<span className='text-sky-400 font-semibold'>✈️ AVIATOR</span>
-						</div>
-					)}
-
-					{operator?.bio && (
-						<div className='bg-gray-800/40 rounded-lg p-4 border border-gray-700'>
-							<h3 className='text-fontz font-semibold mb-2'>Bio</h3>
-							<p className='text-gray-400 text-sm whitespace-pre-wrap'>
-								{operator.bio}
-							</p>
 						</div>
 					)}
 				</div>
 
-				{/* Image Info */}
+				{/* BIO */}
+				{selectedOperator.bio && (
+					<div className='mt-6 w-full bg-gray-800/40 rounded-lg p-4 border border-gray-700'>
+						<h3 className='font-semibold mb-2'>Bio</h3>
+						<p className='text-gray-400 whitespace-pre-wrap text-sm'>
+							{selectedOperator.bio}
+						</p>
+					</div>
+				)}
+
+				{/* IMAGE INFO */}
 				<div className='mt-6 text-xs text-gray-500 text-center'>
-					{hasFullBodyImage ?
-						<p>Full Body Image (Custom Upload)</p>
-					: operator?.image?.startsWith("/uploads/") ?
-						<p>Thumbnail Image (Custom Upload)</p>
-					:	<p>Preset Ghost Image</p>}
+					{selectedOperator.imageKey ?
+						"Full Body Image (S3)"
+					: selectedOperator.image?.startsWith("https://") ?
+						"Thumbnail Image (S3)"
+					:	"Preset Ghost Image"}
 				</div>
 			</div>
 		</section>

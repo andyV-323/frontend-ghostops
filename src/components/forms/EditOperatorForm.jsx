@@ -13,7 +13,6 @@ const EditOperatorForm = ({ operator }) => {
 	const { handleUpdateOperator, handleDeleteOperator } = useFormActions();
 	const { closeSheet } = useSheetStore();
 
-	// Ensure we have an operator ID
 	const operatorId = operator._id;
 
 	const {
@@ -25,14 +24,12 @@ const EditOperatorForm = ({ operator }) => {
 	} = useOperatorsStore();
 	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
 
-	// Load operator data when component mounts
 	useEffect(() => {
 		if (operator) {
 			fetchOperatorById(operatorId);
 		}
 	}, [operatorId]);
 
-	// Show loading state if data is still being fetched
 	if (loading || !selectedOperator) {
 		return (
 			<div className='text-center text-gray-400 p-4'>
@@ -49,7 +46,6 @@ const EditOperatorForm = ({ operator }) => {
 		});
 	};
 
-	// Handle full body image upload (imageKey)
 	const handleFullBodyUpload = (imageUrl) => {
 		setSelectedOperator({
 			...selectedOperator,
@@ -57,17 +53,16 @@ const EditOperatorForm = ({ operator }) => {
 		});
 	};
 
-	// Get proper image URL
+	// Simplified URL handler for S3
 	const getImageUrl = (imagePath) => {
 		if (!imagePath) return null;
 
-		if (imagePath.startsWith("/uploads/")) {
-			const API_BASE_URL =
-				import.meta.env.VITE_API_URL || "http://localhost:8080";
-			const cleanBaseUrl = API_BASE_URL.replace(/\/api\/?$/, "");
-			return `${cleanBaseUrl}${imagePath}`;
+		// S3 URLs are complete - use directly
+		if (imagePath.startsWith("https://")) {
+			return imagePath;
 		}
 
+		// Preset Ghost images
 		return imagePath;
 	};
 
@@ -146,10 +141,6 @@ const EditOperatorForm = ({ operator }) => {
 													"Full body image failed to load:",
 													selectedOperator.imageKey,
 												);
-												console.error(
-													"Tried URL:",
-													getImageUrl(selectedOperator.imageKey),
-												);
 												e.target.style.display = "none";
 											}}
 										/>
@@ -170,7 +161,7 @@ const EditOperatorForm = ({ operator }) => {
 							{selectedOperator?.imageKey && (
 								<div className='mt-3'>
 									<p className='text-xs text-green-400'>
-										✓ Full body image uploaded
+										✓ Full body image uploaded to S3
 									</p>
 								</div>
 							)}
