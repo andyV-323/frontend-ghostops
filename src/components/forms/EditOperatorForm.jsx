@@ -6,7 +6,7 @@ import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useOperatorsStore, useSheetStore } from "@/zustand";
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { useHandleChange, useFormActions, useConfirmDialog } from "@/hooks";
-import { ConfirmDialog } from "@/components";
+import { ConfirmDialog, ImageUpload } from "@/components";
 
 const EditOperatorForm = ({ operator }) => {
 	const handleChange = useHandleChange();
@@ -24,6 +24,7 @@ const EditOperatorForm = ({ operator }) => {
 		loading,
 	} = useOperatorsStore();
 	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
+
 	// Load operator data when component mounts
 	useEffect(() => {
 		if (operator) {
@@ -48,6 +49,28 @@ const EditOperatorForm = ({ operator }) => {
 		});
 	};
 
+	// Handle full body image upload (imageKey)
+	const handleFullBodyUpload = (imageUrl) => {
+		setSelectedOperator({
+			...selectedOperator,
+			imageKey: imageUrl,
+		});
+	};
+
+	// Get proper image URL
+	const getImageUrl = (imagePath) => {
+		if (!imagePath) return null;
+
+		if (imagePath.startsWith("/uploads/")) {
+			const API_BASE_URL =
+				import.meta.env.VITE_API_URL || "http://localhost:8080";
+			const cleanBaseUrl = API_BASE_URL.replace(/\/api\/?$/, "");
+			return `${cleanBaseUrl}${imagePath}`;
+		}
+
+		return imagePath;
+	};
+
 	return (
 		<section className='bg-transparent text-md text-fontz'>
 			<div className='flex flex-col items-end'>
@@ -59,21 +82,24 @@ const EditOperatorForm = ({ operator }) => {
 				<br />
 				<form>
 					<h2 className='mb-4 text-xl font-bold '>I.D</h2>
-					{/*FULLNAME*/}
 					<div className='flex flex-col items-center'>
-						{/*<div className='w-full'>
-							<label className=' block mb-2  font-medium '>Fullname</label>
-							<input
-								type='text'
-								name='name'
-								className='form'
-								placeholder='Last name, First name'
-								value={selectedOperator.name || ""}
-								onChange={handleChange}></input>
-						</div>
-						<br />*/}
-						<div className='w-full'>
-							<label className='block mb-2 font-medium'>I.D Image</label>
+						{/** THUMBNAIL IMAGE - PRESET ONLY **/}
+						<div className='w-full mb-6'>
+							<label className='block mb-2 font-medium'>
+								Current Thumbnail
+							</label>
+							<div className='flex justify-center mb-3'>
+								<img
+									src={selectedOperator.image || "/ghost/Default.png"}
+									alt={selectedOperator.callSign}
+									className='w-24 h-24 object-cover rounded-lg border-2 border-gray-600'
+									onError={(e) => (e.target.src = "/ghost/Default.png")}
+								/>
+							</div>
+
+							<label className='block mb-2 font-medium'>
+								Select Thumbnail (for Roster)
+							</label>
 							<select
 								className='form'
 								value={selectedOperator.image || ""}
@@ -93,8 +119,62 @@ const EditOperatorForm = ({ operator }) => {
 									</option>
 								))}
 							</select>
+							<p className='mt-1 text-xs text-gray-400'>
+								This image appears in rosters and tables (small thumbnail)
+							</p>
 						</div>
-						<br />
+
+						{/** FULL BODY IMAGE - UPLOAD ONLY **/}
+						<div className='mb-6 w-full p-4 border border-gray-700 rounded-lg bg-gray-900/30'>
+							<h3 className='text-lg font-semibold text-fontz mb-2'>
+								Full Body Image (Optional)
+							</h3>
+
+							{/** CURRENT FULL BODY PREVIEW **/}
+							{selectedOperator.imageKey && (
+								<div className='mb-4 w-full'>
+									<label className='block mb-2 font-medium text-sm'>
+										Current Full Body Image
+									</label>
+									<div className='flex justify-center'>
+										<img
+											src={getImageUrl(selectedOperator.imageKey)}
+											alt={`${selectedOperator.callSign} Full Body`}
+											className='max-w-full max-h-64 object-contain rounded-lg border-2 border-gray-600 bg-gray-800'
+											onError={(e) => {
+												console.error(
+													"Full body image failed to load:",
+													selectedOperator.imageKey,
+												);
+												console.error(
+													"Tried URL:",
+													getImageUrl(selectedOperator.imageKey),
+												);
+												e.target.style.display = "none";
+											}}
+										/>
+									</div>
+								</div>
+							)}
+
+							<p className='text-xs text-gray-400 mb-4'>
+								Upload a full body image to display in the operator profile view
+							</p>
+
+							{/** FULL BODY UPLOAD **/}
+							<ImageUpload
+								currentImage={selectedOperator?.imageKey}
+								onImageUpload={handleFullBodyUpload}
+							/>
+
+							{selectedOperator?.imageKey && (
+								<div className='mt-3'>
+									<p className='text-xs text-green-400'>
+										✓ Full body image uploaded
+									</p>
+								</div>
+							)}
+						</div>
 
 						{/*CALL SIGN*/}
 						<div className='w-full'>
@@ -111,6 +191,8 @@ const EditOperatorForm = ({ operator }) => {
 								required></input>
 						</div>
 						<br />
+
+						{/** CLASS **/}
 						<div className='w-full'>
 							<label className='block mb-2 font-medium'>Class</label>
 							<select
@@ -130,6 +212,7 @@ const EditOperatorForm = ({ operator }) => {
 							</select>
 						</div>
 						<br />
+
 						{/*Role*/}
 						<div className='w-full'>
 							<label className='block mb-2 font-medium text-fontz'>Role</label>
@@ -148,6 +231,7 @@ const EditOperatorForm = ({ operator }) => {
 						</div>
 
 						<br />
+
 						{/** SUPPORT SECTION **/}
 						<div className='flex flex-col w-full'>
 							{/** SUPPORT CHECKBOX **/}
@@ -163,13 +247,7 @@ const EditOperatorForm = ({ operator }) => {
 								<label
 									htmlFor='support'
 									className='text-sm font-medium text-gray-300 cursor-pointer'>
-									<h3
-										className='text-lg
-											font-semibold
-											text-fontz
-											'>
-										Support
-									</h3>
+									<h3 className='text-lg font-semibold text-fontz'>Support</h3>
 								</label>
 							</div>
 
@@ -186,13 +264,7 @@ const EditOperatorForm = ({ operator }) => {
 								<label
 									htmlFor='aviator'
 									className='text-sm font-medium text-gray-300 cursor-pointer'>
-									<h3
-										className='text-lg
-											font-semibold
-											text-fontz
-											'>
-										Aviator
-									</h3>
+									<h3 className='text-lg font-semibold text-fontz'>Aviator</h3>
 								</label>
 							</div>
 
@@ -217,6 +289,7 @@ const EditOperatorForm = ({ operator }) => {
 		</section>
 	);
 };
+
 EditOperatorForm.propTypes = {
 	operator: OperatorPropTypes,
 };

@@ -41,3 +41,34 @@ export const updateOperatorBio = async (operatorId, bio) => {
 export const updateOperatorStatus = async (operatorId, status) => {
 	return api.put(`/operators/${operatorId}/status`, { status });
 };
+// Upload operator image
+export const uploadOperatorImage = async (imageFile) => {
+	try {
+		const formData = new FormData();
+		formData.append("image", imageFile);
+
+		const response = await api.post("/operators/upload-image", formData, {
+			headers: {
+				"Content-Type": "multipart/form-data",
+			},
+		});
+
+		return response.data;
+	} catch (error) {
+		console.error("ERROR uploading operator image:", error);
+		throw error;
+	}
+};
+
+// Delete operator image
+export const deleteOperatorImage = async (imagePath) => {
+	try {
+		const response = await api.delete("/operators/delete-image", {
+			data: { imagePath },
+		});
+		return response.data;
+	} catch (error) {
+		console.error("ERROR deleting operator image:", error);
+		throw error;
+	}
+};

@@ -1,18 +1,29 @@
 import { useHandleChange } from "@/hooks";
 import { useOperatorsStore } from "@/zustand";
 import { ghostID, CLASS } from "@/config";
+import { ImageUpload } from "@/components";
 
 const GhostID = () => {
 	const handleChange = useHandleChange();
 	const { selectedOperator, setSelectedOperator } = useOperatorsStore();
 
+	// Handle full body image upload (imageKey)
+	const handleFullBodyUpload = (imageUrl) => {
+		setSelectedOperator({
+			...selectedOperator,
+			imageKey: imageUrl,
+		});
+	};
+
 	return (
 		<div>
 			<h2 className='mb-4 text-xl font-bold text-fontz'>I.D</h2>
 			<div>
-				{/** I.D IMAGE **/}
-				<div className='w-full'>
-					<label className='block mb-2 font-medium '>I.D Image</label>
+				{/** THUMBNAIL IMAGE - PRESET ONLY **/}
+				<div className='w-full mb-6'>
+					<label className='block mb-2 font-medium'>
+						Thumbnail Image (for Roster)
+					</label>
 					<select
 						className='form'
 						value={selectedOperator?.image || ""}
@@ -32,8 +43,33 @@ const GhostID = () => {
 							</option>
 						))}
 					</select>
+					<p className='mt-1 text-xs text-gray-400'>
+						This image will appear in rosters and tables (small thumbnail)
+					</p>
 				</div>
-				<br />
+
+				{/** FULL BODY IMAGE - UPLOAD ONLY **/}
+				<div className='mb-6 p-4 border border-gray-700 rounded-lg bg-gray-900/30'>
+					<h3 className='text-lg font-semibold text-fontz mb-2'>
+						Full Body Image (Optional)
+					</h3>
+					<p className='text-xs text-gray-400 mb-4'>
+						Upload a full body image to display in the operator profile view
+					</p>
+
+					<ImageUpload
+						currentImage={selectedOperator?.imageKey}
+						onImageUpload={handleFullBodyUpload}
+					/>
+
+					{selectedOperator?.imageKey && (
+						<div className='mt-3'>
+							<p className='text-xs text-green-400'>
+								✓ Full body image uploaded
+							</p>
+						</div>
+					)}
+				</div>
 
 				{/** CALL SIGN **/}
 				<div className='w-full'>
@@ -72,6 +108,7 @@ const GhostID = () => {
 					</select>
 				</div>
 				<br />
+
 				{/*Role*/}
 				<div className='w-full'>
 					<label className='block mb-2 font-medium text-fontz'>Role</label>
@@ -89,6 +126,7 @@ const GhostID = () => {
 					</p>
 				</div>
 				<br />
+
 				{/** SUPPORT SECTION **/}
 				<div className='flex flex-col w-full'>
 					{/** SUPPORT CHECKBOX **/}
@@ -104,13 +142,7 @@ const GhostID = () => {
 						<label
 							htmlFor='support'
 							className='text-sm font-medium text-gray-300 cursor-pointer'>
-							<h3
-								className='text-lg
-														font-semibold
-														text-fontz
-														'>
-								Support
-							</h3>
+							<h3 className='text-lg font-semibold text-fontz'>Support</h3>
 						</label>
 					</div>
 
@@ -127,13 +159,7 @@ const GhostID = () => {
 						<label
 							htmlFor='aviator'
 							className='text-sm font-medium text-gray-300 cursor-pointer'>
-							<h3
-								className='text-lg
-														font-semibold
-														text-fontz
-														'>
-								Aviator
-							</h3>
+							<h3 className='text-lg font-semibold text-fontz'>Aviator</h3>
 						</label>
 					</div>
 				</div>

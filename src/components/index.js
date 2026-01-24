@@ -14,6 +14,8 @@ import SheetSide from "./SheetSide";
 import ConfirmDialog from "./ConfirmDialog";
 import Perk from "./Perk";
 import AuroaMap from "./AuroaMap";
+import ImageUpload from "./ImageUpload";
+import OperatorImageView from "./OperatorImageView";
 
 export {
 	Header,
@@ -32,4 +34,6 @@ export {
 	NoneGeographicalMap,
 	MapWrapper,
 	AuroaMap,
+	ImageUpload,
+	OperatorImageView,
 };

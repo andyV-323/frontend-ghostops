@@ -11,13 +11,19 @@ import {
 	EditOperatorForm,
 	AssignTeamSheet,
 } from "@/components/forms";
+import { OperatorImageView } from "@/components";
 import { Button } from "@material-tailwind/react";
 
-const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
+const TabbedRoster = ({ dataUpdated, openSheet }) => {
 	const [activeTab, setActiveTab] = useState("roster");
 
-	const { operators, activeClasses, setSelectedOperator, fetchOperators } =
-		useOperatorsStore();
+	const {
+		operators,
+		activeClasses,
+		setSelectedOperator,
+		fetchOperators,
+		setClickedOperator,
+	} = useOperatorsStore();
 
 	const { teams, fetchTeams } = useTeamsStore();
 
@@ -28,7 +34,7 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 
 	const getOperatorTeam = (operatorId) => {
 		const team = teams.find((team) =>
-			team.operators.some((op) => op._id === operatorId)
+			team.operators.some((op) => op._id === operatorId),
 		);
 		return team ? team.name : "Unassigned";
 	};
@@ -39,15 +45,13 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 	const supportOperators = operators.filter((op) => op.support === true);
 
 	const regularOperators = operators.filter(
-		(op) => op.support !== true && op.aviator !== true
+		(op) => op.support !== true && op.aviator !== true,
 	);
 
 	const currentOperators =
-		activeTab === "roster"
-			? regularOperators
-			: activeTab === "support"
-			? supportOperators
-			: aviatorOperators;
+		activeTab === "roster" ? regularOperators
+		: activeTab === "support" ? supportOperators
+		: aviatorOperators;
 	const isSupportTab = activeTab === "support";
 	const isAviatorTab = activeTab === "aviator";
 
@@ -62,6 +66,13 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 				onClick={() => {
 					setClickedOperator(operator);
 					setSelectedOperator(operator._id);
+					// Open image view sheet when operator row is clicked
+					openSheet(
+						"right",
+						<OperatorImageView operator={operator} />,
+						operator.callSign || "Operator",
+						"View operator profile and image",
+					);
 				}}>
 				<th
 					scope='row'
@@ -96,14 +107,14 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 								}}
 							/>,
 							"Assign to Team",
-							`Assign ${operator.callSign} to a team or remove from current team.`
+							`Assign ${operator.callSign} to a team or remove from current team.`,
 						);
 					}}>
 					<Button
 						className={
-							teamName === "Unassigned"
-								? "text-gray-400 bg-blk/40 hover:text-black hover:bg-btn"
-								: "text-gray-400 bg-highlight/40 hover:text-black hover:bg-btn"
+							teamName === "Unassigned" ?
+								"text-gray-400 bg-blk/40 hover:text-black hover:bg-btn"
+							:	"text-gray-400 bg-highlight/40 hover:text-black hover:bg-btn"
 						}>
 						{teamName}
 					</Button>
@@ -112,11 +123,9 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 					<div className='flex items-center'>
 						<div
 							className={`h-2.5 w-2.5 rounded-full ${
-								operator.status === "Active"
-									? "bg-green-500"
-									: operator.status === "Injured"
-									? "bg-yellow-500"
-									: "bg-red-500"
+								operator.status === "Active" ? "bg-green-500"
+								: operator.status === "Injured" ? "bg-yellow-500"
+								: "bg-red-500"
 							} me-2`}></div>
 						{operator.status || "KIA"}
 					</div>
@@ -130,16 +139,13 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 							openSheet(
 								"right",
 								<EditOperatorForm operator={operator} />,
-								isSupportTab
-									? "Edit Support"
-									: isAviatorTab
-									? "Edit Aviator"
-									: "Edit Operator",
-								isSupportTab
-									? "Edit the support operator's info and role."
-									: isAviatorTab
-									? "Edit the aviator's info and aircraft assignment."
-									: "Edit the operator's info."
+								isSupportTab ? "Edit Support"
+								: isAviatorTab ? "Edit Aviator"
+								: "Edit Operator",
+								isSupportTab ? "Edit the support operator's info and role."
+								: isAviatorTab ?
+									"Edit the aviator's info and aircraft assignment."
+								:	"Edit the operator's info.",
 							);
 						}}
 					/>
@@ -154,18 +160,18 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 			<div className='flex items-center justify-center w-full'>
 				<button
 					className={`px-4 py-2 font-medium text-sm bg-blk/80 border-4 border-highlight/80 rounded-l-lg ${
-						activeTab === "roster"
-							? "text-black bg-btn"
-							: "font-medium text-white hover:bg-highlight/40 hover:text-white"
+						activeTab === "roster" ? "text-black bg-btn" : (
+							"font-medium text-white hover:bg-highlight/40 hover:text-white"
+						)
 					}`}
 					onClick={() => setActiveTab("roster")}>
 					Operators ({regularOperators.length})
 				</button>
 				<button
 					className={`px-4 py-2 font-medium text-sm bg-blk/80 border-4 border-highlight/80 ${
-						activeTab === "support"
-							? "text-black bg-btn"
-							: "font-medium text-white hover:bg-highlight/40 hover:text-white"
+						activeTab === "support" ? "text-black bg-btn" : (
+							"font-medium text-white hover:bg-highlight/40 hover:text-white"
+						)
 					}`}
 					onClick={() => setActiveTab("support")}>
 					Support ({supportOperators.length})
@@ -173,9 +179,9 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 
 				<button
 					className={`px-4 py-2 font-medium text-sm bg-blk/80 border-4 border-highlight/80 rounded-r-lg ${
-						activeTab === "aviator"
-							? "text-black bg-btn"
-							: "font-medium text-white hover:bg-highlight/40 hover:text-white"
+						activeTab === "aviator" ? "text-black bg-btn" : (
+							"font-medium text-white hover:bg-highlight/40 hover:text-white"
+						)
 					}`}
 					onClick={() => setActiveTab("aviator")}>
 					Aviators ({aviatorOperators.length})
@@ -184,11 +190,11 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 
 			{/** Table Header **/}
 			<h1 className='flex flex-col items-center text-lg text-fontz font-bold py-2'>
-				{isSupportTab
-					? "Support Roster"
-					: isAviatorTab
-					? "Aviator Roster"
-					: "Operator Roster"}
+				{isSupportTab ?
+					"Support Roster"
+				: isAviatorTab ?
+					"Aviator Roster"
+				:	"Operator Roster"}
 			</h1>
 
 			<table className='w-full text-left text-gray-400'>
@@ -202,16 +208,14 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 									openSheet(
 										"left",
 										<NewOperatorForm />,
-										isSupportTab
-											? "New Support"
-											: isAviatorTab
-											? "New Aviator"
-											: "New Operator",
-										isSupportTab
-											? "Create a new support operator with advanced capabilities and specialized training."
-											: isAviatorTab
-											? "Create a new aviator with flight training and aircraft assignments."
-											: "Customize an elite operator by selecting their background, class, loadout, and perks for optimal mission performance."
+										isSupportTab ? "New Support"
+										: isAviatorTab ? "New Aviator"
+										: "New Operator",
+										isSupportTab ?
+											"Create a new support operator with advanced capabilities and specialized training."
+										: isAviatorTab ?
+											"Create a new aviator with flight training and aircraft assignments."
+										:	"Customize an elite operator by selecting their background, class, loadout, and perks for optimal mission performance.",
 									);
 								}}
 							/>
@@ -226,21 +230,20 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 				</thead>
 
 				<tbody>
-					{currentOperators.length > 0 ? (
+					{currentOperators.length > 0 ?
 						currentOperators.map(renderOperatorRow)
-					) : (
-						<tr>
+					:	<tr>
 							<td
 								colSpan={isSupportTab || isAviatorTab ? "6" : "5"}
 								className='text-center py-4 text-gray-400'>
-								{isSupportTab
-									? "No support operators found. Promote operators to support status or add new specialists."
-									: isAviatorTab
-									? "No aviators found. Add operators with aviator designation to see them here."
-									: "Click the UserPlus icon to add your first Operator"}
+								{isSupportTab ?
+									"No support operators found. Promote operators to support status or add new specialists."
+								: isAviatorTab ?
+									"No aviators found. Add operators with aviator designation to see them here."
+								:	"Click the UserPlus icon to add your first Operator"}
 							</td>
 						</tr>
-					)}
+					}
 				</tbody>
 			</table>
 		</div>
@@ -249,7 +252,7 @@ const TabbedRoster = ({ setClickedOperator, dataUpdated, openSheet }) => {
 
 TabbedRoster.propTypes = {
 	operators: PropTypes.array,
-	setClickedOperator: PropTypes.func,
+
 	setSelectedClass: PropTypes.func,
 	dataUpdated: PropTypes.bool,
 	refreshData: PropTypes.func,
