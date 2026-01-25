@@ -1,6 +1,6 @@
 import { Button } from "@material-tailwind/react";
 import { useEffect } from "react";
-import { ghostID, CLASS } from "@/config";
+import { ghostID, CLASS, WEAPONS, ITEMS } from "@/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useOperatorsStore, useSheetStore } from "@/zustand";
@@ -221,6 +221,129 @@ const EditOperatorForm = ({ operator }) => {
 							</p>
 						</div>
 
+						<br />
+						{/** WEAPON TYPE **/}
+						<div>
+							<label className='block mb-2 font-medium'>Weapon Type</label>
+							<select
+								className='form'
+								value={selectedOperator?.weaponType || ""}
+								onChange={handleChange}
+								name='weaponType'
+								required>
+								<option value=''>Select Weapon</option>
+								{Object.entries(WEAPONS).map(([key, weapon]) => (
+									<option
+										key={key}
+										value={key}>
+										{weapon.name}
+									</option>
+								))}
+							</select>
+						</div>
+						<br />
+
+						{/*Weapon Name*/}
+						<div className='w-full'>
+							<label className='block mb-2 font-medium text-fontz'>
+								Weapon Name
+							</label>
+							<input
+								type='text'
+								name='weapon'
+								className='form'
+								placeholder='Enter Primary Weapon'
+								value={selectedOperator?.weapon || ""}
+								onChange={handleChange}
+							/>
+							<p className='mt-1 text-xs text-gray-400'>
+								Define this operator&apos;s primary weapon.
+							</p>
+						</div>
+						<br />
+
+						{/*SideArm*/}
+						<div className='w-full'>
+							<label className='block mb-2 font-medium text-fontz'>
+								Side Arm
+							</label>
+							<input
+								type='text'
+								name='sideArm'
+								className='form'
+								placeholder='Enter side arm name'
+								value={selectedOperator?.sideArm || ""}
+								onChange={handleChange}
+							/>
+							<p className='mt-1 text-xs text-gray-400'>
+								Define this operator&apos;s side arm.
+							</p>
+						</div>
+						<br />
+
+						{/** ITEMS **/}
+						<div className='w-full'>
+							<label className='block mb-2 font-medium'>Items</label>
+
+							{/* Selected items display */}
+							<div className='flex flex-wrap gap-2 mb-2'>
+								{(selectedOperator?.items || []).map((item) => (
+									<div
+										key={item}
+										className='flex items-center gap-2 bg-highlight px-3 py-1 rounded-full'>
+										<img
+											src={ITEMS[item]}
+											alt={item}
+											className='w-4 h-4'
+										/>
+										<span className='text-sm'>{item}</span>
+										<button
+											type='button'
+											onClick={() => {
+												const newItems = selectedOperator.items.filter(
+													(i) => i !== item,
+												);
+												handleChange({
+													target: { name: "items", value: newItems },
+												});
+											}}
+											className='text-red-500 hover:text-red-700'>
+											×
+										</button>
+									</div>
+								))}
+							</div>
+
+							{/* Dropdown to add items */}
+							<select
+								className='form'
+								value=''
+								onChange={(e) => {
+									if (
+										e.target.value &&
+										!selectedOperator?.items?.includes(e.target.value)
+									) {
+										const newItems = [
+											...(selectedOperator?.items || []),
+											e.target.value,
+										];
+										handleChange({
+											target: { name: "items", value: newItems },
+										});
+									}
+								}}>
+								<option value=''>Add an item...</option>
+								{Object.keys(ITEMS)
+									.filter((item) => !selectedOperator?.items?.includes(item))
+									.map((item) => (
+										<option
+											key={item}
+											value={item}>
+											{item}
+										</option>
+									))}
+							</select>
+						</div>
 						<br />
 
 						{/** SUPPORT SECTION **/}

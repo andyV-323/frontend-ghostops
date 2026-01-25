@@ -67,12 +67,7 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 					setClickedOperator(operator);
 					setSelectedOperator(operator._id);
 					// Open image view sheet when operator row is clicked
-					openSheet(
-						"right",
-						<OperatorImageView operator={operator} />,
-						operator.callSign || "Operator",
-						"View operator profile and image",
-					);
+					openSheet("left", <OperatorImageView operator={operator} />);
 				}}>
 				<th
 					scope='row'

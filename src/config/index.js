@@ -9,6 +9,7 @@ import { CLASS } from "./classNames";
 import { WEAPONS } from "./weapons";
 import { GARAGE } from "./garage";
 import { CONDITION } from "./vehicleCondition";
+import { ITEMS } from "./items";
 
 export {
 	about,
@@ -22,4 +23,5 @@ export {
 	WEAPONS,
 	GARAGE,
 	CONDITION,
+	ITEMS,
 };
