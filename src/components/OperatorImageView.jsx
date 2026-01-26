@@ -75,7 +75,7 @@ const OperatorImageView = ({ operator }) => {
 					<img
 						src={displayImage}
 						alt={selectedOperator.callSign}
-						className='max-w-full max-h-[600px] object-contain rounded-xl border-2 border-gray-700 shadow-lg'
+						className='max-w-full max-h-[600px] object-contain rounded-xl border-2 border-line shadow-lg'
 						onError={(e) => {
 							console.error("Image failed to load:", displayImage);
 							e.currentTarget.src = "/ghost/Default.png";
@@ -84,7 +84,7 @@ const OperatorImageView = ({ operator }) => {
 				</div>
 
 				{/* LOADOUT SECTION */}
-				<div className='w-full bg-gray-800/40 rounded-lg p-4 border border-gray-700 mb-4'>
+				<div className='w-full bg-line rounded-lg p-4 border border-line mb-4'>
 					<h3 className='font-semibold mb-1 text-lg'>Loadout</h3>
 
 					{/* PRIMARY WEAPON */}
@@ -131,7 +131,7 @@ const OperatorImageView = ({ operator }) => {
 								{selectedOperator.items.map((item) => (
 									<div
 										key={item}
-										className='flex flex-col items-center gap-1 bg-gray-700/30 rounded-lg p-2 border border-gray-600'>
+										className='flex flex-col items-center gap-1 bg-highlight/30 rounded-lg p-2 border border-line'>
 										<img
 											src={ITEMS[item]}
 											alt={item}

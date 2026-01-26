@@ -85,7 +85,7 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 					</div>
 				</th>
 				<td className='px-4 md:px-6 py-4'>{activeClass || "Unknown"}</td>
-				<td className='px-4 md:px-6 py-4'>{operator.role || "No Role"}</td>
+				{/*<td className='px-4 md:px-6 py-4'>{operator.role || "No Role"}</td>*/}
 
 				{/* Team Cell */}
 				<td
@@ -114,7 +114,7 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 						{teamName}
 					</Button>
 				</td>
-				<td className='px-4 md:px-6 py-4'>
+				{/*<td className='px-4 md:px-6 py-4'>
 					<div className='flex items-center'>
 						<div
 							className={`h-2.5 w-2.5 rounded-full ${
@@ -124,7 +124,7 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 							} me-2`}></div>
 						{operator.status || "KIA"}
 					</div>
-				</td>
+				</td>*/}
 				<td>
 					<FontAwesomeIcon
 						className='text-btn text-lg cursor-pointer hover:text-blk/50'
@@ -217,9 +217,9 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 							&nbsp;CallSign
 						</th>
 						<th className='px-4 md:px-6 py-3'>Class</th>
-						<th className='px-4 md:px-6 py-3'>Role</th>
+						{/*<th className='px-4 md:px-6 py-3'>Role</th>*/}
 						<th className='px-4 md:px-6 py-3'>Team</th>
-						<th className='px-4 md:px-6 py-3'>Status</th>
+						{/*<th className='px-4 md:px-6 py-3'>Status</th>*/}
 						<th>Edit</th>
 					</tr>
 				</thead>
