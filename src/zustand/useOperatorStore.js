@@ -29,6 +29,7 @@ const defaultOperator = {
 	support: false,
 	aviator: false,
 	role: "",
+	perks: [],
 };
 
 const useOperatorsStore = create((set, get) => ({

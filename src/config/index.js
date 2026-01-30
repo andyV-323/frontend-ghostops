@@ -10,6 +10,7 @@ import { WEAPONS } from "./weapons";
 import { GARAGE } from "./garage";
 import { CONDITION } from "./vehicleCondition";
 import { ITEMS } from "./items";
+import { PERKS } from "./perks";
 
 export {
 	about,
@@ -24,4 +25,5 @@ export {
 	GARAGE,
 	CONDITION,
 	ITEMS,
+	PERKS,
 };

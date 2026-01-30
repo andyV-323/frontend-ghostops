@@ -1,7 +1,7 @@
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { useOperatorsStore, useTeamsStore } from "@/zustand";
-import { useEffect } from "react";
-import { WEAPONS, ITEMS } from "@/config"; // Import your config files
+import { useEffect, useMemo } from "react";
+import { WEAPONS, ITEMS, PERKS } from "@/config"; // PERKS is an array of strings
 
 const OperatorImageView = ({ operator }) => {
 	const { selectedOperator, fetchOperatorById } = useOperatorsStore();
@@ -11,20 +11,16 @@ const OperatorImageView = ({ operator }) => {
 		fetchTeams();
 	}, [fetchTeams]);
 
-	const getOperatorTeam = (operatorId) => {
-		const team = teams.find((team) =>
-			team.operators.some((op) => op._id === operatorId),
+	const teamName = useMemo(() => {
+		const team = teams.find((t) =>
+			t.operators?.some((op) => op?._id === operator?._id),
 		);
 		return team ? team.name : "Unassigned";
-	};
-
-	const teamName = getOperatorTeam(operator._id);
+	}, [teams, operator?._id]);
 
 	// Fetch fresh operator when sheet opens
 	useEffect(() => {
-		if (operator?._id) {
-			fetchOperatorById(operator._id);
-		}
+		if (operator?._id) fetchOperatorById(operator._id);
 	}, [operator?._id, fetchOperatorById]);
 
 	if (!selectedOperator) {
@@ -39,6 +35,13 @@ const OperatorImageView = ({ operator }) => {
 	const displayImage =
 		selectedOperator.imageKey || selectedOperator.image || "/ghost/Default.png";
 
+	// If you want to ONLY show perks that exist in your config array:
+	const validPerks = (selectedOperator.perks || []).filter((p) =>
+		PERKS.includes(p),
+	);
+	// If you want to show everything stored on the operator even if not in config,
+	// just use: const validPerks = selectedOperator.perks || [];
+
 	return (
 		<section className='bg-transparent text-fontz p-4'>
 			<div className='flex flex-col items-center'>
@@ -51,9 +54,9 @@ const OperatorImageView = ({ operator }) => {
 					<p className='text-gray-400'>
 						Class : {selectedOperator.class || "No Class"}
 					</p>
-					<p className='text-gray-400'>
-						{`Team Role : ${selectedOperator.role}`}
-					</p>
+					<p className='text-gray-400'>{`Team Role : ${
+						selectedOperator.role || "None"
+					}`}</p>
 					<p className='text-gray-400'>{`Team : ${teamName}`}</p>
 
 					<div className='flex items-center justify-center mt-2'>
@@ -90,19 +93,22 @@ const OperatorImageView = ({ operator }) => {
 					{/* PRIMARY WEAPON */}
 					{selectedOperator.weaponType && (
 						<div className='mb-1 flex items-center gap-3'>
-							<img
-								src={WEAPONS[selectedOperator.weaponType]?.imgUrl}
-								alt={WEAPONS[selectedOperator.weaponType]?.name}
-								className='w-40 h-40'
-							/>
+							{WEAPONS[selectedOperator.weaponType]?.imgUrl && (
+								<img
+									src={WEAPONS[selectedOperator.weaponType]?.imgUrl}
+									alt={WEAPONS[selectedOperator.weaponType]?.name || "Weapon"}
+									className='w-40 h-40'
+								/>
+							)}
 							<div>
 								<p className='text-xs text-gray-500'>Primary Weapon</p>
 								<p className='font-medium'>
 									{selectedOperator.weapon ||
-										WEAPONS[selectedOperator.weaponType]?.name}
+										WEAPONS[selectedOperator.weaponType]?.name ||
+										"Unknown Weapon"}
 								</p>
 								<p className='text-xs text-gray-400'>
-									{WEAPONS[selectedOperator.weaponType]?.name}
+									{WEAPONS[selectedOperator.weaponType]?.name || ""}
 								</p>
 							</div>
 						</div>
@@ -111,11 +117,13 @@ const OperatorImageView = ({ operator }) => {
 					{/* SIDEARM */}
 					{selectedOperator.sideArm && (
 						<div className='mb-1 flex items-center gap-3'>
-							<img
-								src={WEAPONS.Sidearm?.imgUrl}
-								alt='Sidearm'
-								className='w-40 h-40'
-							/>
+							{WEAPONS.Sidearm?.imgUrl && (
+								<img
+									src={WEAPONS.Sidearm?.imgUrl}
+									alt='Sidearm'
+									className='w-40 h-40'
+								/>
+							)}
 							<div>
 								<p className='text-xs text-gray-500'>Sidearm</p>
 								<p className='font-medium'>{selectedOperator.sideArm}</p>
@@ -124,20 +132,39 @@ const OperatorImageView = ({ operator }) => {
 					)}
 
 					{/* ITEMS */}
-					{selectedOperator.items && selectedOperator.items.length > 0 && (
-						<div>
-							<p className='text-xs text-gray-500 mb-2'>Equipment</p>
+					{Array.isArray(selectedOperator.items) &&
+						selectedOperator.items.length > 0 && (
+							<div className='mt-4'>
+								<p className='text-xs text-gray-500 mb-2'>Equipment</p>
+								<div className='grid grid-cols-3 gap-3'>
+									{selectedOperator.items.map((item) => (
+										<div
+											key={item}
+											className='flex flex-col items-center gap-1 bg-highlight/30 rounded-lg p-2 border border-line'>
+											{ITEMS[item] ?
+												<img
+													src={ITEMS[item]}
+													alt={item}
+													className='w-10 h-10'
+												/>
+											:	<div className='w-10 h-10 rounded bg-black/20' />}
+											<span className='text-xs text-center'>{item}</span>
+										</div>
+									))}
+								</div>
+							</div>
+						)}
+
+					{/* PERKS */}
+					{validPerks.length > 0 && (
+						<div className='mt-4'>
+							<p className='text-xs text-gray-500 mb-2'>Perks</p>
 							<div className='grid grid-cols-3 gap-3'>
-								{selectedOperator.items.map((item) => (
+								{validPerks.map((perk) => (
 									<div
-										key={item}
+										key={perk}
 										className='flex flex-col items-center gap-1 bg-highlight/30 rounded-lg p-2 border border-line'>
-										<img
-											src={ITEMS[item]}
-											alt={item}
-											className='w-10 h-10'
-										/>
-										<span className='text-xs text-center'>{item}</span>
+										<span className='text-xs text-center'>{perk}</span>
 									</div>
 								))}
 							</div>

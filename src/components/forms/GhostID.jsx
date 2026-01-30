@@ -1,6 +1,6 @@
 import { useHandleChange } from "@/hooks";
 import { useOperatorsStore } from "@/zustand";
-import { ghostID, CLASS, WEAPONS, ITEMS } from "@/config";
+import { ghostID, CLASS, WEAPONS, ITEMS, PERKS } from "@/config";
 import { ImageUpload } from "@/components";
 
 const GhostID = () => {
@@ -241,6 +241,67 @@ const GhostID = () => {
 									{item}
 								</option>
 							))}
+					</select>
+				</div>
+				<br />
+				{/* PERKS */}
+				<div>
+					<label className='block mb-2 font-medium'>Perks</label>
+
+					{/* Selected perks (chips) */}
+					<div className='flex flex-wrap gap-2 mb-2'>
+						{(selectedOperator?.perks || []).map((perk) => (
+							<div
+								key={perk}
+								className='flex items-center gap-2 bg-highlight px-3 py-1 rounded-full'>
+								<span className='text-sm'>{perk}</span>
+
+								<button
+									type='button'
+									onClick={() => {
+										const current = selectedOperator?.perks || [];
+										const newPerks = current.filter((p) => p !== perk);
+
+										handleChange({
+											target: { name: "perks", value: newPerks },
+										});
+									}}
+									className='text-red-500 hover:text-red-700'
+									aria-label={`Remove ${perk}`}>
+									×
+								</button>
+							</div>
+						))}
+					</div>
+
+					{/* Add perk dropdown */}
+					<select
+						className='form'
+						value=''
+						onChange={(e) => {
+							const perkToAdd = e.target.value;
+							if (!perkToAdd) return;
+
+							const current = selectedOperator?.perks || [];
+							if (current.includes(perkToAdd)) return;
+
+							const newPerks = [...current, perkToAdd];
+
+							handleChange({
+								target: { name: "perks", value: newPerks },
+							});
+						}}>
+						<option value=''>Add a perk...</option>
+
+						{PERKS.filter(
+							(perk) => !(selectedOperator?.perks || []).includes(perk),
+						).map((perk) => (
+							<option
+								key={perk}
+								value={perk}>
+								{perk}
+							</option>
+						))}
 					</select>
 				</div>
 				<br />
