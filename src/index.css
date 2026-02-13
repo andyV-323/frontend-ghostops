@@ -262,7 +262,7 @@
 /* styles.css or in a global stylesheet */
 .btn {
 	@apply bg-btn hover:bg-highlight text-black hover:text-white py-1 px-2 text-sm md:py-2 md:px-4 md:text-sm 
-  lg:py-2 lg:px-4 lg:text-base;
+  lg:py-2 lg:px-4 lg:text-sm;
 }
 .l-page-image {
 	@apply w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl shadow-2xl shadow-black rounded-2xl;
@@ -319,7 +319,9 @@
 
 /* Smooth transitions for all drag interactions */
 .team-row {
-	transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+	transition:
+		background-color 0.2s ease-in-out,
+		border-color 0.2s ease-in-out;
 }
 
 /* Operator image hover effects */

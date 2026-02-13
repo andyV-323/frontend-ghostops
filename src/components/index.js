@@ -16,6 +16,7 @@ import Perk from "./Perk";
 import AuroaMap from "./AuroaMap";
 import ImageUpload from "./ImageUpload";
 import OperatorImageView from "./OperatorImageView";
+import TeamView from "./TeamView";
 
 export {
 	Header,
@@ -36,4 +37,5 @@ export {
 	AuroaMap,
 	ImageUpload,
 	OperatorImageView,
+	TeamView,
 };

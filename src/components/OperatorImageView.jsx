@@ -1,9 +1,13 @@
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { useOperatorsStore, useTeamsStore } from "@/zustand";
 import { useEffect, useMemo } from "react";
-import { WEAPONS, ITEMS, PERKS } from "@/config"; // PERKS is an array of strings
+import { WEAPONS, ITEMS, PERKS } from "@/config";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faUserPen } from "@fortawesome/free-solid-svg-icons";
+import { PropTypes } from "prop-types";
+import { EditOperatorForm } from "./forms";
 
-const OperatorImageView = ({ operator }) => {
+const OperatorImageView = ({ operator, openSheet }) => {
 	const { selectedOperator, fetchOperatorById } = useOperatorsStore();
 	const { teams, fetchTeams } = useTeamsStore();
 
@@ -72,7 +76,6 @@ const OperatorImageView = ({ operator }) => {
 						</span>
 					</div>
 				</div>
-
 				{/* IMAGE */}
 				<div className='w-full flex justify-center mb-6'>
 					<img
@@ -85,7 +88,6 @@ const OperatorImageView = ({ operator }) => {
 						}}
 					/>
 				</div>
-
 				{/* LOADOUT SECTION */}
 				<div className='w-full bg-line rounded-lg p-4 border border-line mb-4'>
 					<h3 className='font-semibold mb-1 text-lg'>Loadout</h3>
@@ -171,7 +173,6 @@ const OperatorImageView = ({ operator }) => {
 						</div>
 					)}
 				</div>
-
 				{/* TAGS */}
 				<div className='w-full space-y-3 text-sm'>
 					{selectedOperator.support && (
@@ -188,7 +189,6 @@ const OperatorImageView = ({ operator }) => {
 						</div>
 					)}
 				</div>
-
 				{/* BIO */}
 				{selectedOperator.bio && (
 					<div className='mt-6 w-full bg-gray-800/40 rounded-lg p-4 border border-gray-700'>
@@ -198,6 +198,15 @@ const OperatorImageView = ({ operator }) => {
 						</p>
 					</div>
 				)}
+				<FontAwesomeIcon
+					className='text-btn text-lg cursor-pointer hover:text-blk/50'
+					icon={faUserPen}
+					onClick={(e) => {
+						e.stopPropagation();
+						openSheet("right", <EditOperatorForm operator={operator} />);
+					}}
+				/>{" "}
+				Edit
 			</div>
 		</section>
 	);
@@ -205,6 +214,7 @@ const OperatorImageView = ({ operator }) => {
 
 OperatorImageView.propTypes = {
 	operator: OperatorPropTypes,
+	openSheet: PropTypes.func,
 };
 
 export default OperatorImageView;

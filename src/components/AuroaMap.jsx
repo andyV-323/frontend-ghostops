@@ -5,9 +5,8 @@ import "leaflet/dist/leaflet.js";
 import { PROVINCES } from "@/config";
 import { useTeamsStore } from "@/zustand";
 
-const AuroraMap = ({ selectedAOs = [] }) => {
+const AuroraMap = ({ selectedAOs = [], currentTeamAO = null }) => {
 	const mapRef = useRef(null);
-
 	const markersRef = useRef([]);
 	const mapInstanceRef = useRef(null);
 	const bounds = [
@@ -17,21 +16,25 @@ const AuroraMap = ({ selectedAOs = [] }) => {
 
 	const { teams } = useTeamsStore();
 
-	// Memoize the team-AO mapping to prevent infinite re-renders
-	const teamAOMap = useMemo(() => {
-		const map = {};
+	// Get the current team's name for exact matching
+	const currentTeamName = useMemo(() => {
+		const team = teams.find((t) => t.AO === currentTeamAO);
+		return team ? team.name : null;
+	}, [teams, currentTeamAO]);
+
+	// Group teams by their AO
+	const teamsByAO = useMemo(() => {
+		const grouped = {};
 		teams.forEach((team) => {
 			if (team.AO) {
-				map[team.AO] = team.name;
+				if (!grouped[team.AO]) {
+					grouped[team.AO] = [];
+				}
+				grouped[team.AO].push(team.name);
 			}
 		});
-		return map;
+		return grouped;
 	}, [teams]);
-
-	// Function to get team name by AO
-	const getTeamNameByAO = (aoKey) => {
-		return teamAOMap[aoKey] || "No Team Assigned";
-	};
 
 	// Initialize map once
 	useEffect(() => {
@@ -64,71 +67,172 @@ const AuroraMap = ({ selectedAOs = [] }) => {
 		};
 	}, []);
 
-	// Update markers when selectedAOs or teamAOMap changes
+	// Update markers when selectedAOs or teamsByAO changes
 	useEffect(() => {
 		if (!mapInstanceRef.current) return;
 
 		const addAOMarkers = () => {
 			// Clear existing markers
 			markersRef.current.forEach((marker) =>
-				mapInstanceRef.current.removeLayer(marker)
+				mapInstanceRef.current.removeLayer(marker),
 			);
 			markersRef.current = [];
 
+			// First, add labels for ALL AOs (not just selected ones)
+			Object.entries(PROVINCES).forEach(([aoKey, province]) => {
+				if (!province.AOO) return;
+
+				// Create a simple text label for the AO
+				const aoLabelIcon = L.divIcon({
+					className: "ao-label",
+					html: `
+						<div style="
+						
+							font-weight: bold;
+							color: white;
+							font-size: 10px;
+							white-space: nowrap;
+							pointer-events: none;
+						">${aoKey}</div>
+					`,
+					iconSize: [40, 16],
+					iconAnchor: [20, -5], // Position label above the point
+				});
+
+				const labelMarker = L.marker([province.AOO[0], province.AOO[1]], {
+					icon: aoLabelIcon,
+					interactive: false, // Labels don't respond to clicks
+				}).addTo(mapInstanceRef.current);
+
+				markersRef.current.push(labelMarker);
+			});
+
+			// Then add team markers for selected AOs
 			selectedAOs.forEach((aoKey) => {
 				const province = PROVINCES[aoKey];
-				if (!province) return;
+				if (!province || !province.AOO) return;
 
-				// Add AO marker only
-				if (province.AOO) {
-					const teamName = getTeamNameByAO(aoKey);
-					// Create custom marker icon for AO only
+				const teamsInAO = teamsByAO[aoKey] || [];
+
+				// If multiple teams in same AO, create offset markers
+				if (teamsInAO.length > 1) {
+					// Calculate offset positions in a circle around the main AO point
+					const radius = 30; // Distance from center point
+					const angleStep = (2 * Math.PI) / teamsInAO.length;
+
+					teamsInAO.forEach((teamName, index) => {
+						const angle = angleStep * index;
+						const offsetLat = province.AOO[0] + radius * Math.cos(angle);
+						const offsetLng = province.AOO[1] + radius * Math.sin(angle);
+
+						// Check if THIS SPECIFIC TEAM is the current team
+						const isCurrentTeam = teamName === currentTeamName;
+						const markerColor =
+							isCurrentTeam ?
+								"rgba(59, 130, 246, 0.8)"
+							:	"rgba(169, 186, 180, 0.53)";
+						const borderColor = isCurrentTeam ? "#2563eb" : "#000000ff";
+						const borderWidth = isCurrentTeam ? "3px" : "2px";
+
+						const markerIcon = L.divIcon({
+							className: "ao-marker",
+							html: `
+								<div style="
+									background: ${markerColor};
+									border: ${borderWidth} solid ${borderColor};
+									border-radius: 50%;
+									width: 50px;
+									height: 50px;
+									display: flex;
+									align-items: center;
+									justify-content: center;
+									font-weight: bold;
+									color: white;
+									font-size: 10px;
+									box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+									text-align: center;
+									padding: 2px;
+								">${teamName}</div>
+							`,
+							iconSize: [50, 50],
+							iconAnchor: [25, 25],
+						});
+
+						const marker = L.marker([offsetLat, offsetLng], {
+							icon: markerIcon,
+						}).addTo(mapInstanceRef.current).bindPopup(`
+							<div style="color: black; font-weight: bold;">
+								<strong>Area of Operations: ${aoKey}</strong><br>
+								<strong>Team: ${teamName}</strong>${isCurrentTeam ? ' <span style="color: #2563eb;">(Current)</span>' : ""}<br/>
+								<em>${province.biome}</em><br>
+							</div>
+						`);
+
+						markersRef.current.push(marker);
+					});
+				} else {
+					// Single team - use original marker placement
+					const teamName = teamsInAO[0] || "No Team Assigned";
+
+					// Check if THIS SPECIFIC TEAM is the current team
+					const isCurrentTeam = teamName === currentTeamName;
+					const markerColor =
+						isCurrentTeam ?
+							"rgba(59, 130, 246, 0.8)"
+						:	"rgba(169, 186, 180, 0.53)";
+					const borderColor = isCurrentTeam ? "#2563eb" : "#000000ff";
+					const borderWidth = isCurrentTeam ? "3px" : "2px";
+
 					const aoIcon = L.divIcon({
 						className: "ao-marker",
 						html: `
-          <div style="
-            background:rgba(169, 186, 180, 0.53);
-            border: 1px solid #000000ff;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: white;
-            font-size: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-          ">${teamName}</div>
-        `,
-						iconSize: [24, 24],
-						iconAnchor: [12, 12],
+							<div style="
+								background: ${markerColor};
+								border: ${borderWidth} solid ${borderColor};
+								border-radius: 50%;
+								width: 60px;
+								height: 60px;
+								display: flex;
+								align-items: center;
+								justify-content: center;
+								font-weight: bold;
+								color: white;
+								font-size: 11px;
+								box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+								text-align: center;
+								padding: 4px;
+							">${teamName}</div>
+						`,
+						iconSize: [60, 60],
+						iconAnchor: [30, 30],
 					});
+
 					const aoMarker = L.marker([province.AOO[0], province.AOO[1]], {
 						icon: aoIcon,
 					}).addTo(mapInstanceRef.current).bindPopup(`
-              <div style="color: black; font-weight: bold;">
-                <strong>Area of Operations: ${aoKey}</strong><br>
-                <strong>Team: ${teamName}</strong><br/>
-                <em>${province.biome}</em><br>
-              </div>
-            `);
+						<div style="color: black; font-weight: bold;">
+							<strong>Area of Operations: ${aoKey}</strong><br>
+							<strong>Team: ${teamName}</strong>${isCurrentTeam ? ' <span style="color: #2563eb;">(Current)</span>' : ""}<br/>
+							<em>${province.biome}</em><br>
+						</div>
+					`);
+
 					markersRef.current.push(aoMarker);
 				}
 			});
 		};
 
 		addAOMarkers();
-	}, [selectedAOs, teamAOMap, getTeamNameByAO]);
+	}, [selectedAOs, teamsByAO, currentTeamName]);
 
 	return (
-		<div className='map'>
+		<div className='map w-full'>
 			<div
 				ref={mapRef}
 				id='leaflet-map'
 				style={{
-					width: "700px",
-					height: "450px",
+					width: "100%",
+					height: "clamp(250px, 40vw, 500px)",
 					background: "black",
 				}}
 			/>

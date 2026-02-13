@@ -10,7 +10,7 @@ import {
 import { useTeamsStore } from "@/zustand";
 import { PropTypes } from "prop-types";
 import { useToggleExpand, useConfirmDialog } from "@/hooks";
-import { ConfirmDialog } from "@/components";
+import { ConfirmDialog, TeamView } from "@/components";
 import { EditTeamForm, NewTeamForm } from "@/components/forms";
 import { PROVINCES } from "@/config";
 
@@ -46,7 +46,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	// Check if device is mobile
 	const isMobile =
 		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-			navigator.userAgent
+			navigator.userAgent,
 		);
 	const handleOperatorClick = (operator, e) => {
 		e.stopPropagation();
@@ -171,7 +171,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 										"top",
 										<NewTeamForm />,
 										"New Team",
-										"Create a team or allow A.I to generate one for you."
+										"Create a team or allow A.I to generate one for you.",
 									);
 								}}
 							/>
@@ -186,7 +186,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 					</tr>
 				</thead>
 				<tbody>
-					{teams.length > 0 ? (
+					{teams.length > 0 ?
 						teams.map((team, index) => (
 							<React.Fragment key={team._id || team.name || index}>
 								{/* Main Team Row */}
@@ -214,22 +214,22 @@ const Teams = ({ dataUpdated, openSheet }) => {
 												<img
 													key={operator._id}
 													className={`w-10 h-10 min-w-[2.5rem] border-2 border-lines rounded-full bg-highlight flex-shrink-0 ${
-														!isMobile
-															? "cursor-grab active:cursor-grabbing"
-															: "cursor-pointer"
+														!isMobile ?
+															"cursor-grab active:cursor-grabbing"
+														:	"cursor-pointer"
 													}`}
 													src={operator.image}
 													alt={operator.callSign}
 													title={
-														isMobile
-															? `${operator.callSign} - Tap to assign injury`
-															: `${operator.callSign} - Drag to move to another team`
+														isMobile ?
+															`${operator.callSign} - Tap to assign injury`
+														:	`${operator.callSign} - Drag to move to another team`
 													}
 													draggable={!isMobile}
 													onDragStart={
-														!isMobile
-															? (e) => handleDragStart(e, operator, team._id)
-															: undefined
+														!isMobile ?
+															(e) => handleDragStart(e, operator, team._id)
+														:	undefined
 													}
 													onDragEnd={!isMobile ? handleDragEnd : undefined}
 													onClick={(e) => {
@@ -269,28 +269,36 @@ const Teams = ({ dataUpdated, openSheet }) => {
 											data-team-id={team._id}
 											onDragOver={!isMobile ? handleDragOver : undefined}
 											onDragEnter={
-												!isMobile
-													? (e) => handleDragEnter(e, team._id)
-													: undefined
+												!isMobile ?
+													(e) => handleDragEnter(e, team._id)
+												:	undefined
 											}
 											onDragLeave={!isMobile ? handleDragLeave : undefined}
 											onDrop={
 												!isMobile ? (e) => handleDrop(e, team._id) : undefined
 											}>
+											<Button
+												className='btn'
+												onClick={() => {
+													openSheet("bottom", <TeamView teamId={team._id} />);
+												}}>
+												TeamView
+											</Button>
+
 											<div className='flex flex-wrap gap-4 p-2'>
 												{team.operators.map((operator) => (
 													<div
 														key={operator._id}
 														className={`flex flex-col items-center ${
-															!isMobile
-																? "cursor-grab active:cursor-grabbing"
-																: "cursor-pointer"
+															!isMobile ?
+																"cursor-grab active:cursor-grabbing"
+															:	"cursor-pointer"
 														}`}
 														draggable={!isMobile}
 														onDragStart={
-															!isMobile
-																? (e) => handleDragStart(e, operator, team._id)
-																: undefined
+															!isMobile ?
+																(e) => handleDragStart(e, operator, team._id)
+															:	undefined
 														}
 														onDragEnd={!isMobile ? handleDragEnd : undefined}
 														onClick={(e) => handleOperatorClick(operator, e)}>
@@ -299,16 +307,13 @@ const Teams = ({ dataUpdated, openSheet }) => {
 															src={operator.image}
 															alt={operator.callSign}
 															title={
-																isMobile
-																	? `${operator.callSign} - Tap to assign injury`
-																	: `${operator.callSign} - Hold and drag to move or tap to assign injury`
+																isMobile ?
+																	`${operator.callSign} - Tap to assign injury`
+																:	`${operator.callSign} - Hold and drag to move or tap to assign injury`
 															}
 														/>
 														<span className='text-sm mt-2'>
 															{operator.callSign}
-														</span>
-														<span className='text-sm mt-2'>
-															{operator.role}
 														</span>
 													</div>
 												))}
@@ -330,36 +335,38 @@ const Teams = ({ dataUpdated, openSheet }) => {
 
 												{/* Assigned assets list */}
 												<div className='flex flex-wrap gap-2 mb-3'>
-													{(team.assets || []).length === 0 ? (
+													{(team.assets || []).length === 0 ?
 														<p className='text-xs text-gray-400'>
 															No assets assigned.
 														</p>
-													) : (
-														(team.assets || []).map((asset) => {
+													:	(team.assets || []).map((asset) => {
 															const assetId =
 																typeof asset === "object" ? asset._id : asset;
 															const assetObj =
-																typeof asset === "object"
-																	? asset
-																	: fullVehicleList.find(
-																			(v) => v._id === assetId
-																	  );
+																typeof asset === "object" ? asset : (
+																	fullVehicleList.find((v) => v._id === assetId)
+																);
 
 															return (
 																<div
 																	key={assetId}
 																	className='flex items-center gap-2 bg-blk/40 border border-lines rounded-lg px-2 py-1'>
 																	<span className='text-xs text-fontz'>
-																		{assetObj?.nickName &&
-																		assetObj.nickName !== "None"
-																			? assetObj.nickName
-																			: assetObj?.vehicle || "Unknown Vehicle"}
-																		{assetObj?.condition
-																			? ` • ${assetObj.condition}`
-																			: ""}
-																		{typeof assetObj?.remainingFuel === "number"
-																			? ` • Fuel ${assetObj.remainingFuel}%`
-																			: ""}
+																		{(
+																			assetObj?.nickName &&
+																			assetObj.nickName !== "None"
+																		) ?
+																			assetObj.nickName
+																		:	assetObj?.vehicle || "Unknown Vehicle"}
+																		{assetObj?.condition ?
+																			` • ${assetObj.condition}`
+																		:	""}
+																		{(
+																			typeof assetObj?.remainingFuel ===
+																			"number"
+																		) ?
+																			` • Fuel ${assetObj.remainingFuel}%`
+																		:	""}
 																	</span>
 
 																	<button
@@ -375,7 +382,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 																</div>
 															);
 														})
-													)}
+													}
 												</div>
 
 												{/* Add asset dropdown (available vehicles only) */}
@@ -395,9 +402,9 @@ const Teams = ({ dataUpdated, openSheet }) => {
 														<option
 															key={v._id}
 															value={v._id}>
-															{v.nickName && v.nickName !== "None"
-																? `${v.nickName} - `
-																: ""}
+															{v.nickName && v.nickName !== "None" ?
+																`${v.nickName} - `
+															:	""}
 															{v.vehicle} • {v.condition} • Fuel{" "}
 															{v.remainingFuel}%
 															{v.isRepairing ? " • Repairing" : ""}
@@ -453,7 +460,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 														"bottom",
 														<EditTeamForm teamId={team._id} />,
 														"Edit or Optimize Team",
-														"Modify team details, choose or remove operators, or Generate a team using A.I."
+														"Modify team details, choose or remove operators, or Generate a team using A.I.",
 													)
 												}
 											/>
@@ -462,15 +469,14 @@ const Teams = ({ dataUpdated, openSheet }) => {
 								)}
 							</React.Fragment>
 						))
-					) : (
-						<tr>
+					:	<tr>
 							<td
 								colSpan='3'
 								className='text-center py-4 text-gray-400'>
 								Click the PeopleGroup icon to add your first team.
 							</td>
 						</tr>
-					)}
+					}
 				</tbody>
 			</table>
 

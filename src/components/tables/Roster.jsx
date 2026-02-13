@@ -2,15 +2,11 @@
 // Users can switch between viewing regular operators, support operators, and aviators.
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUserPlus, faUserPen } from "@fortawesome/free-solid-svg-icons";
+import { faUserPlus } from "@fortawesome/free-solid-svg-icons";
 import { useOperatorsStore, useTeamsStore, useSheetStore } from "@/zustand"; // Fixed import
 import { PropTypes } from "prop-types";
 import { useEffect, useState } from "react";
-import {
-	NewOperatorForm,
-	EditOperatorForm,
-	AssignTeamSheet,
-} from "@/components/forms";
+import { NewOperatorForm, AssignTeamSheet } from "@/components/forms";
 import { OperatorImageView } from "@/components";
 import { Button } from "@material-tailwind/react";
 
@@ -67,7 +63,13 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 					setClickedOperator(operator);
 					setSelectedOperator(operator._id);
 					// Open image view sheet when operator row is clicked
-					openSheet("left", <OperatorImageView operator={operator} />);
+					openSheet(
+						"left",
+						<OperatorImageView
+							operator={operator}
+							openSheet={openSheet}
+						/>,
+					);
 				}}>
 				<th
 					scope='row'
@@ -125,26 +127,6 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 						{operator.status || "KIA"}
 					</div>
 				</td>*/}
-				<td>
-					<FontAwesomeIcon
-						className='text-btn text-lg cursor-pointer hover:text-blk/50'
-						icon={faUserPen}
-						onClick={(e) => {
-							e.stopPropagation();
-							openSheet(
-								"right",
-								<EditOperatorForm operator={operator} />,
-								isSupportTab ? "Edit Support"
-								: isAviatorTab ? "Edit Aviator"
-								: "Edit Operator",
-								isSupportTab ? "Edit the support operator's info and role."
-								: isAviatorTab ?
-									"Edit the aviator's info and aircraft assignment."
-								:	"Edit the operator's info.",
-							);
-						}}
-					/>
-				</td>
 			</tr>
 		);
 	};
@@ -220,7 +202,6 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 						{/*<th className='px-4 md:px-6 py-3'>Role</th>*/}
 						<th className='px-4 md:px-6 py-3'>Team</th>
 						{/*<th className='px-4 md:px-6 py-3'>Status</th>*/}
-						<th>Edit</th>
 					</tr>
 				</thead>
 
