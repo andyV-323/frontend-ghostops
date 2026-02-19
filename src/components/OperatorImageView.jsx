@@ -39,13 +39,6 @@ const OperatorImageView = ({ operator, openSheet }) => {
 	const displayImage =
 		selectedOperator.imageKey || selectedOperator.image || "/ghost/Default.png";
 
-	// If you want to ONLY show perks that exist in your config array:
-	const validPerks = (selectedOperator.perks || []).filter((p) =>
-		PERKS.includes(p),
-	);
-	// If you want to show everything stored on the operator even if not in config,
-	// just use: const validPerks = selectedOperator.perks || [];
-
 	return (
 		<section className='bg-transparent text-fontz p-4'>
 			<div className='flex flex-col items-center'>
@@ -158,20 +151,28 @@ const OperatorImageView = ({ operator, openSheet }) => {
 						)}
 
 					{/* PERKS */}
-					{validPerks.length > 0 && (
-						<div className='mt-4'>
-							<p className='text-xs text-gray-500 mb-2'>Perks</p>
-							<div className='grid grid-cols-3 gap-3'>
-								{validPerks.map((perk) => (
-									<div
-										key={perk}
-										className='flex flex-col items-center gap-1 bg-highlight/30 rounded-lg p-2 border border-line'>
-										<span className='text-xs text-center'>{perk}</span>
-									</div>
-								))}
+					{Array.isArray(selectedOperator.perks) &&
+						selectedOperator.perks.length > 0 && (
+							<div className='mt-4'>
+								<p className='text-xs text-gray-500 mb-2'>Perks</p>
+								<div className='grid grid-cols-3 gap-3'>
+									{selectedOperator.perks.map((perk) => (
+										<div
+											key={perk}
+											className='flex flex-col items-center gap-1 bg-highlight/30 rounded-lg p-2 border border-line'>
+											{PERKS[perk] ?
+												<img
+													src={PERKS[perk]}
+													alt={perk}
+													className='w-10 h-10'
+												/>
+											:	<div className='w-10 h-10 rounded bg-black/20' />}
+											<span className='text-xs text-center'>{perk}</span>
+										</div>
+									))}
+								</div>
 							</div>
-						</div>
-					)}
+						)}
 				</div>
 				{/* TAGS */}
 				<div className='w-full space-y-3 text-sm'>

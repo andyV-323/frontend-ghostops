@@ -349,60 +349,63 @@ const EditOperatorForm = ({ operator }) => {
 						<div>
 							<label className='block mb-2 font-medium'>Perks</label>
 
-							{/* Selected perks (chips) */}
+							{/* Selected items display */}
 							<div className='flex flex-wrap gap-2 mb-2'>
 								{(selectedOperator?.perks || []).map((perk) => (
 									<div
 										key={perk}
 										className='flex items-center gap-2 bg-highlight px-3 py-1 rounded-full'>
+										<img
+											src={PERKS[perk]}
+											alt={perk}
+											className='w-4 h-4'
+										/>
 										<span className='text-sm'>{perk}</span>
-
 										<button
 											type='button'
 											onClick={() => {
-												const current = selectedOperator?.perks || [];
-												const newPerks = current.filter((p) => p !== perk);
-
+												const newPerks = selectedOperator.perks.filter(
+													(i) => i !== perk,
+												);
 												handleChange({
 													target: { name: "perks", value: newPerks },
 												});
 											}}
-											className='text-red-500 hover:text-red-700'
-											aria-label={`Remove ${perk}`}>
+											className='text-red-500 hover:text-red-700'>
 											×
 										</button>
 									</div>
 								))}
 							</div>
 
-							{/* Add perk dropdown */}
+							{/* Dropdown to add perks */}
 							<select
 								className='form'
 								value=''
 								onChange={(e) => {
-									const perkToAdd = e.target.value;
-									if (!perkToAdd) return;
-
-									const current = selectedOperator?.perks || [];
-									if (current.includes(perkToAdd)) return;
-
-									const newPerks = [...current, perkToAdd];
-
-									handleChange({
-										target: { name: "perks", value: newPerks },
-									});
+									if (
+										e.target.value &&
+										!selectedOperator?.perks?.includes(e.target.value)
+									) {
+										const newPerks = [
+											...(selectedOperator?.perks || []),
+											e.target.value,
+										];
+										handleChange({
+											target: { name: "perks", value: newPerks },
+										});
+									}
 								}}>
 								<option value=''>Add a perk...</option>
-
-								{PERKS.filter(
-									(perk) => !(selectedOperator?.perks || []).includes(perk),
-								).map((perk) => (
-									<option
-										key={perk}
-										value={perk}>
-										{perk}
-									</option>
-								))}
+								{Object.keys(PERKS)
+									.filter((perk) => !selectedOperator?.perks?.includes(perk))
+									.map((perk) => (
+										<option
+											key={perk}
+											value={perk}>
+											{perk}
+										</option>
+									))}
 							</select>
 						</div>
 						<br />

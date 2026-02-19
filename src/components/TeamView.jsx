@@ -63,7 +63,9 @@ const TeamView = ({ teamId }) => {
 
 	const combinedPerks = useMemo(() => {
 		const all = teamOperatorsWithFullData.flatMap((op) => op.perks || []);
-		return [...new Set(all)].filter((p) => PERKS.includes(p));
+		return [...new Set(all)].filter((p) =>
+			Object.prototype.hasOwnProperty.call(PERKS, p),
+		);
 	}, [teamOperatorsWithFullData]);
 
 	const combinedEquipment = useMemo(() => {
@@ -125,23 +127,40 @@ const TeamView = ({ teamId }) => {
 						<h3 className='hidden lg:block font-semibold mb-4 text-xl text-center'>
 							Team Perks ({combinedPerks.length})
 						</h3>
-						{/* Mobile: pill tags */}
-						<div className='flex flex-wrap gap-1.5 lg:hidden'>
-							{combinedPerks.map((perk) => (
-								<span
-									key={perk}
-									className='text-xs bg-highlight/30 border border-line rounded-full px-2 py-0.5 whitespace-nowrap'>
-									{perk}
-								</span>
-							))}
-						</div>
-						{/* Desktop: grid cards */}
-						<div className='hidden lg:grid grid-cols-3 xl:grid-cols-5 gap-3'>
+						{/* Mobile: 4-col compact */}
+						<div className='grid grid-cols-4 gap-2 lg:hidden'>
 							{combinedPerks.map((perk) => (
 								<div
 									key={perk}
-									className='flex items-center justify-center bg-highlight/30 rounded-lg p-3 border border-line'>
-									<span className='text-sm text-center font-medium'>
+									className='flex flex-col items-center gap-1 bg-highlight/30 rounded p-2 border border-line min-w-0'>
+									{PERKS[perk] ?
+										<img
+											src={PERKS[perk]}
+											alt={perk}
+											className='w-8 h-8 flex-shrink-0'
+										/>
+									:	<div className='w-8 h-8 rounded bg-black/20 flex-shrink-0' />
+									}
+									<span className='text-[9px] text-center leading-tight w-full truncate'>
+										{perk}
+									</span>
+								</div>
+							))}
+						</div>
+						{/* Desktop: 6-col larger */}
+						<div className='hidden lg:grid grid-cols-4 xl:grid-cols-6 gap-3'>
+							{combinedPerks.map((perk) => (
+								<div
+									key={perk}
+									className='flex flex-col items-center gap-1 bg-highlight/30 rounded-lg p-3 border border-line'>
+									{PERKS[perk] ?
+										<img
+											src={PERKS[perk]}
+											alt={perk}
+											className='w-12 h-12'
+										/>
+									:	<div className='w-12 h-12 rounded bg-black/20' />}
+									<span className='text-xs text-center font-medium'>
 										{perk}
 									</span>
 								</div>
@@ -315,9 +334,6 @@ const TeamView = ({ teamId }) => {
 						{teamOperatorsWithFullData.map((operator, index) => {
 							const img =
 								operator.imageKey || operator.image || "/ghost/Default.png";
-							const validPerks = (operator.perks || []).filter((p) =>
-								PERKS.includes(p),
-							);
 
 							return (
 								<div
@@ -440,22 +456,33 @@ const TeamView = ({ teamId }) => {
 													</div>
 												)}
 
-											{validPerks.length > 0 && (
-												<div className='min-w-0'>
-													<p className='text-[10px] text-gray-500 mb-1'>
-														Perks ({validPerks.length})
-													</p>
-													<div className='flex flex-wrap gap-1'>
-														{validPerks.map((perk) => (
-															<span
-																key={perk}
-																className='text-[10px] bg-highlight/30 border border-line rounded-full px-2 py-0.5 whitespace-nowrap'>
-																{perk}
-															</span>
-														))}
+											{Array.isArray(operator.perks) &&
+												operator.perks.length > 0 && (
+													<div className='min-w-0'>
+														<p className='text-[10px] text-gray-500 mb-1'>
+															Perks
+														</p>
+														<div className='grid grid-cols-4 gap-1.5'>
+															{operator.perks.map((perk) => (
+																<div
+																	key={perk}
+																	className='flex flex-col items-center gap-0.5 bg-highlight/30 rounded p-1 border border-line min-w-0'>
+																	{PERKS[perk] ?
+																		<img
+																			src={PERKS[perk]}
+																			alt={perk}
+																			className='w-6 h-6 flex-shrink-0'
+																		/>
+																	:	<div className='w-6 h-6 rounded bg-black/20 flex-shrink-0' />
+																	}
+																	<span className='text-[8px] text-center leading-tight w-full truncate'>
+																		{perk}
+																	</span>
+																</div>
+															))}
+														</div>
 													</div>
-												</div>
-											)}
+												)}
 
 											{(operator.support || operator.aviator) && (
 												<div className='flex flex-wrap gap-1.5'>
@@ -612,25 +639,33 @@ const TeamView = ({ teamId }) => {
 												</div>
 
 												{/* Perks */}
-												{validPerks.length > 0 && (
-													<div className='bg-blk/30 rounded-lg p-4 border border-line'>
-														<h4 className='font-semibold mb-3 text-lg'>
-															Operator Perks ({validPerks.length})
-														</h4>
-														<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
-															{validPerks.map((perk) => (
-																<div
-																	key={perk}
-																	className='flex items-center justify-center bg-highlight/30 rounded-lg p-2 border border-line'>
-																	<span className='text-xs text-center'>
-																		{perk}
-																	</span>
-																</div>
-															))}
+												{Array.isArray(operator.perks) &&
+													operator.perks.length > 0 && (
+														<div className='mt-4'>
+															<p className='text-xs text-gray-500 mb-2'>
+																Perks
+															</p>
+															<div className='grid grid-cols-3 gap-2'>
+																{operator.perks.map((perk) => (
+																	<div
+																		key={perk}
+																		className='flex flex-col items-center gap-1 bg-highlight/30 rounded-lg p-2 border border-line'>
+																		{PERKS[perk] ?
+																			<img
+																				src={PERKS[perk]}
+																				alt={perk}
+																				className='w-8 h-8'
+																			/>
+																		:	<div className='w-8 h-8 rounded bg-black/20' />
+																		}
+																		<span className='text-xs text-center'>
+																			{perk}
+																		</span>
+																	</div>
+																))}
+															</div>
 														</div>
-													</div>
-												)}
-
+													)}
 												{/* Tags */}
 												{(operator.support || operator.aviator) && (
 													<div className='space-y-2'>
