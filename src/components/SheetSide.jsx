@@ -36,6 +36,7 @@ const SheetSide = ({ openSheet, side, content, title, description }) => {
 					<SheetFooter>
 						<SheetClose asChild>
 							<Button
+								className={"btn"}
 								type='button'
 								onClick={closeSheet}>
 								Close

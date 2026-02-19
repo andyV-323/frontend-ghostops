@@ -80,9 +80,9 @@ const NewTeamForm = () => {
 								placeholder='Enter team name'
 								value={teamName || ""}
 								onChange={(e) =>
-									setTeamName
-										? setTeamName(e.target.value)
-										: useTeamsStore.setState({ teamName: e.target.value })
+									setTeamName ?
+										setTeamName(e.target.value)
+									:	useTeamsStore.setState({ teamName: e.target.value })
 								}
 								required
 							/>
@@ -113,9 +113,9 @@ const NewTeamForm = () => {
 											key={v._id}
 											value={v._id}
 											disabled={v.isRepairing}>
-											{v.nickName && v.nickName !== "None"
-												? `${v.nickName} - `
-												: ""}
+											{v.nickName && v.nickName !== "None" ?
+												`${v.nickName} - `
+											:	""}
 											{v.vehicle} • {v.condition} • Fuel {v.remainingFuel}%
 											{v.isRepairing ? " • Repairing" : ""}
 										</option>
@@ -130,13 +130,13 @@ const NewTeamForm = () => {
 											<li
 												key={vehId}
 												className='flex justify-between items-center py-1'>
-												{v
-													? `${
-															v.nickName && v.nickName !== "None"
-																? v.nickName + " - "
-																: ""
-													  }${v.vehicle}`
-													: "Unknown Vehicle"}
+												{v ?
+													`${
+														v.nickName && v.nickName !== "None" ?
+															v.nickName + " - "
+														:	""
+													}${v.vehicle}`
+												:	"Unknown Vehicle"}
 												<FontAwesomeIcon
 													icon={faXmark}
 													className='text-2xl text-btn hover:text-white cursor-pointer'
@@ -188,8 +188,7 @@ const NewTeamForm = () => {
 									<option
 										key={operator._id}
 										value={operator._id}>
-										{operator.callSign} - {operator.class} -{" "}
-										{operator.secondaryClass}
+										{operator.callSign} - {operator.class} - {operator.role}
 									</option>
 								))}
 							</select>
