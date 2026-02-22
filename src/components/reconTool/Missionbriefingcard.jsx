@@ -16,7 +16,7 @@ import {
 	faPeopleGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import PropTypes from "prop-types";
-import { COMPROMISE_META } from "./Reconmodifiers";
+import { COMPROMISE_META } from "./ReconModifiers";
 
 const ConditionRow = ({ icon, label, available, delay, invertLabel }) => {
 	const [visible, setVisible] = useState(false);

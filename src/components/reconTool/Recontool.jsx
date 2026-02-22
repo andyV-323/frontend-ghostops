@@ -3,8 +3,8 @@ import PropTypes from "prop-types";
 import ReconDebrief from "./ReconDebrief";
 import ReconDebriefAdvanced from "./ReconDebriefAdvanced";
 import MissionBriefingCard from "./MissionBriefingCard";
-import { getMissionModifiers } from "./reconModifiers";
-import { getAdvancedMissionModifiers } from "./Reconmodifiersadvanced";
+import { getMissionModifiers } from "./ReconModifiers";
+import { getAdvancedMissionModifiers } from "./ReconModifiersAdvanced";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faRotateLeft,

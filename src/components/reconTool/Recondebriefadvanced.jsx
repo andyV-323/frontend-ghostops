@@ -15,7 +15,7 @@ import {
 	faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import PropTypes from "prop-types";
-import { ASSETS, RECON_TYPE_META } from "./Reconmodifiersadvanced";
+import { ASSETS, RECON_TYPE_META } from "./ReconModifiersAdvanced";
 
 // ── Recon type selector step ─────────────────────────────────────────────────
 const STEP_RECON_TYPE = {
