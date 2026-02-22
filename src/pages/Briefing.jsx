@@ -3,7 +3,7 @@ import { MapWrapper, SheetSide, Loadout, AuroaMap } from "@/components";
 import { MissionGenerator } from "@/components/ai";
 import { useOperatorsStore, useSheetStore, useTeamsStore } from "@/zustand";
 import { OperationsBoard } from "@/components/tables";
-import ReconTool from "@/components/reconTool/Recontool";
+import ReconTool from "../components/reconTool/Recontool";
 
 const Briefing = () => {
 	const [randomLocationSelection, setRandomLocationSelection] = useState([]);
