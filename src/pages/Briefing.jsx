@@ -3,6 +3,7 @@ import { MapWrapper, SheetSide, Loadout, AuroaMap } from "@/components";
 import { MissionGenerator } from "@/components/ai";
 import { useOperatorsStore, useSheetStore, useTeamsStore } from "@/zustand";
 import { OperationsBoard } from "@/components/tables";
+import ReconTool from "@/components/recon tool/recontool";
 
 const Briefing = () => {
 	const [randomLocationSelection, setRandomLocationSelection] = useState([]);
@@ -112,7 +113,8 @@ const Briefing = () => {
 				<div
 					className={panelClass}
 					style={panelShadow}>
-					<OperationsBoard openSheet={handleOpenSheet} />
+					{/*<OperationsBoard openSheet={handleOpenSheet} />*/}
+					<ReconTool />
 				</div>
 
 				{/* === MAP === */}
