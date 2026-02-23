@@ -115,7 +115,6 @@ const buildLaunchWindows = (compromise) => {
 		windows.day.authorized = true;
 		windows.dusk.authorized = true;
 	} else if (compromise === "warm") {
-		windows.night.authorized = true;
 		windows.dusk.authorized = true;
 	} else if (compromise === "engaged_exfil" || compromise === "engaged") {
 		windows.dawn.authorized = true;

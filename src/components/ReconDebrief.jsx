@@ -291,8 +291,8 @@ const ReconDebrief = ({ mission, onComplete }) => {
 							key={opt.value}
 							onClick={() => handleSelect(opt.value)}
 							className={`w-full text-left flex items-start gap-4 p-4 rounded border transition-all duration-200 cursor-pointer
-								${isSelected ? opt.selectedBg : `border-lines/30 bg-transparent ${opt.bg} ${opt.border}`}
-							`}>
+                                ${isSelected ? opt.selectedBg : `border-lines/30 bg-transparent ${opt.bg} ${opt.border}`}
+                            `}>
 							<FontAwesomeIcon
 								icon={opt.icon}
 								className={`mt-0.5 text-base ${opt.color} shrink-0`}
@@ -322,11 +322,11 @@ const ReconDebrief = ({ mission, onComplete }) => {
 				onClick={handleNext}
 				disabled={!selected}
 				className={`w-full py-3 rounded text-sm font-bold uppercase tracking-widest transition-all duration-200
-					${
-						selected ?
-							"bg-btn text-blk cursor-pointer hover:bg-highlight hover:text-fontz"
-						:	"bg-gray-800 text-gray-600 cursor-not-allowed"
-					}`}>
+                    ${
+											selected ?
+												"bg-btn text-blk cursor-pointer hover:bg-highlight hover:text-fontz"
+											:	"bg-gray-800 text-gray-600 cursor-not-allowed"
+										}`}>
 				{isLastStep ? "Submit Debrief" : "Confirm & Continue"}
 			</button>
 		</div>

@@ -1,10 +1,13 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
-import ReconDebrief from "./ReconDebrief";
-import ReconDebriefAdvanced from "./ReconDebriefAdvanced";
-import MissionBriefingCard from "./MissionBriefingCard";
-import { getMissionModifiers } from "./ReconModifiers";
-import { getAdvancedMissionModifiers } from "./ReconModifiersAdvanced";
+import {
+	ReconDebrief,
+	ReconBriefingCard,
+	ReconDebriefAdvanced,
+} from "@/components";
+
+import { getMissionModifiers } from "@/utils/ReconModifiers";
+import { getAdvancedMissionModifiers } from "@/utils/ReconModifiersAdvance";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faRotateLeft,
@@ -136,7 +139,7 @@ const ReconTool = ({ mission, onCasualtyUpdate = null }) => {
 			{/* ── Results ── */}
 			{phase === "results" && modifiers && (
 				<div className='flex flex-col gap-4 p-4 md:p-6'>
-					<MissionBriefingCard
+					<ReconBriefingCard
 						mission={mission}
 						modifiers={modifiers}
 					/>

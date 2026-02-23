@@ -15,7 +15,7 @@ import {
 	faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import PropTypes from "prop-types";
-import { ASSETS, RECON_TYPE_META } from "./ReconModifiersAdvanced";
+import { ASSETS, RECON_TYPE_META } from "@/utils/ReconModifiersAdvance";
 
 // ── Recon type selector step ─────────────────────────────────────────────────
 const STEP_RECON_TYPE = {
@@ -248,45 +248,45 @@ const STEP_CASUALTIES = {
 
 {
 	/*const STEP_TEAM_SIZE = {
-	id: "teamSize",
-	question: "What was the recon team size?",
-	subtext:
-		"Larger elements cover more ground but are harder to keep concealed.",
-	options: [
-		{
-			value: "solo",
-			label: "Solo Operator",
-			description:
-				"Maximum stealth, minimum coverage. Intel accuracy reduced — one set of eyes can only see so much.",
-			icon: faPersonFalling,
-			color: "text-indigo-400",
-			border: "border-indigo-400/40 hover:border-indigo-400",
-			bg: "hover:bg-indigo-400/10",
-			selectedBg: "bg-indigo-400/10 border-indigo-400",
-		},
-		{
-			value: "two",
-			label: "2-Man Element",
-			description:
-				"Standard recon pair. Balanced stealth and coverage. No intel modifier.",
-			icon: faShieldHalved,
-			color: "text-emerald-400",
-			border: "border-emerald-400/40 hover:border-emerald-400",
-			bg: "hover:bg-emerald-400/10",
-			selectedBg: "bg-emerald-400/10 border-emerald-400",
-		},
-		{
-			value: "squad",
-			label: "Full Squad (3–4)",
-			description:
-				"Maximum coverage. Intel accuracy improved — multiple operators confirm entry points and patrol routes.",
-			icon: faEye,
-			color: "text-amber-400",
-			border: "border-amber-400/40 hover:border-amber-400",
-			bg: "hover:bg-amber-400/10",
-			selectedBg: "bg-amber-400/10 border-amber-400",
-		},
-	],
+    id: "teamSize",
+    question: "What was the recon team size?",
+    subtext:
+        "Larger elements cover more ground but are harder to keep concealed.",
+    options: [
+        {
+            value: "solo",
+            label: "Solo Operator",
+            description:
+                "Maximum stealth, minimum coverage. Intel accuracy reduced — one set of eyes can only see so much.",
+            icon: faPersonFalling,
+            color: "text-indigo-400",
+            border: "border-indigo-400/40 hover:border-indigo-400",
+            bg: "hover:bg-indigo-400/10",
+            selectedBg: "bg-indigo-400/10 border-indigo-400",
+        },
+        {
+            value: "two",
+            label: "2-Man Element",
+            description:
+                "Standard recon pair. Balanced stealth and coverage. No intel modifier.",
+            icon: faShieldHalved,
+            color: "text-emerald-400",
+            border: "border-emerald-400/40 hover:border-emerald-400",
+            bg: "hover:bg-emerald-400/10",
+            selectedBg: "bg-emerald-400/10 border-emerald-400",
+        },
+        {
+            value: "squad",
+            label: "Full Squad (3–4)",
+            description:
+                "Maximum coverage. Intel accuracy improved — multiple operators confirm entry points and patrol routes.",
+            icon: faEye,
+            color: "text-amber-400",
+            border: "border-amber-400/40 hover:border-amber-400",
+            bg: "hover:bg-amber-400/10",
+            selectedBg: "bg-amber-400/10 border-amber-400",
+        },
+    ],
 };
 */
 }
@@ -565,20 +565,20 @@ const MultiSelectStep = ({ step, selectedAssets, onToggle }) => (
 					key={opt.value}
 					onClick={() => onToggle(opt.value)}
 					className={`w-full text-left flex items-start gap-4 p-4 rounded border transition-all duration-200 cursor-pointer
-						${
-							isSelected ?
-								isMismatch ? "bg-red-400/10 border-red-400"
-								:	"bg-emerald-400/10 border-emerald-400"
-							:	`border-lines/30 bg-transparent ${opt.bg} ${opt.border}`
-						}`}>
+                        ${
+													isSelected ?
+														isMismatch ? "bg-red-400/10 border-red-400"
+														:	"bg-emerald-400/10 border-emerald-400"
+													:	`border-lines/30 bg-transparent ${opt.bg} ${opt.border}`
+												}`}>
 					<div
 						className={`mt-1 h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-all
-						${
-							isSelected ?
-								isMismatch ? "border-red-400 bg-red-400"
-								:	"border-emerald-400 bg-emerald-400"
-							:	"border-gray-600"
-						}`}>
+                        ${
+													isSelected ?
+														isMismatch ? "border-red-400 bg-red-400"
+														:	"border-emerald-400 bg-emerald-400"
+													:	"border-gray-600"
+												}`}>
 						{isSelected && (
 							<FontAwesomeIcon
 								icon={faCheck}
@@ -746,8 +746,8 @@ const ReconDebriefAdvanced = ({ mission, onComplete }) => {
 								key={opt.value}
 								onClick={() => handleSelect(opt.value)}
 								className={`w-full text-left flex items-start gap-4 p-4 rounded border transition-all duration-200 cursor-pointer
-									${isSelected ? opt.selectedBg : `border-lines/30 bg-transparent ${opt.bg} ${opt.border}`}
-								`}>
+                                    ${isSelected ? opt.selectedBg : `border-lines/30 bg-transparent ${opt.bg} ${opt.border}`}
+                                `}>
 								<FontAwesomeIcon
 									icon={opt.icon}
 									className={`mt-0.5 text-base ${opt.color} shrink-0`}
@@ -784,11 +784,11 @@ const ReconDebriefAdvanced = ({ mission, onComplete }) => {
 				onClick={handleNext}
 				disabled={!canAdvance}
 				className={`w-full py-3 rounded text-sm font-bold uppercase tracking-widest transition-all duration-200
-					${
-						canAdvance ?
-							"bg-btn text-blk cursor-pointer hover:bg-highlight hover:text-fontz"
-						:	"bg-gray-800 text-gray-600 cursor-not-allowed"
-					}`}>
+                    ${
+											canAdvance ?
+												"bg-btn text-blk cursor-pointer hover:bg-highlight hover:text-fontz"
+											:	"bg-gray-800 text-gray-600 cursor-not-allowed"
+										}`}>
 				{isLastStep ? "Submit Debrief" : "Confirm & Continue"}
 			</button>
 		</div>

@@ -16,7 +16,7 @@ import {
 	faPeopleGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import PropTypes from "prop-types";
-import { COMPROMISE_META } from "./ReconModifiers";
+import { COMPROMISE_META } from "@/utils/ReconModifiers";
 
 const ConditionRow = ({ icon, label, available, delay, invertLabel }) => {
 	const [visible, setVisible] = useState(false);
@@ -78,7 +78,7 @@ const ConditionRow = ({ icon, label, available, delay, invertLabel }) => {
 	);
 };
 
-const MissionBriefingCard = ({ mission, modifiers }) => {
+const ReconBriefingCard = ({ mission, modifiers }) => {
 	const [revealed, setRevealed] = useState(false);
 	const meta =
 		COMPROMISE_META[modifiers.compromiseBadge] ?? COMPROMISE_META["cold"];
@@ -379,7 +379,7 @@ ConditionRow.defaultProps = {
 	invertLabel: false,
 };
 
-MissionBriefingCard.propTypes = {
+ReconBriefingCard.propTypes = {
 	mission: PropTypes.shape({
 		_id: PropTypes.string,
 		name: PropTypes.string,
@@ -417,4 +417,4 @@ MissionBriefingCard.propTypes = {
 	}).isRequired,
 };
 
-export default MissionBriefingCard;
+export default ReconBriefingCard;

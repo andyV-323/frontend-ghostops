@@ -123,7 +123,6 @@ export const getMissionModifiers = (reconResult) => {
 		TIME_WINDOWS.dusk.authorized = true;
 	} else if (compromise === "warm") {
 		// Night and transitional only — daylight too exposed
-		TIME_WINDOWS.night.authorized = true;
 		TIME_WINDOWS.dusk.authorized = true;
 	} else if (compromise === "engaged_exfil" || compromise === "engaged") {
 		// Transitional windows only
