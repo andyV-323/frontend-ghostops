@@ -55,6 +55,15 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 		const activeClass = activeClasses[operator._id] || operator.class;
 		const teamName = getOperatorTeam(operator._id);
 
+		const statusColor =
+			operator?.status?.toLowerCase() === "active" ? "#6a9a40"
+			: (
+				operator?.status?.toLowerCase() === "injured" ||
+				operator?.status?.toLowerCase() === "wounded"
+			) ?
+				"#c89050"
+			:	"#c06060";
+
 		return (
 			<tr
 				key={operator._id}
@@ -81,8 +90,21 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 						onError={(e) => (e.target.src = "/ghost/Default.png")}
 					/>
 					<div className='pl-3'>
-						<div className='text-sm md:text-base font-semibold'>
+						<div
+							className='text-sm md:text-base font-semibold'
+							style={{ display: "flex", alignItems: "center", gap: 6 }}>
 							{operator.callSign || "Unknown Operator"}
+							<span
+								style={{
+									display: "inline-block",
+									width: 6,
+									height: 6,
+									borderRadius: "50%",
+									background: statusColor,
+									boxShadow: `0 0 5px ${statusColor}`,
+									flexShrink: 0,
+								}}
+							/>
 						</div>
 					</div>
 				</th>
@@ -228,7 +250,6 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 
 TabbedRoster.propTypes = {
 	operators: PropTypes.array,
-
 	setSelectedClass: PropTypes.func,
 	dataUpdated: PropTypes.bool,
 	refreshData: PropTypes.func,

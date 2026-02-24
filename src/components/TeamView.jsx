@@ -108,16 +108,6 @@ const TeamView = ({ teamId }) => {
 					</p>
 				</div>
 
-				{/* ── Map ── */}
-				{allTeamAOs.length > 0 && (
-					<div className='w-full rounded-lg overflow-hidden border border-line'>
-						<AuroraMap
-							selectedAOs={allTeamAOs}
-							currentTeamAO={selectedTeam.AO}
-						/>
-					</div>
-				)}
-
 				{/* ── Combined Perks ── */}
 				{combinedPerks.length > 0 && (
 					<div className='bg-line rounded-lg p-3 lg:p-6 border border-line w-full min-w-0'>
@@ -127,7 +117,6 @@ const TeamView = ({ teamId }) => {
 						<h3 className='hidden lg:block font-semibold mb-4 text-xl text-center'>
 							Team Perks ({combinedPerks.length})
 						</h3>
-						{/* Mobile: 4-col compact */}
 						<div className='grid grid-cols-4 gap-2 lg:hidden'>
 							{combinedPerks.map((perk) => (
 								<div
@@ -147,7 +136,6 @@ const TeamView = ({ teamId }) => {
 								</div>
 							))}
 						</div>
-						{/* Desktop: 6-col larger */}
 						<div className='hidden lg:grid grid-cols-4 xl:grid-cols-6 gap-3'>
 							{combinedPerks.map((perk) => (
 								<div
@@ -178,7 +166,6 @@ const TeamView = ({ teamId }) => {
 						<h3 className='hidden lg:block font-semibold mb-4 text-xl text-center'>
 							Team Equipment ({combinedEquipment.length})
 						</h3>
-						{/* Mobile: 4-col compact */}
 						<div className='grid grid-cols-4 gap-2 lg:hidden'>
 							{combinedEquipment.map((item) => (
 								<div
@@ -198,7 +185,6 @@ const TeamView = ({ teamId }) => {
 								</div>
 							))}
 						</div>
-						{/* Desktop: 6-col larger */}
 						<div className='hidden lg:grid grid-cols-4 xl:grid-cols-6 gap-3'>
 							{combinedEquipment.map((item) => (
 								<div
@@ -229,7 +215,6 @@ const TeamView = ({ teamId }) => {
 						<h3 className='hidden lg:block font-semibold mb-4 text-xl text-center'>
 							Team Assets ({selectedTeam.assets.length})
 						</h3>
-						{/* Mobile: stacked compact rows */}
 						<div className='space-y-2 lg:hidden'>
 							{selectedTeam.assets.map((asset) => {
 								const a = typeof asset === "object" ? asset : null;
@@ -274,7 +259,6 @@ const TeamView = ({ teamId }) => {
 								);
 							})}
 						</div>
-						{/* Desktop: card grid */}
 						<div className='hidden lg:grid grid-cols-2 xl:grid-cols-3 gap-4'>
 							{selectedTeam.assets.map((asset) => {
 								const a = typeof asset === "object" ? asset : null;
@@ -330,7 +314,7 @@ const TeamView = ({ teamId }) => {
 
 				{/* ── Operator Cards ── */}
 				{teamOperatorsWithFullData.length > 0 ?
-					<div className='space-y-3 lg:space-y-6 w-full min-w-0'>
+					<div className='grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-0 w-full min-w-0'>
 						{teamOperatorsWithFullData.map((operator, index) => {
 							const img =
 								operator.imageKey || operator.image || "/ghost/Default.png";
@@ -338,365 +322,110 @@ const TeamView = ({ teamId }) => {
 							return (
 								<div
 									key={operator._id || index}
-									className='bg-line rounded-lg border border-line overflow-hidden w-full min-w-0'>
-									{/* ── MOBILE layout (hidden on lg+) ── */}
-									<div className='lg:hidden'>
-										{/* Full image */}
-										<div className='w-full'>
-											<img
-												src={img}
-												alt={operator.callSign || "Operator"}
-												className='w-full max-h-80 object-contain'
-												onError={(e) => {
-													e.currentTarget.src = "/ghost/Default.png";
-												}}
-											/>
-										</div>
-
-										{/* Details */}
-										<div className='px-3 pb-3 pt-2 space-y-2.5 min-w-0'>
-											{/* Name + status + button */}
-											<div className='flex items-start justify-between gap-2 min-w-0'>
-												<div className='min-w-0'>
-													<h3 className='text-base font-bold leading-tight truncate'>
-														{operator.callSign || "Unknown"}
-													</h3>
-													<div className='flex items-center gap-1.5 mt-0.5'>
-														<div
-															className={`h-2 w-2 rounded-full flex-shrink-0 ${
-																operator.status === "Active" ? "bg-green-500"
-																: operator.status === "Injured" ?
-																	"bg-yellow-500"
-																:	"bg-red-500"
-															}`}
-														/>
-														<span className='text-xs text-gray-400'>
-															{operator.status || "Unknown"}
-														</span>
-													</div>
-												</div>
-												<button
-													onClick={(e) => {
-														e.stopPropagation();
-														handleOpenInjuryDialog(operator);
-													}}
-													className='flex-shrink-0 px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded font-semibold transition-all'>
-													Assign Injury
-												</button>
-											</div>
-
-											<div className='text-xs text-gray-400 space-y-0.5'>
-												<p>{operator.class || "No Class"}</p>
-												<p>{operator.role || "No Role"}</p>
-											</div>
-
-											{operator.weaponType && (
-												<div className='flex items-center gap-2 min-w-0'>
-													{WEAPONS[operator.weaponType]?.imgUrl && (
-														<img
-															src={WEAPONS[operator.weaponType].imgUrl}
-															alt='weapon'
-															className='w-8 h-8 object-contain flex-shrink-0'
-														/>
-													)}
-													<div className='min-w-0'>
-														<p className='text-[10px] text-gray-500'>Primary</p>
-														<p className='text-xs truncate'>
-															{operator.weapon ||
-																WEAPONS[operator.weaponType]?.name ||
-																"Unknown"}
-														</p>
-													</div>
-												</div>
-											)}
-
-											{operator.sideArm && (
-												<div className='flex items-center gap-2 min-w-0'>
-													{WEAPONS.Sidearm?.imgUrl && (
-														<img
-															src={WEAPONS.Sidearm.imgUrl}
-															alt='Sidearm'
-															className='w-8 h-8 object-contain flex-shrink-0'
-														/>
-													)}
-													<div className='min-w-0'>
-														<p className='text-[10px] text-gray-500'>Sidearm</p>
-														<p className='text-xs truncate'>
-															{operator.sideArm}
-														</p>
-													</div>
-												</div>
-											)}
-
-											{Array.isArray(operator.items) &&
-												operator.items.length > 0 && (
-													<div className='min-w-0'>
-														<p className='text-[10px] text-gray-500 mb-1'>
-															Equipment
-														</p>
-														<div className='grid grid-cols-4 gap-1.5'>
-															{operator.items.map((item) => (
-																<div
-																	key={item}
-																	className='flex flex-col items-center gap-0.5 bg-highlight/30 rounded p-1 border border-line min-w-0'>
-																	{ITEMS[item] ?
-																		<img
-																			src={ITEMS[item]}
-																			alt={item}
-																			className='w-6 h-6 flex-shrink-0'
-																		/>
-																	:	<div className='w-6 h-6 rounded bg-black/20 flex-shrink-0' />
-																	}
-																	<span className='text-[8px] text-center leading-tight w-full truncate'>
-																		{item}
-																	</span>
-																</div>
-															))}
-														</div>
-													</div>
-												)}
-
-											{Array.isArray(operator.perks) &&
-												operator.perks.length > 0 && (
-													<div className='min-w-0'>
-														<p className='text-[10px] text-gray-500 mb-1'>
-															Perks
-														</p>
-														<div className='grid grid-cols-4 gap-1.5'>
-															{operator.perks.map((perk) => (
-																<div
-																	key={perk}
-																	className='flex flex-col items-center gap-0.5 bg-highlight/30 rounded p-1 border border-line min-w-0'>
-																	{PERKS[perk] ?
-																		<img
-																			src={PERKS[perk]}
-																			alt={perk}
-																			className='w-6 h-6 flex-shrink-0'
-																		/>
-																	:	<div className='w-6 h-6 rounded bg-black/20 flex-shrink-0' />
-																	}
-																	<span className='text-[8px] text-center leading-tight w-full truncate'>
-																		{perk}
-																	</span>
-																</div>
-															))}
-														</div>
-													</div>
-												)}
-
-											{(operator.support || operator.aviator) && (
-												<div className='flex flex-wrap gap-1.5'>
-													{operator.support && (
-														<span className='text-[10px] font-semibold bg-highlight/30 border border-line rounded px-2 py-0.5'>
-															SUPPORT SPECIALIST
-														</span>
-													)}
-													{operator.aviator && (
-														<span className='text-[10px] font-semibold bg-highlight/30 border border-line rounded px-2 py-0.5'>
-															AVIATOR
-														</span>
-													)}
-												</div>
-											)}
-
-											{operator.bio && (
-												<div className='bg-blk/30 rounded p-2 border border-line min-w-0'>
-													<p className='text-[10px] text-gray-500 mb-0.5'>
-														Bio
-													</p>
-													<p className='text-xs text-gray-400 whitespace-pre-wrap break-words'>
-														{operator.bio}
-													</p>
-												</div>
-											)}
-										</div>
+									className='bg-line  overflow-hidden w-full min-w-0 flex flex-col'>
+									{/* Operator image */}
+									<div className='w-full'>
+										<img
+											src={img}
+											alt={operator.callSign || "Operator"}
+											className='w-full aspect-[3/4] object-cover object-top'
+											onError={(e) => {
+												e.currentTarget.src = "/ghost/Default.png";
+											}}
+										/>
 									</div>
 
-									{/* ── DESKTOP layout (hidden below lg) ── */}
-									<div className='hidden lg:block p-6'>
-										<div className='flex flex-row gap-6'>
-											{/* Left: full image */}
-											<div className='flex-shrink-0'>
-												<img
-													src={img}
-													alt={operator.callSign || "Operator"}
-													className='max-h-[600px] object-contain rounded-xl border-2 border-line shadow-lg'
-													onError={(e) => {
-														e.currentTarget.src = "/ghost/Default.png";
-													}}
-												/>
-											</div>
+									{/* Details */}
+									<div className='px-3 pb-3 pt-2 space-y-2 min-w-0 flex-1 flex flex-col border border-line bg-highlight/30'>
+										{/* Name */}
+										<h3 className='font-bold text-sm lg:text-xl leading-tight truncate'>
+											{operator.callSign || "Unknown"}
+										</h3>
 
-											{/* Right: details */}
-											<div className='flex-1 space-y-4'>
-												{/* Name + button */}
-												<div className='flex items-center justify-between gap-4'>
-													<h3 className='text-2xl font-bold'>
-														{operator.callSign || "Unknown Operator"}
-													</h3>
-													<button
-														onClick={(e) => {
-															e.stopPropagation();
-															handleOpenInjuryDialog(operator);
-														}}
-														className='px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded font-semibold transition-all flex-shrink-0'>
-														Assign Injury
-													</button>
-												</div>
-
-												{/* Status + class + role */}
-												<div className='space-y-1 text-gray-400'>
-													<p>Class: {operator.class || "No Class"}</p>
-													<p>Team Role: {operator.role || "None"}</p>
-													<div className='flex items-center gap-2 mt-1'>
-														<div
-															className={`h-3 w-3 rounded-full ${
-																operator.status === "Active" ? "bg-green-500"
-																: operator.status === "Injured" ?
-																	"bg-yellow-500"
-																:	"bg-red-500"
-															}`}
-														/>
-														<span className='text-sm'>
-															{operator.status || "Unknown Status"}
-														</span>
-													</div>
-												</div>
-
-												{/* Loadout */}
-												<div className='bg-blk/30 rounded-lg p-4 border border-line'>
-													<h4 className='font-semibold mb-3 text-lg'>
-														Loadout
-													</h4>
-
-													{operator.weaponType && (
-														<div className='mb-3 flex items-center gap-3'>
-															{WEAPONS[operator.weaponType]?.imgUrl && (
-																<img
-																	src={WEAPONS[operator.weaponType].imgUrl}
-																	alt='Weapon'
-																	className='w-24 h-24'
-																/>
-															)}
-															<div>
-																<p className='text-xs text-gray-500'>
-																	Primary Weapon
-																</p>
-																<p className='font-medium'>
-																	{operator.weapon ||
-																		WEAPONS[operator.weaponType]?.name ||
-																		"Unknown Weapon"}
-																</p>
-															</div>
-														</div>
-													)}
-
-													{operator.sideArm && (
-														<div className='mb-3 flex items-center gap-3'>
-															{WEAPONS.Sidearm?.imgUrl && (
-																<img
-																	src={WEAPONS.Sidearm.imgUrl}
-																	alt='Sidearm'
-																	className='w-24 h-24'
-																/>
-															)}
-															<div>
-																<p className='text-xs text-gray-500'>Sidearm</p>
-																<p className='font-medium'>
-																	{operator.sideArm}
-																</p>
-															</div>
-														</div>
-													)}
-
-													{Array.isArray(operator.items) &&
-														operator.items.length > 0 && (
-															<div className='mt-4'>
-																<p className='text-xs text-gray-500 mb-2'>
-																	Equipment
-																</p>
-																<div className='grid grid-cols-3 gap-2'>
-																	{operator.items.map((item) => (
-																		<div
-																			key={item}
-																			className='flex flex-col items-center gap-1 bg-highlight/30 rounded-lg p-2 border border-line'>
-																			{ITEMS[item] ?
-																				<img
-																					src={ITEMS[item]}
-																					alt={item}
-																					className='w-8 h-8'
-																				/>
-																			:	<div className='w-8 h-8 rounded bg-black/20' />
-																			}
-																			<span className='text-xs text-center'>
-																				{item}
-																			</span>
-																		</div>
-																	))}
-																</div>
-															</div>
-														)}
-												</div>
-
-												{/* Perks */}
-												{Array.isArray(operator.perks) &&
-													operator.perks.length > 0 && (
-														<div className='mt-4'>
-															<p className='text-xs text-gray-500 mb-2'>
-																Perks
-															</p>
-															<div className='grid grid-cols-3 gap-2'>
-																{operator.perks.map((perk) => (
-																	<div
-																		key={perk}
-																		className='flex flex-col items-center gap-1 bg-highlight/30 rounded-lg p-2 border border-line'>
-																		{PERKS[perk] ?
-																			<img
-																				src={PERKS[perk]}
-																				alt={perk}
-																				className='w-8 h-8'
-																			/>
-																		:	<div className='w-8 h-8 rounded bg-black/20' />
-																		}
-																		<span className='text-xs text-center'>
-																			{perk}
-																		</span>
-																	</div>
-																))}
-															</div>
-														</div>
-													)}
-												{/* Tags */}
-												{(operator.support || operator.aviator) && (
-													<div className='space-y-2'>
-														{operator.support && (
-															<div className='text-center bg-blue-900/20 border border-blue-700 rounded-lg py-2'>
-																<span className='text-blue-400 font-semibold text-sm'>
-																	SUPPORT SPECIALIST
-																</span>
-															</div>
-														)}
-														{operator.aviator && (
-															<div className='text-center bg-sky-900/20 border border-sky-700 rounded-lg py-2'>
-																<span className='text-sky-400 font-semibold text-sm'>
-																	AVIATOR
-																</span>
-															</div>
-														)}
-													</div>
-												)}
-
-												{/* Bio */}
-												{operator.bio && (
-													<div className='bg-gray-800/40 rounded-lg p-4 border border-gray-700'>
-														<h4 className='font-semibold mb-2'>Bio</h4>
-														<p className='text-gray-400 whitespace-pre-wrap text-sm'>
-															{operator.bio}
-														</p>
-													</div>
-												)}
-											</div>
+										{/* Class + role */}
+										<div className='text-xs lg:text-sm text-gray-400 space-y-0.5'>
+											<p className='text-[10px] lg:text-xs text-gray-500'>
+												Class
+											</p>
+											<p>{operator.class || "No Class"}</p>
+											<p className='text-[10px] lg:text-xs text-gray-500'>
+												Role
+											</p>
+											<p>{operator.role || "No Role"}</p>
 										</div>
+
+										{/* Primary weapon */}
+										{operator.weaponType && (
+											<div className='flex items-center gap-2 min-w-0'>
+												{WEAPONS[operator.weaponType]?.imgUrl && (
+													<img
+														src={WEAPONS[operator.weaponType].imgUrl}
+														alt='weapon'
+														className='w-10 h-10 lg:w-20 lg:h-20 object-contain flex-shrink-0'
+													/>
+												)}
+												<div className='min-w-0'>
+													<p className='text-[10px] lg:text-xs text-gray-500'>
+														Primary
+													</p>
+													<p className='text-xs lg:text-sm truncate'>
+														{operator.weapon ||
+															WEAPONS[operator.weaponType]?.name ||
+															"Unknown"}
+													</p>
+												</div>
+											</div>
+										)}
+
+										{/* Sidearm */}
+										{operator.sideArm && (
+											<div className='flex items-center gap-2 min-w-0'>
+												{WEAPONS.Sidearm?.imgUrl && (
+													<img
+														src={WEAPONS.Sidearm.imgUrl}
+														alt='Sidearm'
+														className='w-10 h-10 lg:w-20 lg:h-20 object-contain flex-shrink-0'
+													/>
+												)}
+												<div className='min-w-0'>
+													<p className='text-[10px] lg:text-xs text-gray-500'>
+														Sidearm
+													</p>
+													<p className='text-xs lg:text-sm truncate'>
+														{operator.sideArm}
+													</p>
+												</div>
+											</div>
+										)}
+
+										{/* Tags */}
+										{(operator.support || operator.aviator) && (
+											<div className='flex flex-wrap gap-1'>
+												{operator.support && (
+													<span className='text-[9px] lg:text-xs font-semibold bg-highlight/30 border border-line rounded px-1.5 py-0.5'>
+														SUPPORT
+													</span>
+												)}
+												{operator.aviator && (
+													<span className='text-[9px] lg:text-xs font-semibold bg-highlight/30 border border-line rounded px-1.5 py-0.5'>
+														AVIATOR
+													</span>
+												)}
+											</div>
+										)}
+
+										{/* Spacer */}
+										<div className='flex-1' />
+
+										{/* Assign Injury — pinned to bottom */}
+										<button
+											onClick={(e) => {
+												e.stopPropagation();
+												handleOpenInjuryDialog(operator);
+											}}
+											className='w-full btn'>
+											Assign Injury
+										</button>
 									</div>
 								</div>
 							);
@@ -723,6 +452,16 @@ const TeamView = ({ teamId }) => {
 					/>
 				)}
 			</div>
+			{/* ── Map ── */}
+			{allTeamAOs.length > 0 && (
+				<div className='w-full rounded-lg overflow-hidden border border-line'>
+					<AuroraMap
+						selectedAOs={allTeamAOs}
+						currentTeamAO={selectedTeam.AO}
+						currentTeamId={selectedTeam._id} // ← add this
+					/>
+				</div>
+			)}
 		</div>
 	);
 };
