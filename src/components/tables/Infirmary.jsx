@@ -1,3 +1,5 @@
+// Infirmary.jsx — redesigned to match UnifiedDashboard HUD aesthetic
+
 import React, { useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -14,117 +16,152 @@ const Infirmary = () => {
 		useInfirmaryStore();
 	const [expandedOperator, toggleExpand] = useToggleExpand();
 
-	// Fetch injured operators
 	useEffect(() => {
 		fetchInjuredOperators();
 	}, [injuredOperators.length]);
 
 	return (
-		<div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
-			<h1 className='flex flex-col items-center text-lg text-fontz font-bold'>
-				Infirmary
-			</h1>
-			<table className='w-full text-sm text-left text-gray-400'>
-				<thead className='text-md text-fontz uppercase bg-linear-to-r/oklch from-blk to-neutral-800'>
+		<div className='flex flex-col'>
+			<table className='w-full text-left'>
+				<thead className='sticky top-0 z-10 bg-blk/90 border-b border-lines/20'>
 					<tr>
-						<th className='px-4 md:px-6 py-3'>Name</th>
-						<th className='px-4 md:px-6 py-3'>Recovery</th>
-						<th className='px-4 md:px-6 py-3'>Action</th>
+						<th className='px-4 py-3 font-mono text-[10px] tracking-widest text-lines/50 uppercase'>
+							Operator
+						</th>
+						<th className='px-4 py-3 font-mono text-[10px] tracking-widest text-lines/50 uppercase'>
+							Recovery
+						</th>
+						<th className='px-4 py-3 font-mono text-[10px] tracking-widest text-lines/50 uppercase text-right'>
+							Action
+						</th>
 					</tr>
 				</thead>
+
 				<tbody>
-					{injuredOperators.length > 0 ? (
+					{injuredOperators.length > 0 ?
 						injuredOperators.map((entry, index) => {
-							// Use recoveryHours directly (in hours)
-							const recoveryHours = entry.recoveryHours;
-							const recoverySeconds = recoveryHours * 3600; // Convert to seconds for calculation only
-							const injuredAt = new Date(entry.injuredAt);
-							const now = new Date();
-							const elapsedSeconds = Math.floor((now - injuredAt) / 1000);
-							const progressPercent = Math.min(
-								100,
-								Math.floor((elapsedSeconds / recoverySeconds) * 100)
+							const recoverySeconds = entry.recoveryHours * 3600;
+							const elapsed = Math.floor(
+								(Date.now() - new Date(entry.injuredAt)) / 1000,
 							);
+							const progress = Math.min(
+								100,
+								Math.floor((elapsed / recoverySeconds) * 100),
+							);
+
+							// Color the bar based on recovery progress
+							const barColor =
+								progress >= 75 ? "bg-green-500"
+								: progress >= 40 ? "bg-amber-400"
+								: "bg-red-500/70";
 
 							return (
 								<React.Fragment
 									key={entry.operator?._id || entry.injuredAt || index}>
-									{/** Main Row **/}
+									{/* Main row */}
 									<tr
-										key={`main-${entry.operator?._id || index}`}
 										onClick={() => toggleExpand(index)}
-										className='cursor-pointer bg-transparent border-b hover:bg-highlight transition-all duration-300'>
-										<th
-											scope='row'
-											className='flex items-center px-4 md:px-6 py-4 text-gray-400 hover:text-fontz whitespace-nowrap'>
-											<img
-												className='w-8 h-8 rounded-full border border-lines bg-highlight md:w-10 md:h-10'
-												src={entry.operator?.image || "/ghost/Default.png"}
-												alt='Profile'
-											/>
-											<div className='pl-3'>
-												<div className='text-sm md:text-base font-semibold'>
-													{entry.operator?.callSign || "Unknown Operator"}
+										className='border-b border-lines/10 hover:bg-highlight/20 cursor-pointer transition-colors duration-150'>
+										{/* Operator */}
+										<td className='px-4 py-3'>
+											<div className='flex items-center gap-3'>
+												<div className='relative shrink-0'>
+													<img
+														className='w-8 h-8 rounded-full border border-lines/30 bg-highlight object-cover'
+														src={entry.operator?.image || "/ghost/Default.png"}
+														alt='Operator'
+													/>
+													{/* Amber injury indicator */}
+													<span className='absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-blk bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]' />
+												</div>
+												<span className='font-mono text-xs text-fontz'>
+													{entry.operator?.callSign || "Unknown"}
+												</span>
+											</div>
+										</td>
+
+										{/* Recovery bar */}
+										<td className='px-4 py-3'>
+											<div className='flex flex-col gap-1.5 min-w-[100px]'>
+												<div className='w-full h-1.5 bg-blk/60 rounded-full overflow-hidden border border-lines/10'>
+													<div
+														className={[
+															"h-full rounded-full transition-all duration-500",
+															barColor,
+														].join(" ")}
+														style={{ width: `${progress}%` }}
+													/>
+												</div>
+												<div className='flex items-center justify-between'>
+													<span className='font-mono text-[9px] text-lines/40 tracking-widest'>
+														{entry.recoveryHours}h
+													</span>
+													<span
+														className={[
+															"font-mono text-[9px] tracking-widest",
+															progress >= 75 ? "text-green-500"
+															: progress >= 40 ? "text-amber-400"
+															: "text-red-400",
+														].join(" ")}>
+														{progress}%
+													</span>
 												</div>
 											</div>
-										</th>
-										<td className='px-4 md:px-6 py-4'>
-											{entry.recoveryHours} Hours
-											<div className='w-full bg-blk/50 rounded-full h-2.5 dark:bg-gray-700 mt-2'>
-												<div
-													className='bg-highlight h-2.5 rounded-full transition-all duration-500'
-													style={{ width: `${progressPercent}%` }}></div>
-											</div>
-											<p className='text-xs mt-1 text-gray-500'>
-												{progressPercent}% recovered
-											</p>
 										</td>
-										<td className='px-4 md:px-6 py-4 flex justify-between items-center'>
-											<button
-												onClick={(e) => {
-													e.stopPropagation();
-													recoverOperator(entry._id);
-												}}
-												className='text-xl text-fontz hover:text-white'>
-												<FontAwesomeIcon icon={faSyringe} />
-											</button>
-											<FontAwesomeIcon
-												icon={
-													expandedOperator === index ? faCaretUp : faCaretDown
-												}
-												className='text-gray-400 text-lg hover:text-white transition-all'
-											/>
+
+										{/* Actions */}
+										<td className='px-4 py-3'>
+											<div className='flex items-center justify-end gap-3'>
+												<button
+													onClick={(e) => {
+														e.stopPropagation();
+														recoverOperator(entry._id);
+													}}
+													className='w-7 h-7 flex items-center justify-center bg-btn/20 hover:bg-btn text-btn hover:text-blk border border-btn/30 rounded transition-all'
+													title='Discharge operator'>
+													<FontAwesomeIcon
+														icon={faSyringe}
+														className='text-[11px]'
+													/>
+												</button>
+												<FontAwesomeIcon
+													icon={
+														expandedOperator === index ? faCaretUp : faCaretDown
+													}
+													className='text-lines/30 text-sm'
+												/>
+											</div>
 										</td>
 									</tr>
-									{/** Expanded Row (Injury Details) **/}
+
+									{/* Expanded: injury details */}
 									{expandedOperator === index && (
-										<tr key={`expanded-${entry.operator?._id || index}`}>
+										<tr>
 											<td
 												colSpan={3}
-												className='p-4 bg-blk/50 text-gray-400'>
-												<div className='flex flex-col gap-2'>
-													<h3 className='text-sm font-semibold'>
-														Injury Details
-													</h3>
-													<p className='text-xs md:text-sm'>
-														{entry.injuryType}
-													</p>
-												</div>
+												className='px-4 py-3 bg-blk/50 border-b border-lines/10'>
+												<p className='font-mono text-[9px] tracking-[0.18em] text-lines/30 uppercase mb-1'>
+													Injury Report
+												</p>
+												<p className='font-mono text-xs text-fontz/70 leading-relaxed'>
+													{entry.injuryType || "Details unavailable."}
+												</p>
 											</td>
 										</tr>
 									)}
 								</React.Fragment>
 							);
 						})
-					) : (
-						<tr>
+					:	<tr>
 							<td
 								colSpan={3}
-								className='text-center py-4 text-gray-400'>
-								No Wounded...
+								className='py-10 text-center'>
+								<p className='font-mono text-[10px] tracking-widest text-lines/25 uppercase'>
+									No Wounded
+								</p>
 							</td>
 						</tr>
-					)}
+					}
 				</tbody>
 			</table>
 		</div>

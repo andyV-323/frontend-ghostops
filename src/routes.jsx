@@ -20,6 +20,7 @@ import DashboardLayout from "./layout/DashboardLayout";
 import MainLayout from "./layout/MainLayout";
 import Login from "./pages/Login";
 import VehicleSimulator from "./pages/VehicleSimulator";
+import UnifiedDashboard from "./pages/UnifiedDashboard";
 
 // Define Routes
 const AppRoutes = () => {
@@ -46,7 +47,7 @@ const AppRoutes = () => {
 					path='/dashboard'
 					element={
 						<PrivateRoute>
-							<DashboardLayout />
+							<UnifiedDashboard />
 						</PrivateRoute>
 					}>
 					<Route

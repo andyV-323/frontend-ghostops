@@ -21,6 +21,7 @@ const ConfirmDialog = ({
 	onKIAInjury,
 	injuryType,
 }) => {
+	// ── Injury assignment variant ──────────────────────────────
 	if (injuryType === "choice") {
 		return (
 			<Dialog
@@ -28,38 +29,38 @@ const ConfirmDialog = ({
 				onOpenChange={closeDialog}>
 				<DialogContent className='max-w-[90%] sm:max-w-md text-fontz z-[1110]'>
 					<DialogHeader>
-						<DialogTitle>
-							Assign Injury to {selectedOperator?.callSign}
+						<DialogTitle className='font-mono text-[11px] tracking-[0.18em] text-lines uppercase'>
+							Assign Injury —{" "}
+							<span className='text-btn'>{selectedOperator?.callSign}</span>
 						</DialogTitle>
-						<DialogDescription>
-							Choose the type of injury to assign to this operator.
+						<DialogDescription className='font-mono text-[10px] tracking-widest text-lines/40 uppercase'>
+							Select injury type to assign to this operator.
 						</DialogDescription>
 					</DialogHeader>
 
-					<div className='space-y-3'>
-						<p className='text-sm text-gray-400'>
-							Random injuries vary in severity and recovery time, may lead to
-							KIA status. KIA injuries are always fatal.
-						</p>
-					</div>
+					<p className='font-mono text-xs text-lines/50 leading-relaxed border border-lines/15 bg-blk/40 rounded px-3 py-2'>
+						Random injuries vary in severity and recovery time, and may escalate
+						to KIA. KIA injuries are always fatal and move the operator to the
+						memorial.
+					</p>
 
-					<DialogFooter className='flex flex-col sm:flex-row gap-2'>
+					<DialogFooter className='flex flex-col sm:flex-row gap-2 pt-2'>
 						<Button
 							variant='outline'
 							onClick={closeDialog}
-							className='w-full sm:w-auto btn font-bold'>
+							className='w-full sm:w-auto btn font-mono text-[10px] tracking-widest uppercase'>
 							Cancel
 						</Button>
 						<Button
 							variant='default'
 							onClick={onRandomInjury}
-							className='btn font-bold'>
+							className='btn font-mono text-[10px] tracking-widest uppercase'>
 							Random Injury
 						</Button>
 						<Button
 							variant='destructive'
 							onClick={onKIAInjury}
-							className='btn font-bold'>
+							className='btn font-mono text-[10px] tracking-widest uppercase bg-red-900/60 hover:bg-red-800 border border-red-700/40 text-red-300'>
 							KIA
 						</Button>
 					</DialogFooter>
@@ -68,33 +69,40 @@ const ConfirmDialog = ({
 		);
 	}
 
+	// ── Generic confirm variant ────────────────────────────────
 	return (
 		<Dialog
 			open={isOpen}
 			onOpenChange={closeDialog}>
 			<DialogContent className='max-w-[90%] sm:max-w-md text-fontz z-[1110]'>
 				<DialogHeader>
-					<DialogTitle>{title}</DialogTitle>
-					{description && ( // Render description only if provided
-						<p className='text-sm text-gray-400'>{description}</p>
+					<DialogTitle className='font-mono text-[11px] tracking-[0.18em] text-lines uppercase'>
+						{title}
+					</DialogTitle>
+					{description && (
+						<p className='font-mono text-xs text-lines/50 mt-1'>
+							{description}
+						</p>
 					)}
-					<DialogDescription>{message}</DialogDescription>
+					<DialogDescription className='font-mono text-xs text-lines/40 leading-relaxed border border-lines/15 bg-blk/40 rounded px-3 py-2 mt-2'>
+						{message}
+					</DialogDescription>
 				</DialogHeader>
 
-				<DialogFooter className='flex flex-col sm:flex-row gap-2'>
+				<DialogFooter className='flex flex-col sm:flex-row gap-2 pt-2'>
 					<Button
 						variant='outline'
 						onClick={closeDialog}
-						className='w-full sm:w-auto btn font-bold'>
+						className='w-full sm:w-auto btn font-mono text-[10px] tracking-widest uppercase'>
 						Cancel
 					</Button>
 					<Button
 						variant='destructive'
 						onClick={() => {
-							confirmAction();
+							confirmAction?.();
 							closeDialog();
 						}}
-						className='w-full sm:w-auto btn font-bold'>
+						className='w-full sm:w-auto font-mono text-[10px] tracking-widest uppercase bg-red-900/60 hover:bg-red-800 border border-red-700/40 text-red-300'>
 						Confirm
 					</Button>
 				</DialogFooter>
@@ -103,16 +111,20 @@ const ConfirmDialog = ({
 	);
 };
 
+// All action props are optional — each variant only needs its own subset.
+// confirmAction   → generic confirm dialog only
+// onRandomInjury  → injury dialog only
+// onKIAInjury     → injury dialog only
 ConfirmDialog.propTypes = {
 	isOpen: PropTypes.bool.isRequired,
 	closeDialog: PropTypes.func.isRequired,
-	confirmAction: PropTypes.func.isRequired,
+	confirmAction: PropTypes.func, // optional — not used in injury variant
 	title: PropTypes.string,
 	message: PropTypes.string,
 	description: PropTypes.string,
-	selectedOperator: PropTypes.string,
-	onRandomInjury: PropTypes.func.isRequired,
-	onKIAInjury: PropTypes.func.isRequired,
+	selectedOperator: PropTypes.object, // fixed: was PropTypes.string
+	onRandomInjury: PropTypes.func, // optional — not used in confirm variant
+	onKIAInjury: PropTypes.func, // optional — not used in confirm variant
 	injuryType: PropTypes.string,
 };
 

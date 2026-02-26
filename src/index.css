@@ -250,6 +250,8 @@
 	--color-stone-950: oklch(0.147 0.004 49.25);
 	--color-black: #000;
 	--color-white: #fff;
+
+	/*custom colors*/
 	--color-lines: #a9bab4;
 	--color-highlight: #50665a;
 	--color-btn: #7caa79;

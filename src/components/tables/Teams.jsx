@@ -1,11 +1,13 @@
+// Teams.jsx — redesigned to match UnifiedDashboard HUD aesthetic
+
 import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Button } from "@material-tailwind/react";
 import {
 	faPeopleGroup,
 	faCaretDown,
 	faCaretUp,
 	faUsersGear,
+	faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTeamsStore } from "@/zustand";
 import { PropTypes } from "prop-types";
@@ -13,6 +15,15 @@ import { useToggleExpand, useConfirmDialog } from "@/hooks";
 import { ConfirmDialog, TeamView } from "@/components";
 import { EditTeamForm, NewTeamForm } from "@/components/forms";
 import { PROVINCES } from "@/config";
+
+// ─── Section label ────────────────────────────────────────────
+function SectionLabel({ children }) {
+	return (
+		<p className='font-mono text-[9px] tracking-[0.2em] text-lines/30 uppercase mb-2'>
+			{children}
+		</p>
+	);
+}
 
 const Teams = ({ dataUpdated, openSheet }) => {
 	const {
@@ -28,11 +39,15 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		addVehicleToTeam,
 		removeVehicleFromTeam,
 	} = useTeamsStore();
+
 	const [expandedTeam, toggleExpand] = useToggleExpand();
-	const userId = localStorage.getItem("userId");
 	const [selectedOperator, setSelectedOperator] = useState(null);
 	const [draggedOperator, setDraggedOperator] = useState(null);
 	const [dragOverTeam, setDragOverTeam] = useState(null);
+	const [injuryType, setInjuryType] = useState("choice");
+
+	const userId = localStorage.getItem("userId");
+
 	const { isOpen, openDialog, closeDialog } = useConfirmDialog();
 	const {
 		isOpen: isRemoveAllOpen,
@@ -40,14 +55,15 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		closeDialog: closeRemoveAllDialog,
 		confirmAction: confirmRemoveAll,
 	} = useConfirmDialog();
+
 	const allVehicles = useTeamsStore((s) => s.allVehicles);
 	const fullVehicleList = useTeamsStore((s) => s.fullVehicleList);
-	const [injuryType, setInjuryType] = useState("choice");
-	// Check if device is mobile
+
 	const isMobile =
 		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
 			navigator.userAgent,
 		);
+
 	const handleOperatorClick = (operator, e) => {
 		e.stopPropagation();
 		if (!operator) return;
@@ -55,93 +71,63 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		setInjuryType("choice");
 		openDialog();
 	};
-	const handleAssignRandomInjury = (operatorId) => {
-		assignRandomInjury(operatorId, userId);
-	};
 
-	const handleAssignRandomKIAInjury = (operatorId) => {
-		assignRandomKIAInjury(operatorId, userId);
-	};
-
-	// Handle AO change for specific team
 	const handleAOChange = async (teamId, newAO) => {
-		try {
-			const team = teams.find((t) => t._id === teamId);
-			if (!team) return;
-
-			// Update team's AO
-			const updatedTeamData = {
-				_id: teamId,
-				createdBy: team.createdBy,
-				name: team.name,
-				AO: newAO,
-				operators: team.operators.map((op) => op._id),
-			};
-
-			await updateTeam(updatedTeamData);
-			await fetchTeams();
-		} catch (error) {
-			console.error("Error updating team AO:", error);
-		}
+		const team = teams.find((t) => t._id === teamId);
+		if (!team) return;
+		await updateTeam({
+			_id: teamId,
+			createdBy: team.createdBy,
+			name: team.name,
+			AO: newAO,
+			operators: team.operators.map((op) => op._id),
+		});
+		await fetchTeams();
 	};
 
-	// Desktop-only Drag and Drop Handlers
+	// ── Drag handlers (desktop only) ──
 	const handleDragStart = (e, operator, sourceTeamId) => {
 		if (isMobile) return;
 		e.stopPropagation();
 		setDraggedOperator({ operator, sourceTeamId });
 		e.dataTransfer.effectAllowed = "move";
 		e.dataTransfer.setData("text/plain", "");
-		e.target.style.opacity = "0.5";
+		e.target.style.opacity = "0.4";
 	};
-
 	const handleDragEnd = (e) => {
 		if (isMobile) return;
 		e.target.style.opacity = "1";
 		setDraggedOperator(null);
 		setDragOverTeam(null);
 	};
-
 	const handleDragOver = (e) => {
 		if (isMobile) return;
 		e.preventDefault();
 		e.dataTransfer.dropEffect = "move";
 	};
-
 	const handleDragEnter = (e, teamId) => {
 		if (isMobile) return;
 		e.preventDefault();
-		if (draggedOperator && draggedOperator.sourceTeamId !== teamId) {
-			setDragOverTeam(teamId);
-		}
+		if (draggedOperator?.sourceTeamId !== teamId) setDragOverTeam(teamId);
 	};
-
 	const handleDragLeave = (e) => {
-		if (isMobile) return; // Disable on mobile
-		if (!e.currentTarget.contains(e.relatedTarget)) {
-			setDragOverTeam(null);
-		}
+		if (isMobile) return;
+		if (!e.currentTarget.contains(e.relatedTarget)) setDragOverTeam(null);
 	};
-
 	const handleDrop = async (e, targetTeamId) => {
-		if (isMobile) return; // Disable on mobile
+		if (isMobile) return;
 		e.preventDefault();
 		e.stopPropagation();
-
 		if (!draggedOperator || draggedOperator.sourceTeamId === targetTeamId) {
 			setDragOverTeam(null);
 			setDraggedOperator(null);
 			return;
 		}
-
-		const { operator, sourceTeamId } = draggedOperator;
-
-		try {
-			await transferOperator(operator._id, sourceTeamId, targetTeamId);
-		} catch (error) {
-			console.error("Error transferring operator:", error);
-		}
-
+		await transferOperator(
+			draggedOperator.operator._id,
+			draggedOperator.sourceTeamId,
+			targetTeamId,
+		).catch(console.error);
 		setDragOverTeam(null);
 		setDraggedOperator(null);
 	};
@@ -153,48 +139,50 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	}, [fetchTeams, dataUpdated, fetchOperators, fetchVehiclesForTeams]);
 
 	return (
-		<div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
-			<h1 className='flex flex-col items-center text-lg text-fontz font-bold'>
-				Teams
-			</h1>
-			<table className='w-full text-md text-left text-fontz'>
-				<thead className='text-md text-fontz uppercase bg-linear-to-r/oklch from-blk to-neutral-800'>
+		<div className='flex flex-col'>
+			{/* ── Table ── */}
+			<table className='w-full text-left'>
+				<thead className='sticky top-0 z-10 bg-blk/90 border-b border-lines/20'>
 					<tr>
-						<th
-							scope='col'
-							className='px-6 py-3'>
-							<FontAwesomeIcon
-								className='text-xl text-black rounded hover:text-white bg-btn hover:bg-highlight transition-all'
-								icon={faPeopleGroup}
-								onClick={() => {
-									openSheet(
-										"top",
-										<NewTeamForm />,
-										"New Team",
-										"Create a team or allow A.I to generate one for you.",
-									);
-								}}
-							/>
-							&nbsp; Team
+						<th className='px-4 py-3 font-mono text-[10px] tracking-widest text-lines/50 uppercase'>
+							<div className='flex items-center gap-2'>
+								<button
+									onClick={() =>
+										openSheet(
+											"top",
+											<NewTeamForm />,
+											"New Team",
+											"Create a team or let A.I generate one.",
+										)
+									}
+									className='w-6 h-6 flex items-center justify-center bg-btn hover:bg-highlight text-blk rounded transition-colors'
+									title='New Team'>
+									<FontAwesomeIcon
+										icon={faPeopleGroup}
+										className='text-[10px]'
+									/>
+								</button>
+								Team
+							</div>
 						</th>
-
-						<th
-							scope='col'
-							className='px-6 py-3'>
+						<th className='px-4 py-3 font-mono text-[10px] tracking-widest text-lines/50 uppercase'>
 							Operators
 						</th>
 					</tr>
 				</thead>
+
 				<tbody>
 					{teams.length > 0 ?
 						teams.map((team, index) => (
 							<React.Fragment key={team._id || team.name || index}>
-								{/* Main Team Row */}
+								{/* ── Team row ── */}
 								<tr
-									className={`cursor-pointer bg-transparent border-b hover:bg-highlight transition-all duration-300 ${
-										dragOverTeam === team._id ? "!bg-btn/50 border-btn " : ""
-									}`}
-									data-team-id={team._id}
+									className={[
+										"border-b border-lines/10 cursor-pointer transition-all duration-150",
+										dragOverTeam === team._id ?
+											"bg-btn/15 border-btn/40"
+										:	"hover:bg-highlight/20",
+									].join(" ")}
 									onClick={() => toggleExpand(index)}
 									onDragOver={!isMobile ? handleDragOver : undefined}
 									onDragEnter={
@@ -204,69 +192,80 @@ const Teams = ({ dataUpdated, openSheet }) => {
 									onDrop={
 										!isMobile ? (e) => handleDrop(e, team._id) : undefined
 									}>
-									<td className='px-6 py-4 font-medium text-gray-400 hover:text-white whitespace-nowrap'>
-										{team.name}
-									</td>
-
-									<td className='px-6 py-4 flex flex-row'>
-										<div className='flex -space-x-4 rtl:space-x-reverse'>
-											{team.operators.slice(0, 4).map((operator) => (
-												<img
-													key={operator._id}
-													className={`w-10 h-10 min-w-[2.5rem] border-2 border-lines rounded-full bg-highlight flex-shrink-0 ${
-														!isMobile ?
-															"cursor-grab active:cursor-grabbing"
-														:	"cursor-pointer"
-													}`}
-													src={operator.image}
-													alt={operator.callSign}
-													title={
-														isMobile ?
-															`${operator.callSign} - Tap to assign injury`
-														:	`${operator.callSign} - Drag to move to another team`
-													}
-													draggable={!isMobile}
-													onDragStart={
-														!isMobile ?
-															(e) => handleDragStart(e, operator, team._id)
-														:	undefined
-													}
-													onDragEnd={!isMobile ? handleDragEnd : undefined}
-													onClick={(e) => {
-														e.stopPropagation();
-														if (isMobile) {
-															handleOperatorClick(operator, e);
-														}
-													}}
-												/>
-											))}
-											{team.operators.length > 4 && (
-												<a
-													className='flex items-center justify-center w-10 h-10 text-xs font-medium text-fontz bg-blk border-2 border-lines rounded-full hover:bg-gray-600'
-													href='#'>
-													+{team.operators.length - 4}
-												</a>
+									{/* Team name */}
+									<td className='px-4 py-3'>
+										<div className='flex items-center gap-2'>
+											<span
+												className={[
+													"w-1 h-1 rounded-full",
+													dragOverTeam === team._id ? "bg-btn" : "bg-lines/30",
+												].join(" ")}
+											/>
+											<span className='font-mono text-xs text-fontz'>
+												{team.name}
+											</span>
+											{team.AO && (
+												<span className='font-mono text-[9px] tracking-widest text-lines/35 uppercase border border-lines/20 px-1.5 py-0.5 rounded-sm'>
+													{team.AO}
+												</span>
 											)}
 										</div>
+									</td>
 
-										<div className='flex justify-end items-end w-full'>
+									{/* Operator avatars */}
+									<td className='px-4 py-3'>
+										<div className='flex items-center justify-between'>
+											<div className='flex -space-x-2'>
+												{team.operators.slice(0, 5).map((op) => (
+													<img
+														key={op._id}
+														className={[
+															"w-8 h-8 rounded-full border-2 border-blk object-cover bg-highlight shrink-0 transition-all",
+															!isMobile ?
+																"cursor-grab active:cursor-grabbing hover:scale-110 hover:z-10 hover:border-btn"
+															:	"cursor-pointer",
+														].join(" ")}
+														src={op.image}
+														alt={op.callSign}
+														title={op.callSign}
+														draggable={!isMobile}
+														onDragStart={
+															!isMobile ?
+																(e) => handleDragStart(e, op, team._id)
+															:	undefined
+														}
+														onDragEnd={!isMobile ? handleDragEnd : undefined}
+														onClick={(e) => {
+															e.stopPropagation();
+															if (isMobile) handleOperatorClick(op, e);
+														}}
+													/>
+												))}
+												{team.operators.length > 5 && (
+													<div className='w-8 h-8 rounded-full bg-blk border-2 border-lines/30 flex items-center justify-center'>
+														<span className='font-mono text-[9px] text-lines/50'>
+															+{team.operators.length - 5}
+														</span>
+													</div>
+												)}
+											</div>
 											<FontAwesomeIcon
 												icon={expandedTeam === index ? faCaretUp : faCaretDown}
-												className='text-gray-400 text-lg hover:text-white transition-all'
+												className='text-lines/30 text-sm ml-3 shrink-0'
 											/>
 										</div>
 									</td>
 								</tr>
 
-								{/* Expanded Section */}
+								{/* ── Expanded: operators ── */}
 								{expandedTeam === index && (
-									<tr key={`expanded-${team._id || team.name || index}`}>
+									<tr>
 										<td
-											colSpan='3'
-											className={`p-4 bg-blk/50 text-gray-400 ${
-												dragOverTeam === team._id ? "bg-white" : ""
-											}`}
-											data-team-id={team._id}
+											colSpan={2}
+											className={[
+												"px-4 pt-3 pb-1 bg-blk/40 border-b border-lines/10 transition-colors",
+												dragOverTeam === team._id ? "bg-btn/10" : "",
+											].join(" ")}
 											onDragOver={!isMobile ? handleDragOver : undefined}
 											onDragEnter={
 												!isMobile ?
@@ -277,43 +276,43 @@ const Teams = ({ dataUpdated, openSheet }) => {
 											onDrop={
 												!isMobile ? (e) => handleDrop(e, team._id) : undefined
 											}>
-											<Button
-												className='btn'
-												onClick={() => {
-													openSheet("bottom", <TeamView teamId={team._id} />);
-												}}>
-												TeamView
-											</Button>
+											{/* TeamView button */}
+											<div className='mb-3'>
+												<button
+													className='font-mono text-[10px] tracking-widest uppercase px-3 py-1.5 border border-lines/30 text-lines/50 hover:text-btn hover:border-btn/50 rounded transition-colors'
+													onClick={() =>
+														openSheet("bottom", <TeamView teamId={team._id} />)
+													}>
+													Team View
+												</button>
+											</div>
 
-											<div className='flex flex-wrap gap-4 p-2'>
-												{team.operators.map((operator) => (
+											{/* Operator grid */}
+											<div className='flex flex-wrap gap-3 mb-4'>
+												{team.operators.map((op) => (
 													<div
-														key={operator._id}
-														className={`flex flex-col items-center ${
+														key={op._id}
+														className={[
+															"flex flex-col items-center gap-1 group",
 															!isMobile ?
 																"cursor-grab active:cursor-grabbing"
-															:	"cursor-pointer"
-														}`}
+															:	"cursor-pointer",
+														].join(" ")}
 														draggable={!isMobile}
 														onDragStart={
 															!isMobile ?
-																(e) => handleDragStart(e, operator, team._id)
+																(e) => handleDragStart(e, op, team._id)
 															:	undefined
 														}
 														onDragEnd={!isMobile ? handleDragEnd : undefined}
-														onClick={(e) => handleOperatorClick(operator, e)}>
+														onClick={(e) => handleOperatorClick(op, e)}>
 														<img
-															className='w-16 h-16 border-2 border-lines hover:border-highlight/50 bg-highlight rounded-full hover:bg-highlight/50 transition-all'
-															src={operator.image}
-															alt={operator.callSign}
-															title={
-																isMobile ?
-																	`${operator.callSign} - Tap to assign injury`
-																:	`${operator.callSign} - Hold and drag to move or tap to assign injury`
-															}
+															className='w-14 h-14 rounded-full border-2 border-lines/30 group-hover:border-btn/60 bg-highlight object-cover transition-all'
+															src={op.image}
+															alt={op.callSign}
 														/>
-														<span className='text-sm mt-2'>
-															{operator.callSign}
+														<span className='font-mono text-[9px] tracking-wide text-lines/50 group-hover:text-fontz transition-colors text-center max-w-[56px] truncate'>
+															{op.callSign}
 														</span>
 													</div>
 												))}
@@ -322,148 +321,131 @@ const Teams = ({ dataUpdated, openSheet }) => {
 									</tr>
 								)}
 
+								{/* ── Expanded: assets + AO ── */}
 								{expandedTeam === index && (
 									<tr>
 										<td
-											colSpan='3'
-											className='text-center bg-blk/50 py-2'>
-											{/* ASSETS SECTION */}
-											<div className='mt-6'>
-												<h2 className='mb-3 text-xs font-bold text-fontz'>
-													Assets (Vehicles)
-												</h2>
-
-												{/* Assigned assets list */}
-												<div className='flex flex-wrap gap-2 mb-3'>
-													{(team.assets || []).length === 0 ?
-														<p className='text-xs text-gray-400'>
-															No assets assigned.
-														</p>
-													:	(team.assets || []).map((asset) => {
-															const assetId =
-																typeof asset === "object" ? asset._id : asset;
-															const assetObj =
-																typeof asset === "object" ? asset : (
-																	fullVehicleList.find((v) => v._id === assetId)
-																);
-
-															return (
-																<div
-																	key={assetId}
-																	className='flex items-center gap-2 bg-blk/40 border border-lines rounded-lg px-2 py-1'>
-																	<span className='text-xs text-fontz'>
-																		{(
-																			assetObj?.nickName &&
-																			assetObj.nickName !== "None"
-																		) ?
-																			assetObj.nickName
-																		:	assetObj?.vehicle || "Unknown Vehicle"}
-																		{assetObj?.condition ?
-																			` • ${assetObj.condition}`
-																		:	""}
-																		{(
-																			typeof assetObj?.remainingFuel ===
-																			"number"
-																		) ?
-																			` • Fuel ${assetObj.remainingFuel}%`
-																		:	""}
-																	</span>
-
-																	<button
-																		type='button'
-																		className='text-xs text-red-400 hover:text-red-200 transition-all'
-																		onClick={(e) => {
-																			e.stopPropagation();
-																			removeVehicleFromTeam(assetId, team._id);
-																		}}
-																		title='Remove asset'>
-																		✕
-																	</button>
-																</div>
+											colSpan={2}
+											className='px-4 py-4 bg-blk/60 border-b border-lines/10'>
+											{/* Assets */}
+											<SectionLabel>Assets (Vehicles)</SectionLabel>
+											<div className='flex flex-wrap gap-2 mb-3'>
+												{(team.assets || []).length === 0 ?
+													<p className='font-mono text-[10px] text-lines/25 tracking-widest'>
+														No assets assigned.
+													</p>
+												:	(team.assets || []).map((asset) => {
+														const assetId =
+															typeof asset === "object" ? asset._id : asset;
+														const assetObj =
+															typeof asset === "object" ? asset : (
+																fullVehicleList.find((v) => v._id === assetId)
 															);
-														})
+														return (
+															<div
+																key={assetId}
+																className='flex items-center gap-2 bg-blk/50 border border-lines/20 rounded px-2 py-1'>
+																<span className='font-mono text-[10px] text-fontz'>
+																	{(
+																		assetObj?.nickName &&
+																		assetObj.nickName !== "None"
+																	) ?
+																		assetObj.nickName
+																	:	assetObj?.vehicle || "Unknown"}
+																	{assetObj?.condition ?
+																		` · ${assetObj.condition}`
+																	:	""}
+																	{typeof assetObj?.remainingFuel === "number" ?
+																		` · ${assetObj.remainingFuel}%`
+																	:	""}
+																</span>
+																<button
+																	className='text-red-500/60 hover:text-red-400 transition-colors'
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		removeVehicleFromTeam(assetId, team._id);
+																	}}>
+																	<FontAwesomeIcon
+																		icon={faXmark}
+																		className='text-[10px]'
+																	/>
+																</button>
+															</div>
+														);
+													})
+												}
+											</div>
+
+											{/* Add asset */}
+											<select
+												className='w-full bg-blk/50 border border-lines/25 rounded px-3 py-2 font-mono text-[10px] text-fontz outline-none focus:border-btn/50 mb-1 transition-colors'
+												onChange={(e) => {
+													if (e.target.value) {
+														addVehicleToTeam(e.target.value, team._id);
+														e.target.value = "";
 													}
+												}}>
+												<option value=''>— Add Asset —</option>
+												{allVehicles.map((v) => (
+													<option
+														key={v._id}
+														value={v._id}>
+														{v.nickName && v.nickName !== "None" ?
+															`${v.nickName} — `
+														:	""}
+														{v.vehicle} · {v.condition} · Fuel {v.remainingFuel}
+														%{v.isRepairing ? " · Repairing" : ""}
+													</option>
+												))}
+											</select>
+											<p className='font-mono text-[9px] text-lines/25 tracking-widest mb-5'>
+												Assigning removes vehicle from the available pool.
+											</p>
+
+											{/* AO */}
+											<SectionLabel>Area of Operations</SectionLabel>
+											{team.AO && PROVINCES[team.AO] && (
+												<div className='bg-blk/30 border border-lines/15 rounded px-3 py-2 mb-2'>
+													<p className='font-mono text-[10px] text-fontz'>
+														Current: <span className='text-btn'>{team.AO}</span>
+														{" — "}
+														{PROVINCES[team.AO].biome}
+													</p>
 												</div>
-
-												{/* Add asset dropdown (available vehicles only) */}
-												<select
-													className='bg-blk/50 border border-lines rounded-lg block w-full p-2.5 text-fontz outline-lines text-xs'
-													onChange={(e) => {
-														const selectedVehicleId = e.target.value;
-														if (selectedVehicleId) {
-															addVehicleToTeam(selectedVehicleId, team._id);
-															e.target.value = "";
-														}
-													}}>
-													<option value=''>
-														-- Add an Asset (Available Vehicles) --
+											)}
+											<select
+												className='w-full bg-blk/50 border border-lines/25 rounded px-3 py-2 font-mono text-[10px] text-fontz outline-none focus:border-btn/50 mb-4 transition-colors'
+												value={team.AO || ""}
+												onChange={(e) =>
+													handleAOChange(team._id, e.target.value)
+												}>
+												<option value=''>— Select AO —</option>
+												{Object.entries(PROVINCES).map(([key, province]) => (
+													<option
+														key={key}
+														value={key}>
+														{key} — {province.biome}
 													</option>
-													{allVehicles.map((v) => (
-														<option
-															key={v._id}
-															value={v._id}>
-															{v.nickName && v.nickName !== "None" ?
-																`${v.nickName} - `
-															:	""}
-															{v.vehicle} • {v.condition} • Fuel{" "}
-															{v.remainingFuel}%
-															{v.isRepairing ? " • Repairing" : ""}
-														</option>
-													))}
-												</select>
+												))}
+											</select>
 
-												<p className='text-[10px] text-gray-400 mt-2'>
-													Vehicles are exclusive: assigning to a team removes
-													them from the available pool.
-												</p>
-											</div>
-
-											{/* AO Change Section */}
-											<div className='mb-4 text-xs'>
-												{/* Display Current AO Info */}
-												{team.AO && PROVINCES[team.AO] && (
-													<div className='bg-blk/30 rounded-lg p-2 mt-2'>
-														<p className='text-fontz text-xs'>
-															<strong>Current AO:</strong> {team.AO} -{" "}
-															{PROVINCES[team.AO].biome}
-														</p>
-													</div>
-												)}
-												<h4 className='font-semibold text-fontz mb-2'>
-													Change Area Of Operation
-												</h4>
-												<select
-													className='bg-blk/50 border border-lines outline-lines rounded-lg block w-full p-2.5 text-fontz text-xs'
-													value={team.AO || ""}
-													onChange={(e) => {
-														handleAOChange(team._id, e.target.value);
-													}}>
-													<option value=''>
-														-- Select Area of Operations --
-													</option>
-													{Object.entries(PROVINCES).map(([key, province]) => (
-														<option
-															key={key}
-															value={key}>
-															{key} - {province.biome}
-														</option>
-													))}
-												</select>
-											</div>
-
-											{/* Edit Team Button */}
-											<FontAwesomeIcon
-												className='cursor-pointer text-xl text-btn hover:text-white transition-all'
-												icon={faUsersGear}
+											{/* Edit team */}
+											<button
+												className='flex items-center gap-2 font-mono text-[10px] tracking-widest uppercase text-btn hover:text-white transition-colors'
 												onClick={() =>
 													openSheet(
 														"bottom",
 														<EditTeamForm teamId={team._id} />,
 														"Edit or Optimize Team",
-														"Modify team details, choose or remove operators, or Generate a team using A.I.",
+														"Modify team details, choose operators, or generate a team using A.I.",
 													)
-												}
-											/>
+												}>
+												<FontAwesomeIcon
+													icon={faUsersGear}
+													className='text-sm'
+												/>
+												Edit Team
+											</button>
 										</td>
 									</tr>
 								)}
@@ -471,75 +453,68 @@ const Teams = ({ dataUpdated, openSheet }) => {
 						))
 					:	<tr>
 							<td
-								colSpan='3'
-								className='text-center py-4 text-gray-400'>
-								Click the PeopleGroup icon to add your first team.
+								colSpan={2}
+								className='py-12 text-center'>
+								<p className='font-mono text-[10px] tracking-widest text-lines/25 uppercase'>
+									Click + to add your first team.
+								</p>
 							</td>
 						</tr>
 					}
 				</tbody>
 			</table>
 
-			{/* Desktop-only Drop Zone Indicator */}
-			{!isMobile && draggedOperator && (
-				<div className='fixed top-4 left-4 bg-black text-white px-3 py-1 rounded-lg shadow-lg z-50'>
-					Moving {draggedOperator.operator.callSign} - Drop on target team
-				</div>
-			)}
-
-			{isOpen && selectedOperator && (
-				<ConfirmDialog
-					isOpen={isOpen}
-					closeDialog={closeDialog}
-					selectedOperator={selectedOperator}
-					onRandomInjury={() => {
-						handleAssignRandomInjury(selectedOperator._id);
-						closeDialog();
-					}}
-					onKIAInjury={() => {
-						handleAssignRandomKIAInjury(selectedOperator._id);
-						closeDialog();
-					}}
-					injuryType={injuryType}
-				/>
-			)}
-			{/* Remove All Operators Confirmation */}
-			<ConfirmDialog
-				isOpen={isRemoveAllOpen}
-				closeDialog={closeRemoveAllDialog}
-				confirmAction={confirmRemoveAll}
-				title='Remove All Operators'
-				description='This will remove all operators from every team.'
-				message="Are you sure? All team assignments will be cleared. Operators won't be deleted, just unassigned."
-			/>
-			<div className='flex justify-center'>
-				<Button
-					type='button'
-					className='btn hover:bg-red-800 text-xs'
+			{/* ── Clear all ── */}
+			<div className='px-4 py-3 border-t border-lines/15 flex justify-end'>
+				<button
+					className='font-mono text-[10px] tracking-widest uppercase text-red-500/50 hover:text-red-400 border border-red-900/30 hover:border-red-500/40 px-3 py-1.5 rounded transition-all'
 					onClick={() =>
 						openRemoveAllDialog(async () => {
 							await removeAllOperatorsFromTeams();
 						})
 					}>
 					Clear All Teams
-				</Button>
+				</button>
 			</div>
+
+			{/* Drag indicator */}
+			{!isMobile && draggedOperator && (
+				<div className='fixed top-4 left-4 z-50 bg-blk border border-btn/50 px-3 py-1.5 rounded shadow-lg'>
+					<p className='font-mono text-[10px] tracking-widest text-btn uppercase'>
+						Moving: {draggedOperator.operator.callSign}
+					</p>
+				</div>
+			)}
+
+			{/* Dialogs */}
+			{isOpen && selectedOperator && (
+				<ConfirmDialog
+					isOpen={isOpen}
+					closeDialog={closeDialog}
+					selectedOperator={selectedOperator}
+					onRandomInjury={() => {
+						assignRandomInjury(selectedOperator._id, userId);
+						closeDialog();
+					}}
+					onKIAInjury={() => {
+						assignRandomKIAInjury(selectedOperator._id, userId);
+						closeDialog();
+					}}
+					injuryType={injuryType}
+				/>
+			)}
+			<ConfirmDialog
+				isOpen={isRemoveAllOpen}
+				closeDialog={closeRemoveAllDialog}
+				confirmAction={confirmRemoveAll}
+				title='Remove All Operators'
+				description='This will remove all operators from every team.'
+				message="All team assignments will be cleared. Operators won't be deleted, just unassigned."
+			/>
 		</div>
 	);
 };
-// In ConfirmDialog.jsx
-ConfirmDialog.propTypes = {
-	isOpen: PropTypes.bool.isRequired,
-	closeDialog: PropTypes.func.isRequired,
-	confirmAction: PropTypes.func,
-	title: PropTypes.string,
-	description: PropTypes.string,
-	message: PropTypes.string,
-	selectedOperator: PropTypes.object,
-	onRandomInjury: PropTypes.func, // Remove .isRequired
-	onKIAInjury: PropTypes.func, // Remove .isRequired
-	injuryType: PropTypes.string,
-};
+
 Teams.propTypes = {
 	dataUpdated: PropTypes.bool,
 	refreshData: PropTypes.func,
