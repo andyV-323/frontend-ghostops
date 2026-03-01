@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import { PrivateRoute, AuthRedirector } from "@/auth";
-import { Home, OperatorDashboard, Briefing } from "@/pages";
+import { Home, UnifiedDashboard } from "@/pages";
 import {
 	Memorial,
 	Roster,
@@ -16,11 +16,8 @@ import {
 	NewVehicleForm,
 	EditVehicleForm,
 } from "@/components/forms";
-import DashboardLayout from "./layout/DashboardLayout";
 import MainLayout from "./layout/MainLayout";
 import Login from "./pages/Login";
-import VehicleSimulator from "./pages/VehicleSimulator";
-import UnifiedDashboard from "./pages/UnifiedDashboard";
 
 // Define Routes
 const AppRoutes = () => {
@@ -50,19 +47,6 @@ const AppRoutes = () => {
 							<UnifiedDashboard />
 						</PrivateRoute>
 					}>
-					<Route
-						index
-						element={<OperatorDashboard />}
-					/>{" "}
-					{/* Default Dashboard Page */}
-					<Route
-						path='briefing'
-						element={<Briefing />}
-					/>
-					<Route
-						path='vehicleSimulator'
-						element={<VehicleSimulator />}
-					/>
 					<Route
 						path='memorial'
 						element={<Memorial />}

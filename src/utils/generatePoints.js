@@ -1,7 +1,3 @@
-// src/utils/generatePoints.js
-
-const randBetween = (min, max) => Math.random() * (max - min) + min;
-
 const dist = (a, b) => {
 	const dx = a[0] - b[0];
 	const dy = a[1] - b[1];

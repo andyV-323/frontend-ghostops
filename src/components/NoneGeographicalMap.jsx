@@ -47,24 +47,23 @@ const injectStyles = () => {
 	style.textContent = `
 		@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
-		/* ── Objective marker — sharp fast pulse ── */
 		@keyframes obj-pulse {
-			0%   { box-shadow: 0 0 0 0 ${OBJ_PULSE_COLOR}, inset 0 0 0 1px ${OBJ_COLOR}; transform: scale(1); }
-			60%  { box-shadow: 0 0 0 10px rgba(255,68,68,0), inset 0 0 0 1px ${OBJ_COLOR}; transform: scale(1.08); }
-			100% { box-shadow: 0 0 0 0 rgba(255,68,68,0), inset 0 0 0 1px ${OBJ_COLOR}; transform: scale(1); }
+			0%   { box-shadow: 0 0 0 0 ${OBJ_PULSE_COLOR}, inset 0 0 0 1px ${OBJ_COLOR}; transform: scale(1) rotate(0deg); }
+			60%  { box-shadow: 0 0 0 10px rgba(255,68,68,0), inset 0 0 0 1px ${OBJ_COLOR}; transform: scale(1.08) rotate(0deg); }
+			100% { box-shadow: 0 0 0 0 rgba(255,68,68,0), inset 0 0 0 1px ${OBJ_COLOR}; transform: scale(1) rotate(0deg); }
 		}
 		.obj-marker {
 			width: ${OBJ_SIZE}px; height: ${OBJ_SIZE}px;
-			border-radius: 50%;
-			background: rgba(180,30,30,0.25);
+			border-radius: 2px;
+			background: rgba(180,30,30,0.22);
 			border: 1.5px solid ${OBJ_COLOR};
 			display: flex; align-items: center; justify-content: center;
 			animation: obj-pulse 1.8s ease-out infinite;
 			box-sizing: border-box;
 			position: relative;
+			transform: rotate(45deg);
 		}
 		.obj-marker::before {
-			/* crosshair lines */
 			content: '';
 			position: absolute; inset: 0;
 			background:
@@ -73,6 +72,13 @@ const injectStyles = () => {
 			background-repeat: no-repeat;
 			opacity: 0.5;
 		}
+		.obj-marker::after {
+			content: '';
+			position: absolute;
+			inset: 3px;
+			border: 1px solid rgba(255,68,68,0.3);
+			border-radius: 1px;
+		}
 		.obj-label {
 			font-family: 'Share Tech Mono', monospace;
 			font-size: 9px; font-weight: 700;
@@ -80,9 +86,9 @@ const injectStyles = () => {
 			text-shadow: 0 0 6px rgba(255,68,68,0.8);
 			position: relative; z-index: 1;
 			line-height: 1;
+			transform: rotate(-45deg);
 		}
 
-		/* ── Zone rings — slow radar pulse ── */
 		@keyframes zone-pulse-infil {
 			0%,100% { transform: scale(0.92); opacity:0.85; box-shadow: 0 0 0 0 rgba(193,255,114,0.18); }
 			50%     { transform: scale(1.06); opacity:0.55; box-shadow: 0 0 0 18px rgba(193,255,114,0); }
@@ -100,7 +106,6 @@ const injectStyles = () => {
 		.zone-ring-exfil { animation: zone-pulse-exfil 3s ease-in-out infinite; border:2px solid #4DA6FF; background:rgba(77,166,255,0.08); }
 		.zone-ring-rally { animation: zone-pulse-rally 3.4s ease-in-out infinite; border:2px dashed #FFD966; background:rgba(255,217,102,0.08); }
 
-		/* ── Tactical popups ── */
 		.tac-popup .leaflet-popup-content-wrapper {
 			background: rgba(8,10,6,0.97);
 			border: 1px solid rgba(74,90,40,0.5);
@@ -124,7 +129,6 @@ const injectStyles = () => {
 		.tac-popup-obj .leaflet-popup-tip-container { display: none; }
 		.tac-popup-obj .leaflet-popup-close-button { color:#7a3535 !important; top:5px !important; right:7px !important; }
 
-		/* ── Grid labels ── */
 		.map-grid-label {
 			font-family: 'Share Tech Mono', monospace;
 			font-size: 9px; color: rgba(143,184,64,0.45);
@@ -132,7 +136,6 @@ const injectStyles = () => {
 			white-space: nowrap;
 		}
 
-		/* ── Coordinates display ── */
 		.coordinates-container {
 			background: rgba(8,10,5,0.88);
 			border: 1px solid rgba(74,90,40,0.3);
@@ -141,7 +144,6 @@ const injectStyles = () => {
 			padding: 3px 8px; border-radius:1px; pointer-events:none;
 		}
 
-		/* ── Custom zoom control ── */
 		.leaflet-control-zoom {
 			border: 1px solid rgba(74,90,40,0.35) !important;
 			border-radius: 2px !important;
@@ -161,7 +163,6 @@ const injectStyles = () => {
 	document.head.appendChild(style);
 };
 
-/* ── Build objective divIcon with number ── */
 const buildObjIcon = (index) =>
 	L.divIcon({
 		className: "",
@@ -170,7 +171,6 @@ const buildObjIcon = (index) =>
 		html: `<div class="obj-marker"><span class="obj-label">${String(index + 1).padStart(2, "0")}</span></div>`,
 	});
 
-/* ── Build zone ring divIcon ── */
 const buildZoneIcon = (type) => {
 	const cfg = ZONE_CONFIG[type];
 	const size = cfg.size;
@@ -182,7 +182,6 @@ const buildZoneIcon = (type) => {
 	});
 };
 
-/* ── Popup HTML builders ── */
 const objPopupHTML = (mark, index) => `
 	<div style="font-family:'Share Tech Mono',monospace;">
 		<div style="font-size:0.58em;color:#7a3535;letter-spacing:0.15em;margin-bottom:4px;">
@@ -209,7 +208,6 @@ const zonePopupHTML = (type) => {
 	</div>`;
 };
 
-/* ── Add grid labels along map edges ── */
 const addGridLabels = (map, bounds) => {
 	const [[minY, minX], [maxY, maxX]] = bounds;
 	const cols = 8;
@@ -217,7 +215,6 @@ const addGridLabels = (map, bounds) => {
 	const stepX = (maxX - minX) / cols;
 	const stepY = (maxY - minY) / rows;
 
-	// Column labels (top edge)
 	for (let i = 0; i <= cols; i++) {
 		const x = minX + i * stepX;
 		L.marker([maxY, x], {
@@ -230,7 +227,6 @@ const addGridLabels = (map, bounds) => {
 		}).addTo(map);
 	}
 
-	// Row labels (left edge)
 	for (let j = 0; j <= rows; j++) {
 		const y = minY + j * stepY;
 		L.marker([y, minX], {
@@ -244,7 +240,6 @@ const addGridLabels = (map, bounds) => {
 	}
 };
 
-/* ── Tactical legend control ── */
 const buildLegend = (hasInfil, hasExfil, hasRally) => {
 	const control = L.control({ position: "bottomleft" });
 	control.onAdd = () => {
@@ -266,7 +261,7 @@ const buildLegend = (hasInfil, hasExfil, hasRally) => {
 				<span style="color:#7a9060;">RALLY ZONE</span>
 			</div>`,
 			`<div style="display:flex;align-items:center;gap:7px;">
-				<div style="width:12px;height:12px;border-radius:50%;border:1.5px solid #FF4444;background:rgba(255,68,68,0.15);flex-shrink:0;"></div>
+				<div style="width:12px;height:12px;border-radius:2px;border:1.5px solid #FF4444;background:rgba(255,68,68,0.15);flex-shrink:0;transform:rotate(45deg);"></div>
 				<span style="color:#7a9060;">OBJECTIVE</span>
 			</div>`,
 		]
@@ -303,7 +298,8 @@ const NoneGeographicalMap = ({
 	fallbackExfil,
 }) => {
 	const mapRef = useRef(null);
-	const coordinatesRef = useRef(null);
+	const mapInst = useRef(null); // store the Leaflet instance so cleanup is reliable
+	const coordsRef = useRef(null);
 
 	useEffect(() => {
 		if (!bounds || !imgURL || !Array.isArray(locationsInProvince)) {
@@ -311,7 +307,19 @@ const NoneGeographicalMap = ({
 			return;
 		}
 
-		if (mapRef.current?._leaflet_id) mapRef.current.remove();
+		// Tear down any previous instance cleanly before building a new one
+		if (mapInst.current) {
+			try {
+				// Stop any in-progress zoom animation before removing —
+				// prevents "_leaflet_pos of undefined" when the transition
+				// callback fires after the map DOM node is already gone.
+				mapInst.current.stop();
+				mapInst.current.remove();
+			} catch (_) {
+				/* already removed */
+			}
+			mapInst.current = null;
+		}
 
 		injectStyles();
 
@@ -322,16 +330,20 @@ const NoneGeographicalMap = ({
 			dragging: true,
 			zoomControl: true,
 			scrollWheelZoom: true,
+			// Disable zoom animation — the animation is what races against unmount.
+			// Without it the transition is instant so there's nothing in-flight
+			// to hit a dead DOM node.
+			zoomAnimation: false,
 		});
 		map.setMinZoom(-1);
 		map.setMaxZoom(2);
+		mapInst.current = map;
 
-		/* ── Base image with military tint via CSS filter ── */
+		/* ── Base image ── */
 		const overlay = L.imageOverlay(imgURL, bounds, {
 			className: "tac-map-img",
 		}).addTo(map);
 
-		// Apply dark military tint via element style after add
 		overlay.on("load", () => {
 			const el = overlay.getElement();
 			if (el) {
@@ -394,20 +406,29 @@ const NoneGeographicalMap = ({
 		const coordControl = L.control({ position: "bottomright" });
 		coordControl.onAdd = () => {
 			const div = L.DomUtil.create("div", "coordinates-container");
-			coordinatesRef.current = div;
+			coordsRef.current = div;
 			div.textContent = "0, 0";
 			return div;
 		};
 		coordControl.addTo(map);
 		map.on("mousemove", (e) => {
-			if (coordinatesRef.current)
-				coordinatesRef.current.textContent = `${e.latlng.lat.toFixed(0)}, ${e.latlng.lng.toFixed(0)}`;
+			if (coordsRef.current)
+				coordsRef.current.textContent = `${e.latlng.lat.toFixed(0)}, ${e.latlng.lng.toFixed(0)}`;
 		});
 
 		map.setZoom(-1);
 
 		return () => {
-			map.remove();
+			coordsRef.current = null;
+			if (mapInst.current) {
+				try {
+					mapInst.current.stop(); // cancel any in-flight animation
+					mapInst.current.remove(); // destroy the instance + DOM listeners
+				} catch (_) {
+					/* already removed */
+				}
+				mapInst.current = null;
+			}
 		};
 	}, [
 		bounds,
@@ -427,7 +448,7 @@ const NoneGeographicalMap = ({
 				background: "#050704",
 				overflow: "hidden",
 			}}>
-			{/* Corner brackets — pure CSS, no canvas needed */}
+			{/* Corner brackets */}
 			{["tl", "tr", "bl", "br"].map((corner) => (
 				<div
 					key={corner}
@@ -473,7 +494,7 @@ const NoneGeographicalMap = ({
 				/>
 			))}
 
-			{/* Vignette overlay */}
+			{/* Vignette */}
 			<div
 				style={{
 					position: "absolute",
@@ -485,7 +506,7 @@ const NoneGeographicalMap = ({
 				}}
 			/>
 
-			{/* Leaflet map */}
+			{/* Leaflet mount point */}
 			<div
 				ref={mapRef}
 				style={{ width: "100%", height: "100%", background: "#050704" }}

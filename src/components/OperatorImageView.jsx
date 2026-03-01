@@ -1,5 +1,3 @@
-// OperatorImageView.jsx — JSOC Operator Dossier
-
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { useOperatorsStore, useTeamsStore } from "@/zustand";
 import { useEffect, useMemo } from "react";
@@ -425,7 +423,18 @@ const OperatorImageView = ({ operator, openSheet }) => {
 		</section>
 	);
 };
-
+SectionHeader.propTypes = {
+	label: PropTypes.string,
+};
+InfoRow.propTypes = {
+	label: PropTypes.string,
+	value: PropTypes.string,
+};
+GearCard.propTypes = {
+	imgSrc: PropTypes.string,
+	name: PropTypes.string,
+	sub: PropTypes.string,
+};
 OperatorImageView.propTypes = {
 	operator: OperatorPropTypes,
 	openSheet: PropTypes.func,

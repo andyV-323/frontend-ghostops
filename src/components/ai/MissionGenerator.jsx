@@ -1,11 +1,107 @@
 import { useState, useEffect } from "react";
 import { PROVINCES } from "@/config";
 import PropTypes from "prop-types";
-import { Button } from "@material-tailwind/react";
 import { chatGPTApi } from "@/api";
 import { toast } from "react-toastify";
 import { generateInsertionExtractionPoints } from "@/utils/generatePoints";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+	faLocationDot,
+	faShuffle,
+	faListCheck,
+	faBolt,
+	faSpinner,
+	faRobot,
+	faMinus,
+	faPlus,
+} from "@fortawesome/free-solid-svg-icons";
 
+/* ─── HUD Select ─────────────────────────────────────────────── */
+function HudSelect({ label, value, onChange, children }) {
+	return (
+		<div className='flex flex-col gap-1'>
+			<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
+				{label}
+			</span>
+			<div className='relative'>
+				<select
+					value={value}
+					onChange={onChange}
+					className='w-full appearance-none bg-blk/60 border border-lines/25 hover:border-lines/50 focus:border-btn/60 focus:outline-none rounded-sm px-3 py-2 font-mono text-[11px] text-fontz/80 cursor-pointer transition-colors'>
+					{children}
+				</select>
+				<div className='absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none'>
+					<div className='w-0 h-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-lines/30' />
+				</div>
+			</div>
+		</div>
+	);
+}
+
+/* ─── HUD Textarea ───────────────────────────────────────────── */
+function HudTextarea({ label, value, onChange, placeholder }) {
+	return (
+		<div className='flex flex-col gap-1'>
+			<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
+				{label}
+			</span>
+			<textarea
+				value={value}
+				onChange={onChange}
+				placeholder={placeholder}
+				rows={3}
+				className='bg-blk/60 border border-lines/25 hover:border-lines/40 focus:border-btn/50 focus:outline-none rounded-sm px-3 py-2 font-mono text-[11px] text-fontz/75 placeholder:text-lines/20 resize-none transition-colors'
+			/>
+		</div>
+	);
+}
+
+/* ─── Action button ──────────────────────────────────────────── */
+function ActionBtn({
+	onClick,
+	disabled,
+	loading,
+	icon,
+	label,
+	variant = "default",
+	wide = false,
+}) {
+	const variants = {
+		default:
+			"text-btn border-btn/35 bg-btn/8 hover:bg-btn/18 hover:border-btn/60",
+		primary: "text-blk border-btn bg-btn hover:bg-highlight",
+		ai: "text-purple-300 border-purple-800/50 bg-purple-900/10 hover:bg-purple-900/20 hover:border-purple-600/50",
+		muted: "text-lines/25 border-lines/12 bg-transparent cursor-not-allowed",
+	};
+	return (
+		<button
+			onClick={onClick}
+			disabled={disabled || loading}
+			className={[
+				"flex items-center justify-center gap-2 border rounded-sm font-mono text-[10px] tracking-widest uppercase transition-all py-2",
+				wide ? "w-full px-4" : "px-3",
+				disabled || loading ? variants.muted : variants[variant],
+			].join(" ")}>
+			{loading ?
+				<FontAwesomeIcon
+					icon={faSpinner}
+					className='animate-spin text-[10px]'
+				/>
+			:	icon && (
+					<FontAwesomeIcon
+						icon={icon}
+						className='text-[10px]'
+					/>
+				)
+			}
+			{label}
+		</button>
+	);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MISSION GENERATOR
+═══════════════════════════════════════════════════════════════ */
 function MissionGenerator({
 	onGenerateRandomOps,
 	onGenerateOps,
@@ -19,193 +115,119 @@ function MissionGenerator({
 	const [selectedProvince, setSelectedProvince] = useState("");
 	const [selectedLocations, setSelectedLocations] = useState([]);
 	const [numberOfLocations, setNumberOfLocations] = useState(1);
-	const [randomLocationSelection, setRandomSelection] = useState([]);
-
-	const [errmsg, setErrMsg] = useState("");
+	const [randomSelection, setRandomSelection] = useState([]);
 	const [generationMode, setGenerationMode] = useState("random");
 	const [missionDescription, setMissionDescription] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [aiLoading, setAiLoading] = useState(false);
 
+	const provinces = Object.keys(PROVINCES);
+	const locationsInProvince =
+		selectedProvince ? PROVINCES[selectedProvince].locations : [];
+	const allProvinceCoords =
+		selectedProvince ? locationsInProvince.map((l) => l.coordinates) : [];
+
 	useEffect(() => {
-		// Reset selections when switching modes
 		setSelectedLocations([]);
 		setRandomSelection([]);
 		setMapBounds(null);
 		setImgURL("");
-
-		setErrMsg("");
 		setInfilPoint(null);
 		setExfilPoint(null);
 		setFallbackExfil(null);
 		setMissionBriefing("");
 	}, [generationMode]);
 
-	const allProvinceCoordinates = selectedProvince
-		? PROVINCES[selectedProvince].locations.map((loc) => loc.coordinates)
-		: [];
-
-	const provinces = Object.keys(PROVINCES);
-
-	const locationsInProvince =
-		selectedProvince && PROVINCES[selectedProvince]
-			? PROVINCES[selectedProvince].locations
-			: [];
-	const generateAIBriefing = async () => {
-		if (
-			!selectedProvince ||
-			(!randomLocationSelection.length && !selectedLocations.length)
-		) {
-			toast.warn("Select a province and at least one location first.");
-			return;
-		}
-
-		const provinceData = PROVINCES[selectedProvince];
-
-		const briefingData = {
-			missionDescription: missionDescription || "",
-			biome: provinceData.biome,
-			provinceDescription: provinceData.description || "unknown",
-		};
-
-		try {
-			const aiResponse = await chatGPTApi("briefing", briefingData);
-
-			// RapidAPI wrappers vary: support multiple response shapes
-			const rawText =
-				aiResponse?.result ??
-				aiResponse?.choices?.[0]?.message?.content ??
-				aiResponse?.output ??
-				"";
-
-			if (!rawText || typeof rawText !== "string") {
-				toast.error("AI briefing response is empty.");
-				return;
-			}
-
-			// Clean any accidental code fences
-			const cleaned = rawText.replace(/```/g, "").trim();
-
-			setMissionBriefing(cleaned);
-			toast.success("Mission briefing generated!");
-		} catch (error) {
-			console.error(
-				"AI Briefing Generation Failed:",
-				error.response?.data || error
-			);
-			toast.error("Failed to generate mission briefing.");
-		}
-	};
-
-	//Province selection and number of locations
+	/* ── Ops generation ── */
 	const generateRandomOps = async () => {
 		if (!selectedProvince || numberOfLocations <= 0) {
-			if (!selectedProvince) toast.warn("Please select a province.");
-			if (numberOfLocations <= 0)
-				toast.warn("The number of locations must be > 0.");
-			throw new Error("Invalid selections");
+			if (!selectedProvince) toast.warn("Select a province.");
+			if (numberOfLocations <= 0) toast.warn("Locations must be > 0.");
+			throw new Error("Invalid");
 		}
-
-		const provinceData = PROVINCES[selectedProvince];
-		let locationsInProvince = [...provinceData.locations];
-
-		// Shuffle
-		for (let i = locationsInProvince.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1));
-			[locationsInProvince[i], locationsInProvince[j]] = [
-				locationsInProvince[j],
-				locationsInProvince[i],
-			];
-		}
-
-		// Pick subset
-		const ops = locationsInProvince.slice(
-			0,
-			Math.min(numberOfLocations, locationsInProvince.length)
-		);
-
-		const bounds = provinceData.coordinates.bounds;
-		const coordinates = ops.map((loc) => loc.coordinates);
-		const imgURL = provinceData.imgURL;
-		const biome = provinceData.biome;
-
+		const pd = PROVINCES[selectedProvince];
+		const shuffled = [...pd.locations].sort(() => Math.random() - 0.5);
+		const ops = shuffled.slice(0, Math.min(numberOfLocations, shuffled.length));
 		onGenerateRandomOps({
 			selectedProvince,
-			allProvinceCoordinates,
-			bounds,
-			coordinates,
+			allProvinceCoordinates: allProvinceCoords,
+			bounds: pd.coordinates.bounds,
+			coordinates: ops.map((l) => l.coordinates),
 			randomSelection: ops,
-			imgURL,
-			biome,
+			imgURL: pd.imgURL,
+			biome: pd.biome,
 		});
-
-		// keep state for UI
 		setRandomSelection(ops);
-
-		// ✅ return ops so caller can use immediately
 		return ops;
 	};
 
 	const generateOps = async () => {
 		if (!selectedProvince || selectedLocations.length === 0) {
-			toast.error("Please select a province and at least one location.");
+			toast.error("Select a province and at least one location.");
 			return;
 		}
-
-		const provinceData = PROVINCES[selectedProvince];
-
-		// Ensure selected locations exist in the province
-		const validLocations = selectedLocations
-			.map((locName) =>
-				provinceData.locations.find((loc) => loc.name === locName)
-			)
-			.filter((loc) => loc?.coordinates); // Ensure locations are valid
-
-		// If no valid locations are found, show error
-		if (validLocations.length === 0) {
-			toast.error(
-				"Invalid location(s) selected. Please choose from the available list."
-			);
+		const pd = PROVINCES[selectedProvince];
+		const valid = selectedLocations
+			.map((n) => pd.locations.find((l) => l.name === n))
+			.filter((l) => l?.coordinates);
+		if (!valid.length) {
+			toast.error("Invalid locations selected.");
 			return;
 		}
-
-		const bounds = provinceData.coordinates.bounds;
-		const coordinates = validLocations.map((location) => location.coordinates);
-		const imgURL = provinceData.imgURL;
-		const biome = provinceData.biome;
-
 		onGenerateOps({
 			selectedProvince,
-			allProvinceCoordinates,
-			bounds,
-			coordinates,
-			randomSelection: validLocations,
-			imgURL,
-			biome,
+			allProvinceCoordinates: allProvinceCoords,
+			bounds: pd.coordinates.bounds,
+			coordinates: valid.map((l) => l.coordinates),
+			randomSelection: valid,
+			imgURL: pd.imgURL,
+			biome: pd.biome,
 		});
 	};
 
-	// Function to handle incrementing the number of locations
-	const handleIncrement = () => {
-		setNumberOfLocations((prevCount) => prevCount + 1);
+	const generateNonAIPoints = (pickedLocations = null) => {
+		if (!selectedProvince) {
+			toast.error("Select a province first.");
+			return;
+		}
+		const pd = PROVINCES[selectedProvince];
+		let coords = [];
+		if (pickedLocations?.length)
+			coords = pickedLocations.map((l) => l.coordinates);
+		else if (randomSelection.length)
+			coords = randomSelection.map((l) => l.coordinates);
+		else if (selectedLocations.length)
+			coords = selectedLocations
+				.map((n) => pd.locations.find((l) => l.name === n))
+				.filter(Boolean)
+				.map((l) => l.coordinates);
+		if (!coords.length) {
+			toast.error("Pick at least one mission location.");
+			return;
+		}
+		try {
+			const pts = generateInsertionExtractionPoints({
+				bounds: pd.coordinates.bounds,
+				missionCoordinates: coords,
+				allProvinceCoordinates: allProvinceCoords,
+				maxAttempts: 20000,
+			});
+			setInfilPoint(pts.infilPoint);
+			setExfilPoint(pts.exfilPoint);
+			setFallbackExfil(pts.fallbackExfil);
+			toast.success("Infil / exfil / rally points generated.");
+		} catch (err) {
+			toast.error(err.message || "Failed to generate points.");
+		}
 	};
 
-	// Function to handle decrementing the number of locations
-	const handleDecrement = () => {
-		setNumberOfLocations((prevCount) => Math.max(0, prevCount - 1)); // Prevent negative values
-	};
-	// Handles the function selection between "Random Generator" and "Generate Ops"
 	const handleGenerateMission = async () => {
 		setLoading(true);
-
-		// clear map + points (optional)
 		setMapBounds(null);
 		setImgURL("");
-		setErrMsg("");
 		setInfilPoint(null);
 		setExfilPoint(null);
 		setFallbackExfil(null);
-
 		try {
 			if (generationMode === "random") {
 				const ops = await generateRandomOps();
@@ -220,241 +242,231 @@ function MissionGenerator({
 			setLoading(false);
 		}
 	};
+
 	const handleGenerateBriefing = async () => {
-		// do not require locations if you truly don’t want to
 		if (!selectedProvince) {
 			toast.error("Select a province first.");
 			return;
 		}
 		setAiLoading(true);
-
 		try {
-			await generateAIBriefing();
+			const pd = PROVINCES[selectedProvince];
+			const res = await chatGPTApi("briefing", {
+				missionDescription: missionDescription || "",
+				biome: pd.biome,
+				provinceDescription: pd.description || "unknown",
+			});
+			const raw =
+				res?.result ?? res?.choices?.[0]?.message?.content ?? res?.output ?? "";
+			if (!raw) {
+				toast.error("AI response was empty.");
+				return;
+			}
+			setMissionBriefing(raw.replace(/```/g, "").trim());
+			toast.success("Mission briefing generated.");
+		} catch {
+			toast.error("Failed to generate briefing.");
 		} finally {
 			setAiLoading(false);
 		}
 	};
 
-	const handleModeChange = (mode) => {
-		setGenerationMode(mode);
-		setSelectedLocations([]);
-		setRandomSelection([]);
-		setNumberOfLocations(1);
-		setMapBounds(null);
-		setImgURL("");
-
-		setErrMsg("");
-	};
-	const generateNonAIPoints = (pickedLocations = null) => {
-		if (!selectedProvince) {
-			toast.error("Please select a province first.");
-			return;
-		}
-
-		const provinceData = PROVINCES[selectedProvince];
-
-		let missionCoordinates = [];
-
-		// ✅ if caller provided fresh random picks, use them
-		if (pickedLocations && pickedLocations.length > 0) {
-			missionCoordinates = pickedLocations.map((loc) => loc.coordinates);
-		} else if (randomLocationSelection.length > 0) {
-			missionCoordinates = randomLocationSelection.map(
-				(loc) => loc.coordinates
-			);
-		} else if (selectedLocations.length > 0) {
-			missionCoordinates = selectedLocations
-				.map((name) => provinceData.locations.find((l) => l.name === name))
-				.filter(Boolean)
-				.map((loc) => loc.coordinates);
-		}
-
-		if (missionCoordinates.length === 0) {
-			toast.error("Pick at least one mission location first.");
-			return;
-		}
-
-		try {
-			const { infilPoint, exfilPoint, fallbackExfil } =
-				generateInsertionExtractionPoints({
-					bounds: provinceData.coordinates.bounds,
-					missionCoordinates,
-					allProvinceCoordinates,
-					maxAttempts: 20000,
-				});
-
-			setInfilPoint(infilPoint);
-			setExfilPoint(exfilPoint);
-			setFallbackExfil(fallbackExfil);
-
-			toast.success("Generated infil/exfil/rally points!");
-		} catch (err) {
-			console.error(err);
-			toast.error(err.message || "Failed to generate points.");
-		}
-	};
-
+	/* ── UI ── */
 	return (
-		<div className='flex flex-col items-center justify-center text-fontz text-md'>
-			{/* Error Message */}
-			{errmsg && (
-				<div style={{ color: "red", marginBottom: "10px" }}>{errmsg}</div>
-			)}
-
-			{/* Title */}
-			<div className='w-full'>
-				<label className='font-bold text-2xl p-2 flex flex-col items-center'>
-					Mission Generator
-				</label>
+		<div className='flex flex-col gap-4 h-full'>
+			{/* Mode toggle */}
+			<div className='flex gap-0 border border-lines/20 rounded-sm overflow-hidden shrink-0'>
+				{[
+					{ id: "random", icon: faShuffle, label: "Random" },
+					{ id: "ops", icon: faListCheck, label: "Mission" },
+				].map((m) => {
+					const active = generationMode === m.id;
+					return (
+						<button
+							key={m.id}
+							onClick={() => setGenerationMode(m.id)}
+							className={[
+								"flex-1 flex items-center justify-center gap-2 py-2 font-mono text-[10px] tracking-widest uppercase transition-all",
+								active ?
+									"bg-btn/20 text-btn border-r border-lines/20 last:border-r-0"
+								:	"text-lines/35 hover:text-fontz hover:bg-white/[0.03]",
+							].join(" ")}>
+							<FontAwesomeIcon
+								icon={m.icon}
+								className='text-[9px]'
+							/>
+							{m.label}
+						</button>
+					);
+				})}
 			</div>
-			{/* Select Generation Mode */}
-			<div className='grid lg:grid-cols-2 '>
-				<div className='flex flex-col items-center '>
-					<label className='inline-flex items-center cursor-pointer'>
-						<input
-							type='checkbox'
-							checked={generationMode === "ops"} // true when in "random" mode
-							onChange={() =>
-								handleModeChange(generationMode === "random" ? "ops" : "random")
-							}
-							className='sr-only peer'
-						/>
-						<div className="relative w-11 h-6 bg-highlight peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-lines  rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-btn after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-blk/50 "></div>
-						<span className='ms-3 text-sm font-medium'>
-							{generationMode === "ops" ? "Mission Mode" : "Random Mode"}
+
+			{/* Form fields */}
+			<div className='flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto'>
+				{/* Province */}
+				<HudSelect
+					label='Province'
+					value={selectedProvince}
+					onChange={(e) => {
+						setSelectedProvince(e.target.value);
+						setSelectedLocations([]);
+					}}>
+					<option value=''>— Select Province —</option>
+					{provinces.map((p) => (
+						<option
+							key={p}
+							value={p}>
+							{p}
+						</option>
+					))}
+				</HudSelect>
+
+				{/* Location count (random mode) */}
+				{generationMode === "random" && selectedProvince && (
+					<div className='flex flex-col gap-1'>
+						<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
+							Locations
 						</span>
-					</label>
-					<br />
-
-					{/* Province Selection - Always Visible */}
-					<label className='flex flex-col items-center '>
-						Select a Province:
-						<select
-							className=' form rounded-lg shadow-black shadow-lg  outline-lines text-fontz'
-							value={selectedProvince}
-							onChange={(e) => {
-								setSelectedProvince(e.target.value);
-								setSelectedLocations([]); // Reset locations when province changes
-							}}>
-							<option value=''>Select Province</option>
-							{provinces.map((province) => (
-								<option
-									key={province}
-									value={province}>
-									{province}
-								</option>
-							))}
-						</select>
-					</label>
-					<br />
-					<label className='text-md font-bold'>Mission Description</label>
-					<textarea
-						className='form flex flex-col items-center  border border-lines h-25 outline-lines'
-						value={missionDescription}
-						onChange={(e) => setMissionDescription(e.target.value)}
-						placeholder='Provide details about the mission to get AI recommendations...'
-					/>
-				</div>
-				<div className='flex flex-col  justify-center'>
-					{/* Location Selection - Only Visible in "Generate Ops" Mode */}
-					{generationMode === "ops" &&
-						selectedProvince &&
-						locationsInProvince.map((location) => (
-							<label
-								key={location.name}
-								className=' space-x-2'>
-								<input
-									className='accent-btn'
-									type='checkbox'
-									value={location.name}
-									checked={selectedLocations.includes(location.name)}
-									onChange={(e) => {
-										if (e.target.checked) {
-											setSelectedLocations([
-												...selectedLocations,
-												location.name,
-											]);
-										} else {
-											setSelectedLocations(
-												selectedLocations.filter((loc) => loc !== location.name)
-											);
-										}
-									}}
+						<div className='flex items-center gap-0 border border-lines/25 rounded-sm overflow-hidden w-32'>
+							<button
+								onClick={() => setNumberOfLocations((n) => Math.max(1, n - 1))}
+								className='w-9 h-9 flex items-center justify-center text-lines/40 hover:text-btn hover:bg-btn/10 transition-colors border-r border-lines/20'>
+								<FontAwesomeIcon
+									icon={faMinus}
+									className='text-[9px]'
 								/>
-								<span>{location.name}</span>
-							</label>
-						))}
-
-					{/* Number of Locations - Only Visible in "Random Generator" Mode */}
-					{generationMode === "random" && selectedProvince && (
-						<form className='flex flex-col items-center max-w-xs mx-auto text-fontz'>
-							<br />
-							<label
-								htmlFor='quantity-input'
-								className='mb-2 text-sm font-medium'>
-								Choose number of locations:
-							</label>
-							<div className='relative flex items-center max-w-[8rem]'>
-								<button
-									type='button'
-									onClick={handleDecrement}
-									className='btn rounded-s-lg p-3 h-11 '>
-									-
-								</button>
-								<input
-									type='text'
-									value={numberOfLocations}
-									onChange={(e) =>
-										setNumberOfLocations(parseInt(e.target.value) || 1)
-									}
-									className='bg-gray-50 border-x-0 text-center text-gray-900 text-sm w-full py-2.5'
+							</button>
+							<span className='flex-1 text-center font-mono text-xs text-fontz tabular-nums'>
+								{numberOfLocations}
+							</span>
+							<button
+								onClick={() => setNumberOfLocations((n) => n + 1)}
+								className='w-9 h-9 flex items-center justify-center text-lines/40 hover:text-btn hover:bg-btn/10 transition-colors border-l border-lines/20'>
+								<FontAwesomeIcon
+									icon={faPlus}
+									className='text-[9px]'
 								/>
+							</button>
+						</div>
+					</div>
+				)}
 
-								<button
-									type='button'
-									onClick={handleIncrement}
-									className='btn rounded-e-lg p-3 h-11'>
-									+
-								</button>
+				{/* Location checklist (ops mode) */}
+				{generationMode === "ops" &&
+					selectedProvince &&
+					locationsInProvince.length > 0 && (
+						<div className='flex flex-col gap-1'>
+							<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
+								Locations{" "}
+								<span className='text-btn ml-1'>
+									{selectedLocations.length} selected
+								</span>
+							</span>
+							<div className='flex flex-col gap-0.5 max-h-36 overflow-y-auto border border-lines/15 rounded-sm bg-blk/40 p-1'>
+								{locationsInProvince.map((loc) => {
+									const checked = selectedLocations.includes(loc.name);
+									return (
+										<label
+											key={loc.name}
+											className={[
+												"flex items-center gap-2.5 px-2.5 py-1.5 rounded-sm cursor-pointer transition-colors",
+												checked ?
+													"bg-btn/10 border border-btn/20"
+												:	"hover:bg-white/[0.03] border border-transparent",
+											].join(" ")}>
+											{/* Custom checkbox */}
+											<span
+												className={[
+													"w-3 h-3 border rounded-sm shrink-0 flex items-center justify-center transition-colors",
+													checked ? "bg-btn border-btn" : (
+														"border-lines/30 bg-transparent"
+													),
+												].join(" ")}>
+												{checked && (
+													<span className='w-1.5 h-1 border-b border-r border-blk rotate-45 -translate-y-px' />
+												)}
+											</span>
+											<input
+												type='checkbox'
+												className='sr-only'
+												value={loc.name}
+												checked={checked}
+												onChange={(e) =>
+													setSelectedLocations(
+														e.target.checked ?
+															[...selectedLocations, loc.name]
+														:	selectedLocations.filter((l) => l !== loc.name),
+													)
+												}
+											/>
+											<span className='font-mono text-[10px] text-fontz/70'>
+												<FontAwesomeIcon
+													icon={faLocationDot}
+													className='text-lines/25 mr-1.5 text-[8px]'
+												/>
+												{loc.name}
+											</span>
+										</label>
+									);
+								})}
 							</div>
-						</form>
+						</div>
 					)}
 
-					<div className='flex flex-col items-center bg-transparent'>
-						{/* Generate Button */}
-						<>
-							{loading ? (
-								<div className='w-10 h-10 border-4 border-gray-300 border-t-highlight rounded-full animate-spin'></div>
-							) : (
-								<div className='flex flex-col items-center bg-transparent gap-3 mt-6'>
-									<Button
-										className='btn'
-										onClick={handleGenerateMission}
-										disabled={loading}>
-										Generate Mission
-									</Button>
+				{/* Mission description */}
+				<HudTextarea
+					label='Mission Description (optional)'
+					value={missionDescription}
+					onChange={(e) => setMissionDescription(e.target.value)}
+					placeholder='Describe the mission objective for AI briefing generation...'
+				/>
+			</div>
 
-									<Button
-										className='bg-transparent py-3 px-8 rounded-lg  mt-6 flex flex-col items-center text-font'
-										onClick={handleGenerateBriefing}
-										disabled={aiLoading}>
-										<img
-											src='/icons/ai.svg'
-											alt='AI Icon'
-											className='bg-blk/50 hover:bg-highlight rounded '
-										/>
-										<br />
-										Generate Briefing
-									</Button>
-								</div>
-							)}
-						</>
-					</div>
-				</div>
+			{/* Action buttons — always at bottom */}
+			<div className='flex flex-col gap-2 shrink-0'>
+				<ActionBtn
+					onClick={handleGenerateMission}
+					loading={loading}
+					disabled={!selectedProvince}
+					icon={faBolt}
+					label='Generate Mission'
+					variant='primary'
+					wide
+				/>
+				<ActionBtn
+					onClick={handleGenerateBriefing}
+					loading={aiLoading}
+					disabled={!selectedProvince}
+					icon={faRobot}
+					label='Generate AI Briefing'
+					variant='ai'
+					wide
+				/>
 			</div>
 		</div>
 	);
 }
+HudSelect.propTypes = {
+	label: PropTypes.string,
+	value: PropTypes.string,
+	onChange: PropTypes.func,
+	children: PropTypes.array,
+};
+HudTextarea.propTypes = {
+	label: PropTypes.string,
+	value: PropTypes.string,
+	onChange: PropTypes.func,
+	placeholder: PropTypes.string,
+};
+ActionBtn.propTypes = {
+	onClick: PropTypes.func,
+	disabled: PropTypes.bool,
+	loading: PropTypes.bool,
+	icon: PropTypes.object,
+	label: PropTypes.string,
+	variant: PropTypes.string,
+	wide: PropTypes.bool,
+};
 MissionGenerator.propTypes = {
 	onGenerateRandomOps: PropTypes.func.isRequired,
 	onGenerateOps: PropTypes.func.isRequired,

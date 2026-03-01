@@ -5,10 +5,12 @@ import { toast } from "react-toastify";
 
 const useMissionsStore = create((set, get) => ({
 	missions: [],
-	selectedMission: null,
+	activeMission: null, // the currently loaded/playing mission
+	intelAssessment: null, // computed from activeMission.reconReports
 	loading: false,
 
-	// Fetch missions from the API
+	// ─── Mission CRUD ──────────────────────────────────────────
+
 	fetchMissions: async () => {
 		try {
 			const data = await MissionsApi.getMissions();
@@ -19,140 +21,217 @@ const useMissionsStore = create((set, get) => ({
 		}
 	},
 
-	// Set selected mission - accepts mission object or ID string
-	setSelectedMission: (missionOrId) => {
-		// If it's a string, treat it as an ID and find the mission
-		if (typeof missionOrId === "string") {
-			const mission = get().missions.find((m) => m._id === missionOrId);
-			set({ selectedMission: mission || null });
-		} else {
-			// Otherwise, it's a mission object
-			set({ selectedMission: missionOrId });
-		}
-	},
-
-	// Create new mission
-	createMission: async (missionData) => {
-		try {
-			await MissionsApi.createMission(missionData);
-			toast.success("Mission created successfully!");
-			await get().fetchMissions();
-		} catch (error) {
-			console.error("ERROR creating mission:", error);
-			console.error("Error response:", error.response?.data);
-			console.error("Error status:", error.response?.status);
-			toast.error(error.response?.data?.message || "Failed to create mission.");
-		}
-	},
-
-	// Fetch a single mission by ID
-	fetchMissionById: async (missionId) => {
+	// Load a mission as the active mission — fetches full data including intelAssessment
+	loadMission: async (missionId) => {
 		if (!missionId) return;
 		set({ loading: true });
 		try {
-			const response = await MissionsApi.getMissionById(missionId);
-			set({ selectedMission: response.data, loading: false });
+			const { mission, intelAssessment } =
+				await MissionsApi.getMissionById(missionId);
+			set({ activeMission: mission, intelAssessment, loading: false });
 		} catch (error) {
-			console.error("Error fetching mission:", error);
-			set({ selectedMission: null, loading: false });
+			console.error("ERROR loading mission:", error);
+			set({ activeMission: null, intelAssessment: null, loading: false });
+			toast.error("Failed to load mission.");
 		}
 	},
 
-	// Update a mission
-	updateMission: async (missionId, updatedData) => {
+	// Set active mission directly from the list (lightweight — no refetch)
+	setActiveMission: (mission) => {
+		set({ activeMission: mission, intelAssessment: null });
+	},
+
+	clearActiveMission: () => {
+		set({ activeMission: null, intelAssessment: null });
+	},
+
+	createMission: async (name) => {
+		try {
+			const { mission } = await MissionsApi.createMission(name);
+			// Optimistically add to list and set as active
+			set((state) => ({
+				missions: [mission, ...state.missions],
+				activeMission: mission,
+				intelAssessment: null,
+			}));
+			toast.success(`${mission.name} created`);
+			return mission;
+		} catch (error) {
+			console.error("ERROR creating mission:", error);
+			toast.error(error.response?.data?.message || "Failed to create mission.");
+			return null;
+		}
+	},
+
+	// Generic field patch — used by all the convenience helpers below
+	updateMission: async (missionId, patch) => {
 		if (!missionId) return;
 		try {
-			await MissionsApi.updateMission(missionId, updatedData);
-			toast.success("Mission updated successfully!");
-			await get().fetchMissions();
+			const { mission } = await MissionsApi.updateMission(missionId, patch);
+			// Update in list
+			set((state) => ({
+				missions: state.missions.map((m) =>
+					m._id === missionId ? mission : m,
+				),
+				// If this is the active mission, keep it in sync
+				activeMission:
+					state.activeMission?._id === missionId ?
+						{ ...state.activeMission, ...mission }
+					:	state.activeMission,
+			}));
+			return mission;
 		} catch (error) {
 			console.error("ERROR updating mission:", error);
 			toast.error("Failed to update mission.");
 		}
 	},
 
-	// Delete a mission
 	deleteMission: async (missionId) => {
 		if (!missionId) return;
 		try {
 			await MissionsApi.deleteMission(missionId);
-			toast.success("Mission deleted successfully!");
-			await get().fetchMissions();
+			set((state) => ({
+				missions: state.missions.filter((m) => m._id !== missionId),
+				activeMission:
+					state.activeMission?._id === missionId ? null : state.activeMission,
+				intelAssessment:
+					state.activeMission?._id === missionId ? null : state.intelAssessment,
+			}));
+			toast.success("Mission deleted.");
 		} catch (error) {
 			console.error("ERROR deleting mission:", error);
 			toast.error("Failed to delete mission.");
 		}
 	},
 
-	// Update mission status
+	// ─── Convenience update helpers ───────────────────────────
+
 	updateMissionStatus: async (missionId, status) => {
-		if (!missionId) return;
-		try {
-			await MissionsApi.updateMissionStatus(missionId, status);
-			toast.success("Mission status updated!");
-			await get().fetchMissions();
-		} catch (error) {
-			console.error("ERROR updating mission status:", error);
-			toast.error("Failed to update mission status.");
-		}
+		await get().updateMission(missionId, { status });
 	},
 
-	// Update mission notes
 	updateMissionNotes: async (missionId, notes) => {
+		await get().updateMission(missionId, { notes });
+	},
+
+	// Called when MissionGenerator produces output
+	saveMissionGenerator: async (missionId, generator, province, biome) => {
+		await get().updateMission(missionId, { generator, province, biome });
+	},
+
+	// Called when AI briefing is generated
+	saveMissionBriefing: async (missionId, briefingText) => {
+		await get().updateMission(missionId, { briefingText });
+	},
+
+	// ─── Recon reports ─────────────────────────────────────────
+
+	// Append a completed recon debrief — called from ReconTool onComplete()
+	// payload: { reconType, answers, modifiers }
+	addReconReport: async (missionId, payload) => {
 		if (!missionId) return;
 		try {
-			await MissionsApi.updateMissionNotes(missionId, notes);
-			toast.success("Mission notes updated!");
-			await get().fetchMissions();
-		} catch (error) {
-			console.error("ERROR updating mission notes:", error);
-			toast.error("Failed to update mission notes.");
-		}
-	},
+			const { report, intelAssessment, totalReports } =
+				await MissionsApi.addReconReport(missionId, payload);
 
-	// Add team to mission
-	addTeamToMission: async (missionId, teamId) => {
-		try {
-			const mission = get().missions.find((m) => m._id === missionId);
-			if (!mission) return null;
+			// Append report to active mission and update intel assessment
+			set((state) => {
+				const updatedMission =
+					state.activeMission?._id === missionId ?
+						{
+							...state.activeMission,
+							reconReports: [
+								...(state.activeMission.reconReports || []),
+								report,
+							],
+						}
+					:	state.activeMission;
 
-			const updatedTeams = [
-				...(mission.teams || []).map((t) => t._id || t),
-				teamId,
-			];
-			await get().updateMission(missionId, {
-				...mission,
-				teams: updatedTeams,
+				// Also bump the report count on the list entry
+				const updatedMissions = state.missions.map((m) =>
+					m._id === missionId ?
+						{ ...m, reconReports: Array(totalReports).fill(null) } // list only needs count
+					:	m,
+				);
+
+				return {
+					activeMission: updatedMission,
+					intelAssessment: intelAssessment,
+					missions: updatedMissions,
+				};
 			});
+
+			toast.success("Recon report saved.");
+			return report;
 		} catch (error) {
-			console.error("Error adding team to mission:", error);
-			toast.error("Failed to add team to mission.");
+			console.error("ERROR saving recon report:", error);
+			toast.error("Failed to save recon report.");
+			return null;
 		}
 	},
 
-	// Remove team from mission
-	removeTeamFromMission: async (missionId, teamId) => {
+	deleteReconReport: async (missionId, reportId) => {
+		if (!missionId || !reportId) return;
 		try {
-			const mission = get().missions.find((m) => m._id === missionId);
-			if (!mission) return null;
+			const { intelAssessment, totalReports } =
+				await MissionsApi.deleteReconReport(missionId, reportId);
 
-			const updatedTeams = (mission.teams || [])
-				.map((t) => t._id || t)
-				.filter((id) => id !== teamId);
+			set((state) => {
+				const updatedMission =
+					state.activeMission?._id === missionId ?
+						{
+							...state.activeMission,
+							reconReports: state.activeMission.reconReports.filter(
+								(r) => r._id !== reportId,
+							),
+						}
+					:	state.activeMission;
 
-			await get().updateMission(missionId, {
-				...mission,
-				teams: updatedTeams,
+				const updatedMissions = state.missions.map((m) =>
+					m._id === missionId ?
+						{ ...m, reconReports: Array(totalReports).fill(null) }
+					:	m,
+				);
+
+				return {
+					activeMission: updatedMission,
+					intelAssessment: intelAssessment ?? null,
+					missions: updatedMissions,
+				};
 			});
+
+			toast.success("Recon report deleted.");
 		} catch (error) {
-			console.error("Error removing team from mission:", error);
-			toast.error("Failed to remove team from mission.");
+			console.error("ERROR deleting recon report:", error);
+			toast.error("Failed to delete recon report.");
 		}
 	},
 
-	// Reset store
+	// ─── Intel assessment ──────────────────────────────────────
+
+	// Fetch fresh intel assessment — called before generating AI briefing
+	refreshIntelAssessment: async (missionId) => {
+		if (!missionId) return null;
+		try {
+			const { intelAssessment } =
+				await MissionsApi.getIntelAssessment(missionId);
+			set({ intelAssessment });
+			return intelAssessment;
+		} catch (error) {
+			console.error("ERROR fetching intel assessment:", error);
+			return null;
+		}
+	},
+
+	// ─── Reset ────────────────────────────────────────────────
+
 	resetMissionsStore: () =>
-		set({ missions: [], selectedMission: null, loading: false }),
+		set({
+			missions: [],
+			activeMission: null,
+			intelAssessment: null,
+			loading: false,
+		}),
 }));
 
 export default useMissionsStore;
