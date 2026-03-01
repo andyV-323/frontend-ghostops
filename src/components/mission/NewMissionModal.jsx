@@ -10,7 +10,8 @@ import {
 import {
 	generateMissionName,
 	generateMissionNames,
-} from "@/utils/generateMissionName";
+} from "@/utils/GenerateMissionName";
+import PropTypes from "prop-types";
 
 export default function NewMissionModal({
 	onConfirm,
@@ -179,3 +180,9 @@ export default function NewMissionModal({
 		</div>
 	);
 }
+
+NewMissionModal.propTypes = {
+	onConfirm: PropTypes.bool,
+	onCancel: PropTypes.bool,
+	loading: PropTypes.bool,
+};
