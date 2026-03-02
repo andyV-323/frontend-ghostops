@@ -12,6 +12,7 @@ import {
 	faPlus,
 	faFolderOpen,
 	faClipboardList,
+	faFileShield,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { MapWrapper, SheetSide, ReconTool } from "@/components";
@@ -39,11 +40,11 @@ import PropTypes from "prop-types";
 const NAV = [
 	{
 		id: "briefing",
-		label: "Ops Briefing",
-		sub: "Mission Control",
+		label: "Ops Room",
+		sub: "SCIF",
 		icon: faCrosshairs,
 	},
-	{ id: "operators", label: "Personnel", sub: "Roster & Teams", icon: faUsers },
+	{ id: "operators", label: "Personnel", sub: "Team Room", icon: faUsers },
 	{ id: "vehicles", label: "Motor Pool", sub: "Fleet Assets", icon: faTruck },
 ];
 
@@ -477,6 +478,21 @@ function BriefingPage({ onNewMission }) {
 			"Recon Reports",
 			`${reconCount} filed — ${activeMission?.name}`,
 		);
+	const openIntelSheet = () =>
+		openSheet(
+			"left",
+			<IntelBody
+				hasBriefing={hasBriefing}
+				missionBriefing={briefingText}
+				infilPoint={infilPoint}
+				exfilPoint={exfilPoint}
+				fallbackExfil={fallbackExfil}
+			/>,
+			"Intel Briefing",
+			hasBriefing ?
+				"TS//SCI — Ghost Protocol Package"
+			:	"STANDBY — No package generated",
+		);
 
 	// ── Props for MissionGenerator ───────────────────────────────
 	// NO-OP setters: MissionGenerator calls these directly for live preview
@@ -525,6 +541,20 @@ function BriefingPage({ onNewMission }) {
 					</span>
 				</button>
 			)}
+			<button
+				onClick={openIntelSheet}
+				className={[
+					"flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase px-2 py-1 rounded-sm border transition-all",
+					hasBriefing ?
+						"text-purple-300 border-purple-500/40 bg-purple-900/10 hover:bg-purple-900/20 hover:border-purple-500/60"
+					:	"text-lines/35 border-lines/15 hover:border-lines/30 hover:text-lines/55",
+				].join(" ")}>
+				<FontAwesomeIcon
+					icon={faFileShield}
+					className='text-[8px]'
+				/>
+				<span className='hidden sm:inline'>Intel</span>
+			</button>
 			<button
 				onClick={openReconSheet}
 				className='flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-btn hover:text-white border border-btn/30 hover:border-btn/60 bg-btn/5 hover:bg-btn/15 px-2 py-1 rounded-sm transition-all'>
@@ -610,22 +640,11 @@ function BriefingPage({ onNewMission }) {
 					</Panel>
 
 					<Panel
-						title='Intel Briefing'
-						badge={hasBriefing ? "TS//SCI" : "STANDBY"}
-						badgeGreen={hasBriefing}
-						className='h-64'
-						bodyClass='p-0 flex flex-col overflow-hidden'>
-						<IntelBody
-							hasBriefing={hasBriefing}
-							missionBriefing={briefingText}
-							infilPoint={infilPoint}
-							exfilPoint={exfilPoint}
-							fallbackExfil={fallbackExfil}
-						/>
-					</Panel>
-
-					<Panel
-						title='Tactical Map'
+						title={
+							activeMission?.province ?
+								`${activeMission.province}`
+							:	"Tactical Map"
+						}
 						badge='AO-LIVE'
 						badgeGreen
 						className='h-72'
@@ -687,27 +706,17 @@ function BriefingPage({ onNewMission }) {
 						<Panel
 							title='Mission Generator'
 							badge='GEN-SYS'
-							className='flex-[3] min-h-0'
+							className='flex-1 min-h-0'
 							bodyClass='p-3'>
 							<MissionGenerator {...mgProps} />
 						</Panel>
-						<Panel
-							title='Intel Briefing'
-							badge={hasBriefing ? "TS//SCI" : "STANDBY"}
-							badgeGreen={hasBriefing}
-							className='flex-[2] min-h-0'
-							bodyClass='p-0 flex flex-col overflow-hidden'>
-							<IntelBody
-								hasBriefing={hasBriefing}
-								missionBriefing={briefingText}
-								infilPoint={infilPoint}
-								exfilPoint={exfilPoint}
-								fallbackExfil={fallbackExfil}
-							/>
-						</Panel>
 					</div>
 					<Panel
-						title='Tactical Map'
+						title={
+							activeMission?.province ?
+								`${activeMission.province}`
+							:	"Tactical Map"
+						}
 						badge='AO-LIVE'
 						badgeGreen
 						className='h-full'
@@ -932,10 +941,6 @@ export default function UnifiedDashboard() {
 			{/* ══ TOPBAR ══════════════════════════════════════════════ */}
 			<header className='shrink-0 h-12 flex items-center gap-3 px-4 bg-blk/90 border-b border-lines/25'>
 				<div className='flex items-center gap-2 shrink-0'>
-					<div className='relative w-4 h-4 sm:w-5 sm:h-5'>
-						<div className='absolute inset-0 border border-btn rotate-45' />
-						<div className='absolute inset-[4px] sm:inset-[5px] bg-btn' />
-					</div>
 					<img
 						src={iconUrl}
 						alt='description'
@@ -1192,7 +1197,7 @@ export default function UnifiedDashboard() {
 					setOpenSheet={() => setShowMissionList(false)}
 					side='left'
 					title='Operations Log'
-					description='NOMAD-7 // Mission Archive'
+					description='GHOST-1 // Mission Archive'
 					onClose={() => setShowMissionList(false)}
 					content={
 						<MissionListSheet

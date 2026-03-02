@@ -150,7 +150,6 @@ const buildGroqMessages = ({
 	pd,
 	locations,
 	missionType,
-	missionDescription,
 	recon,
 }) => {
 	const isSR = missionType === "Special Reconnaissance";
@@ -186,7 +185,8 @@ ASSET STATUS — state each as a hard rule in the ASSET STATUS section:
   Strike Designator: ${m.strikeDesignator ? "AVAILABLE" : "OFFLINE — no fire support"}
   Vehicle Insertion: ${m.vehicleInsertion ? "AUTHORIZED" : "DENIED — foot infiltration only"}
   Suppressors: ${m.suppressorsAvailable ? "REQUIRED — maintain noise discipline" : "IRRELEVANT — go loud"}
-  Teammate Abilities: ${m.teammateAbilities ? "ACTIVE" : "OFFLINE"}`;
+  Teammate Abilities: ${m.teammateAbilities ? "ACTIVE" : "OFFLINE"}
+  Authorized Windows: ${windows}`;
 	}
 
 	const sections = [
@@ -211,8 +211,6 @@ ${isSR ? "SR mission: emphasize stealth, no-contact doctrine, covert exfil. No L
 	const user = `OPERATION: ${selectedProvince} — ${missionType}
 DOCTRINE: ${MISSION_DOCTRINE[missionType]}
 PROVINCE: ${selectedProvince} | BIOME: ${pd.biome}
-${missionDescription ? `MISSION CONTEXT: ${missionDescription}` : ""}
-
 TARGET LOCATIONS:
 ${locationBlock}
 
@@ -249,23 +247,6 @@ function HudSelect({ label, value, onChange, children }) {
 					<div className='w-0 h-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-lines/30' />
 				</div>
 			</div>
-		</div>
-	);
-}
-
-function HudTextarea({ label, value, onChange, placeholder }) {
-	return (
-		<div className='flex flex-col gap-1'>
-			<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
-				{label}
-			</span>
-			<textarea
-				value={value}
-				onChange={onChange}
-				placeholder={placeholder}
-				rows={3}
-				className='bg-blk/60 border border-lines/25 hover:border-lines/40 focus:border-btn/50 focus:outline-none rounded-sm px-3 py-2 font-mono text-[11px] text-fontz/75 placeholder:text-lines/20 resize-none transition-colors'
-			/>
 		</div>
 	);
 }
@@ -442,7 +423,6 @@ function MissionGenerator({
 	const [numberOfLocations, setNumberOfLocations] = useState(1);
 	const [randomSelection, setRandomSelection] = useState([]);
 	const [generationMode, setGenerationMode] = useState("random");
-	const [missionDescription, setMissionDescription] = useState("");
 	const [missionType, setMissionType] = useState("");
 	const [selectedReconId, setSelectedReconId] = useState(null);
 	const [missionGenerated, setMissionGenerated] = useState(false);
@@ -600,7 +580,6 @@ function MissionGenerator({
 						]
 					),
 				missionType,
-				missionDescription,
 				recon,
 			});
 
@@ -792,13 +771,6 @@ function MissionGenerator({
 					/>
 				)}
 
-				<HudTextarea
-					label='Mission Context (optional)'
-					value={missionDescription}
-					onChange={(e) => setMissionDescription(e.target.value)}
-					placeholder='Additional objective context for AI briefing...'
-				/>
-
 				{/* ── Recon chips — unlocked after mission generates ── */}
 				{missionGenerated && (
 					<>
@@ -850,12 +822,6 @@ HudSelect.propTypes = {
 	value: PropTypes.string,
 	onChange: PropTypes.func,
 	children: PropTypes.node,
-};
-HudTextarea.propTypes = {
-	label: PropTypes.string,
-	value: PropTypes.string,
-	onChange: PropTypes.func,
-	placeholder: PropTypes.string,
 };
 ActionBtn.propTypes = {
 	onClick: PropTypes.func,

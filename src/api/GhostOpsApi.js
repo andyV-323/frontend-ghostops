@@ -70,14 +70,13 @@ const buildPackageMessage = ({
 			:	"UNKNOWN";
 
 		reconBlock = `
-RECON INTELLIGENCE — apply these as hard rules, do not override:
+RECON INTELLIGENCE — apply every line as a hard rule:
   Compromise: ${recon.compromiseBadge?.toUpperCase()}
   Enemy State: ${recon.enemyState}
   Intel Confidence: ${recon.intelAccuracy}%
   Mission Difficulty: ${recon.difficulty}
-  Authorized Launch Windows: ${authorizedWindows}
 
-ASSET STATUS — state each exactly as written in the ASSET STATUS section:
+ASSET STATUS — output each line verbatim in the ASSET STATUS section:
   UAS / TacMap: ${recon.UAS ? "ONLINE" : "OFFLINE — no tactical map"}
   Cross-Com HUD: ${recon.crossCom ? "ONLINE" : "OFFLINE"}
   Armaros Drone: ${recon.armarosDrone ? "AVAILABLE" : "OFFLINE — do not call in"}
@@ -85,6 +84,7 @@ ASSET STATUS — state each exactly as written in the ASSET STATUS section:
   Vehicle Insertion: ${recon.vehicleInsertion ? "AUTHORIZED" : "DENIED — foot infiltration only"}
   Suppressors: ${recon.suppressorsAvailable ? "REQUIRED — maintain noise discipline" : "IRRELEVANT — go loud"}
   Teammate Abilities: ${recon.teammateAbilities ? "ACTIVE" : "OFFLINE — solo execution only"}
+  Launch Windows: ${authorizedWindows}
 `;
 	}
 

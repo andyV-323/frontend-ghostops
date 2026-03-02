@@ -11,16 +11,33 @@ import useSheetStore from "@/zustand/useSheetStore";
 import { Button } from "@/components/ui/button";
 import PropTypes from "prop-types";
 
-const SheetSide = ({ openSheet, side, content, title, description }) => {
+const SheetSide = ({
+	openSheet,
+	setOpenSheet,
+	side,
+	content,
+	title,
+	description,
+	onClose,
+}) => {
 	const { closeSheet } = useSheetStore();
+
+	const handleClose = () => {
+		// Close whichever controller is active
+		if (onClose) onClose();
+		if (setOpenSheet) setOpenSheet(null);
+		closeSheet();
+	};
 
 	return (
 		<Sheet
 			open={openSheet === side}
-			onOpenChange={closeSheet}>
+			onOpenChange={(open) => {
+				if (!open) handleClose();
+			}}>
 			<>
 				<SheetContent
-					className='bg-linear-45 from-blk via-background to-neutral-800 text-fontz flex flex-col items-center overflow-y-auto  w-full p-4  max-h-[100vh]'
+					className='bg-linear-45 from-blk via-background to-neutral-800 text-fontz flex flex-col items-center overflow-y-auto w-full p-4 max-h-[100vh]'
 					side={side}
 					aria-describedby='sheet-description'>
 					<SheetHeader>
@@ -38,7 +55,7 @@ const SheetSide = ({ openSheet, side, content, title, description }) => {
 							<Button
 								className={"btn"}
 								type='button'
-								onClick={closeSheet}>
+								onClick={handleClose}>
 								Close
 							</Button>
 						</SheetClose>
@@ -51,7 +68,8 @@ const SheetSide = ({ openSheet, side, content, title, description }) => {
 
 SheetSide.propTypes = {
 	openSheet: PropTypes.string,
-	setOpenSheet: PropTypes.func.isRequired,
+	setOpenSheet: PropTypes.func,
+	onClose: PropTypes.func,
 	side: PropTypes.oneOf(["left", "right", "top", "bottom"]).isRequired,
 	content: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
 	title: PropTypes.string,

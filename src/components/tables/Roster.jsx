@@ -196,22 +196,33 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 										<td className='px-4 py-3'>
 											<div className='flex items-center gap-3'>
 												<div className='relative shrink-0'>
-													<img
-														className='w-9 h-9 rounded-full border border-lines/40 bg-highlight object-cover'
-														src={operator.image || "/ghost/Default.png"}
-														alt={operator.name || "Operator"}
-														onError={(e) =>
-															(e.target.src = "/ghost/Default.png")
-														}
-													/>
-													{/* Status dot on avatar */}
-													<span
-														className={[
-															"absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-blk",
-															status.dot,
-															status.glow,
-														].join(" ")}
-													/>
+													<div className='w-16 h-16 rounded-full border-2 border-lines/30 overflow-hidden bg-highlight'>
+														<img
+															className={[
+																"w-full h-full object-cover object-top",
+																operator.status === "KIA" ?
+																	"grayscale opacity-60"
+																:	"",
+															].join(" ")}
+															onError={(e) => {
+																e.currentTarget.src = "/ghost/Default.png";
+															}}
+															src={
+																operator.imageKey ||
+																operator.image ||
+																"/ghost/Default.png"
+															}
+															alt={operator.name || "Operator"}
+														/>
+														{/* Status dot on avatar */}
+														<span
+															className={[
+																"absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-blk",
+																status.dot,
+																status.glow,
+															].join(" ")}
+														/>
+													</div>
 												</div>
 												<div className='flex flex-col leading-none gap-1'>
 													<span className='font-mono text-xs text-fontz group-hover:text-white transition-colors'>
@@ -287,7 +298,11 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 		</div>
 	);
 };
-
+TabBtn.propTypes = {
+	active: PropTypes.bool,
+	onClick: PropTypes.func,
+	children: PropTypes.array,
+};
 TabbedRoster.propTypes = {
 	operators: PropTypes.array,
 	setSelectedClass: PropTypes.func,

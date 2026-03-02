@@ -7,6 +7,8 @@ const cognitoAuthConfig = {
 	redirect_uri: import.meta.env.VITE_COGNITO_REDIRECT_URI,
 	response_type: "code",
 	scope: import.meta.env.VITE_COGNITO_SCOPE,
+	automaticSilentRenew: true,
+	monitorSession: false,
 };
 
 export const useAuthService = () => {
@@ -27,7 +29,7 @@ export const useAuthService = () => {
 		const redirectUri = import.meta.env.VITE_COGNITO_REDIRECT_URI;
 
 		window.location.href = `${cognitoDomain}/signup?client_id=${clientId}&response_type=code&scope=email openid phone profile&redirect_uri=${encodeURIComponent(
-			redirectUri
+			redirectUri,
 		)}`;
 	};
 
@@ -39,7 +41,7 @@ export const useAuthService = () => {
 		const logoutUri = import.meta.env.VITE_LOGOUT_URI;
 
 		window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(
-			logoutUri
+			logoutUri,
 		)}`;
 	};
 

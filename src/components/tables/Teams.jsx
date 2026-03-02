@@ -220,12 +220,12 @@ const Teams = ({ dataUpdated, openSheet }) => {
 													<img
 														key={op._id}
 														className={[
-															"w-8 h-8 rounded-full border-2 border-blk object-cover bg-highlight shrink-0 transition-all",
+															"w-8 h-8 rounded-full border-2 border-blk object-cover bg-highlight shrink-0 transition-all object-cover object-top",
 															!isMobile ?
 																"cursor-grab active:cursor-grabbing hover:scale-110 hover:z-10 hover:border-btn"
 															:	"cursor-pointer",
 														].join(" ")}
-														src={op.image}
+														src={op.imageKey || op.image}
 														alt={op.callSign}
 														title={op.callSign}
 														draggable={!isMobile}
@@ -307,8 +307,8 @@ const Teams = ({ dataUpdated, openSheet }) => {
 														onDragEnd={!isMobile ? handleDragEnd : undefined}
 														onClick={(e) => handleOperatorClick(op, e)}>
 														<img
-															className='w-14 h-14 rounded-full border-2 border-lines/30 group-hover:border-btn/60 bg-highlight object-cover transition-all'
-															src={op.image}
+															className='w-14 h-14 rounded-full border-2 border-lines/30 group-hover:border-btn/60 bg-highlight object-cover transition-all  object-cover object-top'
+															src={op.imageKey || op.image}
 															alt={op.callSign}
 														/>
 														<span className='font-mono text-[9px] tracking-wide text-lines/50 group-hover:text-fontz transition-colors text-center max-w-[56px] truncate'>
@@ -514,7 +514,9 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		</div>
 	);
 };
-
+SectionLabel.propTypes = {
+	children: PropTypes.array,
+};
 Teams.propTypes = {
 	dataUpdated: PropTypes.bool,
 	refreshData: PropTypes.func,
