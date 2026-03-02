@@ -3,8 +3,8 @@ import * as TeamsApi from "./TeamsApi";
 import * as InfirmaryApi from "./InfirmaryApi";
 import * as MemorialApi from "./MemorialApi";
 import * as VehicleAPI from "./VehicleApi";
-import { chatGPTApi } from "./chatGPTApi";
 import * as MissionsApi from "./MissionsApi";
+import * as GhostOpsAPI from "./GhostOpsApi";
 
 export {
 	OperatorsApi,
@@ -12,6 +12,6 @@ export {
 	InfirmaryApi,
 	MemorialApi,
 	VehicleAPI,
-	chatGPTApi,
 	MissionsApi,
+	GhostOpsAPI,
 };

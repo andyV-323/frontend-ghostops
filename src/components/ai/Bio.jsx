@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { OperatorsApi, chatGPTApi } from "@/api";
+import { OperatorsApi } from "@/api";
 import { Button } from "@material-tailwind/react";
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { PropTypes } from "prop-types";
@@ -12,7 +12,9 @@ const Bio = ({ operator, setOperator }) => {
 	// When a new operator is selected, update bio
 	useEffect(() => {
 		setBio((prevBio) =>
-			operator?.bio !== prevBio ? operator?.bio || "No bio available." : prevBio
+			operator?.bio !== prevBio ?
+				operator?.bio || "No bio available."
+			:	prevBio,
 		);
 	}, [operator]);
 

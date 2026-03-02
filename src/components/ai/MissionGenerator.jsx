@@ -1,7 +1,7 @@
+// MissionGenerator.jsx
 import { useState, useEffect } from "react";
 import { PROVINCES } from "@/config";
 import PropTypes from "prop-types";
-import { chatGPTApi } from "@/api";
 import { toast } from "react-toastify";
 import { generateInsertionExtractionPoints } from "@/utils/generatePoints";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -14,9 +14,224 @@ import {
 	faRobot,
 	faMinus,
 	faPlus,
+	faCrosshairs,
+	faSkull,
+	faBomb,
+	faHandcuffs,
+	faTruck,
+	faEye,
+	faUserSecret,
 } from "@fortawesome/free-solid-svg-icons";
 
-/* ─── HUD Select ─────────────────────────────────────────────── */
+// ── Mission types ─────────────────────────────────────────────────────────────
+const MISSION_TYPES = [
+	{
+		id: "Special Reconnaissance",
+		abbr: "SR",
+		icon: faUserSecret,
+		color: "text-indigo-400",
+		activeBorder: "border-indigo-400/60",
+		activeBg: "bg-indigo-400/8",
+	},
+	{
+		id: "Direct Action",
+		abbr: "DA",
+		icon: faCrosshairs,
+		color: "text-red-400",
+		activeBorder: "border-red-400/60",
+		activeBg: "bg-red-400/8",
+	},
+	{
+		id: "HVT Elimination",
+		abbr: "HVT",
+		icon: faSkull,
+		color: "text-orange-400",
+		activeBorder: "border-orange-400/60",
+		activeBg: "bg-orange-400/8",
+	},
+	{
+		id: "Sabotage / Demolition",
+		abbr: "SAB",
+		icon: faBomb,
+		color: "text-amber-400",
+		activeBorder: "border-amber-400/60",
+		activeBg: "bg-amber-400/8",
+	},
+	{
+		id: "Hostage Rescue",
+		abbr: "HR",
+		icon: faHandcuffs,
+		color: "text-cyan-400",
+		activeBorder: "border-cyan-400/60",
+		activeBg: "bg-cyan-400/8",
+	},
+	{
+		id: "Convoy Interdiction",
+		abbr: "CI",
+		icon: faTruck,
+		color: "text-violet-400",
+		activeBorder: "border-violet-400/60",
+		activeBg: "bg-violet-400/8",
+	},
+	{
+		id: "Defensive / Overwatch",
+		abbr: "OW",
+		icon: faEye,
+		color: "text-emerald-400",
+		activeBorder: "border-emerald-400/60",
+		activeBg: "bg-emerald-400/8",
+	},
+];
+
+const MISSION_DOCTRINE = {
+	"Special Reconnaissance":
+		"Covert observation only. No contact. Ghost Protocol in effect. Emphasize stealth, hide site, and silent exfil.",
+	"Direct Action":
+		"Speed and violence of action. Small element, hard hit, planned exfil before QRF arrives.",
+	"HVT Elimination":
+		"Surgical strike. Confirm target ID before engagement. Minimize collateral. Clean exfil mandatory.",
+	"Sabotage / Demolition":
+		"Infrastructure denial. Reach target, place charges, exfil before detonation. Noise acceptable post-breach.",
+	"Hostage Rescue":
+		"Time critical. Non-combatant present. No fire near HVT. Speed is life.",
+	"Convoy Interdiction":
+		"Mobile target. Prepare kill zone in advance. Block front and rear. Controlled ambush — no pursuit.",
+	"Defensive / Overwatch":
+		"Establish overwatch before enemy movement. Priority is observation and early warning. Engage on order only.",
+};
+
+const INFIL_OPTIONS = [
+	"HALO jump (high altitude, avoids radar and visual detection)",
+	"LALO parachute (low altitude, terrain masking, short exposure window)",
+	"Helicopter fast rope (medium altitude insert, higher acoustic signature)",
+	"Small bird assault insert (quick low-signature insert, limited personnel)",
+	"Boat / water insertion (coastal or river approach, silent at low speed)",
+	"Ground vehicle (road approach, high signature, speed advantage)",
+	"On foot (zero signature, slow — best for short distances)",
+];
+
+// ── Compromise chip colors ────────────────────────────────────────────────────
+const COMPROMISE_CHIP = {
+	cold: {
+		label: "COLD",
+		color: "text-emerald-400",
+		border: "border-emerald-400/50",
+		bg: "bg-emerald-400/10",
+	},
+	warm: {
+		label: "WARM",
+		color: "text-amber-400",
+		border: "border-amber-400/50",
+		bg: "bg-amber-400/10",
+	},
+	engaged: {
+		label: "HOT",
+		color: "text-orange-400",
+		border: "border-orange-400/50",
+		bg: "bg-orange-400/10",
+	},
+	engaged_exfil: {
+		label: "HOT",
+		color: "text-orange-400",
+		border: "border-orange-400/50",
+		bg: "bg-orange-400/10",
+	},
+	burned: {
+		label: "BURNED",
+		color: "text-red-400",
+		border: "border-red-400/50",
+		bg: "bg-red-400/10",
+	},
+};
+
+// ── Prompt builder ────────────────────────────────────────────────────────────
+const buildGroqMessages = ({
+	selectedProvince,
+	pd,
+	locations,
+	missionType,
+	missionDescription,
+	recon,
+}) => {
+	const isSR = missionType === "Special Reconnaissance";
+
+	const locationBlock = locations
+		.map(
+			(l, i) =>
+				`  OBJ-${String(i + 1).padStart(2, "0")}: ${l.name}\n  Intel: ${l.description}`,
+		)
+		.join("\n\n");
+
+	let reconBlock = "";
+	if (recon) {
+		const m = recon.modifiers || {};
+		const windows =
+			m.launchWindows ?
+				Object.values(m.launchWindows)
+					.filter((w) => w?.authorized)
+					.map((w) => w.label)
+					.join(", ") || "NONE"
+			:	"UNKNOWN";
+		reconBlock = `
+RECON INTELLIGENCE — apply as hard rules:
+  Compromise: ${(m.compromiseBadge || "unknown").toUpperCase()}
+  Enemy State: ${m.enemyState || "Unknown"}
+  Intel Confidence: ${m.intelAccuracy ?? "?"}%
+  Authorized Windows: ${windows}
+
+ASSET STATUS — state each as a hard rule in the ASSET STATUS section:
+  UAS / TacMap: ${m.UAS ? "ONLINE" : "OFFLINE — no tactical map"}
+  Cross-Com HUD: ${m.crossCom ? "ONLINE" : "OFFLINE"}
+  Armaros Drone: ${m.armarosDrone ? "AVAILABLE" : "OFFLINE — do not call in"}
+  Strike Designator: ${m.strikeDesignator ? "AVAILABLE" : "OFFLINE — no fire support"}
+  Vehicle Insertion: ${m.vehicleInsertion ? "AUTHORIZED" : "DENIED — foot infiltration only"}
+  Suppressors: ${m.suppressorsAvailable ? "REQUIRED — maintain noise discipline" : "IRRELEVANT — go loud"}
+  Teammate Abilities: ${m.teammateAbilities ? "ACTIVE" : "OFFLINE"}`;
+	}
+
+	const sections = [
+		recon ? "ASSET STATUS" : null,
+		"MISSION INTENT",
+		"INFILTRATION",
+		"GEAR",
+		isSR ? null : "LOADOUT",
+		"RULES OF ENGAGEMENT",
+		"COMMANDER'S INTENT",
+	]
+		.filter(Boolean)
+		.join(", ");
+
+	const system = `You are a Ghost Recon special operations mission planner producing pre-mission packages for Auroa island. \
+Output is read by a player before loading into the game. Be concise, tactical, specific to the location intel. \
+Total output under 220 words. Use ALL CAPS section labels followed by a colon and newline. \
+No markdown # headers. No bullet point dashes. Reference location names directly. \
+${recon ? "State recon asset availability as hard rules in ASSET STATUS." : ""} \
+${isSR ? "SR mission: emphasize stealth, no-contact doctrine, covert exfil. No LOADOUT section." : ""}`;
+
+	const user = `OPERATION: ${selectedProvince} — ${missionType}
+DOCTRINE: ${MISSION_DOCTRINE[missionType]}
+PROVINCE: ${selectedProvince} | BIOME: ${pd.biome}
+${missionDescription ? `MISSION CONTEXT: ${missionDescription}` : ""}
+
+TARGET LOCATIONS:
+${locationBlock}
+
+AVAILABLE INFILTRATION METHODS (choose best primary + contingency):
+${INFIL_OPTIONS.map((o) => `  ${o}`).join("\n")}
+${reconBlock}
+
+Generate Ghost Protocol Package. Sections in this exact order: ${sections}.
+GEAR: clothing for ${pd.biome} biome — headgear, top, bottom, boots, camo color/pattern. Only what matters for this mission.
+${!isSR ? `LOADOUT: generic weapon types based on mission type and environment (no specific gun model names).` : ""}
+${!recon ? "\nEnd with: // No recon data — cold assumptions applied." : ""}`;
+
+	return [
+		{ role: "system", content: system },
+		{ role: "user", content: user },
+	];
+};
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 function HudSelect({ label, value, onChange, children }) {
 	return (
 		<div className='flex flex-col gap-1'>
@@ -38,7 +253,6 @@ function HudSelect({ label, value, onChange, children }) {
 	);
 }
 
-/* ─── HUD Textarea ───────────────────────────────────────────── */
 function HudTextarea({ label, value, onChange, placeholder }) {
 	return (
 		<div className='flex flex-col gap-1'>
@@ -56,7 +270,6 @@ function HudTextarea({ label, value, onChange, placeholder }) {
 	);
 }
 
-/* ─── Action button ──────────────────────────────────────────── */
 function ActionBtn({
 	onClick,
 	disabled,
@@ -70,8 +283,8 @@ function ActionBtn({
 		default:
 			"text-btn border-btn/35 bg-btn/8 hover:bg-btn/18 hover:border-btn/60",
 		primary: "text-blk border-btn bg-btn hover:bg-highlight",
-		ai: "text-purple-300 border-purple-800/50 bg-purple-900/10 hover:bg-purple-900/20 hover:border-purple-600/50",
-		muted: "text-lines/25 border-lines/12 bg-transparent cursor-not-allowed",
+		ai: "text-purple-300 border-purple-500/40 bg-purple-900/10 hover:bg-purple-900/20 hover:border-purple-500/60",
+		muted: "text-lines/20 border-lines/10 bg-transparent cursor-not-allowed",
 	};
 	return (
 		<button
@@ -99,18 +312,130 @@ function ActionBtn({
 	);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MISSION GENERATOR
-═══════════════════════════════════════════════════════════════ */
+function MissionTypeGrid({ value, onChange }) {
+	return (
+		<div className='flex flex-col gap-1.5'>
+			<div className='flex items-center gap-2'>
+				<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
+					Mission Type
+				</span>
+				<div className='flex-1 h-px bg-lines/10' />
+			</div>
+			<div className='grid grid-cols-4 gap-1'>
+				{MISSION_TYPES.map((t) => {
+					const active = value === t.id;
+					return (
+						<button
+							key={t.id}
+							onClick={() => onChange(active ? "" : t.id)}
+							title={t.id}
+							className={[
+								"flex flex-col items-center gap-1 py-2 px-1 border rounded-sm transition-all",
+								active ?
+									`${t.activeBorder} ${t.activeBg}`
+								:	"border-lines/15 hover:border-lines/30",
+							].join(" ")}>
+							<FontAwesomeIcon
+								icon={t.icon}
+								className={`text-[11px] ${active ? t.color : "text-lines/25"}`}
+							/>
+							<span
+								className={`font-mono text-[8px] tracking-widest ${active ? t.color : "text-lines/30"}`}>
+								{t.abbr}
+							</span>
+						</button>
+					);
+				})}
+			</div>
+			{value && (
+				<span className='font-mono text-[8px] text-lines/40 italic'>
+					{value}
+				</span>
+			)}
+		</div>
+	);
+}
+
+function ReconChips({ reports, selectedId, onSelect }) {
+	if (!reports?.length) {
+		return (
+			<div className='flex flex-col gap-1'>
+				<div className='flex items-center gap-2'>
+					<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
+						Recon Intel
+					</span>
+					<div className='flex-1 h-px bg-lines/10' />
+				</div>
+				<span className='font-mono text-[8px] text-lines/20 italic'>
+					No recon on file — briefing runs cold
+				</span>
+			</div>
+		);
+	}
+
+	return (
+		<div className='flex flex-col gap-1.5'>
+			<div className='flex items-center gap-2'>
+				<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
+					Recon Intel
+				</span>
+				<div className='flex-1 h-px bg-lines/10' />
+				<span className='font-mono text-[7px] text-lines/25 uppercase tracking-widest'>
+					tap to apply
+				</span>
+			</div>
+			<div className='flex flex-wrap gap-1.5'>
+				<button
+					onClick={() => onSelect(null)}
+					className={[
+						"font-mono text-[8px] tracking-widest px-2.5 py-1 border rounded-sm transition-all",
+						selectedId === null ?
+							"border-lines/35 bg-lines/8 text-lines/55"
+						:	"border-lines/15 text-lines/25 hover:border-lines/30 hover:text-lines/40",
+					].join(" ")}>
+					NONE
+				</button>
+				{[...reports].reverse().map((r, i) => {
+					const origIdx = reports.length - 1 - i;
+					const id = r._id ?? origIdx;
+					const m = r.modifiers || {};
+					const meta =
+						COMPROMISE_CHIP[m.compromiseBadge] || COMPROMISE_CHIP.cold;
+					const intel = m.intelAccuracy != null ? `${m.intelAccuracy}%` : "—";
+					const active = selectedId === id;
+					return (
+						<button
+							key={String(id)}
+							onClick={() => onSelect(active ? null : id)}
+							className={[
+								"font-mono text-[8px] tracking-widest px-2.5 py-1 border rounded-sm transition-all",
+								active ?
+									`${meta.border} ${meta.bg} ${meta.color}`
+								:	`border-lines/15 text-lines/30 hover:${meta.border} hover:${meta.color}`,
+							].join(" ")}>
+							{meta.label} // {intel}
+						</button>
+					);
+				})}
+			</div>
+		</div>
+	);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MISSION GENERATOR
+// ═══════════════════════════════════════════════════════════════
 function MissionGenerator({
 	onGenerateRandomOps,
 	onGenerateOps,
+	onGenerateAIMission,
 	setMapBounds,
 	setImgURL,
 	setMissionBriefing,
 	setInfilPoint,
 	setExfilPoint,
 	setFallbackExfil,
+	reconReports,
 }) {
 	const [selectedProvince, setSelectedProvince] = useState("");
 	const [selectedLocations, setSelectedLocations] = useState([]);
@@ -118,6 +443,9 @@ function MissionGenerator({
 	const [randomSelection, setRandomSelection] = useState([]);
 	const [generationMode, setGenerationMode] = useState("random");
 	const [missionDescription, setMissionDescription] = useState("");
+	const [missionType, setMissionType] = useState("");
+	const [selectedReconId, setSelectedReconId] = useState(null);
+	const [missionGenerated, setMissionGenerated] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [aiLoading, setAiLoading] = useState(false);
 
@@ -130,19 +458,18 @@ function MissionGenerator({
 	useEffect(() => {
 		setSelectedLocations([]);
 		setRandomSelection([]);
+		setMissionGenerated(false);
 		setMapBounds(null);
 		setImgURL("");
 		setInfilPoint(null);
 		setExfilPoint(null);
 		setFallbackExfil(null);
 		setMissionBriefing("");
-	}, [generationMode]);
+	}, [generationMode, selectedProvince]);
 
-	/* ── Ops generation ── */
 	const generateRandomOps = async () => {
-		if (!selectedProvince || numberOfLocations <= 0) {
-			if (!selectedProvince) toast.warn("Select a province.");
-			if (numberOfLocations <= 0) toast.warn("Locations must be > 0.");
+		if (!selectedProvince) {
+			toast.warn("Select a province.");
 			throw new Error("Invalid");
 		}
 		const pd = PROVINCES[selectedProvince];
@@ -186,25 +513,19 @@ function MissionGenerator({
 	};
 
 	const generateNonAIPoints = (pickedLocations = null) => {
-		if (!selectedProvince) {
-			toast.error("Select a province first.");
-			return;
-		}
+		if (!selectedProvince) return;
 		const pd = PROVINCES[selectedProvince];
 		let coords = [];
 		if (pickedLocations?.length)
 			coords = pickedLocations.map((l) => l.coordinates);
 		else if (randomSelection.length)
 			coords = randomSelection.map((l) => l.coordinates);
-		else if (selectedLocations.length)
+		else
 			coords = selectedLocations
 				.map((n) => pd.locations.find((l) => l.name === n))
 				.filter(Boolean)
 				.map((l) => l.coordinates);
-		if (!coords.length) {
-			toast.error("Pick at least one mission location.");
-			return;
-		}
+		if (!coords.length) return;
 		try {
 			const pts = generateInsertionExtractionPoints({
 				bounds: pd.coordinates.bounds,
@@ -215,7 +536,6 @@ function MissionGenerator({
 			setInfilPoint(pts.infilPoint);
 			setExfilPoint(pts.exfilPoint);
 			setFallbackExfil(pts.fallbackExfil);
-			toast.success("Infil / exfil / rally points generated.");
 		} catch (err) {
 			toast.error(err.message || "Failed to generate points.");
 		}
@@ -223,6 +543,7 @@ function MissionGenerator({
 
 	const handleGenerateMission = async () => {
 		setLoading(true);
+		setMissionGenerated(false);
 		setMapBounds(null);
 		setImgURL("");
 		setInfilPoint(null);
@@ -236,6 +557,7 @@ function MissionGenerator({
 				await generateOps();
 				generateNonAIPoints();
 			}
+			setMissionGenerated(true);
 		} catch (e) {
 			console.error(e);
 		} finally {
@@ -243,35 +565,88 @@ function MissionGenerator({
 		}
 	};
 
-	const handleGenerateBriefing = async () => {
-		if (!selectedProvince) {
-			toast.error("Select a province first.");
-			return;
-		}
+	const handleGenerateAIBriefing = async () => {
+		if (!selectedProvince || !missionType || !missionGenerated) return;
 		setAiLoading(true);
 		try {
 			const pd = PROVINCES[selectedProvince];
-			const res = await chatGPTApi("briefing", {
-				missionDescription: missionDescription || "",
-				biome: pd.biome,
-				provinceDescription: pd.description || "unknown",
+			const locations =
+				generationMode === "random" ? randomSelection : (
+					selectedLocations
+						.map((n) => pd.locations.find((l) => l.name === n))
+						.filter(Boolean)
+				);
+
+			const recon =
+				selectedReconId != null ?
+					((reconReports || []).find(
+						(r, i) => (r._id ?? i) === selectedReconId,
+					) ?? null)
+				:	null;
+
+			const key = import.meta.env.VITE_GROQ_KEY;
+			if (!key) throw new Error("VITE_GROQ_KEY is not set");
+
+			const messages = buildGroqMessages({
+				selectedProvince,
+				pd,
+				locations:
+					locations.length ? locations : (
+						[
+							{
+								name: "Primary Objective",
+								description: "No location intel on file.",
+							},
+						]
+					),
+				missionType,
+				missionDescription,
+				recon,
 			});
-			const raw =
-				res?.result ?? res?.choices?.[0]?.message?.content ?? res?.output ?? "";
-			if (!raw) {
+
+			const response = await fetch(
+				"https://api.groq.com/openai/v1/chat/completions",
+				{
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${key}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						model: "llama-3.3-70b-versatile",
+						max_tokens: 450,
+						temperature: 0.65,
+						messages,
+					}),
+				},
+			);
+
+			if (!response.ok)
+				throw new Error(`Groq ${response.status}: ${await response.text()}`);
+
+			const data = await response.json();
+			const briefing = data.choices?.[0]?.message?.content ?? "";
+			if (!briefing) {
 				toast.error("AI response was empty.");
 				return;
 			}
-			setMissionBriefing(raw.replace(/```/g, "").trim());
-			toast.success("Mission briefing generated.");
-		} catch {
-			toast.error("Failed to generate briefing.");
+
+			onGenerateAIMission({ briefing: briefing.replace(/```/g, "").trim() });
+			toast.success("Ghost Protocol Package generated.");
+		} catch (err) {
+			console.error(err);
+			toast.error(err.message || "Failed to generate briefing.");
 		} finally {
 			setAiLoading(false);
 		}
 	};
 
-	/* ── UI ── */
+	const aiDisabled = !missionGenerated || !missionType;
+	const aiLabel =
+		!missionGenerated ? "Generate Mission First"
+		: !missionType ? "Select Mission Type"
+		: "Generate AI Briefing";
+
 	return (
 		<div className='flex flex-col gap-4 h-full'>
 			{/* Mode toggle */}
@@ -287,9 +662,9 @@ function MissionGenerator({
 							onClick={() => setGenerationMode(m.id)}
 							className={[
 								"flex-1 flex items-center justify-center gap-2 py-2 font-mono text-[10px] tracking-widest uppercase transition-all",
-								active ?
-									"bg-btn/20 text-btn border-r border-lines/20 last:border-r-0"
-								:	"text-lines/35 hover:text-fontz hover:bg-white/[0.03]",
+								active ? "bg-btn/20 text-btn" : (
+									"text-lines/35 hover:text-fontz hover:bg-white/[0.03]"
+								),
 							].join(" ")}>
 							<FontAwesomeIcon
 								icon={m.icon}
@@ -301,9 +676,8 @@ function MissionGenerator({
 				})}
 			</div>
 
-			{/* Form fields */}
+			{/* Scrollable form */}
 			<div className='flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto'>
-				{/* Province */}
 				<HudSelect
 					label='Province'
 					value={selectedProvince}
@@ -321,7 +695,6 @@ function MissionGenerator({
 					))}
 				</HudSelect>
 
-				{/* Location count (random mode) */}
 				{generationMode === "random" && selectedProvince && (
 					<div className='flex flex-col gap-1'>
 						<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
@@ -351,7 +724,6 @@ function MissionGenerator({
 					</div>
 				)}
 
-				{/* Location checklist (ops mode) */}
 				{generationMode === "ops" &&
 					selectedProvince &&
 					locationsInProvince.length > 0 && (
@@ -374,7 +746,6 @@ function MissionGenerator({
 													"bg-btn/10 border border-btn/20"
 												:	"hover:bg-white/[0.03] border border-transparent",
 											].join(" ")}>
-											{/* Custom checkbox */}
 											<span
 												className={[
 													"w-3 h-3 border rounded-sm shrink-0 flex items-center justify-center transition-colors",
@@ -413,16 +784,41 @@ function MissionGenerator({
 						</div>
 					)}
 
-				{/* Mission description */}
+				{/* Mission type — shown when province is selected */}
+				{selectedProvince && (
+					<MissionTypeGrid
+						value={missionType}
+						onChange={setMissionType}
+					/>
+				)}
+
 				<HudTextarea
-					label='Mission Description (optional)'
+					label='Mission Context (optional)'
 					value={missionDescription}
 					onChange={(e) => setMissionDescription(e.target.value)}
-					placeholder='Describe the mission objective for AI briefing generation...'
+					placeholder='Additional objective context for AI briefing...'
 				/>
+
+				{/* ── Recon chips — unlocked after mission generates ── */}
+				{missionGenerated && (
+					<>
+						<div className='flex items-center gap-2'>
+							<div className='flex-1 h-px bg-lines/12' />
+							<span className='font-mono text-[7px] tracking-[0.3em] text-lines/20 uppercase'>
+								Phase 2 Intel
+							</span>
+							<div className='flex-1 h-px bg-lines/12' />
+						</div>
+						<ReconChips
+							reports={reconReports}
+							selectedId={selectedReconId}
+							onSelect={setSelectedReconId}
+						/>
+					</>
+				)}
 			</div>
 
-			{/* Action buttons — always at bottom */}
+			{/* Buttons */}
 			<div className='flex flex-col gap-2 shrink-0'>
 				<ActionBtn
 					onClick={handleGenerateMission}
@@ -433,24 +829,27 @@ function MissionGenerator({
 					variant='primary'
 					wide
 				/>
-				<ActionBtn
-					onClick={handleGenerateBriefing}
-					loading={aiLoading}
-					disabled={!selectedProvince}
-					icon={faRobot}
-					label='Generate AI Briefing'
-					variant='ai'
-					wide
-				/>
+				{missionGenerated && (
+					<ActionBtn
+						onClick={handleGenerateAIBriefing}
+						loading={aiLoading}
+						disabled={aiDisabled}
+						icon={faRobot}
+						label={aiLabel}
+						variant={aiDisabled ? "muted" : "ai"}
+						wide
+					/>
+				)}
 			</div>
 		</div>
 	);
 }
+
 HudSelect.propTypes = {
 	label: PropTypes.string,
 	value: PropTypes.string,
 	onChange: PropTypes.func,
-	children: PropTypes.array,
+	children: PropTypes.node,
 };
 HudTextarea.propTypes = {
 	label: PropTypes.string,
@@ -467,15 +866,26 @@ ActionBtn.propTypes = {
 	variant: PropTypes.string,
 	wide: PropTypes.bool,
 };
+MissionTypeGrid.propTypes = {
+	value: PropTypes.string,
+	onChange: PropTypes.func.isRequired,
+};
+ReconChips.propTypes = {
+	reports: PropTypes.array,
+	selectedId: PropTypes.any,
+	onSelect: PropTypes.func.isRequired,
+};
 MissionGenerator.propTypes = {
 	onGenerateRandomOps: PropTypes.func.isRequired,
 	onGenerateOps: PropTypes.func.isRequired,
+	onGenerateAIMission: PropTypes.func.isRequired,
 	setMapBounds: PropTypes.func.isRequired,
 	setImgURL: PropTypes.func.isRequired,
 	setInfilPoint: PropTypes.func.isRequired,
 	setExfilPoint: PropTypes.func.isRequired,
 	setFallbackExfil: PropTypes.func.isRequired,
 	setMissionBriefing: PropTypes.func.isRequired,
+	reconReports: PropTypes.array,
 };
 
 export default MissionGenerator;

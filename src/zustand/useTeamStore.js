@@ -5,7 +5,6 @@ import {
 	OperatorsApi,
 	InfirmaryApi,
 	MemorialApi,
-	chatGPTApi,
 	VehicleAPI,
 } from "../api";
 import { INJURIES } from "../config";
@@ -38,7 +37,7 @@ const useTeamsStore = create((set, get) => ({
 			const filteredTeams = teamsData.map((team) => ({
 				...team,
 				operators: team.operators.filter(
-					(op) => op.status !== "Injured" && op.status !== "KIA"
+					(op) => op.status !== "Injured" && op.status !== "KIA",
 				),
 			}));
 			set({ teams: filteredTeams });
@@ -57,8 +56,8 @@ const useTeamsStore = create((set, get) => ({
 			const teams = get().teams || [];
 			const assignedIds = new Set(
 				teams.flatMap((t) =>
-					(t.assets || []).map((v) => (typeof v === "object" ? v._id : v))
-				)
+					(t.assets || []).map((v) => (typeof v === "object" ? v._id : v)),
+				),
 			);
 
 			const available = all.filter((v) => !assignedIds.has(v._id));
@@ -103,7 +102,7 @@ const useTeamsStore = create((set, get) => ({
 			let assetIds = [];
 			if (teamData.assets && Array.isArray(teamData.assets)) {
 				assetIds = teamData.assets.map((v) =>
-					typeof v === "object" && v._id ? v._id : v
+					typeof v === "object" && v._id ? v._id : v,
 				);
 			}
 
@@ -163,7 +162,7 @@ const useTeamsStore = create((set, get) => ({
 		} catch (error) {
 			console.error(
 				"ERROR updating team:",
-				error.response?.data || error.message
+				error.response?.data || error.message,
 			);
 			toast.error("Failed to update team.");
 		}
@@ -242,7 +241,7 @@ const useTeamsStore = create((set, get) => ({
 
 			// Check if operator is already in the target team
 			const operatorAlreadyInTarget = targetTeam.operators.some(
-				(op) => op._id === operatorId
+				(op) => op._id === operatorId,
 			);
 			if (operatorAlreadyInTarget) {
 				toast.warning("Operator is already in this team");
@@ -253,12 +252,12 @@ const useTeamsStore = create((set, get) => ({
 			const sourceTeam = teams.find(
 				(team) =>
 					team._id !== targetTeamId &&
-					team.operators.some((op) => op._id === operatorId)
+					team.operators.some((op) => op._id === operatorId),
 			);
 
 			// Get the operator details
 			const operatorToMove = fullOperatorList.find(
-				(op) => op._id === operatorId
+				(op) => op._id === operatorId,
 			);
 			if (!operatorToMove) {
 				toast.error("Operator not found");
@@ -310,11 +309,11 @@ const useTeamsStore = create((set, get) => ({
 				});
 
 				toast.success(
-					`${operatorToMove.callSign} transferred from ${sourceTeam.name} to ${targetTeam.name}!`
+					`${operatorToMove.callSign} transferred from ${sourceTeam.name} to ${targetTeam.name}!`,
 				);
 			} else {
 				toast.success(
-					`${operatorToMove.callSign} added to ${targetTeam.name}!`
+					`${operatorToMove.callSign} added to ${targetTeam.name}!`,
 				);
 			}
 
@@ -343,57 +342,139 @@ const useTeamsStore = create((set, get) => ({
 		set({ operators: get().operators.filter((id) => id !== operatorId) });
 	},
 
-	// Generate an AI-recommended team
+	// ─────────────────────────────────────────────────────────────────────────────
+	// DROP-IN REPLACEMENT for generateAITeam in useTeamsStore.js
+	//
+	// Paste this function body over the existing generateAITeam: async () => { ... }
+	// No other store changes needed.
+	// ─────────────────────────────────────────────────────────────────────────────
+
 	generateAITeam: async () => {
 		set({ loading: true });
 		try {
 			const { selectedTeamType, missionDescription, allOperators } = get();
 
 			if (!selectedTeamType && !missionDescription.trim()) {
-				toast.warn(
-					"Please select a team type or provide a mission description."
-				);
+				toast.warn("Select a team type or describe the mission.");
 				return;
 			}
 
-			const response = await chatGPTApi("team", {
-				teamType: selectedTeamType || null,
-				missionDescription: missionDescription || null,
-				availableOperators: allOperators.map((op) => ({
-					id: op._id,
-					name: op.callSign,
-					role: op.class,
-					secondaryRole: op.secondaryClass,
-				})),
+			const key = import.meta.env.VITE_GROQ_KEY;
+			if (!key) throw new Error("VITE_GROQ_KEY is not set");
+
+			// ── Build full operator context ─────────────────────────────────────
+			// Keep payload slim to avoid truncation — only what the AI needs to decide
+			const operatorContext = allOperators.map((op) => ({
+				id: op._id,
+				callSign: op.callSign,
+				class: op.class || "",
+				role: op.role || "",
+				weaponType: op.weaponType || "",
+				support: !!op.support,
+				aviator: !!op.aviator,
+			}));
+
+			// ── System prompt ───────────────────────────────────────────────────
+			const system = `You are a Ghost Recon special operations team commander selecting operators for a mission. \
+You will receive a list of available operators with their class, role, weapon type, perks, and special flags. \
+Select the best 2–4 operators for the given mission type or description. \
+Respond ONLY with a valid JSON array. No markdown, no explanation outside the JSON. \
+Each element must have exactly these fields: id (string), callSign (string), justification (string — one tactical sentence explaining why this operator fits). \
+Example: [{"id":"abc123","callSign":"NOMAD","justification":"Assault class with silenced SMG loadout ideal for close-quarters direct action."}]`;
+
+			// ── User prompt ─────────────────────────────────────────────────────
+			const missionContext = [
+				selectedTeamType ? `Team type: ${selectedTeamType}` : null,
+				missionDescription?.trim() ? `Mission: ${missionDescription}` : null,
+			]
+				.filter(Boolean)
+				.join("\n");
+
+			const user = `${missionContext}
+
+Available operators:
+${JSON.stringify(operatorContext, null, 2)}
+
+Select the best 2–4 operators. Return only the JSON array.`;
+
+			// ── Groq call ───────────────────────────────────────────────────────
+			const response = await fetch(
+				"https://api.groq.com/openai/v1/chat/completions",
+				{
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${key}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						model: "llama-3.3-70b-versatile",
+						max_tokens: 800,
+						temperature: 0.5,
+						messages: [
+							{ role: "system", content: system },
+							{ role: "user", content: user },
+						],
+					}),
+				},
+			);
+
+			if (!response.ok) {
+				const err = await response.text();
+				throw new Error(`Groq ${response.status}: ${err}`);
+			}
+
+			const data = await response.json();
+			const raw = data.choices?.[0]?.message?.content ?? "";
+
+			// ── Parse JSON — robustly extract array from anywhere in the response
+			// Model sometimes wraps in markdown, adds preamble, or truncates
+			let parsed;
+			try {
+				// First try: strip fences and parse directly
+				const clean = raw.replace(/```json|```/gi, "").trim();
+				parsed = JSON.parse(clean);
+			} catch {
+				// Second try: extract just the [...] portion with regex
+				const match = raw.match(/\[\s*\{[\s\S]*?\}\s*\]/);
+				if (!match)
+					throw new Error("Could not extract JSON array from AI response.");
+				parsed = JSON.parse(match[0]);
+			}
+
+			if (!Array.isArray(parsed) || parsed.length === 0) {
+				throw new Error("AI returned empty or invalid team.");
+			}
+
+			// ── Match back to full operator objects, attach justification ───────
+			const suggested = parsed
+				.map((item) => {
+					const op = allOperators.find(
+						(o) => o._id === item.id || o.callSign === item.callSign,
+					);
+					if (!op) return null;
+					return { ...op, justification: item.justification || "" };
+				})
+				.filter(Boolean);
+
+			if (suggested.length === 0) {
+				throw new Error("AI suggested operators not found in roster.");
+			}
+
+			set({
+				aiTeam: suggested,
+				operators: suggested.map((op) => op._id),
 			});
 
-			if (response && response.result) {
-				const generatedTeam = response.result;
-				const suggestedOperators = allOperators.filter((op) =>
-					generatedTeam.includes(op.callSign)
-				);
-
-				set({
-					aiTeam: suggestedOperators,
-					operators: suggestedOperators.map((op) => op._id), // Store operator IDs
-				});
-			} else {
-				throw new Error("Invalid AI response format");
-			}
+			toast.success(
+				`AI selected ${suggested.length} operator${suggested.length > 1 ? "s" : ""}.`,
+			);
 		} catch (error) {
-			console.error("ERROR generating team:", error);
-			toast.error("Failed to generate team.");
+			console.error("ERROR generating AI team:", error);
+			toast.error(error.message || "Failed to generate team.");
 		} finally {
 			set({ loading: false });
 		}
 	},
-
-	// Set selected team type
-	setSelectedTeamType: (type) => set({ selectedTeamType: type }),
-
-	// Set mission description
-	setMissionDescription: (desc) => set({ missionDescription: desc }),
-
 	// Create a new team
 	createTeam: async (teamData) => {
 		try {
@@ -412,7 +493,7 @@ const useTeamsStore = create((set, get) => ({
 		} catch (error) {
 			console.error(
 				"ERROR creating team:",
-				error.response?.data || error.message
+				error.response?.data || error.message,
 			);
 			alert("Failed to create team. Check console for details.");
 		}
@@ -462,7 +543,7 @@ const useTeamsStore = create((set, get) => ({
 	assignRandomKIAInjury: async (operatorId, userId) => {
 		// Filter to only get KIA injuries
 		const kiaInjuries = INJURIES.filter(
-			(injury) => injury.recoveryHours === "KIA"
+			(injury) => injury.recoveryHours === "KIA",
 		);
 
 		const injury = kiaInjuries[Math.floor(Math.random() * kiaInjuries.length)];
@@ -520,10 +601,10 @@ const useTeamsStore = create((set, get) => ({
 
 			// Find the operator to transfer from the current state
 			const sourceTeam = originalTeams.find(
-				(team) => team._id === sourceTeamId
+				(team) => team._id === sourceTeamId,
 			);
 			const operatorToTransfer = sourceTeam?.operators.find(
-				(op) => op._id === operatorId
+				(op) => op._id === operatorId,
 			);
 
 			if (!operatorToTransfer) {
@@ -544,7 +625,7 @@ const useTeamsStore = create((set, get) => ({
 					if (team._id === targetTeamId) {
 						// Check if operator is already in target team
 						const operatorExists = team.operators.some(
-							(op) => op._id === operatorId
+							(op) => op._id === operatorId,
 						);
 						if (!operatorExists) {
 							// Add operator to target team
@@ -561,16 +642,16 @@ const useTeamsStore = create((set, get) => ({
 			// Get the updated teams state for API calls
 			const currentState = get();
 			const updatedSourceTeam = currentState.teams.find(
-				(team) => team._id === sourceTeamId
+				(team) => team._id === sourceTeamId,
 			);
 			const updatedTargetTeam = currentState.teams.find(
-				(team) => team._id === targetTeamId
+				(team) => team._id === targetTeamId,
 			);
 
 			if (updatedSourceTeam && updatedTargetTeam) {
 				// Update source team (remove operator) - send only operator IDs
 				const sourceOperatorIds = updatedSourceTeam.operators.map((op) =>
-					typeof op === "object" ? op._id : op
+					typeof op === "object" ? op._id : op,
 				);
 
 				await TeamsApi.updateTeam(sourceTeamId, {
@@ -581,7 +662,7 @@ const useTeamsStore = create((set, get) => ({
 
 				// Update target team (add operator) - send only operator IDs
 				const targetOperatorIds = updatedTargetTeam.operators.map((op) =>
-					typeof op === "object" ? op._id : op
+					typeof op === "object" ? op._id : op,
 				);
 
 				await TeamsApi.updateTeam(targetTeamId, {
@@ -607,7 +688,7 @@ const useTeamsStore = create((set, get) => ({
 
 			// Update each team to have empty operators array
 			await Promise.all(
-				teams.map((team) => updateTeam({ ...team, operators: [] }))
+				teams.map((team) => updateTeam({ ...team, operators: [] })),
 			);
 
 			await fetchTeams();
@@ -625,7 +706,7 @@ const useTeamsStore = create((set, get) => ({
 			if (!targetTeam) return toast.error("Target team not found");
 
 			const alreadyInTarget = (targetTeam.assets || []).some(
-				(v) => (typeof v === "object" ? v._id : v) === vehicleId
+				(v) => (typeof v === "object" ? v._id : v) === vehicleId,
 			);
 			if (alreadyInTarget) return toast.warning("Vehicle already in this team");
 
@@ -633,8 +714,8 @@ const useTeamsStore = create((set, get) => ({
 				(t) =>
 					t._id !== targetTeamId &&
 					(t.assets || []).some(
-						(v) => (typeof v === "object" ? v._id : v) === vehicleId
-					)
+						(v) => (typeof v === "object" ? v._id : v) === vehicleId,
+					),
 			);
 
 			const vehicleObj = fullVehicleList.find((v) => v._id === vehicleId);
@@ -647,7 +728,7 @@ const useTeamsStore = create((set, get) => ({
 						return {
 							...t,
 							assets: (t.assets || []).filter(
-								(v) => (typeof v === "object" ? v._id : v) !== vehicleId
+								(v) => (typeof v === "object" ? v._id : v) !== vehicleId,
 							),
 						};
 					}
@@ -661,7 +742,7 @@ const useTeamsStore = create((set, get) => ({
 			// IDs only for backend
 			const targetAssetIds = [
 				...(targetTeam.assets || []).map((v) =>
-					typeof v === "object" ? v._id : v
+					typeof v === "object" ? v._id : v,
 				),
 				vehicleId,
 			];
@@ -670,7 +751,7 @@ const useTeamsStore = create((set, get) => ({
 				name: targetTeam.name,
 				AO: targetTeam.AO,
 				operators: (targetTeam.operators || []).map((op) =>
-					typeof op === "object" ? op._id : op
+					typeof op === "object" ? op._id : op,
 				),
 				assets: targetAssetIds,
 			});
@@ -684,13 +765,13 @@ const useTeamsStore = create((set, get) => ({
 					name: sourceTeam.name,
 					AO: sourceTeam.AO,
 					operators: (sourceTeam.operators || []).map((op) =>
-						typeof op === "object" ? op._id : op
+						typeof op === "object" ? op._id : op,
 					),
 					assets: sourceAssetIds,
 				});
 
 				toast.success(
-					`Vehicle transferred from ${sourceTeam.name} to ${targetTeam.name}!`
+					`Vehicle transferred from ${sourceTeam.name} to ${targetTeam.name}!`,
 				);
 			} else {
 				toast.success(`Vehicle added to ${targetTeam.name}!`);
@@ -713,14 +794,14 @@ const useTeamsStore = create((set, get) => ({
 			// optimistic
 			set((state) => ({
 				teams: state.teams.map((t) =>
-					t._id === teamId
-						? {
-								...t,
-								assets: (t.assets || []).filter(
-									(v) => (typeof v === "object" ? v._id : v) !== vehicleId
-								),
-						  }
-						: t
+					t._id === teamId ?
+						{
+							...t,
+							assets: (t.assets || []).filter(
+								(v) => (typeof v === "object" ? v._id : v) !== vehicleId,
+							),
+						}
+					:	t,
 				),
 			}));
 
@@ -732,7 +813,7 @@ const useTeamsStore = create((set, get) => ({
 				name: team.name,
 				AO: team.AO,
 				operators: (team.operators || []).map((op) =>
-					typeof op === "object" ? op._id : op
+					typeof op === "object" ? op._id : op,
 				),
 				assets: assetIds,
 			});

@@ -193,6 +193,23 @@ function BriefStatChip({ label, value, live = false }) {
 	);
 }
 
+// ── Section label colors for AI package output ────────────────────────────────
+const SECTION_COLORS = {
+	"ASSET STATUS": "text-red-400",
+	"MISSION INTENT": "text-btn",
+	INFILTRATION: "text-cyan-400",
+	GEAR: "text-amber-400",
+	LOADOUT: "text-orange-400",
+	"RULES OF ENGAGEMENT": "text-lines/55",
+	"COMMANDER'S INTENT": "text-emerald-400",
+};
+function getSectionColor(label) {
+	for (const [key, color] of Object.entries(SECTION_COLORS)) {
+		if (label.includes(key)) return color;
+	}
+	return "text-lines/45";
+}
+
 function IntelBody({
 	hasBriefing,
 	missionBriefing,
@@ -202,7 +219,7 @@ function IntelBody({
 }) {
 	if (!hasBriefing) {
 		return (
-			<div className='flex flex-col items-center justify-center flex-1 gap-4 p-6'>
+			<div className='flex flex-col items-center justify-center flex-1 gap-4 p-6 h-full'>
 				<div className='grid grid-cols-3 gap-1 opacity-20'>
 					{[...Array(9)].map((_, i) => (
 						<div
@@ -211,12 +228,18 @@ function IntelBody({
 						/>
 					))}
 				</div>
-				<p className='font-mono text-[9px] tracking-[0.3em] text-lines/25 uppercase'>
-					// Awaiting Mission Parameters //
+				<p className='font-mono text-[9px] tracking-[0.3em] text-lines/25 uppercase text-center'>
+					// Awaiting Ghost Protocol Package //
+				</p>
+				<p className='font-mono text-[8px] text-lines/15 text-center leading-relaxed'>
+					Select province → mission type → Generate Mission
+					<br />
+					then Generate AI Briefing
 				</p>
 			</div>
 		);
 	}
+
 	const coords = [
 		infilPoint && {
 			label: "INFIL",
@@ -237,16 +260,22 @@ function IntelBody({
 			bg: "rgba(88,58,12,0.18)",
 		},
 	].filter(Boolean);
+
+	// Render section-colored package text
+	const lines = missionBriefing.split("\n");
+
 	return (
 		<div className='flex flex-col h-full'>
+			{/* Classification bar */}
 			<div className='shrink-0 flex items-center justify-between px-3 py-1.5 border-b border-lines/15 bg-blk/50'>
 				<span className='font-mono text-[8px] tracking-[0.35em] text-red-500/35 uppercase'>
 					// TOP SECRET //
 				</span>
 				<span className='font-mono text-[8px] tracking-widest text-lines/20'>
-					NOMAD-7
+					GHOST PROTOCOL
 				</span>
 			</div>
+			{/* Coordinate chips */}
 			{coords.length > 0 && (
 				<div className='shrink-0 flex flex-wrap border-b border-lines/10'>
 					{coords.map(({ label, val, color, bg }) => (
@@ -263,24 +292,65 @@ function IntelBody({
 								className='font-mono text-[9px]'
 								style={{ color }}>
 								{Array.isArray(val) ?
-									`${Number(val[0]).toFixed(4)}, ${Number(val[1]).toFixed(4)}`
+									`${Number(val[0]).toFixed(0)}, ${Number(val[1]).toFixed(0)}`
 								:	String(val)}
 							</span>
 						</div>
 					))}
 				</div>
 			)}
-			<div className='flex-1 min-h-0 overflow-y-auto p-4'>
-				<div className='flex items-center gap-2 mb-3'>
-					<div className='w-2 h-px bg-lines/25' />
-					<span className='font-mono text-[8px] tracking-[0.25em] text-lines/30 uppercase'>
-						OPORD FIELD ANNEX B
-					</span>
-					<div className='flex-1 h-px bg-lines/10' />
+			{/* Package body */}
+			<div className='flex-1 min-h-0 overflow-y-auto px-4 py-3'>
+				<div className='flex flex-col gap-0.5'>
+					{lines.map((line, i) => {
+						const sectionMatch = line.match(/^([A-Z][A-Z\s'\/]+):\s*(.*)/);
+						if (sectionMatch) {
+							const [, label, rest] = sectionMatch;
+							const color = getSectionColor(label.trim());
+							return (
+								<div
+									key={i}
+									className={i === 0 ? "" : "mt-2.5"}>
+									<div className='flex items-center gap-2 mb-0.5'>
+										<span
+											className={`font-mono text-[8px] tracking-[0.2em] font-bold ${color}`}>
+											{label}
+										</span>
+										<div className='flex-1 h-px bg-lines/10' />
+									</div>
+									{rest && (
+										<p className='font-mono text-[10px] text-fontz/68 leading-relaxed'>
+											{rest}
+										</p>
+									)}
+								</div>
+							);
+						}
+						if (line.trim().startsWith("//")) {
+							return (
+								<p
+									key={i}
+									className='font-mono text-[9px] text-lines/25 italic mt-2 border-t border-lines/10 pt-2'>
+									{line}
+								</p>
+							);
+						}
+						if (!line.trim())
+							return (
+								<div
+									key={i}
+									className='h-0.5'
+								/>
+							);
+						return (
+							<p
+								key={i}
+								className='font-mono text-[10px] text-fontz/65 leading-relaxed'>
+								{line}
+							</p>
+						);
+					})}
 				</div>
-				<p className='font-mono text-xs leading-[2] text-fontz/75'>
-					{missionBriefing}
-				</p>
 			</div>
 		</div>
 	);
@@ -315,6 +385,8 @@ function BriefingPage({ onNewMission }) {
 	const hasBriefing = !!briefingText;
 	const hasPoints = !!(infilPoint || exfilPoint);
 	const reconCount = activeMission?.reconReports?.length || 0;
+
+	// ── Intel briefing panel tab ──────────────────────────────────────────────
 
 	// ── onGenerate* callbacks — ONLY place we write to the store ─
 	//
@@ -423,6 +495,7 @@ function BriefingPage({ onNewMission }) {
 		setFallbackExfil: noop,
 		setMissionBriefing: noop,
 		generationMode,
+		reconReports: activeMission?.reconReports || [],
 	};
 
 	const mapProps = {
@@ -540,7 +613,8 @@ function BriefingPage({ onNewMission }) {
 						title='Intel Briefing'
 						badge={hasBriefing ? "TS//SCI" : "STANDBY"}
 						badgeGreen={hasBriefing}
-						className='h-64'>
+						className='h-64'
+						bodyClass='p-0 flex flex-col overflow-hidden'>
 						<IntelBody
 							hasBriefing={hasBriefing}
 							missionBriefing={briefingText}
@@ -621,7 +695,8 @@ function BriefingPage({ onNewMission }) {
 							title='Intel Briefing'
 							badge={hasBriefing ? "TS//SCI" : "STANDBY"}
 							badgeGreen={hasBriefing}
-							className='flex-[2] min-h-0'>
+							className='flex-[2] min-h-0'
+							bodyClass='p-0 flex flex-col overflow-hidden'>
 							<IntelBody
 								hasBriefing={hasBriefing}
 								missionBriefing={briefingText}
@@ -857,6 +932,10 @@ export default function UnifiedDashboard() {
 			{/* ══ TOPBAR ══════════════════════════════════════════════ */}
 			<header className='shrink-0 h-12 flex items-center gap-3 px-4 bg-blk/90 border-b border-lines/25'>
 				<div className='flex items-center gap-2 shrink-0'>
+					<div className='relative w-4 h-4 sm:w-5 sm:h-5'>
+						<div className='absolute inset-0 border border-btn rotate-45' />
+						<div className='absolute inset-[4px] sm:inset-[5px] bg-btn' />
+					</div>
 					<img
 						src={iconUrl}
 						alt='description'
@@ -1132,7 +1211,6 @@ export default function UnifiedDashboard() {
 		</div>
 	);
 }
-
 Panel.propTypes = {
 	title: PropTypes.string,
 	badge: PropTypes.string,
