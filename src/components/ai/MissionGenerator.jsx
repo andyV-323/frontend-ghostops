@@ -4,7 +4,7 @@ import { PROVINCES } from "@/config";
 import { PROVINCE_TERRAIN } from "@/config/provinceTerrain";
 import PropTypes from "prop-types";
 import { toast } from "react-toastify";
-import { generateGhostPackage } from "@/api/ghostOpsApi";
+import { generateGhostPackage } from "@/api/GhostOpsApi";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faLocationDot,
