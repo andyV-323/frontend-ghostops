@@ -1,9 +1,10 @@
 // MissionGenerator.jsx
 import { useState, useEffect } from "react";
 import { PROVINCES } from "@/config";
+import { PROVINCE_TERRAIN } from "@/config/provinceTerrain";
 import PropTypes from "prop-types";
 import { toast } from "react-toastify";
-import { generateInsertionExtractionPoints } from "@/utils/generatePoints";
+import { generateGhostPackage } from "@/api/ghostOpsApi";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faLocationDot,
@@ -83,34 +84,7 @@ const MISSION_TYPES = [
 	},
 ];
 
-const MISSION_DOCTRINE = {
-	"Special Reconnaissance":
-		"Covert observation only. No contact. Ghost Protocol in effect. Emphasize stealth, hide site, and silent exfil.",
-	"Direct Action":
-		"Speed and violence of action. Small element, hard hit, planned exfil before QRF arrives.",
-	"HVT Elimination":
-		"Surgical strike. Confirm target ID before engagement. Minimize collateral. Clean exfil mandatory.",
-	"Sabotage / Demolition":
-		"Infrastructure denial. Reach target, place charges, exfil before detonation. Noise acceptable post-breach.",
-	"Hostage Rescue":
-		"Time critical. Non-combatant present. No fire near HVT. Speed is life.",
-	"Convoy Interdiction":
-		"Mobile target. Prepare kill zone in advance. Block front and rear. Controlled ambush — no pursuit.",
-	"Defensive / Overwatch":
-		"Establish overwatch before enemy movement. Priority is observation and early warning. Engage on order only.",
-};
-
-const INFIL_OPTIONS = [
-	"HALO jump (high altitude, avoids radar and visual detection)",
-	"LALO parachute (low altitude, terrain masking, short exposure window)",
-	"Helicopter fast rope (medium altitude insert, higher acoustic signature)",
-	"Small bird assault insert (quick low-signature insert, limited personnel)",
-	"Boat / water insertion (coastal or river approach, silent at low speed)",
-	"Ground vehicle (road approach, high signature, speed advantage)",
-	"On foot (zero signature, slow — best for short distances)",
-];
-
-// ── Compromise chip colors ────────────────────────────────────────────────────
+// ── Compromise chip colours ───────────────────────────────────────────────────
 const COMPROMISE_CHIP = {
 	cold: {
 		label: "COLD",
@@ -142,91 +116,6 @@ const COMPROMISE_CHIP = {
 		border: "border-red-400/50",
 		bg: "bg-red-400/10",
 	},
-};
-
-// ── Prompt builder ────────────────────────────────────────────────────────────
-const buildGroqMessages = ({
-	selectedProvince,
-	pd,
-	locations,
-	missionType,
-	recon,
-}) => {
-	const isSR = missionType === "Special Reconnaissance";
-
-	const locationBlock = locations
-		.map(
-			(l, i) =>
-				`  OBJ-${String(i + 1).padStart(2, "0")}: ${l.name}\n  Intel: ${l.description}`,
-		)
-		.join("\n\n");
-
-	let reconBlock = "";
-	if (recon) {
-		const m = recon.modifiers || {};
-		const windows =
-			m.launchWindows ?
-				Object.values(m.launchWindows)
-					.filter((w) => w?.authorized)
-					.map((w) => w.label)
-					.join(", ") || "NONE"
-			:	"UNKNOWN";
-		reconBlock = `
-RECON INTELLIGENCE — apply as hard rules:
-  Compromise: ${(m.compromiseBadge || "unknown").toUpperCase()}
-  Enemy State: ${m.enemyState || "Unknown"}
-  Intel Confidence: ${m.intelAccuracy ?? "?"}%
-  Authorized Windows: ${windows}
-
-ASSET STATUS — state each as a hard rule in the ASSET STATUS section:
-  UAS / TacMap: ${m.UAS ? "ONLINE" : "OFFLINE — no tactical map"}
-  Cross-Com HUD: ${m.crossCom ? "ONLINE" : "OFFLINE"}
-  Armaros Drone: ${m.armarosDrone ? "AVAILABLE" : "OFFLINE — do not call in"}
-  Strike Designator: ${m.strikeDesignator ? "AVAILABLE" : "OFFLINE — no fire support"}
-  Vehicle Insertion: ${m.vehicleInsertion ? "AUTHORIZED" : "DENIED — foot infiltration only"}
-  Suppressors: ${m.suppressorsAvailable ? "REQUIRED — maintain noise discipline" : "IRRELEVANT — go loud"}
-  Teammate Abilities: ${m.teammateAbilities ? "ACTIVE" : "OFFLINE"}
-  Authorized Windows: ${windows}`;
-	}
-
-	const sections = [
-		recon ? "ASSET STATUS" : null,
-		"MISSION INTENT",
-		"INFILTRATION",
-		"GEAR",
-		isSR ? null : "LOADOUT",
-		"RULES OF ENGAGEMENT",
-		"COMMANDER'S INTENT",
-	]
-		.filter(Boolean)
-		.join(", ");
-
-	const system = `You are a Ghost Recon special operations mission planner producing pre-mission packages for Auroa island. \
-Output is read by a player before loading into the game. Be concise, tactical, specific to the location intel. \
-Total output under 220 words. Use ALL CAPS section labels followed by a colon and newline. \
-No markdown # headers. No bullet point dashes. Reference location names directly. \
-${recon ? "State recon asset availability as hard rules in ASSET STATUS." : ""} \
-${isSR ? "SR mission: emphasize stealth, no-contact doctrine, covert exfil. No LOADOUT section." : ""}`;
-
-	const user = `OPERATION: ${selectedProvince} — ${missionType}
-DOCTRINE: ${MISSION_DOCTRINE[missionType]}
-PROVINCE: ${selectedProvince} | BIOME: ${pd.biome}
-TARGET LOCATIONS:
-${locationBlock}
-
-AVAILABLE INFILTRATION METHODS (choose best primary + contingency):
-${INFIL_OPTIONS.map((o) => `  ${o}`).join("\n")}
-${reconBlock}
-
-Generate Ghost Protocol Package. Sections in this exact order: ${sections}.
-GEAR: clothing for ${pd.biome} biome — headgear, top, bottom, boots, camo color/pattern. Only what matters for this mission.
-${!isSR ? `LOADOUT: generic weapon types based on mission type and environment (no specific gun model names).` : ""}
-${!recon ? "\nEnd with: // No recon data — cold assumptions applied." : ""}`;
-
-	return [
-		{ role: "system", content: system },
-		{ role: "user", content: user },
-	];
 };
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -415,6 +304,7 @@ function MissionGenerator({
 	setMissionBriefing,
 	setInfilPoint,
 	setExfilPoint,
+	setRallyPoint,
 	setFallbackExfil,
 	reconReports,
 }) {
@@ -435,6 +325,7 @@ function MissionGenerator({
 	const allProvinceCoords =
 		selectedProvince ? locationsInProvince.map((l) => l.coordinates) : [];
 
+	// Reset on mode or province change
 	useEffect(() => {
 		setSelectedLocations([]);
 		setRandomSelection([]);
@@ -443,10 +334,12 @@ function MissionGenerator({
 		setImgURL("");
 		setInfilPoint(null);
 		setExfilPoint(null);
+		if (setRallyPoint) setRallyPoint(null);
 		setFallbackExfil(null);
 		setMissionBriefing("");
 	}, [generationMode, selectedProvince]);
 
+	// ── Phase 1: generate mission (locations + map) ───────────────────────────
 	const generateRandomOps = async () => {
 		if (!selectedProvince) {
 			toast.warn("Select a province.");
@@ -492,35 +385,6 @@ function MissionGenerator({
 		});
 	};
 
-	const generateNonAIPoints = (pickedLocations = null) => {
-		if (!selectedProvince) return;
-		const pd = PROVINCES[selectedProvince];
-		let coords = [];
-		if (pickedLocations?.length)
-			coords = pickedLocations.map((l) => l.coordinates);
-		else if (randomSelection.length)
-			coords = randomSelection.map((l) => l.coordinates);
-		else
-			coords = selectedLocations
-				.map((n) => pd.locations.find((l) => l.name === n))
-				.filter(Boolean)
-				.map((l) => l.coordinates);
-		if (!coords.length) return;
-		try {
-			const pts = generateInsertionExtractionPoints({
-				bounds: pd.coordinates.bounds,
-				missionCoordinates: coords,
-				allProvinceCoordinates: allProvinceCoords,
-				maxAttempts: 20000,
-			});
-			setInfilPoint(pts.infilPoint);
-			setExfilPoint(pts.exfilPoint);
-			setFallbackExfil(pts.fallbackExfil);
-		} catch (err) {
-			toast.error(err.message || "Failed to generate points.");
-		}
-	};
-
 	const handleGenerateMission = async () => {
 		setLoading(true);
 		setMissionGenerated(false);
@@ -528,15 +392,12 @@ function MissionGenerator({
 		setImgURL("");
 		setInfilPoint(null);
 		setExfilPoint(null);
+		if (setRallyPoint) setRallyPoint(null);
 		setFallbackExfil(null);
 		try {
-			if (generationMode === "random") {
-				const ops = await generateRandomOps();
-				generateNonAIPoints(ops);
-			} else {
-				await generateOps();
-				generateNonAIPoints();
-			}
+			if (generationMode === "random") await generateRandomOps();
+			else await generateOps();
+			// Points are NOT generated here — AI owns point placement in Phase 2
 			setMissionGenerated(true);
 		} catch (e) {
 			console.error(e);
@@ -545,11 +406,21 @@ function MissionGenerator({
 		}
 	};
 
+	// ── Phase 2: AI generates briefing + all 3 map points ────────────────────
 	const handleGenerateAIBriefing = async () => {
 		if (!selectedProvince || !missionType || !missionGenerated) return;
 		setAiLoading(true);
+
+		// Clear stale points while AI thinks
+		setInfilPoint(null);
+		setExfilPoint(null);
+		if (setRallyPoint) setRallyPoint(null);
+		setFallbackExfil(null);
+
 		try {
 			const pd = PROVINCES[selectedProvince];
+
+			// Resolve the currently selected objective locations
 			const locations =
 				generationMode === "random" ? randomSelection : (
 					selectedLocations
@@ -557,6 +428,7 @@ function MissionGenerator({
 						.filter(Boolean)
 				);
 
+			// Resolve the selected recon report (null = run cold)
 			const recon =
 				selectedReconId != null ?
 					((reconReports || []).find(
@@ -564,53 +436,78 @@ function MissionGenerator({
 					) ?? null)
 				:	null;
 
-			const key = import.meta.env.VITE_GROQ_KEY;
-			if (!key) throw new Error("VITE_GROQ_KEY is not set");
+			// Resolve terrain metadata — safe fallback if province not yet configured
+			const terrain = PROVINCE_TERRAIN?.[selectedProvince] ?? {
+				isIsland: false,
+				hasCoast: false,
+				coastZones: [],
+				inlandWater: [],
+				hasRoads: true,
+				hasAirfield: false,
+				notes: "No terrain data configured for this province.",
+			};
 
-			const messages = buildGroqMessages({
-				selectedProvince,
-				pd,
+			// Build a readable operation name
+			const missionName = `${selectedProvince.replace(/([A-Z])/g, " $1").trim()} — ${missionType}`;
+
+			const result = await generateGhostPackage({
+				missionName,
+				province: selectedProvince,
+				biome: pd.biome,
+				// If no locations somehow, fall back to province AOO
 				locations:
 					locations.length ? locations : (
 						[
 							{
 								name: "Primary Objective",
 								description: "No location intel on file.",
+								coordinates: pd.AOO ?? [384, 683],
 							},
 						]
 					),
+				allLocations: pd.locations, // full list for spatial context
 				missionType,
+				terrain,
 				recon,
 			});
 
-			const response = await fetch(
-				"https://api.groq.com/openai/v1/chat/completions",
-				{
-					method: "POST",
-					headers: {
-						Authorization: `Bearer ${key}`,
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						model: "llama-3.3-70b-versatile",
-						max_tokens: 450,
-						temperature: 0.65,
-						messages,
-					}),
-				},
-			);
+			// ── Place AI-generated points on the map ─────────────────────────
+			setInfilPoint(result.infilPoint);
+			setExfilPoint(result.exfilPoint);
+			if (setRallyPoint) setRallyPoint(result.rallyPoint);
+			// setFallbackExfil stays null — AI gave us a real exfil
 
-			if (!response.ok)
-				throw new Error(`Groq ${response.status}: ${await response.text()}`);
+			// ── Assemble briefing text from structured sections ───────────────
+			const s = result.sections || {};
+			const isSR = missionType === "Special Reconnaissance";
 
-			const data = await response.json();
-			const briefing = data.choices?.[0]?.message?.content ?? "";
+			const briefingLines = [
+				s.ASSET_STATUS ? `ASSET STATUS:\n${s.ASSET_STATUS}` : null,
+				s.MISSION_INTENT ? `MISSION INTENT:\n${s.MISSION_INTENT}` : null,
+				s.INFILTRATION ? `INFILTRATION:\n${s.INFILTRATION}` : null,
+				s.GEAR ? `GEAR:\n${s.GEAR}` : null,
+				!isSR && s.LOADOUT ? `LOADOUT:\n${s.LOADOUT}` : null,
+				s.RULES_OF_ENGAGEMENT ?
+					`RULES OF ENGAGEMENT:\n${s.RULES_OF_ENGAGEMENT}`
+				:	null,
+				s.COMMANDERS_INTENT ?
+					`COMMANDER'S INTENT:\n${s.COMMANDERS_INTENT}`
+				:	null,
+				result.approachVector ? `// Approach: ${result.approachVector}` : null,
+			].filter(Boolean);
+
+			const briefing = briefingLines.join("\n\n");
 			if (!briefing) {
-				toast.error("AI response was empty.");
+				toast.error("AI returned an empty briefing.");
 				return;
 			}
 
-			onGenerateAIMission({ briefing: briefing.replace(/```/g, "").trim() });
+			onGenerateAIMission({
+				briefing: briefing.trim(),
+				infilPoint: result.infilPoint,
+				exfilPoint: result.exfilPoint,
+				rallyPoint: result.rallyPoint,
+			});
 			toast.success("Ghost Protocol Package generated.");
 		} catch (err) {
 			console.error(err);
@@ -626,6 +523,7 @@ function MissionGenerator({
 		: !missionType ? "Select Mission Type"
 		: "Generate AI Briefing";
 
+	// ── Render ────────────────────────────────────────────────────────────────
 	return (
 		<div className='flex flex-col gap-4 h-full'>
 			{/* Mode toggle */}
@@ -655,7 +553,7 @@ function MissionGenerator({
 				})}
 			</div>
 
-			{/* Scrollable form */}
+			{/* Scrollable form body */}
 			<div className='flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto'>
 				<HudSelect
 					label='Province'
@@ -674,6 +572,7 @@ function MissionGenerator({
 					))}
 				</HudSelect>
 
+				{/* Random mode: location count stepper */}
 				{generationMode === "random" && selectedProvince && (
 					<div className='flex flex-col gap-1'>
 						<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
@@ -703,6 +602,7 @@ function MissionGenerator({
 					</div>
 				)}
 
+				{/* Manual mode: location checklist */}
 				{generationMode === "ops" &&
 					selectedProvince &&
 					locationsInProvince.length > 0 && (
@@ -763,7 +663,7 @@ function MissionGenerator({
 						</div>
 					)}
 
-				{/* Mission type — shown when province is selected */}
+				{/* Mission type grid */}
 				{selectedProvince && (
 					<MissionTypeGrid
 						value={missionType}
@@ -771,7 +671,7 @@ function MissionGenerator({
 					/>
 				)}
 
-				{/* ── Recon chips — unlocked after mission generates ── */}
+				{/* Recon chips — only shown after mission is generated */}
 				{missionGenerated && (
 					<>
 						<div className='flex items-center gap-2'>
@@ -790,7 +690,7 @@ function MissionGenerator({
 				)}
 			</div>
 
-			{/* Buttons */}
+			{/* Action buttons */}
 			<div className='flex flex-col gap-2 shrink-0'>
 				<ActionBtn
 					onClick={handleGenerateMission}
@@ -817,6 +717,7 @@ function MissionGenerator({
 	);
 }
 
+// ── PropTypes ─────────────────────────────────────────────────────────────────
 HudSelect.propTypes = {
 	label: PropTypes.string,
 	value: PropTypes.string,
@@ -849,6 +750,7 @@ MissionGenerator.propTypes = {
 	setImgURL: PropTypes.func.isRequired,
 	setInfilPoint: PropTypes.func.isRequired,
 	setExfilPoint: PropTypes.func.isRequired,
+	setRallyPoint: PropTypes.func, // new — AI-placed rally point
 	setFallbackExfil: PropTypes.func.isRequired,
 	setMissionBriefing: PropTypes.func.isRequired,
 	reconReports: PropTypes.array,

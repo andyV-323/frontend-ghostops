@@ -377,6 +377,7 @@ function BriefingPage({ onNewMission }) {
 	// (generateInsertionExtractionPoints output varies; normalizePoint handles all shapes)
 	const infilPoint = normalizePoint(g.infilPoint);
 	const exfilPoint = normalizePoint(g.exfilPoint);
+	const rallyPoint = normalizePoint(g.rallyPoint); // add this
 	const fallbackExfil = normalizePoint(g.fallbackExfil);
 
 	const locationSelection = generationMode === "ops" ? selectedLocations : [];
@@ -414,7 +415,6 @@ function BriefingPage({ onNewMission }) {
 
 	const handleGenerateRandomOps = (data) => {
 		if (!activeMission?._id) return;
-		const pts = computePoints(data);
 		saveMissionGenerator(
 			activeMission._id,
 			{
@@ -422,9 +422,11 @@ function BriefingPage({ onNewMission }) {
 				selectedLocations: data.randomSelection,
 				mapBounds: data.bounds,
 				imgURL: data.imgURL || "",
-				infilPoint: pts.infilPoint,
-				exfilPoint: pts.exfilPoint,
-				fallbackExfil: pts.fallbackExfil,
+				// No points — AI sets these in Phase 2
+				infilPoint: null,
+				exfilPoint: null,
+				rallyPoint: null,
+				fallbackExfil: null,
 			},
 			data.selectedProvince,
 			data.biome,
@@ -433,7 +435,6 @@ function BriefingPage({ onNewMission }) {
 
 	const handleGenerateOps = (data) => {
 		if (!activeMission?._id) return;
-		const pts = computePoints(data);
 		saveMissionGenerator(
 			activeMission._id,
 			{
@@ -441,9 +442,10 @@ function BriefingPage({ onNewMission }) {
 				selectedLocations: data.randomSelection,
 				mapBounds: data.bounds,
 				imgURL: data.imgURL || "",
-				infilPoint: pts.infilPoint,
-				exfilPoint: pts.exfilPoint,
-				fallbackExfil: pts.fallbackExfil,
+				// No points — AI sets these in Phase 2
+				infilPoint: null,
+				exfilPoint: null,
+				fallbackExfil: null,
 			},
 			data.selectedProvince,
 			data.biome,
@@ -452,9 +454,27 @@ function BriefingPage({ onNewMission }) {
 
 	const handleGenerateAIMission = (data) => {
 		if (!activeMission?._id) return;
-		// AI briefing: keep existing generator data, only update briefing text
-		// (map + points were set in the prior generate call)
+
+		// Save briefing text
 		saveMissionBriefing(activeMission._id, data.briefing || data.result || "");
+
+		// Save AI-generated points back into the generator slice of the store
+		// so the map picks them up via normalizePoint(g.infilPoint) etc.
+		if (data.infilPoint || data.exfilPoint || data.rallyPoint) {
+			saveMissionGenerator(
+				activeMission._id,
+				{
+					// Preserve existing generator data, only overwrite points
+					...activeMission.generator,
+					infilPoint: data.infilPoint ?? null,
+					exfilPoint: data.exfilPoint ?? null,
+					rallyPoint: data.rallyPoint ?? null,
+					fallbackExfil: null,
+				},
+				activeMission.generator?.province,
+				activeMission.generator?.biome,
+			);
+		}
 	};
 
 	// ── Sheets ───────────────────────────────────────────────────

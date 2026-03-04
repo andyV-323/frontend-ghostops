@@ -8,7 +8,9 @@ const cognitoAuthConfig = {
 	response_type: "code",
 	scope: import.meta.env.VITE_COGNITO_SCOPE,
 	automaticSilentRenew: true,
+	silent_redirect_uri: import.meta.env.VITE_COGNITO_REDIRECT_URI,
 	monitorSession: false,
+	accessTokenExpiringNotificationTimeInSeconds: 120,
 };
 
 export const useAuthService = () => {
