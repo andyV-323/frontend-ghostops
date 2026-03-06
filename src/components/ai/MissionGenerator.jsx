@@ -22,6 +22,7 @@ import {
 	faTruck,
 	faEye,
 	faUserSecret,
+	faHandsBound,
 } from "@fortawesome/free-solid-svg-icons";
 
 // ── Mission types ─────────────────────────────────────────────────────────────
@@ -81,6 +82,14 @@ const MISSION_TYPES = [
 		color: "text-emerald-400",
 		activeBorder: "border-emerald-400/60",
 		activeBg: "bg-emerald-400/8",
+	},
+	{
+		id: "Capture",
+		abbr: "CAP",
+		icon: faHandsBound,
+		color: "text-blue-400",
+		activeBorder: "border-blue-400/60",
+		activeBg: "bg-blue-400/8",
 	},
 ];
 

@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faChevronRight,
+	faChevronLeft,
 	faShieldHalved,
 	faEye,
 	faPersonFalling,
@@ -24,17 +25,6 @@ const STEP_RECON_TYPE = {
 	subtext:
 		"Select the recon doctrine used. This determines which questions follow and how intel is weighted.",
 	options: [
-		{
-			value: "standard",
-			label: "Standard Recon",
-			description: "General purpose debrief. No specialization required.",
-			asset: "Any configuration",
-			icon: faListCheck,
-			color: "text-gray-400",
-			border: "border-gray-400/40 hover:border-gray-400",
-			bg: "hover:bg-gray-400/10",
-			selectedBg: "bg-gray-400/10 border-gray-400",
-		},
 		{
 			value: "route",
 			label: "Route Recon",
@@ -246,50 +236,6 @@ const STEP_CASUALTIES = {
 	],
 };
 
-{
-	/*const STEP_TEAM_SIZE = {
-    id: "teamSize",
-    question: "What was the recon team size?",
-    subtext:
-        "Larger elements cover more ground but are harder to keep concealed.",
-    options: [
-        {
-            value: "solo",
-            label: "Solo Operator",
-            description:
-                "Maximum stealth, minimum coverage. Intel accuracy reduced — one set of eyes can only see so much.",
-            icon: faPersonFalling,
-            color: "text-indigo-400",
-            border: "border-indigo-400/40 hover:border-indigo-400",
-            bg: "hover:bg-indigo-400/10",
-            selectedBg: "bg-indigo-400/10 border-indigo-400",
-        },
-        {
-            value: "two",
-            label: "2-Man Element",
-            description:
-                "Standard recon pair. Balanced stealth and coverage. No intel modifier.",
-            icon: faShieldHalved,
-            color: "text-emerald-400",
-            border: "border-emerald-400/40 hover:border-emerald-400",
-            bg: "hover:bg-emerald-400/10",
-            selectedBg: "bg-emerald-400/10 border-emerald-400",
-        },
-        {
-            value: "squad",
-            label: "Full Squad (3–4)",
-            description:
-                "Maximum coverage. Intel accuracy improved — multiple operators confirm entry points and patrol routes.",
-            icon: faEye,
-            color: "text-amber-400",
-            border: "border-amber-400/40 hover:border-amber-400",
-            bg: "hover:bg-amber-400/10",
-            selectedBg: "bg-amber-400/10 border-amber-400",
-        },
-    ],
-};
-*/
-}
 // ── Type-specific steps ──────────────────────────────────────────────────────
 
 const STEP_ROUTE_STATUS = {
@@ -477,6 +423,7 @@ const STEP_OUTCOME = {
 		},
 	],
 };
+
 const buildAssetStep = (reconType) => ({
 	id: "assets",
 	question: "What assets did you use during recon?",
@@ -535,7 +482,6 @@ const buildSteps = (answers) => {
 			return [STEP_RECON_TYPE, STEP_OBSERVATION, STEP_COMPROMISE, assetStep];
 
 		default:
-			// Standard — survey, compromise, casualties, then assets
 			return [
 				STEP_RECON_TYPE,
 				STEP_SURVEY,
@@ -642,8 +588,9 @@ const ReconDebriefAdvanced = ({ mission, onComplete }) => {
 	const steps = useMemo(() => buildSteps(answers), [answers]);
 	const step = steps[currentStep];
 	const totalSteps = steps.length;
-	const progress = (currentStep / totalSteps) * 100;
+	const progress = ((currentStep + 1) / totalSteps) * 100;
 	const isLastStep = currentStep === totalSteps - 1;
+	const isFirstStep = currentStep === 0;
 	const isAssetStep = step?.isMultiSelect;
 
 	const handleSelect = (value) => setSelected(value);
@@ -652,6 +599,41 @@ const ReconDebriefAdvanced = ({ mission, onComplete }) => {
 		setSelectedAssets((prev) =>
 			prev.includes(value) ? prev.filter((a) => a !== value) : [...prev, value],
 		);
+	};
+
+	const handleBack = () => {
+		if (isFirstStep || animating) return;
+
+		setAnimating(true);
+
+		setTimeout(() => {
+			const prevStep = steps[currentStep - 1];
+
+			// Restore the asset selection or single selection for the previous step
+			if (prevStep.isMultiSelect) {
+				setSelectedAssets(answers[prevStep.id] ?? []);
+				setSelected(null);
+			} else {
+				setSelected(answers[prevStep.id] ?? null);
+				setSelectedAssets([]);
+			}
+
+			// Remove current step's answer from state
+			setAnswers((prev) => {
+				const updated = { ...prev };
+				delete updated[step.id];
+				// If backing out of compromise, also clear auto-set casualties
+				if (step.id === "compromise") delete updated.casualties;
+				// If backing out of reconType, clear all derived answers
+				if (step.id === "reconType") {
+					return {};
+				}
+				return updated;
+			});
+
+			setCurrentStep((s) => s - 1);
+			setAnimating(false);
+		}, 250);
 	};
 
 	const handleNext = () => {
@@ -664,26 +646,20 @@ const ReconDebriefAdvanced = ({ mission, onComplete }) => {
 		} else {
 			newAnswers[step.id] = selected;
 
-			// When any step that writes to "compromise" resolves to an implied casualty level,
-			// auto-set casualties so the briefing card always has a defined value
 			if (step.id === "compromise" && CASUALTIES_IMPLIED.includes(selected)) {
 				newAnswers.casualties = "kia";
 			}
 
-			// RIF: auto-set compromise and casualties since neither is asked
 			if (step.id === "reconType" && selected === "rif") {
 				newAnswers.compromise = "warm";
 				newAnswers.casualties = "none";
 			}
 		}
 
-		// Always guarantee casualties is defined before submitting
 		if (!newAnswers.casualties) {
 			newAnswers.casualties = "none";
 		}
 
-		// Compute the NEXT step sequence from newAnswers, not stale state.
-		// Critical when reconType is selected — steps rebuilds immediately on that answer.
 		const nextSteps = buildSteps(newAnswers);
 		const nextIsLast = currentStep >= nextSteps.length - 1;
 
@@ -694,6 +670,7 @@ const ReconDebriefAdvanced = ({ mission, onComplete }) => {
 			if (!nextIsLast) {
 				setCurrentStep((s) => s + 1);
 				setSelected(null);
+				setSelectedAssets([]);
 			} else {
 				onComplete(newAnswers);
 			}
@@ -760,7 +737,6 @@ const ReconDebriefAdvanced = ({ mission, onComplete }) => {
 									<span className='text-xs text-gray-500 leading-relaxed'>
 										{opt.description}
 									</span>
-									{/* Asset recommendation hint on type selector */}
 									{opt.asset && (
 										<span className='text-xs text-gray-600 mt-1 font-mono'>
 											Assets: {opt.asset}
@@ -779,18 +755,35 @@ const ReconDebriefAdvanced = ({ mission, onComplete }) => {
 				}
 			</div>
 
-			{/* Next button */}
-			<button
-				onClick={handleNext}
-				disabled={!canAdvance}
-				className={`w-full py-3 rounded text-sm font-bold uppercase tracking-widest transition-all duration-200
+			{/* Action buttons */}
+			<div className='flex gap-3'>
+				{/* Back button — hidden on first step */}
+				{!isFirstStep && (
+					<button
+						onClick={handleBack}
+						disabled={animating}
+						className='flex items-center gap-2 px-4 py-3 rounded border border-lines/30 text-sm font-bold uppercase tracking-widest text-gray-400 hover:text-fontz hover:border-gray-500 transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'>
+						<FontAwesomeIcon
+							icon={faChevronLeft}
+							className='text-xs'
+						/>
+						Back
+					</button>
+				)}
+
+				{/* Next / Submit button */}
+				<button
+					onClick={handleNext}
+					disabled={!canAdvance}
+					className={`flex-1 py-3 rounded text-sm font-bold uppercase tracking-widest transition-all duration-200
                     ${
 											canAdvance ?
 												"bg-btn text-blk cursor-pointer hover:bg-highlight hover:text-fontz"
 											:	"bg-gray-800 text-gray-600 cursor-not-allowed"
 										}`}>
-				{isLastStep ? "Submit Debrief" : "Confirm & Continue"}
-			</button>
+					{isLastStep ? "Submit Debrief" : "Confirm & Continue"}
+				</button>
+			</div>
 		</div>
 	);
 };

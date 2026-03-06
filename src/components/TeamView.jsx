@@ -62,7 +62,7 @@ function SectionHeader({ label, count }) {
 /* ─── Gear chip ─────────────────────────────────────────────── */
 function GearChip({ imgSrc, name }) {
 	return (
-		<div className='flex flex-col items-center gap-1.5 bg-blk/50 border border-lines/15 rounded-sm p-2 hover:border-lines/30 transition-colors group'>
+		<div className='flex flex-col items-center gap-1.5  bg-blk/40 border border-lines/15 rounded-sm p-2 hover:border-lines/30 transition-colors group'>
 			{imgSrc ?
 				<img
 					src={imgSrc}
@@ -179,7 +179,7 @@ function OperatorCard({ operator, onInjuryClick }) {
 
 				{/* Primary weapon */}
 				{operator.weaponType && (
-					<div className='flex items-center gap-2 bg-blk/40 border border-lines/10 rounded-sm p-1.5'>
+					<div className='flex items-center gap-2  bg-background/40 border border-lines/10 rounded-sm p-1.5'>
 						{WEAPONS[operator.weaponType]?.imgUrl && (
 							<img
 								src={WEAPONS[operator.weaponType].imgUrl}
@@ -574,7 +574,24 @@ const TeamView = ({ teamId }) => {
 		</div>
 	);
 };
-
+SectionHeader.propTypes = {
+	label: PropTypes.string,
+	count: PropTypes.number,
+};
+GearChip.propTypes = {
+	imgSrc: PropTypes.string,
+	name: PropTypes.string,
+};
+FuelBar.propTypes = {
+	pct: PropTypes.number,
+};
+OperatorCard.propTypes = {
+	operator: PropTypes.object,
+	onInjuryClick: PropTypes.func,
+};
+AssetCard.propTypes = {
+	asset: PropTypes.object,
+};
 TeamView.propTypes = {
 	openSheet: PropTypes.func,
 	teamId: PropTypes.string.isRequired,

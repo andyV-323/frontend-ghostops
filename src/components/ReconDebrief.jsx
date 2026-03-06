@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faChevronRight,
+	faChevronLeft,
 	faShieldHalved,
 	faEye,
 	faPersonFalling,
@@ -220,8 +221,9 @@ const ReconDebrief = ({ mission, onComplete }) => {
 
 	const step = steps[currentStep];
 	const totalSteps = steps.length;
-	const progress = (currentStep / totalSteps) * 100;
+	const progress = ((currentStep + 1) / totalSteps) * 100;
 	const isLastStep = currentStep === totalSteps - 1;
+	const isFirstStep = currentStep === 0;
 
 	const handleSelect = (value) => setSelected(value);
 
@@ -231,7 +233,6 @@ const ReconDebrief = ({ mission, onComplete }) => {
 		const newAnswers = { ...answers, [step.id]: selected };
 
 		// Auto-set casualties to "kia" when compromise implies it
-		// so getMissionModifiers always receives the casualties field
 		if (step.id === "compromise" && CASUALTIES_IMPLIED.includes(selected)) {
 			newAnswers.casualties = "kia";
 		}
@@ -246,6 +247,31 @@ const ReconDebrief = ({ mission, onComplete }) => {
 			} else {
 				onComplete(newAnswers);
 			}
+			setAnimating(false);
+		}, 250);
+	};
+
+	const handleBack = () => {
+		if (isFirstStep || animating) return;
+
+		setAnimating(true);
+
+		setTimeout(() => {
+			const prevStep = steps[currentStep - 1];
+
+			// Restore previously saved answer for that step as the selection
+			setSelected(answers[prevStep.id] ?? null);
+
+			// Remove the current step's answer from state
+			setAnswers((prev) => {
+				const updated = { ...prev };
+				delete updated[step.id];
+				// If going back past compromise, also clear the auto-set casualties
+				if (step.id === "compromise") delete updated.casualties;
+				return updated;
+			});
+
+			setCurrentStep((s) => s - 1);
 			setAnimating(false);
 		}, 250);
 	};
@@ -317,18 +343,35 @@ const ReconDebrief = ({ mission, onComplete }) => {
 				})}
 			</div>
 
-			{/* Next button */}
-			<button
-				onClick={handleNext}
-				disabled={!selected}
-				className={`w-full py-3 rounded text-sm font-bold uppercase tracking-widest transition-all duration-200
+			{/* Action buttons */}
+			<div className='flex gap-3'>
+				{/* Back button — hidden on first step */}
+				{!isFirstStep && (
+					<button
+						onClick={handleBack}
+						disabled={animating}
+						className='flex items-center gap-2 px-4 py-3 rounded border border-lines/30 text-sm font-bold uppercase tracking-widest text-gray-400 hover:text-fontz hover:border-gray-500 transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'>
+						<FontAwesomeIcon
+							icon={faChevronLeft}
+							className='text-xs'
+						/>
+						Back
+					</button>
+				)}
+
+				{/* Next / Submit button */}
+				<button
+					onClick={handleNext}
+					disabled={!selected}
+					className={`flex-1 py-3 rounded text-sm font-bold uppercase tracking-widest transition-all duration-200
                     ${
 											selected ?
 												"bg-btn text-blk cursor-pointer hover:bg-highlight hover:text-fontz"
 											:	"bg-gray-800 text-gray-600 cursor-not-allowed"
 										}`}>
-				{isLastStep ? "Submit Debrief" : "Confirm & Continue"}
-			</button>
+					{isLastStep ? "Submit Debrief" : "Confirm & Continue"}
+				</button>
+			</div>
 		</div>
 	);
 };

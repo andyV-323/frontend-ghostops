@@ -515,7 +515,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	);
 };
 SectionLabel.propTypes = {
-	children: PropTypes.array,
+	children: PropTypes.string,
 };
 Teams.propTypes = {
 	dataUpdated: PropTypes.bool,

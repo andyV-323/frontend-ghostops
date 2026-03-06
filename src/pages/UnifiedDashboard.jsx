@@ -385,7 +385,7 @@ function BriefingPage({ onNewMission }) {
 		generationMode === "random" ? selectedLocations : [];
 
 	const hasBriefing = !!briefingText;
-	const hasPoints = !!(infilPoint || exfilPoint);
+	const hasPoints = !!(infilPoint || exfilPoint || rallyPoint);
 	const reconCount = activeMission?.reconReports?.length || 0;
 
 	// ── Intel briefing panel tab ──────────────────────────────────────────────
@@ -396,7 +396,8 @@ function BriefingPage({ onNewMission }) {
 	// intermediate steps — those are noops below. The full snapshot including
 	// insertion/extraction points is computed HERE and saved in one write.
 	//
-	const computePoints = (data) => {
+	{
+		/*const computePoints = (data) => {
 		try {
 			const coords = (data.randomSelection || [])
 				.map((loc) => loc.coordinates)
@@ -411,7 +412,8 @@ function BriefingPage({ onNewMission }) {
 			console.warn("Point generation failed:", e.message);
 			return { infilPoint: null, exfilPoint: null, fallbackExfil: null };
 		}
-	};
+	};*/
+	}
 
 	const handleGenerateRandomOps = (data) => {
 		if (!activeMission?._id) return;
@@ -703,6 +705,13 @@ function BriefingPage({ onNewMission }) {
 						{exfilPoint && (
 							<BriefStatChip
 								label='Exfil'
+								value='SET'
+								live
+							/>
+						)}
+						{rallyPoint && (
+							<BriefStatChip
+								label='Rally'
 								value='SET'
 								live
 							/>
