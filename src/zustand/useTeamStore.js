@@ -23,7 +23,6 @@ const useTeamsStore = create((set, get) => ({
 	selectedTeamType: "",
 	missionDescription: "",
 	teamName: "",
-	AO: "",
 	fullOperatorList: [],
 	assets: [],
 	allVehicles: [],
@@ -111,12 +110,10 @@ const useTeamsStore = create((set, get) => ({
 					_id: teamData._id,
 					createdBy: teamData.createdBy || "",
 					name: teamData.name || "",
-					AO: teamData.AO || "",
 					operators: operatorIds,
 					assets: assetIds,
 				},
 				teamName: teamData.name || "",
-				AO: teamData.AO || "",
 				operators: operatorIds,
 				assets: assetIds,
 			};
@@ -127,7 +124,6 @@ const useTeamsStore = create((set, get) => ({
 			setTimeout(() => {
 				const currentState = get();
 				console.log("Verified teamName:", currentState.teamName);
-				console.log("Verified AO:", currentState.AO);
 				console.log("Verified operators:", currentState.operators);
 			}, 100);
 		} catch (error) {
@@ -140,7 +136,6 @@ const useTeamsStore = create((set, get) => ({
 
 	// Set team name
 	setTeamName: (name) => set({ teamName: name }),
-	setAO: (ao) => set({ AO: ao }),
 
 	updateTeam: async (teamData) => {
 		try {
@@ -153,7 +148,6 @@ const useTeamsStore = create((set, get) => ({
 			await TeamsApi.updateTeam(teamData._id, {
 				createdBy: teamData.createdBy,
 				name: teamData.name,
-				AO: teamData.AO,
 				operators: teamData.operators,
 				assets: teamData.assets,
 			});
@@ -184,50 +178,7 @@ const useTeamsStore = create((set, get) => ({
 			set({ allOperators: [], fullOperatorList: [] });
 		}
 	},
-	/*fetchOperators: async () => {
-		try {
-			const data = await OperatorsApi.getOperators();
-			const allTeams = await TeamsApi.getTeams();
 
-			// Save the full list of operators for rendering names
-			set({ fullOperatorList: data });
-
-			// Filter only active + not assigned for the select dropdown
-			/*	const operatorsInTeams = allTeams.flatMap((team) =>
-				team.operators.map((op) => op._id)
-			);
-			const availableOperators = data.filter(
-				(op) => op.status === "Active"
-				//&& !operatorsInTeams.includes(op._id)
-			);
-
-			set({ allOperators: availableOperators });
-		} catch (error) {
-			console.error("ERROR fetching operators:", error);
-			set({ allOperators: [], fullOperatorList: [] });
-		}
-	},*/
-	/*fetchOperators: async () => {
-		try {
-			const data = await OperatorsApi.getOperators();
-			const allTeams = await TeamsApi.getTeams();
-
-			// Get IDs of operators already in teams
-			const operatorsInTeams = allTeams.flatMap((team) =>
-				team.operators.map((op) => op._id)
-			);
-
-			// Only keep active operators who are NOT already assigned
-			const availableOperators = data.filter(
-				(op) => op.status === "Active" && !operatorsInTeams.includes(op._id)
-			);
-
-			set({ allOperators: availableOperators });
-		} catch (error) {
-			console.error("ERROR fetching operators:", error);
-			set({ allOperators: [] });
-		}
-	},*/
 	addOperatorToTeam: async (operatorId, targetTeamId) => {
 		try {
 			const { teams, fullOperatorList } = get();
@@ -292,7 +243,6 @@ const useTeamsStore = create((set, get) => ({
 			];
 			await TeamsApi.updateTeam(targetTeamId, {
 				name: targetTeam.name,
-				AO: targetTeam.AO,
 				operators: updatedTargetOperatorIds,
 			});
 
@@ -304,7 +254,6 @@ const useTeamsStore = create((set, get) => ({
 
 				await TeamsApi.updateTeam(sourceTeam._id, {
 					name: sourceTeam.name,
-					AO: sourceTeam.AO,
 					operators: updatedSourceOperatorIds,
 				});
 
@@ -342,11 +291,6 @@ const useTeamsStore = create((set, get) => ({
 		set({ operators: get().operators.filter((id) => id !== operatorId) });
 	},
 
-	// ─────────────────────────────────────────────────────────────────────────────
-	// DROP-IN REPLACEMENT for generateAITeam in useTeamsStore.js
-	//
-	// Paste this function body over the existing generateAITeam: async () => { ... }
-	// No other store changes needed.
 	// ─────────────────────────────────────────────────────────────────────────────
 
 	generateAITeam: async () => {
@@ -763,7 +707,6 @@ Select the best 2–4 operators. Return only the JSON array.`;
 
 				await TeamsApi.updateTeam(sourceTeam._id, {
 					name: sourceTeam.name,
-					AO: sourceTeam.AO,
 					operators: (sourceTeam.operators || []).map((op) =>
 						typeof op === "object" ? op._id : op,
 					),
@@ -811,7 +754,6 @@ Select the best 2–4 operators. Return only the JSON array.`;
 
 			await TeamsApi.updateTeam(teamId, {
 				name: team.name,
-				AO: team.AO,
 				operators: (team.operators || []).map((op) =>
 					typeof op === "object" ? op._id : op,
 				),
@@ -861,7 +803,6 @@ Select the best 2–4 operators. Return only the JSON array.`;
 			teamName: "",
 			operators: [],
 			assets: [],
-			AO: "",
 			aiTeam: [],
 			selectedTeamType: "",
 			missionDescription: "",

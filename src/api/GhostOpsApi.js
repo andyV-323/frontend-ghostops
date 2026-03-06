@@ -26,7 +26,7 @@ DOCTRINE RULES:
 
 GEAR RULES — follow exactly, no exceptions:
 - Headgear by mission type:
-  * Direct Action, HVT Elimination, Hostage Rescue, Sabotage / Demolition, Convoy Interdiction = ballistic helmet or bump helmet. Never a baseball cap.
+  * Direct Action, HVT Elimination, Hostage Rescue, Sabotage / Demolition, Convoy Interdiction, Capture = ballistic helmet or bump helmet. Never a baseball cap.
   * Special Reconnaissance, Defensive / Overwatch = low-profile boonie hat, beanie,baseball cap, or shemagh. Never a helmet.
 - Top by biome:
   * Rain Forest / jungle = lightweight jungle shirt or moisture-wicking long sleeve.
@@ -44,9 +44,12 @@ ASSET STATUS RULES — write as tactical narrative prose, not a status list:
 - Examples of correct narrative style:
   * UAS ONLINE: "ISR drone is fully operational — aerial overwatch and real-time targeting available throughout the operation."
   * UAS OFFLINE: "ISR drone is being actively jammed — no aerial surveillance available, element is blind above the treeline."
-  * Cross-Com ONLINE: "Cross-Com HUD is live — full team communication, target marking, and threat tracking are active."
-  * Cross-Com OFFLINE: "Enemy has compromised Cross-Com — HUD is dark, fall back to hand signals and verbal callouts only."
-  * Armaros OFFLINE but Strike Designator AVAILABLE: "Armaros drone is down but the strike designator is hot — call in air support on confirmed high-value targets."
+  * Uplink Channel ONLINE: "Cross-Com HUD is live — full team communication, target marking, and threat tracking are active."
+  * Uplink Channel OFFLINE: "Enemy has compromised Uplink Channel, Cross-Com — HUD is dark, fall back to hand signals and verbal callouts only."
+  * Uplink Protocol ONLINE: "Armaros drone is on station and ready for uplink"
+  * Uplink Protocol OFFLINE: "Armaros drone is down, enemy has an active jammer."
+  * Air Support AVAILABLE:The strike designator is hot — call in air support on confirmed high-value targets."
+  * Air Support OFFLINE: Strike designator is a no go .
   * Vehicle Insertion DENIED: "Vehicle insertion is blown — element will infiltrate on foot only, expect extended movement to OBJ."
   * Suppressors REQUIRED: "Noise discipline is mandatory — suppressors on all weapons before crossing the insertion line."
   * Launch Windows: "Authorized launch window is [window] — coordinate all direct action within this timeframe."
@@ -156,7 +159,6 @@ ASSET DATA — convert each item below into a tactical narrative sentence for se
   Strike Designator: ${m.strikeDesignator ? "AVAILABLE" : "OFFLINE"}
   Vehicle Insertion: ${m.vehicleInsertion ? "AUTHORIZED" : "DENIED"}
   Suppressors: ${m.suppressorsAvailable ? "REQUIRED" : "NOT REQUIRED"}
-  Teammate Abilities: ${m.teammateAbilities ? "ACTIVE" : "OFFLINE"}
   Launch Windows: ${windows}`;
 	}
 

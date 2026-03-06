@@ -9,7 +9,6 @@ import { useConfirmDialog } from "@/hooks";
 import { ConfirmDialog } from "@/components";
 import { PropTypes } from "prop-types";
 import { toast } from "react-toastify";
-import { PROVINCES } from "@/config";
 
 const EditTeamForm = ({ teamId }) => {
 	const auth = useAuth();
@@ -17,7 +16,6 @@ const EditTeamForm = ({ teamId }) => {
 
 	// Get reactive store values - these will update when store changes
 	const teamName = useTeamsStore((state) => state.teamName);
-	const AO = useTeamsStore((state) => state.AO);
 	const operators = useTeamsStore((state) => state.operators);
 	const allOperators = useTeamsStore((state) => state.allOperators);
 	const fullOperatorList = useTeamsStore((state) => state.fullOperatorList);
@@ -69,7 +67,6 @@ const EditTeamForm = ({ teamId }) => {
 			_id: teamId,
 			createdBy: storeState.createdBy,
 			name: teamName.trim(),
-			AO: AO || "", // Use reactive AO value
 			operators: operators.length > 0 ? operators : [],
 			assets: storeState.assets.length ? storeState.assets : [],
 		};
@@ -93,7 +90,7 @@ const EditTeamForm = ({ teamId }) => {
 	};
 	const getOperatorTeam = (operatorId) => {
 		const team = teams.find((team) =>
-			team.operators.some((op) => op._id === operatorId)
+			team.operators.some((op) => op._id === operatorId),
 		);
 		return team ? team.name : "Unassigned";
 	};
@@ -149,9 +146,9 @@ const EditTeamForm = ({ teamId }) => {
 										key={v._id}
 										value={v._id}
 										disabled={v.isRepairing}>
-										{v.nickName && v.nickName !== "None"
-											? `${v.nickName} - `
-											: ""}
+										{v.nickName && v.nickName !== "None" ?
+											`${v.nickName} - `
+										:	""}
 										{v.vehicle} • {v.condition} • Fuel {v.remainingFuel}%
 										{v.isRepairing ? " • Repairing" : ""}
 									</option>
@@ -168,19 +165,19 @@ const EditTeamForm = ({ teamId }) => {
 								<ul className='list-disc pl-4 text-fontz bg-blk/50 border border-lines rounded-lg p-3'>
 									{assets.map((vehId) => {
 										const vehicle = fullVehicleList.find(
-											(v) => v._id === vehId
+											(v) => v._id === vehId,
 										);
 										return (
 											<li
 												key={vehId}
 												className='flex justify-between items-center text-lg py-1'>
-												{vehicle
-													? `${
-															vehicle.nickName && vehicle.nickName !== "None"
-																? vehicle.nickName + " - "
-																: ""
-													  }${vehicle.vehicle}`
-													: "Unknown Vehicle"}
+												{vehicle ?
+													`${
+														vehicle.nickName && vehicle.nickName !== "None" ?
+															vehicle.nickName + " - "
+														:	""
+													}${vehicle.vehicle}`
+												:	"Unknown Vehicle"}
 												<FontAwesomeIcon
 													icon={faXmark}
 													className='text-2xl text-btn hover:text-white cursor-pointer'
@@ -190,42 +187,6 @@ const EditTeamForm = ({ teamId }) => {
 										);
 									})}
 								</ul>
-							</div>
-						)}
-
-						{/* Area of Operations (AO) Dropdown */}
-						<div className='sm:col-span-2'>
-							<label className='block mb-2 text-xl font-bold text-fontz'>
-								Area of Operations (AO)
-							</label>
-							<select
-								className='bg-blk/50 border border-lines outline-lines rounded-lg block w-full p-2.5 text-fontz'
-								value={AO || ""} // Use reactive value with fallback
-								onChange={(e) => {
-									useTeamsStore.setState({ AO: e.target.value });
-								}}>
-								<option value=''>-- Select Area of Operations --</option>
-								{Object.entries(PROVINCES).map(([key, province]) => (
-									<option
-										key={key}
-										value={key}>
-										{key} - {province.biome}
-									</option>
-								))}
-							</select>
-						</div>
-
-						{/* Display Selected AO Info */}
-						{AO && PROVINCES[AO] && (
-							<div className='sm:col-span-2'>
-								<div className='bg-blk/50 border border-lines rounded-lg p-3'>
-									<h3 className='text-lg font-semibold text-fontz mb-2'>
-										Selected AO: {AO}
-									</h3>
-									<p className='text-fontz mb-2'>
-										Biome: {PROVINCES[AO].biome}
-									</p>
-								</div>
 							</div>
 						)}
 
@@ -262,7 +223,7 @@ const EditTeamForm = ({ teamId }) => {
 								<ul className='list-disc pl-4 text-fontz bg-blk/50 border border-lines rounded-lg p-3'>
 									{operators.map((opId) => {
 										const operator = fullOperatorList.find(
-											(op) => op._id === opId
+											(op) => op._id === opId,
 										);
 										return (
 											<li

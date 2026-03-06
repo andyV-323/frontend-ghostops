@@ -4,7 +4,6 @@ import { useTeamsStore, useOperatorsStore } from "@/zustand";
 import { useEffect, useMemo, useState } from "react";
 import { WEAPONS, ITEMS, PERKS, GARAGE } from "@/config";
 import { PropTypes } from "prop-types";
-import AuroraMap from "./AuroaMap";
 import ConfirmDialog from "./ConfirmDialog";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -364,11 +363,6 @@ const TeamView = ({ teamId }) => {
 		);
 	}, [teamOps]);
 
-	const allTeamAOs = useMemo(
-		() => [...new Set(teams.filter((t) => t.AO).map((t) => t.AO))],
-		[teams],
-	);
-
 	// Team-wide status counts
 	const statusCounts = useMemo(
 		() => ({
@@ -541,20 +535,6 @@ const TeamView = ({ teamId }) => {
 									asset={asset}
 								/>
 							))}
-						</div>
-					</div>
-				)}
-
-				{/* ── Map ── */}
-				{allTeamAOs.length > 0 && (
-					<div>
-						<SectionHeader label='Area of Operations' />
-						<div className='rounded-sm overflow-hidden border border-lines/20'>
-							<AuroraMap
-								selectedAOs={allTeamAOs}
-								currentTeamAO={selectedTeam.AO}
-								currentTeamId={selectedTeam._id}
-							/>
 						</div>
 					</div>
 				)}

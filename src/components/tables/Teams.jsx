@@ -14,7 +14,6 @@ import { PropTypes } from "prop-types";
 import { useToggleExpand, useConfirmDialog } from "@/hooks";
 import { ConfirmDialog, TeamView } from "@/components";
 import { EditTeamForm, NewTeamForm } from "@/components/forms";
-import { PROVINCES } from "@/config";
 
 // ─── Section label ────────────────────────────────────────────
 function SectionLabel({ children }) {
@@ -34,7 +33,6 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		assignRandomInjury,
 		assignRandomKIAInjury,
 		transferOperator,
-		updateTeam,
 		removeAllOperatorsFromTeams,
 		addVehicleToTeam,
 		removeVehicleFromTeam,
@@ -70,19 +68,6 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		setSelectedOperator(operator);
 		setInjuryType("choice");
 		openDialog();
-	};
-
-	const handleAOChange = async (teamId, newAO) => {
-		const team = teams.find((t) => t._id === teamId);
-		if (!team) return;
-		await updateTeam({
-			_id: teamId,
-			createdBy: team.createdBy,
-			name: team.name,
-			AO: newAO,
-			operators: team.operators.map((op) => op._id),
-		});
-		await fetchTeams();
 	};
 
 	// ── Drag handlers (desktop only) ──
@@ -204,11 +189,6 @@ const Teams = ({ dataUpdated, openSheet }) => {
 											<span className='font-mono text-xs text-fontz'>
 												{team.name}
 											</span>
-											{team.AO && (
-												<span className='font-mono text-[9px] tracking-widest text-lines/35 uppercase border border-lines/20 px-1.5 py-0.5 rounded-sm'>
-													{team.AO}
-												</span>
-											)}
 										</div>
 									</td>
 
@@ -401,33 +381,6 @@ const Teams = ({ dataUpdated, openSheet }) => {
 											<p className='font-mono text-[9px] text-lines/25 tracking-widest mb-5'>
 												Assigning removes vehicle from the available pool.
 											</p>
-
-											{/* AO */}
-											<SectionLabel>Area of Operations</SectionLabel>
-											{team.AO && PROVINCES[team.AO] && (
-												<div className='bg-blk/30 border border-lines/15 rounded px-3 py-2 mb-2'>
-													<p className='font-mono text-[10px] text-fontz'>
-														Current: <span className='text-btn'>{team.AO}</span>
-														{" — "}
-														{PROVINCES[team.AO].biome}
-													</p>
-												</div>
-											)}
-											<select
-												className='w-full bg-blk/50 border border-lines/25 rounded px-3 py-2 font-mono text-[10px] text-fontz outline-none focus:border-btn/50 mb-4 transition-colors'
-												value={team.AO || ""}
-												onChange={(e) =>
-													handleAOChange(team._id, e.target.value)
-												}>
-												<option value=''>— Select AO —</option>
-												{Object.entries(PROVINCES).map(([key, province]) => (
-													<option
-														key={key}
-														value={key}>
-														{key} — {province.biome}
-													</option>
-												))}
-											</select>
 
 											{/* Edit team */}
 											<button

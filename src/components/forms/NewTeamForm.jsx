@@ -5,14 +5,12 @@ import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { Button } from "@material-tailwind/react";
 import { useTeamsStore, useSheetStore } from "@/zustand";
 import { AITeamGenerator } from "@/components/ai";
-import { PROVINCES } from "@/config";
 
 const NewTeamForm = () => {
 	const auth = useAuth();
 	const { closeSheet } = useSheetStore();
 
 	const teamName = useTeamsStore((s) => s.teamName);
-	const AO = useTeamsStore((s) => s.AO);
 	const operators = useTeamsStore((s) => s.operators);
 	const allOperators = useTeamsStore((s) => s.allOperators);
 
@@ -147,28 +145,6 @@ const NewTeamForm = () => {
 									})}
 								</ul>
 							)}
-						</div>
-
-						{/* AO */}
-						<div className='sm:col-span-2'>
-							<label className='block mb-2 text-xl font-bold text-fontz'>
-								Area of Operations (AO)
-							</label>
-							<select
-								className='bg-blk/50 border border-lines outline-lines rounded-lg block w-full p-2.5 text-fontz'
-								value={AO || ""}
-								onChange={(e) =>
-									useTeamsStore.setState({ AO: e.target.value })
-								}>
-								<option value=''>-- Select Area of Operations --</option>
-								{Object.entries(PROVINCES).map(([key, province]) => (
-									<option
-										key={key}
-										value={key}>
-										{key} - {province.biome}
-									</option>
-								))}
-							</select>
 						</div>
 
 						{/* Operators */}
