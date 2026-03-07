@@ -4,7 +4,11 @@ import { PROVINCES } from "@/config";
 import { PROVINCE_TERRAIN } from "@/config/provinceTerrain";
 import PropTypes from "prop-types";
 import { toast } from "react-toastify";
-import { generateGhostPackage } from "@/api/GhostOpsApi";
+import {
+	generateGhostPackage,
+	MISSION_TYPES,
+	MISSION_CATEGORIES,
+} from "@/api/GhostOpsApi";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faLocationDot,
@@ -25,73 +29,33 @@ import {
 	faHandsBound,
 } from "@fortawesome/free-solid-svg-icons";
 
-// ── Mission types ─────────────────────────────────────────────────────────────
-const MISSION_TYPES = [
-	{
-		id: "Special Reconnaissance",
-		abbr: "SR",
-		icon: faUserSecret,
-		color: "text-indigo-400",
-		activeBorder: "border-indigo-400/60",
-		activeBg: "bg-indigo-400/8",
+// ── FA icon map — resolves string icon keys from MISSION_TYPES to FA objects ──
+const ICON_MAP = {
+	faCrosshairs,
+	faSkull,
+	faBomb,
+	faHandcuffs,
+	faTruck,
+	faEye,
+	faUserSecret,
+	faHandsBound,
+	faBolt,
+	faListCheck,
+	faShuffle,
+};
+const resolveIcon = (key) => ICON_MAP[key] ?? faCrosshairs;
+
+// ── Category header accent colours ───────────────────────────────────────────
+const CATEGORY_STYLES = {
+	"Direct Action": { header: "text-red-400/50", divider: "bg-red-400/10" },
+	"Special Reconnaissance": {
+		header: "text-indigo-400/50",
+		divider: "bg-indigo-400/10",
 	},
-	{
-		id: "Direct Action",
-		abbr: "DA",
-		icon: faCrosshairs,
-		color: "text-red-400",
-		activeBorder: "border-red-400/60",
-		activeBg: "bg-red-400/8",
-	},
-	{
-		id: "HVT Elimination",
-		abbr: "HVT",
-		icon: faSkull,
-		color: "text-orange-400",
-		activeBorder: "border-orange-400/60",
-		activeBg: "bg-orange-400/8",
-	},
-	{
-		id: "Sabotage / Demolition",
-		abbr: "SAB",
-		icon: faBomb,
-		color: "text-amber-400",
-		activeBorder: "border-amber-400/60",
-		activeBg: "bg-amber-400/8",
-	},
-	{
-		id: "Hostage Rescue",
-		abbr: "HR",
-		icon: faHandcuffs,
-		color: "text-cyan-400",
-		activeBorder: "border-cyan-400/60",
-		activeBg: "bg-cyan-400/8",
-	},
-	{
-		id: "Convoy Interdiction",
-		abbr: "CI",
-		icon: faTruck,
-		color: "text-violet-400",
-		activeBorder: "border-violet-400/60",
-		activeBg: "bg-violet-400/8",
-	},
-	{
-		id: "Defensive / Overwatch",
-		abbr: "OW",
-		icon: faEye,
-		color: "text-emerald-400",
-		activeBorder: "border-emerald-400/60",
-		activeBg: "bg-emerald-400/8",
-	},
-	{
-		id: "Capture",
-		abbr: "CAP",
-		icon: faHandsBound,
-		color: "text-blue-400",
-		activeBorder: "border-blue-400/60",
-		activeBg: "bg-blue-400/8",
-	},
-];
+	Counterterrorism: { header: "text-cyan-400/50", divider: "bg-cyan-400/10" },
+	Overwatch: { header: "text-emerald-400/50", divider: "bg-emerald-400/10" },
+	Support: { header: "text-emerald-400/50", divider: "bg-emerald-400/10" },
+};
 
 // ── Compromise chip colours ───────────────────────────────────────────────────
 const COMPROMISE_CHIP = {
@@ -191,44 +155,79 @@ function ActionBtn({
 	);
 }
 
+// ── Mission type grid — grouped by category ───────────────────────────────────
 function MissionTypeGrid({ value, onChange }) {
+	const grouped = MISSION_CATEGORIES.map((cat) => ({
+		category: cat,
+		missions: MISSION_TYPES.filter((m) => m.category === cat),
+	})).filter((g) => g.missions.length > 0);
+
+	const selected = MISSION_TYPES.find((m) => m.id === value);
+
 	return (
-		<div className='flex flex-col gap-1.5'>
+		<div className='flex flex-col gap-2'>
+			{/* Header */}
 			<div className='flex items-center gap-2'>
 				<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
 					Mission Type
 				</span>
 				<div className='flex-1 h-px bg-lines/10' />
 			</div>
-			<div className='grid grid-cols-4 gap-1'>
-				{MISSION_TYPES.map((t) => {
-					const active = value === t.id;
-					return (
-						<button
-							key={t.id}
-							onClick={() => onChange(active ? "" : t.id)}
-							title={t.id}
-							className={[
-								"flex flex-col items-center gap-1 py-2 px-1 border rounded-sm transition-all",
-								active ?
-									`${t.activeBorder} ${t.activeBg}`
-								:	"border-lines/15 hover:border-lines/30",
-							].join(" ")}>
-							<FontAwesomeIcon
-								icon={t.icon}
-								className={`text-[11px] ${active ? t.color : "text-lines/25"}`}
-							/>
+
+			{/* Grouped cards */}
+			{grouped.map(({ category, missions }) => {
+				const catStyle = CATEGORY_STYLES[category] ?? {
+					header: "text-lines/40",
+					divider: "bg-lines/10",
+				};
+				return (
+					<div
+						key={category}
+						className='flex flex-col gap-1'>
+						{/* Category label */}
+						<div className='flex items-center gap-1.5'>
 							<span
-								className={`font-mono text-[8px] tracking-widest ${active ? t.color : "text-lines/30"}`}>
-								{t.abbr}
+								className={`font-mono text-[7px] tracking-[0.25em] uppercase ${catStyle.header}`}>
+								{category}
 							</span>
-						</button>
-					);
-				})}
-			</div>
-			{value && (
+							<div className={`flex-1 h-px ${catStyle.divider}`} />
+						</div>
+
+						{/* Mission cards — 4-col grid matching original layout */}
+						<div className='grid grid-cols-4 gap-1'>
+							{missions.map((t) => {
+								const active = value === t.id;
+								return (
+									<button
+										key={t.id}
+										onClick={() => onChange(active ? "" : t.id)}
+										title={t.fullLabel ?? t.label}
+										className={[
+											"flex flex-col items-center gap-1 py-2 px-1 border rounded-sm transition-all",
+											active ?
+												`${t.activeBorder} ${t.activeBg}`
+											:	"border-lines/15 hover:border-lines/30",
+										].join(" ")}>
+										<FontAwesomeIcon
+											icon={resolveIcon(t.icon)}
+											className={`text-[11px] ${active ? t.color : "text-lines/25"}`}
+										/>
+										<span
+											className={`font-mono text-[8px] tracking-widest ${active ? t.color : "text-lines/30"}`}>
+											{t.abbr}
+										</span>
+									</button>
+								);
+							})}
+						</div>
+					</div>
+				);
+			})}
+
+			{/* Selected mission label */}
+			{selected && (
 				<span className='font-mono text-[8px] text-lines/40 italic'>
-					{value}
+					{selected.fullLabel ?? selected.label}
 				</span>
 			)}
 		</div>
@@ -406,7 +405,6 @@ function MissionGenerator({
 		try {
 			if (generationMode === "random") await generateRandomOps();
 			else await generateOps();
-			// Points are NOT generated here — AI owns point placement in Phase 2
 			setMissionGenerated(true);
 		} catch (e) {
 			console.error(e);
@@ -420,7 +418,6 @@ function MissionGenerator({
 		if (!selectedProvince || !missionType || !missionGenerated) return;
 		setAiLoading(true);
 
-		// Clear stale points while AI thinks
 		setInfilPoint(null);
 		setExfilPoint(null);
 		if (setRallyPoint) setRallyPoint(null);
@@ -429,7 +426,6 @@ function MissionGenerator({
 		try {
 			const pd = PROVINCES[selectedProvince];
 
-			// Resolve the currently selected objective locations
 			const locations =
 				generationMode === "random" ? randomSelection : (
 					selectedLocations
@@ -437,7 +433,6 @@ function MissionGenerator({
 						.filter(Boolean)
 				);
 
-			// Resolve the selected recon report (null = run cold)
 			const recon =
 				selectedReconId != null ?
 					((reconReports || []).find(
@@ -445,7 +440,6 @@ function MissionGenerator({
 					) ?? null)
 				:	null;
 
-			// Resolve terrain metadata — safe fallback if province not yet configured
 			const terrain = PROVINCE_TERRAIN?.[selectedProvince] ?? {
 				isIsland: false,
 				hasCoast: false,
@@ -456,14 +450,12 @@ function MissionGenerator({
 				notes: "No terrain data configured for this province.",
 			};
 
-			// Build a readable operation name
 			const missionName = `${selectedProvince.replace(/([A-Z])/g, " $1").trim()} — ${missionType}`;
 
 			const result = await generateGhostPackage({
 				missionName,
 				province: selectedProvince,
 				biome: pd.biome,
-				// If no locations somehow, fall back to province AOO
 				locations:
 					locations.length ? locations : (
 						[
@@ -474,21 +466,20 @@ function MissionGenerator({
 							},
 						]
 					),
-				allLocations: pd.locations, // full list for spatial context
+				allLocations: pd.locations,
 				missionType,
 				terrain,
 				recon,
 			});
 
-			// ── Place AI-generated points on the map ─────────────────────────
 			setInfilPoint(result.infilPoint);
 			setExfilPoint(result.exfilPoint);
 			if (setRallyPoint) setRallyPoint(result.rallyPoint);
-			// setFallbackExfil stays null — AI gave us a real exfil
 
-			// ── Assemble briefing text from structured sections ───────────────
+			// ── Assemble briefing text ────────────────────────────────────────
 			const s = result.sections || {};
-			const isSR = missionType === "Special Reconnaissance";
+			// SR missions have no LOADOUT section
+			const isSR = ["SR_AREA", "SR_POINT", "SR_BDA"].includes(missionType);
 
 			const briefingLines = [
 				s.ASSET_STATUS ? `ASSET STATUS:\n${s.ASSET_STATUS}` : null,
@@ -759,7 +750,7 @@ MissionGenerator.propTypes = {
 	setImgURL: PropTypes.func.isRequired,
 	setInfilPoint: PropTypes.func.isRequired,
 	setExfilPoint: PropTypes.func.isRequired,
-	setRallyPoint: PropTypes.func, // new — AI-placed rally point
+	setRallyPoint: PropTypes.func,
 	setFallbackExfil: PropTypes.func.isRequired,
 	setMissionBriefing: PropTypes.func.isRequired,
 	reconReports: PropTypes.array,

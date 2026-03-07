@@ -1,7 +1,7 @@
 import { useHandleChange } from "@/hooks";
 import { useOperatorsStore } from "@/zustand";
 import { ghostID, CLASS, WEAPONS, ITEMS, PERKS } from "@/config";
-import { ImageUpload } from "@/components";
+import { ImageUpload, SquadSelect } from "@/components";
 
 const GhostID = () => {
 	const handleChange = useHandleChange();
@@ -306,6 +306,11 @@ const GhostID = () => {
 								</option>
 							))}
 					</select>
+					<br />
+					<SquadSelect
+						value={selectedOperator?.squad || ""}
+						onChange={handleChange}
+					/>
 				</div>
 				<br />
 				{/** SUPPORT SECTION **/}

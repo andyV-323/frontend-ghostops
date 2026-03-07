@@ -6,7 +6,7 @@ import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useOperatorsStore, useSheetStore } from "@/zustand";
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { useHandleChange, useFormActions, useConfirmDialog } from "@/hooks";
-import { ConfirmDialog, ImageUpload } from "@/components";
+import { ConfirmDialog, ImageUpload, SquadSelect } from "@/components";
 
 const EditOperatorForm = ({ operator }) => {
 	const handleChange = useHandleChange();
@@ -407,8 +407,14 @@ const EditOperatorForm = ({ operator }) => {
 										</option>
 									))}
 							</select>
+							<br />
+							<SquadSelect
+								value={selectedOperator?.squad || ""}
+								onChange={handleChange}
+							/>
 						</div>
 						<br />
+
 						{/** SUPPORT SECTION **/}
 						<div className='flex flex-col w-full'>
 							{/** SUPPORT CHECKBOX **/}

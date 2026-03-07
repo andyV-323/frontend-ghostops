@@ -24,7 +24,7 @@ import {
 	Teams,
 	Garage,
 } from "@/components/tables";
-import { useOperatorsStore, useSheetStore } from "@/zustand";
+import { useOperatorsStore, useSheetStore, useSquadStore } from "@/zustand";
 import { useAuthService } from "@/services/AuthService";
 import useMissionsStore from "@/zustand/useMissionsStore";
 
@@ -766,10 +766,17 @@ function BriefingPage({ onNewMission }) {
 function OperatorsPage() {
 	const { setSelectedOperator, operators, fetchOperators } =
 		useOperatorsStore();
+	const { squads, activeSquadId, fetchSquads, setActiveSquadId } =
+		useSquadStore();
 	const { open, SheetEl } = usePageSheet();
 	const [dataUpdated, setDataUpdated] = useState(false);
 	const [clickedOperator, setClickedOperator] = useState(null);
 	const refreshData = () => setDataUpdated((p) => !p);
+
+	const PanelTitle =
+		activeSquadId ?
+			`${squads.find((s) => s._id === activeSquadId)?.name ?? "Squad"} `
+		:	"Special Operations Force";
 	useEffect(() => {
 		fetchOperators();
 	}, [fetchOperators]);
@@ -778,7 +785,7 @@ function OperatorsPage() {
 			<div className='lg:hidden flex-1 overflow-y-auto'>
 				<div className='p-3 flex flex-col gap-3'>
 					<Panel
-						title='Operator Roster'
+						title={PanelTitle}
 						badge='ACTIVE DUTY'
 						badgeGreen
 						className='min-h-[420px]'>
@@ -825,7 +832,7 @@ function OperatorsPage() {
 			</div>
 			<div className='hidden lg:flex flex-1 min-h-0 overflow-hidden p-4 gap-4'>
 				<Panel
-					title='Operator Roster'
+					title={PanelTitle}
 					badge='ACTIVE DUTY'
 					badgeGreen
 					className='w-[55%] shrink-0 min-h-0'>

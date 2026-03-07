@@ -1,5 +1,5 @@
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
-import { useOperatorsStore, useTeamsStore } from "@/zustand";
+import { useOperatorsStore, useSquadStore, useTeamsStore } from "@/zustand";
 import { useEffect, useMemo } from "react";
 import { WEAPONS, ITEMS, PERKS } from "@/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -95,8 +95,13 @@ const OperatorImageView = ({ operator, openSheet }) => {
 		const team = teams.find((t) =>
 			t.operators?.some((op) => op?._id === operator?._id),
 		);
-		return team ? team.name : "Unassigned";
+		return team ? team.name : "";
 	}, [teams, operator?._id]);
+
+	const squadName =
+		selectedOperator?.squad?.name ||
+		(typeof selectedOperator?.squad === "string" && selectedOperator.squad) ||
+		"";
 
 	useEffect(() => {
 		if (operator?._id) fetchOperatorById(operator._id);
@@ -204,6 +209,11 @@ const OperatorImageView = ({ operator, openSheet }) => {
 							<span className='font-mono text-[9px] tracking-widest text-lines/40 uppercase'>
 								{teamName}
 							</span>
+							<div className='w-px h-3 bg-lines/20 self-center' />
+							<span className='font-mono text-[9px] tracking-widest text-lines/40 uppercase'>
+								{squadName}
+							</span>
+
 							{selectedOperator.support && (
 								<>
 									<div className='w-px h-3 bg-lines/20 self-center' />
@@ -286,6 +296,10 @@ const OperatorImageView = ({ operator, openSheet }) => {
 						<InfoRow
 							label='Team'
 							value={teamName}
+						/>
+						<InfoRow
+							label='Squad'
+							value={squadName}
 						/>
 						<InfoRow
 							label='Status'

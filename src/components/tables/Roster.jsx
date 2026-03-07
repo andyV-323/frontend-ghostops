@@ -1,12 +1,21 @@
-// TabbedRoster.jsx — redesigned to match UnifiedDashboard HUD aesthetic
-
+// TabbedRoster.jsx
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUserPlus, faChevronRight } from "@fortawesome/free-solid-svg-icons";
-import { useOperatorsStore, useTeamsStore, useSheetStore } from "@/zustand";
+import {
+	faUserPlus,
+	faChevronRight,
+	faLayerGroup,
+} from "@fortawesome/free-solid-svg-icons";
+import {
+	useOperatorsStore,
+	useTeamsStore,
+	useSheetStore,
+	useSquadStore,
+} from "@/zustand";
+
 import { PropTypes } from "prop-types";
 import { useEffect, useState } from "react";
 import { NewOperatorForm, AssignTeamSheet } from "@/components/forms";
-import { OperatorImageView } from "@/components";
+import { OperatorImageView, SquadSelectorSheet } from "@/components";
 
 // ─── Status config ────────────────────────────────────────────
 const STATUS_MAP = {
@@ -31,7 +40,6 @@ const STATUS_MAP = {
 		glow: "shadow-[0_0_6px_rgba(239,68,68,0.7)]",
 	},
 };
-
 const getStatus = (s = "") => STATUS_MAP[s.toLowerCase()] ?? STATUS_MAP.kia;
 
 // ─── Tab button ───────────────────────────────────────────────
@@ -50,7 +58,7 @@ function TabBtn({ active, onClick, children }) {
 	);
 }
 
-// ─── Main component ───────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 const TabbedRoster = ({ dataUpdated, openSheet }) => {
 	const [activeTab, setActiveTab] = useState("roster");
 
@@ -63,11 +71,14 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 	} = useOperatorsStore();
 
 	const { teams, fetchTeams } = useTeamsStore();
+	const { squads, activeSquadId, fetchSquads, setActiveSquadId } =
+		useSquadStore();
 
 	useEffect(() => {
 		fetchOperators();
 		fetchTeams();
-	}, [fetchOperators, fetchTeams, dataUpdated]);
+		fetchSquads();
+	}, [fetchOperators, fetchTeams, fetchSquads, dataUpdated]);
 
 	const getOperatorTeam = (operatorId) => {
 		const team = teams.find((t) =>
@@ -78,7 +89,14 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 
 	const aviatorOperators = operators.filter((op) => op.aviator === true);
 	const supportOperators = operators.filter((op) => op.support === true);
-	const regularOperators = operators.filter((op) => !op.support && !op.aviator);
+	const allRegular = operators.filter((op) => !op.support && !op.aviator);
+
+	const regularOperators =
+		activeSquadId ?
+			allRegular.filter(
+				(op) => op.squad === activeSquadId || op.squad?._id === activeSquadId,
+			)
+		:	allRegular;
 
 	const currentOperators =
 		activeTab === "roster" ? regularOperators
@@ -87,54 +105,102 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 
 	const isSupportTab = activeTab === "support";
 	const isAviatorTab = activeTab === "aviator";
-
-	const tableTitle =
-		isSupportTab ? "Support Roster"
-		: isAviatorTab ? "Aviator Roster"
-		: "Operator Roster";
+	const isSpecialist = isSupportTab || isAviatorTab;
 
 	const newFormTitle =
-		isSupportTab ? "New Support"
+		isSupportTab ? "New Enabler"
 		: isAviatorTab ? "New Aviator"
 		: "New Operator";
 
 	const newFormDesc =
 		isSupportTab ?
-			"Create a new support operator with advanced capabilities and specialized training."
+			"Create a new enabler with advanced capabilities and specialized training."
 		: isAviatorTab ?
 			"Create a new aviator with flight training and aircraft assignments."
 		:	"Customize an elite operator by selecting their background, class, loadout, and perks.";
 
 	const emptyMsg =
-		isSupportTab ? "No support operators found."
+		isSupportTab ? "No enablers found."
 		: isAviatorTab ? "No aviators found."
+		: activeSquadId ? "No operators assigned to this squad."
 		: "Click the + icon to add your first operator.";
+
+	// column 2 label + value — Role for enablers/aviation, Class for operators
+	const col2Header = isSpecialist ? "Role" : "Class";
+	const col2Value = (op) =>
+		isSpecialist ? op.role || "—" : activeClasses[op._id] || op.class || "—";
+
+	const activeSquadName =
+		activeSquadId ? squads.find((s) => s._id === activeSquadId)?.name : null;
+
+	const openSquadSheet = () =>
+		openSheet(
+			"right",
+			<SquadSelectorSheet
+				onClose={() => useSheetStore.getState().closeSheet()}
+			/>,
+			"Squads",
+			"Manage squads — filters the Operators tab",
+		);
 
 	return (
 		<div className='flex flex-col h-full'>
-			{/* ── Tab bar ── */}
-			<div className='flex border-b border-lines/20 bg-blk/40 shrink-0'>
+			{/* ── Tab bar + squad selector ──────────────────────── */}
+			<div className='flex items-end border-b border-lines/20 bg-blk/40 shrink-0'>
 				<TabBtn
 					active={activeTab === "roster"}
 					onClick={() => setActiveTab("roster")}>
-					Operators&nbsp;
+					Operators{" "}
 					<span className='text-lines/40'>({regularOperators.length})</span>
 				</TabBtn>
 				<TabBtn
 					active={activeTab === "support"}
 					onClick={() => setActiveTab("support")}>
-					Support&nbsp;
+					Enablers{" "}
 					<span className='text-lines/40'>({supportOperators.length})</span>
 				</TabBtn>
 				<TabBtn
 					active={activeTab === "aviator"}
 					onClick={() => setActiveTab("aviator")}>
-					Aviators&nbsp;
+					Aviation{" "}
 					<span className='text-lines/40'>({aviatorOperators.length})</span>
 				</TabBtn>
+
+				<div className='flex-1' />
+
+				<div className='flex items-center gap-2 px-3 pb-2'>
+					{activeSquadName && (
+						<>
+							<span className='font-mono text-[8px] tracking-widest text-btn/70 uppercase truncate max-w-[100px]'>
+								{activeSquadName}
+							</span>
+							<button
+								onClick={() => setActiveSquadId(null)}
+								className='font-mono text-[8px] text-lines/30 hover:text-red-400 border border-lines/15 hover:border-red-900/40 px-1.5 py-0.5 rounded-sm transition-all'
+								title='Clear squad filter'>
+								✕
+							</button>
+						</>
+					)}
+					<button
+						onClick={openSquadSheet}
+						title='Squads'
+						className={[
+							"flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase px-2.5 py-1.5 rounded-sm border transition-all",
+							activeSquadName ?
+								"text-btn border-btn/40 bg-btn/10 hover:bg-btn/20"
+							:	"text-lines/35 border-lines/15 hover:border-lines/30 hover:text-fontz",
+						].join(" ")}>
+						<FontAwesomeIcon
+							icon={faLayerGroup}
+							className='text-[9px]'
+						/>
+						Squads
+					</button>
+				</div>
 			</div>
 
-			{/* ── Table ── */}
+			{/* ── Table ────────────────────────────────────────────── */}
 			<div className='flex-1 min-h-0 overflow-y-auto overflow-x-hidden'>
 				<table className='w-full text-left'>
 					<thead className='sticky top-0 z-10 bg-blk/90 border-b border-lines/20'>
@@ -157,11 +223,11 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 											className='text-[10px]'
 										/>
 									</button>
-									{tableTitle}
+									Operator
 								</div>
 							</th>
 							<th className='px-4 py-3 font-mono text-[10px] tracking-widest text-lines/50 uppercase'>
-								Class
+								{col2Header}
 							</th>
 							<th className='px-4 py-3 font-mono text-[10px] tracking-widest text-lines/50 uppercase'>
 								Team
@@ -172,8 +238,6 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 					<tbody>
 						{currentOperators.length > 0 ?
 							currentOperators.map((operator) => {
-								const activeClass =
-									activeClasses[operator._id] || operator.class;
 								const teamName = getOperatorTeam(operator._id);
 								const status = getStatus(operator?.status);
 
@@ -212,9 +276,8 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 																operator.image ||
 																"/ghost/Default.png"
 															}
-															alt={operator.name || "Operator"}
+															alt={operator.callSign || "Operator"}
 														/>
-														{/* Status dot on avatar */}
 														<span
 															className={[
 																"absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-blk",
@@ -241,12 +304,12 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 											</div>
 										</td>
 
-										{/* Class */}
+										{/* Class or Role */}
 										<td className='px-4 py-3 font-mono text-[11px] text-lines/60'>
-											{activeClass || "—"}
+											{col2Value(operator)}
 										</td>
 
-										{/* Team assign button */}
+										{/* Team assign */}
 										<td
 											className='px-4 py-3'
 											onClick={(e) => {
@@ -298,14 +361,13 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 		</div>
 	);
 };
+
 TabBtn.propTypes = {
 	active: PropTypes.bool,
 	onClick: PropTypes.func,
-	children: PropTypes.array,
+	children: PropTypes.node,
 };
 TabbedRoster.propTypes = {
-	operators: PropTypes.array,
-	setSelectedClass: PropTypes.func,
 	dataUpdated: PropTypes.bool,
 	refreshData: PropTypes.func,
 	openSheet: PropTypes.func,

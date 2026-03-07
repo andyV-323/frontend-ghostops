@@ -203,13 +203,13 @@ const ReconBriefingCard = ({ mission, modifiers }) => {
 				</span>
 				<ConditionRow
 					icon={faSatellite}
-					label='UAS / TacMap'
+					label='Unmanned Aircraft System'
 					available={modifiers.UAS}
 					delay={450}
 				/>
 				<ConditionRow
 					icon={faMicrochip}
-					label='Cross-Com HUD'
+					label='Cross-Com'
 					available={modifiers.crossCom}
 					delay={550}
 				/>
