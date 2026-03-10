@@ -53,31 +53,6 @@
 			name="viewport"
 			content="width=device-width, initial-scale=1.0" />
 		<title>GhostOpsAI</title>
-		<!-- WebView2/Game Bar compatibility -->
-		<meta
-			http-equiv="Content-Security-Policy"
-			content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;" />
-
-		<!-- Prevent iframe/WebView embedding issues -->
-		<meta
-			http-equiv="X-UA-Compatible"
-			content="IE=edge" />
-
-		<!-- WebView2 detection + fix -->
-		<script>
-			const isWebView =
-				navigator.userAgent.includes("WebView") ||
-				navigator.userAgent.includes("wv") ||
-				(navigator.userAgent.includes("Edg/") &&
-					!navigator.userAgent.includes("Chrome/"));
-
-			if (isWebView) {
-				// Store flag for React to use
-				window.__WEBVIEW__ = true;
-				// Prevent scroll issues in WebView2
-				document.documentElement.style.overflow = "hidden";
-			}
-		</script>
 	</head>
 	<body>
 		<div id="root"></div>
