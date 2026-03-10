@@ -38,8 +38,8 @@ export const features = [
 		description: [
 			"Customize operator loadouts with a wide range of weapons.",
 			"Select from various weapon classes, including assault rifles, sniper rifles, sidearms, and more.",
-			"Select a special role for each operator to view perks.",
-			"View loadout for classes like Assault, Sharpshooter,Echelon, and more.",
+			"Assign a specialty role, items, and perks to each operator.",
+			"View your operators profile that includes an uploaded image, class, perks, and other information.",
 		],
 	},
 	{
@@ -59,7 +59,6 @@ export const features = [
 		description: [
 			"The vehicle simulator allows users to simulate trips and see how much fuel will be consumed.",
 			"Automatically degrades vehicle condition with each refuel (simulating wear and tear).",
-			"Organize operators into teams for efficient mission planning.",
 			"Track Vehicle fuel level and create unique vehicles by giving them a nickname.",
 			"Initiates repair processes to restore vehicle condition to Optimal in real time.",
 		],

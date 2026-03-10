@@ -60,7 +60,7 @@ export default function NewMissionModal({
 							// Classification: Top Secret //
 						</span>
 						<span className='font-mono text-[8px] tracking-widest text-lines/20'>
-							NOMAD-7
+							GhostOpsAI
 						</span>
 					</div>
 

@@ -36,12 +36,13 @@ const Home = () => {
 						</h1>
 						<p className='p-6 text-sm md:text-lg text-fontz'>
 							Like to role play or Milsim? Use AI teammates? Now you can manage
-							a full team of ghosts or whatever Spec ops unit you like.
+							a full team of ghosts or whatever Spec ops unit you like and use
+							AI to generate realistic operations.
 						</p>
 						<Button
 							className='btn'
 							onClick={signUp}>
-							Try it Free
+							It&apos;s Free
 						</Button>
 					</div>
 				</div>

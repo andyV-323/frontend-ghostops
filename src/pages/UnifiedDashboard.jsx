@@ -32,7 +32,6 @@ import NewMissionModal from "@/components/mission/NewMissionModal";
 import MissionListSheet from "@/components/mission/MissionListSheet";
 import ActiveMissionChip from "@/components/mission/ActiveMissionChip";
 import ReconHistoryPanel from "@/components/mission/ReconHistoryPanel";
-import { generateInsertionExtractionPoints } from "@/utils/generatePoints";
 import iconUrl from "/icons/GhostOpsAI.svg?url";
 import PropTypes from "prop-types";
 
@@ -733,7 +732,7 @@ function BriefingPage({ onNewMission }) {
 				<div className='grid grid-cols-[420px_1fr] gap-3 flex-1 min-h-0 overflow-hidden'>
 					<div className='flex flex-col gap-3 min-h-0 overflow-hidden'>
 						<Panel
-							title='Mission Generator'
+							title='Ghost Operations AI'
 							badge='GEN-SYS'
 							className='flex-1 min-h-0'
 							bodyClass='p-3'>
@@ -766,8 +765,7 @@ function BriefingPage({ onNewMission }) {
 function OperatorsPage() {
 	const { setSelectedOperator, operators, fetchOperators } =
 		useOperatorsStore();
-	const { squads, activeSquadId, fetchSquads, setActiveSquadId } =
-		useSquadStore();
+	const { squads, activeSquadId } = useSquadStore();
 	const { open, SheetEl } = usePageSheet();
 	const [dataUpdated, setDataUpdated] = useState(false);
 	const [clickedOperator, setClickedOperator] = useState(null);
@@ -971,6 +969,7 @@ export default function UnifiedDashboard() {
 				return null;
 		}
 	};
+	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
 	return (
 		<div className='h-screen w-screen flex flex-col overflow-hidden bg-gradient-to-br from-blk via-background to-neutral-800 text-fontz'>
@@ -1128,7 +1127,7 @@ export default function UnifiedDashboard() {
 									</div>
 									<div className='flex flex-col min-w-0'>
 										<span className='font-mono text-[9px] text-fontz/70 truncate leading-none'>
-											{user?.profile?.email || "NOMAD-7"}
+											{user?.profile?.email || "GHOST-1"}
 										</span>
 										<span className='font-mono text-[8px] text-green-600 tracking-widest leading-none mt-1'>
 											SYS:ONLINE
@@ -1186,35 +1185,88 @@ export default function UnifiedDashboard() {
 			</div>
 
 			{/* ══ BOTTOM TAB BAR ══════════════════════════════════════ */}
-			<nav className='lg:hidden shrink-0 flex border-t border-lines/20 bg-blk/95'>
-				{NAV.map((n) => {
-					const active = activeTab === n.id;
-					return (
+			<nav className='lg:hidden shrink-0 flex flex-col border-t border-lines/20 bg-blk/95'>
+				{/* Collapsible auth panel */}
+				{isAuthenticated && mobileMenuOpen && (
+					<div className='flex items-center justify-between px-4 py-2.5 border-b border-lines/10 bg-blk/60'>
+						<span className='font-mono text-[8px] tracking-widest text-fontz/40 truncate'>
+							{user?.profile?.email || "GHOST-1"}
+						</span>
 						<button
-							key={n.id}
-							onClick={() => setActiveTab(n.id)}
-							className={[
-								"flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-all duration-150",
-								active ? "text-btn" : "text-lines/35 hover:text-fontz",
-							].join(" ")}>
+							onClick={signOut}
+							className='flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase text-lines/35 hover:text-red-400 border border-lines/15 hover:border-red-900/40 hover:bg-red-900/10 px-2 py-1 rounded-sm transition-all'>
 							<FontAwesomeIcon
-								icon={n.icon}
-								className={[
-									"text-base transition-colors",
-									active ? "text-btn" : "",
-								].join(" ")}
+								icon={faRightFromBracket}
+								className='text-[8px]'
 							/>
-							<span
-								className={[
-									"font-mono text-[8px] tracking-widest uppercase leading-none",
-									active ? "text-btn" : "",
-								].join(" ")}>
-								{n.label.split(" ")[0]}
-							</span>
-							{active && <span className='w-4 h-0.5 rounded-full bg-btn' />}
+							Sign Out
 						</button>
-					);
-				})}
+					</div>
+				)}
+
+				<div className='flex'>
+					{NAV.map((n) => {
+						const active = activeTab === n.id;
+						return (
+							<button
+								key={n.id}
+								onClick={() => {
+									setActiveTab(n.id);
+									setMobileMenuOpen(false);
+								}}
+								className={[
+									"flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-all duration-150",
+									active ? "text-btn" : "text-lines/35 hover:text-fontz",
+								].join(" ")}>
+								<FontAwesomeIcon
+									icon={n.icon}
+									className={[
+										"text-base transition-colors",
+										active ? "text-btn" : "",
+									].join(" ")}
+								/>
+								<span
+									className={[
+										"font-mono text-[8px] tracking-widest uppercase leading-none",
+										active ? "text-btn" : "",
+									].join(" ")}>
+									{n.label.split(" ")[0]}
+								</span>
+								{active && <span className='w-4 h-0.5 rounded-full bg-btn' />}
+							</button>
+						);
+					})}
+
+					{/* Avatar toggle button */}
+					<button
+						onClick={() => setMobileMenuOpen((prev) => !prev)}
+						className={[
+							"flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-all duration-150",
+							mobileMenuOpen ? "text-btn" : "text-lines/35 hover:text-fontz",
+						].join(" ")}>
+						<div className='w-5 h-5 rounded-full border border-lines/25 overflow-hidden bg-highlight'>
+							{user?.profile?.picture ?
+								<img
+									src={user.profile.picture}
+									alt='avatar'
+									className='w-full h-full object-cover'
+								/>
+							:	<div className='w-full h-full flex items-center justify-center'>
+									<FontAwesomeIcon
+										icon={faUser}
+										className='text-[9px] text-lines/40'
+									/>
+								</div>
+							}
+						</div>
+						<span className='font-mono text-[8px] tracking-widest uppercase leading-none'>
+							OPSEC
+						</span>
+						{mobileMenuOpen && (
+							<span className='w-4 h-0.5 rounded-full bg-btn' />
+						)}
+					</button>
+				</div>
 			</nav>
 
 			{/* ══ MISSION MODAL ════════════════════════════════════════ */}
