@@ -11,6 +11,9 @@ import { GARAGE } from "./garage";
 import { CONDITION } from "./vehicleCondition";
 import { ITEMS } from "./items";
 import { PERKS } from "./perks";
+import { BIOME_WEATHER } from "./biome";
+import { PROVINCE_BIOMES } from "./provinceBiomes";
+import { PROVINCE_TERRAIN } from "./provinceTerrain";
 
 export {
 	about,
@@ -26,4 +29,7 @@ export {
 	CONDITION,
 	ITEMS,
 	PERKS,
+	BIOME_WEATHER,
+	PROVINCE_BIOMES,
+	PROVINCE_TERRAIN,
 };

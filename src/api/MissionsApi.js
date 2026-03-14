@@ -1,11 +1,13 @@
+// ─────────────────────────────────────────────────────────────────────────────
 // api/missions.api.js
-// All API calls related to missions
+// All API calls related to missions, phases, and AAR.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import api from "./ApiClient";
 
-// ─── Mission CRUD ─────────────────────────────────────────────
+// ─── Mission CRUD ─────────────────────────────────────────────────────────────
 
-// Get all missions (lightweight list — no briefingText or recon details)
+// Get all missions (lightweight list)
 export const getMissions = async () => {
 	try {
 		const response = await api.get("/missions");
@@ -16,11 +18,11 @@ export const getMissions = async () => {
 	}
 };
 
-// Get single mission with full data + intelAssessment
+// Get single mission with full data including phases and AAR
 export const getMissionById = async (id) => {
 	try {
 		const response = await api.get(`/missions/${id}`);
-		return response.data; // { mission, intelAssessment }
+		return response.data; // { mission }
 	} catch (error) {
 		console.error("ERROR fetching mission:", error);
 		throw error;
@@ -38,7 +40,8 @@ export const createMission = async (name) => {
 	}
 };
 
-// Update mission fields — generator, briefingText, status, province, biome, notes
+// Update mission fields — generator, briefingText, status, province, biome,
+// missionType, notes, aar. Backend whitelists via $set.
 export const updateMission = async (id, patch) => {
 	try {
 		const response = await api.put(`/missions/${id}`, patch);
@@ -60,9 +63,7 @@ export const deleteMission = async (id) => {
 	}
 };
 
-// ─── Convenience update helpers ───────────────────────────────
-// These all call updateMission under the hood — no separate backend routes needed
-// since the controller whitelists individual fields via $set
+// ─── Convenience update helpers ───────────────────────────────────────────────
 
 export const updateMissionStatus = async (id, status) =>
 	updateMission(id, { status });
@@ -76,43 +77,44 @@ export const updateMissionGenerator = async (id, generator, province, biome) =>
 export const updateMissionBriefing = async (id, briefingText) =>
 	updateMission(id, { briefingText });
 
-// ─── Recon reports ────────────────────────────────────────────
+// ─── Phase reports ────────────────────────────────────────────────────────────
 
-// Append a completed recon debrief to a mission
-// payload: { reconType, answers, modifiers }
-export const addReconReport = async (missionId, payload) => {
+// Append a completed phase debrief to a mission.
+// payload: phase object from PhaseReportSheet
+// Returns: { message, phase }
+export const addPhase = async (missionId, payload) => {
 	try {
-		const response = await api.post(`/missions/${missionId}/recon`, payload);
-		return response.data; // { message, report, intelAssessment, totalReports }
+		const response = await api.post(`/missions/${missionId}/phases`, payload);
+		return response.data; // { message, phase }
 	} catch (error) {
-		console.error("ERROR saving recon report:", error);
+		console.error("ERROR saving phase:", error);
 		throw error;
 	}
 };
 
-// Delete a specific recon report from a mission
-export const deleteReconReport = async (missionId, reportId) => {
+// Delete a specific phase from a mission
+export const deletePhase = async (missionId, phaseId) => {
 	try {
 		const response = await api.delete(
-			`/missions/${missionId}/recon/${reportId}`,
+			`/missions/${missionId}/phases/${phaseId}`,
 		);
-		return response.data; // { message, intelAssessment, totalReports }
+		return response.data; // { message }
 	} catch (error) {
-		console.error("ERROR deleting recon report:", error);
+		console.error("ERROR deleting phase:", error);
 		throw error;
 	}
 };
 
-// ─── Intel assessment ─────────────────────────────────────────
+// ─── AAR ─────────────────────────────────────────────────────────────────────
 
-// Get computed intel assessment from all recon reports on a mission
-// Used before generating the AI briefing to build prompt context
-export const getIntelAssessment = async (missionId) => {
+// Save generated AAR text to the mission document.
+// Called after generateAAR() returns successfully in AARSheet.
+export const saveAAR = async (missionId, aarText) => {
 	try {
-		const response = await api.get(`/missions/${missionId}/intel`);
-		return response.data; // { mission, intelAssessment }
+		const response = await api.put(`/missions/${missionId}`, { aar: aarText });
+		return response.data; // { message, mission }
 	} catch (error) {
-		console.error("ERROR fetching intel assessment:", error);
+		console.error("ERROR saving AAR:", error);
 		throw error;
 	}
 };

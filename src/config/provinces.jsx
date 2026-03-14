@@ -1592,7 +1592,7 @@ export const PROVINCES = {
 		},
 		AOO: [380, 540],
 		imgURL: "/maps/LakeCountry.png",
-		biome: "Rain SHadows",
+		biome: "Rain Shadows",
 
 		locations: [
 			{

@@ -11,11 +11,24 @@ import {
 	faUser,
 	faPlus,
 	faFolderOpen,
-	faClipboardList,
 	faFileShield,
+	faLayerGroup,
+	faCloudSun,
+	faCloudRain,
+	faSnowflake,
+	faFire,
+	faWind,
+	faCity,
 } from "@fortawesome/free-solid-svg-icons";
 
-import { MapWrapper, SheetSide, ReconTool } from "@/components";
+import {
+	MapWrapper,
+	SheetSide,
+	WeatherPanel,
+	AARSheet,
+	PhaseList,
+	PhaseReportSheet,
+} from "@/components";
 import { MissionGenerator } from "@/components/ai";
 import {
 	Roster,
@@ -28,27 +41,25 @@ import { useOperatorsStore, useSheetStore, useSquadStore } from "@/zustand";
 import { useAuthService } from "@/services/AuthService";
 import useMissionsStore from "@/zustand/useMissionsStore";
 
-import NewMissionModal from "@/components/mission/NewMissionModal";
-import MissionListSheet from "@/components/mission/MissionListSheet";
-import ActiveMissionChip from "@/components/mission/ActiveMissionChip";
-import ReconHistoryPanel from "@/components/mission/ReconHistoryPanel";
+import {
+	NewMissionModal,
+	MissionListSheet,
+	ActiveMissionChip,
+} from "@/components/mission";
+
 import iconUrl from "/icons/GhostOpsAI.svg?url";
 import PropTypes from "prop-types";
 
-// ─── Nav ─────────────────────────────────────────────────────
+// ─── Nav ─────────────────────────────────────────────────────────────────────
+
 const NAV = [
-	{
-		id: "briefing",
-		label: "Ops Room",
-		sub: "SCIF",
-		icon: faCrosshairs,
-	},
+	{ id: "briefing", label: "Ops Room", sub: "SCIF", icon: faCrosshairs },
 	{ id: "operators", label: "Personnel", sub: "Team Room", icon: faUsers },
 	{ id: "vehicles", label: "Motor Pool", sub: "Fleet Assets", icon: faTruck },
 ];
 
-// ─── Normalize a stored point to [lat, lng] array ────────────
-// Handles: [lat, lng] arrays, { lat, lng } objects, { latitude, longitude }
+// ─── Normalize stored point → [row, col] array ───────────────────────────────
+
 function normalizePoint(pt) {
 	if (!pt) return null;
 	if (Array.isArray(pt) && pt.length >= 2) return [pt[0], pt[1]];
@@ -60,7 +71,8 @@ function normalizePoint(pt) {
 	return null;
 }
 
-// ─── Clock ───────────────────────────────────────────────────
+// ─── Clock ────────────────────────────────────────────────────────────────────
+
 function HUDClock() {
 	const [time, setTime] = useState("");
 	useEffect(() => {
@@ -86,7 +98,8 @@ function HUDClock() {
 	);
 }
 
-// ─── Panel ───────────────────────────────────────────────────
+// ─── Panel ────────────────────────────────────────────────────────────────────
+
 function Panel({
 	title,
 	badge,
@@ -136,7 +149,8 @@ function Panel({
 	);
 }
 
-// ─── Sheet hook (ISR / page-level only) ──────────────────────
+// ─── Sheet hook ───────────────────────────────────────────────────────────────
+
 function usePageSheet() {
 	const { openSheet, setOpenSheet, closeSheet } = useSheetStore();
 	const [content, setContent] = useState(null);
@@ -163,12 +177,35 @@ function usePageSheet() {
 			/>
 		:	null;
 
-	return { open, SheetEl };
+	return { open, close: closeSheet, SheetEl };
 }
 
-// ═══════════════════════════════════════════════════════════════
-// BRIEFING PAGE
-// ═══════════════════════════════════════════════════════════════
+// ─── Biome → weather icon ─────────────────────────────────────────────────────
+
+const BIOME_ICON_MAP = {
+	"Rain Forest": { icon: faCloudRain, color: "text-green-400" },
+	"Volcanic Rain Forest": { icon: faFire, color: "text-orange-400" },
+	"Volcanic Dessert": { icon: faFire, color: "text-red-400" },
+	"High Cliffs": { icon: faWind, color: "text-slate-300" },
+	"Salt Marsh": { icon: faCloudRain, color: "text-teal-400" },
+	"High Thundra": { icon: faSnowflake, color: "text-blue-300" },
+	Fjordlands: { icon: faSnowflake, color: "text-cyan-400" },
+	"Rain Shadows": { icon: faCloudSun, color: "text-yellow-400" },
+	"Mead Lands": { icon: faCloudSun, color: "text-lime-400" },
+	"Meadow Lands and Urban City": { icon: faCity, color: "text-zinc-300" },
+	"Meadow Lands": { icon: faWind, color: "text-lime-300" },
+	"High Thundra and Rain Shadows": {
+		icon: faSnowflake,
+		color: "text-indigo-300",
+	},
+	"Rain SHadows": { icon: faCloudSun, color: "text-yellow-400" },
+};
+
+function getWeatherIcon(biome) {
+	return BIOME_ICON_MAP[biome] ?? { icon: faCloudSun, color: "text-lines/40" };
+}
+
+// ─── BriefStatChip ────────────────────────────────────────────────────────────
 
 function BriefStatChip({ label, value, live = false }) {
 	return (
@@ -193,16 +230,23 @@ function BriefStatChip({ label, value, live = false }) {
 	);
 }
 
-// ── Section label colors for AI package output ────────────────────────────────
+// ─── Section colors — updated to match BriefingGenerator output ───────────────
+
 const SECTION_COLORS = {
 	"ASSET STATUS": "text-red-400",
 	"MISSION INTENT": "text-btn",
 	INFILTRATION: "text-cyan-400",
+	EXFILTRATION: "text-blue-400",
+	"RALLY POINT": "text-amber-300",
 	GEAR: "text-amber-400",
 	LOADOUT: "text-orange-400",
 	"RULES OF ENGAGEMENT": "text-lines/55",
 	"COMMANDER'S INTENT": "text-emerald-400",
+	"AREA OF OPERATIONS": "text-indigo-400",
+	OBJECTIVES: "text-violet-400",
+	"ENVIRONMENTAL CONDITIONS": "text-teal-400",
 };
+
 function getSectionColor(label) {
 	for (const [key, color] of Object.entries(SECTION_COLORS)) {
 		if (label.includes(key)) return color;
@@ -210,12 +254,14 @@ function getSectionColor(label) {
 	return "text-lines/45";
 }
 
+// ─── IntelBody ────────────────────────────────────────────────────────────────
+
 function IntelBody({
 	hasBriefing,
 	missionBriefing,
 	infilPoint,
 	exfilPoint,
-	fallbackExfil,
+	rallyPoint,
 }) {
 	if (!hasBriefing) {
 		return (
@@ -229,12 +275,10 @@ function IntelBody({
 					))}
 				</div>
 				<p className='font-mono text-[9px] tracking-[0.3em] text-lines/25 uppercase text-center'>
-					// Awaiting Ghost Protocol Package //
+					// Awaiting Mission Brief //
 				</p>
 				<p className='font-mono text-[8px] text-lines/15 text-center leading-relaxed'>
-					Select province → mission type → Generate Mission
-					<br />
-					then Generate AI Briefing
+					Select province → mission type → Generate
 				</p>
 			</div>
 		);
@@ -253,20 +297,18 @@ function IntelBody({
 			color: "rgba(95,158,232,0.65)",
 			bg: "rgba(22,48,95,0.18)",
 		},
-		fallbackExfil && {
+		rallyPoint && {
 			label: "RALLY",
-			val: fallbackExfil,
+			val: rallyPoint,
 			color: "rgba(215,162,52,0.65)",
 			bg: "rgba(88,58,12,0.18)",
 		},
 	].filter(Boolean);
 
-	// Render section-colored package text
 	const lines = missionBriefing.split("\n");
 
 	return (
 		<div className='flex flex-col h-full'>
-			{/* Classification bar */}
 			<div className='shrink-0 flex items-center justify-between px-3 py-1.5 border-b border-lines/15 bg-blk/50'>
 				<span className='font-mono text-[8px] tracking-[0.35em] text-red-500/35 uppercase'>
 					// TOP SECRET //
@@ -275,7 +317,6 @@ function IntelBody({
 					GHOST PROTOCOL
 				</span>
 			</div>
-			{/* Coordinate chips */}
 			{coords.length > 0 && (
 				<div className='shrink-0 flex flex-wrap border-b border-lines/10'>
 					{coords.map(({ label, val, color, bg }) => (
@@ -299,7 +340,6 @@ function IntelBody({
 					))}
 				</div>
 			)}
-			{/* Package body */}
 			<div className='flex-1 min-h-0 overflow-y-auto px-4 py-3'>
 				<div className='flex flex-col gap-0.5'>
 					{lines.map((line, i) => {
@@ -356,28 +396,31 @@ function IntelBody({
 	);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// BRIEFING PAGE
+// ═══════════════════════════════════════════════════════════════════════════════
+
 function BriefingPage({ onNewMission }) {
 	const {
 		activeMission,
 		saveMissionGenerator,
 		saveMissionBriefing,
-		addReconReport,
+		addPhase,
+		saveAAR,
 	} = useMissionsStore();
 
-	// ── Derive all display values from store — zero local mission state ──
+	// ── Derive display values from store ──────────────────────────────────────
 	const g = activeMission?.generator || {};
 	const generationMode = g.generationMode || "random";
 	const mapBounds = g.mapBounds || null;
 	const imgURL = g.imgURL || "";
 	const selectedLocations = g.selectedLocations || [];
 	const briefingText = activeMission?.briefingText || "";
+	const phases = activeMission?.phases ?? [];
 
-	// Normalize stored points → [lat, lng] arrays for Leaflet
-	// (generateInsertionExtractionPoints output varies; normalizePoint handles all shapes)
 	const infilPoint = normalizePoint(g.infilPoint);
 	const exfilPoint = normalizePoint(g.exfilPoint);
-	const rallyPoint = normalizePoint(g.rallyPoint); // add this
-	const fallbackExfil = normalizePoint(g.fallbackExfil);
+	const rallyPoint = normalizePoint(g.rallyPoint);
 
 	const locationSelection = generationMode === "ops" ? selectedLocations : [];
 	const randomLocationSelection =
@@ -385,34 +428,9 @@ function BriefingPage({ onNewMission }) {
 
 	const hasBriefing = !!briefingText;
 	const hasPoints = !!(infilPoint || exfilPoint || rallyPoint);
-	const reconCount = activeMission?.reconReports?.length || 0;
+	const phaseCount = phases.length;
 
-	// ── Intel briefing panel tab ──────────────────────────────────────────────
-
-	// ── onGenerate* callbacks — ONLY place we write to the store ─
-	//
-	// MissionGenerator calls setMapBounds/setImgURL/setInfilPoint etc. as
-	// intermediate steps — those are noops below. The full snapshot including
-	// insertion/extraction points is computed HERE and saved in one write.
-	//
-	{
-		/*const computePoints = (data) => {
-		try {
-			const coords = (data.randomSelection || [])
-				.map((loc) => loc.coordinates)
-				.filter(Boolean);
-			return generateInsertionExtractionPoints({
-				bounds: data.bounds,
-				missionCoordinates: coords,
-				allProvinceCoordinates: data.allProvinceCoordinates || [],
-				maxAttempts: 20000,
-			});
-		} catch (e) {
-			console.warn("Point generation failed:", e.message);
-			return { infilPoint: null, exfilPoint: null, fallbackExfil: null };
-		}
-	};*/
-	}
+	// ── Generate callbacks ────────────────────────────────────────────────────
 
 	const handleGenerateRandomOps = (data) => {
 		if (!activeMission?._id) return;
@@ -423,15 +441,18 @@ function BriefingPage({ onNewMission }) {
 				selectedLocations: data.randomSelection,
 				mapBounds: data.bounds,
 				imgURL: data.imgURL || "",
-				// No points — AI sets these in Phase 2
-				infilPoint: null,
-				exfilPoint: null,
-				rallyPoint: null,
-				fallbackExfil: null,
+				missionType: data.missionType,
+				infilPoint: data.infilPoint ?? null,
+				exfilPoint: data.exfilPoint ?? null,
+				rallyPoint: data.rallyPoint ?? null,
+				infilMethod: data.infilMethod ?? null,
+				exfilMethod: data.exfilMethod ?? null,
+				approachVector: data.approachVector ?? null,
 			},
 			data.selectedProvince,
 			data.biome,
 		);
+		if (data.briefing) saveMissionBriefing(activeMission._id, data.briefing);
 	};
 
 	const handleGenerateOps = (data) => {
@@ -443,62 +464,33 @@ function BriefingPage({ onNewMission }) {
 				selectedLocations: data.randomSelection,
 				mapBounds: data.bounds,
 				imgURL: data.imgURL || "",
-				// No points — AI sets these in Phase 2
-				infilPoint: null,
-				exfilPoint: null,
-				fallbackExfil: null,
+				missionType: data.missionType,
+				infilPoint: data.infilPoint ?? null,
+				exfilPoint: data.exfilPoint ?? null,
+				rallyPoint: data.rallyPoint ?? null,
+				infilMethod: data.infilMethod ?? null,
+				exfilMethod: data.exfilMethod ?? null,
+				approachVector: data.approachVector ?? null,
 			},
 			data.selectedProvince,
 			data.biome,
 		);
+		if (data.briefing) saveMissionBriefing(activeMission._id, data.briefing);
 	};
 
-	const handleGenerateAIMission = (data) => {
-		if (!activeMission?._id) return;
+	// ── Sheets ────────────────────────────────────────────────────────────────
+	const { open: openSheet, close, SheetEl } = usePageSheet();
 
-		// Save briefing text
-		saveMissionBriefing(activeMission._id, data.briefing || data.result || "");
-
-		// Save AI-generated points back into the generator slice of the store
-		// so the map picks them up via normalizePoint(g.infilPoint) etc.
-		if (data.infilPoint || data.exfilPoint || data.rallyPoint) {
-			saveMissionGenerator(
-				activeMission._id,
-				{
-					// Preserve existing generator data, only overwrite points
-					...activeMission.generator,
-					infilPoint: data.infilPoint ?? null,
-					exfilPoint: data.exfilPoint ?? null,
-					rallyPoint: data.rallyPoint ?? null,
-					fallbackExfil: null,
-				},
-				activeMission.generator?.province,
-				activeMission.generator?.biome,
-			);
-		}
+	const openWeatherSheet = () => {
+		if (!activeMission?.biome) return;
+		openSheet(
+			"left",
+			<WeatherPanel province={activeMission.biome} />,
+			"Pre-Op Conditions",
+			`${activeMission.biome} — Environmental Brief`,
+		);
 	};
 
-	// ── Sheets ───────────────────────────────────────────────────
-	const { open: openSheet, SheetEl } = usePageSheet();
-
-	const openReconSheet = () =>
-		openSheet(
-			"right",
-			<ReconTool
-				mission={activeMission}
-				onSave={(payload) => addReconReport(activeMission._id, payload)}
-			/>,
-			"Recon Debrief",
-			"ISR // Post-Mission Assessment",
-		);
-
-	const openReconHistory = () =>
-		openSheet(
-			"right",
-			<ReconHistoryPanel mission={activeMission} />,
-			"Recon Reports",
-			`${reconCount} filed — ${activeMission?.name}`,
-		);
 	const openIntelSheet = () =>
 		openSheet(
 			"left",
@@ -507,32 +499,83 @@ function BriefingPage({ onNewMission }) {
 				missionBriefing={briefingText}
 				infilPoint={infilPoint}
 				exfilPoint={exfilPoint}
-				fallbackExfil={fallbackExfil}
+				rallyPoint={rallyPoint}
 			/>,
-			"Intel Briefing",
+			"Mission Brief",
 			hasBriefing ?
 				"TS//SCI — Ghost Protocol Package"
-			:	"STANDBY — No package generated",
+			:	"STANDBY — No brief generated",
 		);
 
-	// ── Props for MissionGenerator ───────────────────────────────
-	// NO-OP setters: MissionGenerator calls these directly for live preview
-	// inside its own internal state. We don't need to intercept them — the
-	// full result is captured in onGenerateRandomOps / onGenerateOps above.
+	const openPhaseSheet = () => {
+		const phaseNumber = phaseCount + 1;
+		openSheet(
+			"right",
+			<PhaseReportSheet
+				mission={activeMission}
+				phaseNumber={phaseNumber}
+				onSave={async (phaseData) => {
+					await addPhase(activeMission._id, phaseData);
+					close();
+				}}
+				onClose={close}
+			/>,
+			`Phase ${phaseNumber} Report`,
+			`${activeMission?.name} — Post-Mission Debrief`,
+		);
+	};
+
+	const openAARSheet = () =>
+		openSheet(
+			"left",
+			<AARSheet
+				mission={activeMission}
+				onSave={async (aarText) => {
+					await saveAAR(activeMission._id, aarText);
+				}}
+				onClose={close}
+			/>,
+			"After Action Report",
+			`${activeMission?.name} — Debrief`,
+		);
+
+	const openPhaseListSheet = () =>
+		openSheet(
+			"right",
+			<PhaseList
+				phases={phases}
+				onNewPhase={() => {
+					close();
+					openPhaseSheet();
+				}}
+				onAAR={() => {
+					close();
+					openAARSheet();
+				}}
+			/>,
+			"Phase Log",
+			`${activeMission?.name} — ${phaseCount} phase${phaseCount !== 1 ? "s" : ""} filed`,
+		);
+
+	// ── MissionGenerator props ────────────────────────────────────────────────
 	const noop = () => {};
 	const mgProps = {
 		onGenerateRandomOps: handleGenerateRandomOps,
 		onGenerateOps: handleGenerateOps,
-		onGenerateAIMission: handleGenerateAIMission,
 		setMapBounds: noop,
 		setImgURL: noop,
-		setGenerationMode: noop,
-		setInfilPoint: noop,
-		setExfilPoint: noop,
-		setFallbackExfil: noop,
-		setMissionBriefing: noop,
 		generationMode,
-		reconReports: activeMission?.reconReports || [],
+		operationName: activeMission?.name ?? "",
+		priorPhases: phases,
+		setGenerationMode: (mode) => {
+			if (!activeMission?._id) return;
+			saveMissionGenerator(
+				activeMission._id,
+				{ ...g, generationMode: mode },
+				activeMission.province,
+				activeMission.biome,
+			);
+		},
 	};
 
 	const mapProps = {
@@ -543,22 +586,26 @@ function BriefingPage({ onNewMission }) {
 		generationMode,
 		infilPoint,
 		exfilPoint,
-		fallbackExfil,
+		fallbackExfil: rallyPoint,
 	};
 
+	const biome = activeMission?.biome || null;
+	const weatherMeta = biome ? getWeatherIcon(biome) : null;
+
+	// ── Action buttons ────────────────────────────────────────────────────────
 	const ActionButtons = (
 		<div className='flex items-center gap-2'>
-			{reconCount > 0 && (
+			{weatherMeta && (
 				<button
-					onClick={openReconHistory}
-					className='flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-lines/45 hover:text-fontz border border-lines/15 hover:border-lines/35 bg-transparent hover:bg-white/[0.03] px-2 py-1 rounded-sm transition-all'>
+					onClick={openWeatherSheet}
+					title={biome}
+					className='flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase border border-lines/15 hover:border-lines/35 bg-transparent hover:bg-white/[0.03] px-2 py-1 rounded-sm transition-all'>
 					<FontAwesomeIcon
-						icon={faClipboardList}
-						className='text-[8px]'
+						icon={weatherMeta.icon}
+						className={`text-[10px] ${weatherMeta.color}`}
 					/>
-					<span className='hidden sm:inline'>Reports</span>
-					<span className='font-mono text-[9px] text-btn ml-0.5'>
-						{reconCount}
+					<span className={`hidden sm:inline ${weatherMeta.color}`}>
+						Weather
 					</span>
 				</button>
 			)}
@@ -574,21 +621,31 @@ function BriefingPage({ onNewMission }) {
 					icon={faFileShield}
 					className='text-[8px]'
 				/>
-				<span className='hidden sm:inline'>Intel</span>
+				<span className='hidden sm:inline'>Brief</span>
 			</button>
 			<button
-				onClick={openReconSheet}
-				className='flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-btn hover:text-white border border-btn/30 hover:border-btn/60 bg-btn/5 hover:bg-btn/15 px-2 py-1 rounded-sm transition-all'>
+				onClick={openPhaseListSheet}
+				className={[
+					"flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase px-2 py-1 rounded-sm border transition-all",
+					phaseCount > 0 ?
+						"text-btn border-btn/30 bg-btn/5 hover:bg-btn/15 hover:border-btn/60"
+					:	"text-lines/35 border-lines/15 hover:border-lines/30 hover:text-lines/55",
+				].join(" ")}>
 				<FontAwesomeIcon
-					icon={faCrosshairs}
+					icon={faLayerGroup}
 					className='text-[8px]'
 				/>
-				ISR
+				<span className='hidden sm:inline'>Phases</span>
+				{phaseCount > 0 && (
+					<span className='font-mono text-[8px] text-btn tabular-nums'>
+						{phaseCount}
+					</span>
+				)}
 			</button>
 		</div>
 	);
 
-	// ── No mission ───────────────────────────────────────────────
+	// ── No mission ────────────────────────────────────────────────────────────
 	if (!activeMission) {
 		return (
 			<div className='flex flex-col flex-1 items-center justify-center gap-5 p-8 text-center'>
@@ -623,7 +680,7 @@ function BriefingPage({ onNewMission }) {
 
 	return (
 		<>
-			{/* ══ MOBILE ══════════════════════════════════════════════ */}
+			{/* ══ MOBILE ══════════════════════════════════════════════════════ */}
 			<div className='lg:hidden flex-1 overflow-y-auto'>
 				<div className='p-3 flex flex-col gap-3'>
 					<div className='flex flex-wrap items-center gap-2'>
@@ -649,6 +706,12 @@ function BriefingPage({ onNewMission }) {
 								live
 							/>
 						)}
+						{phaseCount > 0 && (
+							<BriefStatChip
+								label='Phases'
+								value={phaseCount}
+							/>
+						)}
 						<div className='ml-auto'>{ActionButtons}</div>
 					</div>
 
@@ -661,11 +724,7 @@ function BriefingPage({ onNewMission }) {
 					</Panel>
 
 					<Panel
-						title={
-							activeMission?.province ?
-								`${activeMission.province}`
-							:	"Tactical Map"
-						}
+						title={activeMission?.province ?? "Tactical Map"}
 						badge='AO-LIVE'
 						badgeGreen
 						className='h-72'
@@ -675,7 +734,7 @@ function BriefingPage({ onNewMission }) {
 				</div>
 			</div>
 
-			{/* ══ DESKTOP ═════════════════════════════════════════════ */}
+			{/* ══ DESKTOP ═════════════════════════════════════════════════════ */}
 			<div className='hidden lg:flex flex-1 min-h-0 overflow-hidden flex-col p-4 gap-3'>
 				<div className='shrink-0 flex items-center gap-3'>
 					<span className='font-mono text-[9px] tracking-widest text-btn/70 uppercase truncate max-w-[200px] shrink-0'>
@@ -715,10 +774,10 @@ function BriefingPage({ onNewMission }) {
 								live
 							/>
 						)}
-						{reconCount > 0 && (
+						{phaseCount > 0 && (
 							<BriefStatChip
-								label='Recon'
-								value={reconCount}
+								label='Phases'
+								value={phaseCount}
 							/>
 						)}
 					</div>
@@ -730,21 +789,17 @@ function BriefingPage({ onNewMission }) {
 				</div>
 
 				<div className='grid grid-cols-[420px_1fr] gap-3 flex-1 min-h-0 overflow-hidden'>
-					<div className='flex flex-col gap-3 min-h-0 overflow-hidden'>
-						<Panel
-							title='Ghost Operations AI'
-							badge='GEN-SYS'
-							className='flex-1 min-h-0'
-							bodyClass='p-3'>
-							<MissionGenerator {...mgProps} />
-						</Panel>
-					</div>
+					{/* Left column — generator */}
 					<Panel
-						title={
-							activeMission?.province ?
-								`${activeMission.province}`
-							:	"Tactical Map"
-						}
+						title='Ghost Operations AI'
+						badge='GEN-SYS'
+						className='h-full'
+						bodyClass='p-3'>
+						<MissionGenerator {...mgProps} />
+					</Panel>
+					{/* Right column — map */}
+					<Panel
+						title={activeMission?.province ?? "Tactical Map"}
 						badge='AO-LIVE'
 						badgeGreen
 						className='h-full'
@@ -759,9 +814,10 @@ function BriefingPage({ onNewMission }) {
 	);
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
 // OPERATORS PAGE — unchanged
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+
 function OperatorsPage() {
 	const { setSelectedOperator, operators, fetchOperators } =
 		useOperatorsStore();
@@ -775,9 +831,11 @@ function OperatorsPage() {
 		activeSquadId ?
 			`${squads.find((s) => s._id === activeSquadId)?.name ?? "Squad"} `
 		:	"Special Operations Force";
+
 	useEffect(() => {
 		fetchOperators();
 	}, [fetchOperators]);
+
 	return (
 		<>
 			<div className='lg:hidden flex-1 overflow-y-auto'>
@@ -896,9 +954,10 @@ function OperatorsPage() {
 	);
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
 // VEHICLES PAGE — unchanged
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+
 function VehiclesPage() {
 	const { open, SheetEl } = usePageSheet();
 	const [dataUpdated, setDataUpdated] = useState(false);
@@ -922,14 +981,16 @@ function VehiclesPage() {
 	);
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
 // ROOT SHELL
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+
 export default function UnifiedDashboard() {
 	const [activeTab, setActiveTab] = useState("briefing");
+	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const activeNav = NAV.find((n) => n.id === activeTab);
-	const { isAuthenticated, user, signIn, signUp, signOut } = useAuthService();
 
+	const { isAuthenticated, user, signIn, signUp, signOut } = useAuthService();
 	const {
 		missions,
 		activeMission,
@@ -953,7 +1014,7 @@ export default function UnifiedDashboard() {
 	};
 
 	const handleLoadMission = async (m) => {
-		await loadMission(m._id); // full fetch including reconReports
+		await loadMission(m._id);
 		setShowMissionList(false);
 	};
 
@@ -969,22 +1030,19 @@ export default function UnifiedDashboard() {
 				return null;
 		}
 	};
-	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
 	return (
 		<div className='h-screen w-screen flex flex-col overflow-hidden bg-gradient-to-br from-blk via-background to-neutral-800 text-fontz'>
-			{/* ══ TOPBAR ══════════════════════════════════════════════ */}
+			{/* ══ TOPBAR ══════════════════════════════════════════════════════ */}
 			<header className='shrink-0 h-12 flex items-center gap-3 px-4 bg-blk/90 border-b border-lines/25'>
 				<div className='flex items-center gap-2 shrink-0'>
 					<img
 						src={iconUrl}
-						alt='description'
+						alt='GhostOpsAI'
 						className='w-20 h-20 lg:w-30 lg:h-30 xl:w-40 xl:h-40'
 					/>
 				</div>
-
 				<div className='flex-1 h-px bg-gradient-to-r from-lines/15 to-transparent' />
-
 				<div className='hidden sm:flex items-center gap-3 font-mono text-[10px] tracking-widest text-lines/40 uppercase'>
 					<span className='flex items-center gap-1.5'>
 						<FontAwesomeIcon
@@ -998,7 +1056,6 @@ export default function UnifiedDashboard() {
 						Mode: <span className='text-btn'>{activeNav?.label}</span>
 					</span>
 				</div>
-
 				{isAuthenticated && (
 					<>
 						<ActiveMissionChip
@@ -1024,7 +1081,6 @@ export default function UnifiedDashboard() {
 						</button>
 					</>
 				)}
-
 				{!isAuthenticated && (
 					<div className='flex items-center gap-2 shrink-0'>
 						<button
@@ -1039,11 +1095,10 @@ export default function UnifiedDashboard() {
 						</button>
 					</div>
 				)}
-
 				<HUDClock />
 			</header>
 
-			{/* ══ BODY ════════════════════════════════════════════════ */}
+			{/* ══ BODY ════════════════════════════════════════════════════════ */}
 			<div className='flex flex-1 min-h-0 overflow-hidden'>
 				<nav className='hidden lg:flex shrink-0 w-44 flex-col bg-blk/70 border-r border-lines/15'>
 					<div className='px-3 pt-3 pb-1 flex items-center justify-between'>
@@ -1184,9 +1239,8 @@ export default function UnifiedDashboard() {
 				</main>
 			</div>
 
-			{/* ══ BOTTOM TAB BAR ══════════════════════════════════════ */}
+			{/* ══ BOTTOM TAB BAR ══════════════════════════════════════════════ */}
 			<nav className='lg:hidden shrink-0 flex flex-col border-t border-lines/20 bg-blk/95'>
-				{/* Collapsible auth panel */}
 				{isAuthenticated && mobileMenuOpen && (
 					<div className='flex items-center justify-between px-4 py-2.5 border-b border-lines/10 bg-blk/60'>
 						<span className='font-mono text-[8px] tracking-widest text-fontz/40 truncate'>
@@ -1203,7 +1257,6 @@ export default function UnifiedDashboard() {
 						</button>
 					</div>
 				)}
-
 				<div className='flex'>
 					{NAV.map((n) => {
 						const active = activeTab === n.id;
@@ -1236,8 +1289,6 @@ export default function UnifiedDashboard() {
 							</button>
 						);
 					})}
-
-					{/* Avatar toggle button */}
 					<button
 						onClick={() => setMobileMenuOpen((prev) => !prev)}
 						className={[
@@ -1269,7 +1320,7 @@ export default function UnifiedDashboard() {
 				</div>
 			</nav>
 
-			{/* ══ MISSION MODAL ════════════════════════════════════════ */}
+			{/* ══ MODALS ══════════════════════════════════════════════════════ */}
 			{showNewMission && (
 				<NewMissionModal
 					loading={missionLoading}
@@ -1277,8 +1328,6 @@ export default function UnifiedDashboard() {
 					onCancel={() => setShowNewMission(false)}
 				/>
 			)}
-
-			{/* ══ MISSION LIST SHEET — isolated from useSheetStore ════ */}
 			{showMissionList && (
 				<SheetSide
 					openSheet='left'
@@ -1304,11 +1353,14 @@ export default function UnifiedDashboard() {
 		</div>
 	);
 }
+
+// ─── PropTypes ────────────────────────────────────────────────────────────────
+
 Panel.propTypes = {
 	title: PropTypes.string,
 	badge: PropTypes.string,
 	badgeGreen: PropTypes.bool,
-	children: PropTypes.object,
+	children: PropTypes.node,
 	className: PropTypes.string,
 	bodyClass: PropTypes.string,
 };
@@ -1322,7 +1374,7 @@ IntelBody.propTypes = {
 	missionBriefing: PropTypes.string,
 	infilPoint: PropTypes.array,
 	exfilPoint: PropTypes.array,
-	fallbackExfil: PropTypes.array,
+	rallyPoint: PropTypes.array,
 };
 BriefingPage.propTypes = {
 	onNewMission: PropTypes.func,
