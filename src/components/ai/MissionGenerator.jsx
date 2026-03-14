@@ -11,7 +11,7 @@ import PropTypes from "prop-types";
 import { toast } from "react-toastify";
 import { PROVINCES, PROVINCE_TERRAIN } from "@/config";
 import { MISSION_TYPES, MISSION_CATEGORIES } from "@/api/GhostOpsApi";
-import { generatePoints } from "../../utils/GeneratePoints";
+import { GeneratePointsOnMap } from "@/utils/GeneratePointsOnMap";
 import { generateBriefing } from "@/utils/BriefingGenerator";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -272,7 +272,7 @@ export default function MissionGenerator({
 			}
 
 			// ── 1. Generate points algorithmically ───────────────────────────────
-			const points = generatePoints({
+			const points = GeneratePointsOnMap({
 				missionType,
 				terrain,
 				objectives: locations,

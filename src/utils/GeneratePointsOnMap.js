@@ -389,7 +389,12 @@ function describeApproachVector(infilPoint, objectives, infilMethod, terrain) {
  *   approachVector: string,
  * }}
  */
-export function generatePoints({ missionType, terrain, objectives, seed }) {
+export function GeneratePointsOnMap({
+	missionType,
+	terrain,
+	objectives,
+	seed,
+}) {
 	const rng = makePRNG(seed);
 
 	// Normalize objectives to [row, col] tuples
@@ -466,7 +471,7 @@ export function generatePoints({ missionType, terrain, objectives, seed }) {
  */
 export function generatePointVariants(params, count = 3) {
 	return Array.from({ length: count }, (_, i) =>
-		generatePoints({
+		GeneratePointsOnMap({
 			...params,
 			seed: Math.floor(Math.random() * 2 ** 32) + i,
 		}),
