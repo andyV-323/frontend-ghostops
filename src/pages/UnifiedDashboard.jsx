@@ -493,7 +493,7 @@ function BriefingPage({ onNewMission }) {
 
 	const openIntelSheet = () =>
 		openSheet(
-			"left",
+			"top",
 			<IntelBody
 				hasBriefing={hasBriefing}
 				missionBriefing={briefingText}
@@ -527,7 +527,7 @@ function BriefingPage({ onNewMission }) {
 
 	const openAARSheet = () =>
 		openSheet(
-			"left",
+			"bottom",
 			<AARSheet
 				mission={activeMission}
 				onSave={async (aarText) => {

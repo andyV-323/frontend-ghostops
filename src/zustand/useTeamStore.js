@@ -537,6 +537,55 @@ Select the best 2–4 operators. Return only the JSON array.`;
 		}
 	},
 
+	assignUnknownFate: async (operatorId, userId) => {
+		const roll = Math.random();
+
+		// 30% chance of survival — tune this number
+		if (roll < 0.3) {
+			toast.success("Operator extracted safe — no injuries sustained");
+			return; // Nothing happens, operator stays Active and on team
+		}
+
+		// Otherwise fall through to full injury pool including KIA
+		const injury = INJURIES[Math.floor(Math.random() * INJURIES.length)];
+		const status = injury.recoveryHours === "KIA" ? "KIA" : "Injured";
+
+		const infirmaryEntry = {
+			createdBy: userId,
+			operator: operatorId,
+			injuryType: injury.injury,
+			recoveryHours: status === "KIA" ? 0 : injury.recoveryHours,
+			injuredAt: new Date(),
+		};
+
+		const memorialEntry = {
+			createdBy: userId,
+			operator: operatorId,
+			name: injury.injury,
+			dateOfDeath: new Date(),
+		};
+
+		try {
+			await OperatorsApi.updateOperatorStatus(operatorId, status);
+			await TeamsApi.removeOperatorFromTeams(operatorId);
+
+			if (status === "Injured") {
+				await InfirmaryApi.addInfirmaryEntry(infirmaryEntry);
+				toast.info("Operator was wounded in action");
+				useInfirmaryStore.getState().addInjuredOperator(infirmaryEntry);
+			} else if (status === "KIA") {
+				await MemorialApi.addMemorialEntry(memorialEntry);
+				toast.info("Operator was killed in action");
+				useMemorialStore.getState().addKIAOperator(memorialEntry);
+			}
+
+			get().fetchTeams();
+			useOperatorsStore.getState().fetchOperators();
+		} catch (error) {
+			console.error("ERROR processing unknown fate:", error);
+		}
+	},
+
 	// Transfer operator between teams via drag and drop
 	transferOperator: async (operatorId, sourceTeamId, targetTeamId) => {
 		try {

@@ -32,6 +32,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		fetchVehiclesForTeams,
 		assignRandomInjury,
 		assignRandomKIAInjury,
+		assignUnknownFate,
 		transferOperator,
 		removeAllOperatorsFromTeams,
 		addVehicleToTeam,
@@ -451,6 +452,10 @@ const Teams = ({ dataUpdated, openSheet }) => {
 					}}
 					onKIAInjury={() => {
 						assignRandomKIAInjury(selectedOperator._id, userId);
+						closeDialog();
+					}}
+					onUnknownFate={() => {
+						assignUnknownFate(selectedOperator._id, userId);
 						closeDialog();
 					}}
 					injuryType={injuryType}

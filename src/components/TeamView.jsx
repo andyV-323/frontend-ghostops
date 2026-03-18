@@ -298,8 +298,13 @@ function AssetCard({ asset }) {
    TEAMVIEW
 ═══════════════════════════════════════════════════════════════ */
 const TeamView = ({ teamId }) => {
-	const { teams, fetchTeams, assignRandomInjury, assignRandomKIAInjury } =
-		useTeamsStore();
+	const {
+		teams,
+		fetchTeams,
+		assignRandomInjury,
+		assignRandomKIAInjury,
+		assignUnknownFate,
+	} = useTeamsStore();
 	const { operators, fetchOperators } = useOperatorsStore();
 	const userId = localStorage.getItem("userId");
 
@@ -333,7 +338,12 @@ const TeamView = ({ teamId }) => {
 		await fetchTeams();
 		await fetchOperators();
 	};
-
+	const handleAssignUnknownFate = async (id) => {
+		await assignUnknownFate(id, userId);
+		handleCloseInjuryDialog();
+		await fetchTeams();
+		await fetchOperators();
+	};
 	const selectedTeam = useMemo(
 		() => teams.find((t) => t._id === teamId),
 		[teams, teamId],
@@ -548,6 +558,7 @@ const TeamView = ({ teamId }) => {
 					selectedOperator={selectedOperator}
 					onRandomInjury={() => handleAssignRandomInjury(selectedOperator._id)}
 					onKIAInjury={() => handleAssignRandomKIAInjury(selectedOperator._id)}
+					onUnknownFate={() => handleAssignUnknownFate(selectedOperator._id)}
 					injuryType={injuryType}
 				/>
 			)}
