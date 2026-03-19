@@ -28,6 +28,7 @@ import {
 	AARSheet,
 	PhaseList,
 	PhaseReportSheet,
+	CampaignView,
 } from "@/components";
 import { MissionGenerator } from "@/components/ai";
 import {
@@ -405,30 +406,66 @@ function BriefingPage({ onNewMission }) {
 		activeMission,
 		saveMissionGenerator,
 		saveMissionBriefing,
+		saveMissionGeneratorAI,
 		addPhase,
 		saveAAR,
 	} = useMissionsStore();
 
 	// ── Derive display values from store ──────────────────────────────────────
 	const g = activeMission?.generator || {};
+
+	// ── AI campaign fields — declared first, used throughout ──────────────────
+	const campaignPhases = activeMission?.campaignPhases ?? [];
+	const totalCampaignPhases = campaignPhases.length;
+	const completedCampaignPhases = campaignPhases.filter(
+		(p) => p.status === "complete",
+	).length;
+	const isAIMission = !!activeMission?.aiGenerated;
+
+	// Active campaign phase — drives map for AI missions
+	const activeCampaignPhase =
+		isAIMission ?
+			(campaignPhases.find((p) => p.status === "active") ?? null)
+		:	null;
+
+	// ── Generation mode ───────────────────────────────────────────────────────
 	const generationMode = g.generationMode || "random";
-	const mapBounds = g.mapBounds || null;
-	const imgURL = g.imgURL || "";
+	const MODE_LABEL = { random: "RAND", ops: "OPS", ai: "AI OPS" };
+
+	// ── Map source — AI uses active phase, standard uses generator ─────────────
+	const mapSource = activeCampaignPhase ?? g;
+
+	const mapBounds = mapSource.bounds ?? mapSource.mapBounds ?? null;
+	const imgURL = mapSource.imgURL ?? "";
+
+	// ── Points ────────────────────────────────────────────────────────────────
+	const infilPoint = normalizePoint(mapSource.infilPoint);
+	const exfilPoint = normalizePoint(mapSource.exfilPoint);
+	const rallyPoint = normalizePoint(mapSource.rallyPoint);
+
+	// ── Location markers for map ──────────────────────────────────────────────
 	const selectedLocations = g.selectedLocations || [];
+
+	const aiPhaseLocations =
+		activeCampaignPhase?.location ? [activeCampaignPhase.location] : [];
+
+	const locationSelection =
+		isAIMission ? aiPhaseLocations
+		: generationMode === "ops" ? selectedLocations
+		: [];
+
+	const randomLocationSelection =
+		isAIMission ? []
+		: generationMode === "random" ? selectedLocations
+		: [];
+
+	// ── Phase reports (player-filed) ──────────────────────────────────────────
 	const briefingText = activeMission?.briefingText || "";
 	const phases = activeMission?.phases ?? [];
-
-	const infilPoint = normalizePoint(g.infilPoint);
-	const exfilPoint = normalizePoint(g.exfilPoint);
-	const rallyPoint = normalizePoint(g.rallyPoint);
-
-	const locationSelection = generationMode === "ops" ? selectedLocations : [];
-	const randomLocationSelection =
-		generationMode === "random" ? selectedLocations : [];
+	const phaseCount = phases.length;
 
 	const hasBriefing = !!briefingText;
 	const hasPoints = !!(infilPoint || exfilPoint || rallyPoint);
-	const phaseCount = phases.length;
 
 	// ── Generate callbacks ────────────────────────────────────────────────────
 
@@ -476,6 +513,11 @@ function BriefingPage({ onNewMission }) {
 			data.biome,
 		);
 		if (data.briefing) saveMissionBriefing(activeMission._id, data.briefing);
+	};
+
+	const handleGenerateAI = (payload) => {
+		if (!activeMission?._id) return;
+		saveMissionGeneratorAI(activeMission._id, payload);
 	};
 
 	// ── Sheets ────────────────────────────────────────────────────────────────
@@ -539,29 +581,51 @@ function BriefingPage({ onNewMission }) {
 			`${activeMission?.name} — Debrief`,
 		);
 
-	const openPhaseListSheet = () =>
-		openSheet(
-			"right",
-			<PhaseList
-				phases={phases}
-				onNewPhase={() => {
-					close();
-					openPhaseSheet();
-				}}
-				onAAR={() => {
-					close();
-					openAARSheet();
-				}}
-			/>,
-			"Phase Log",
-			`${activeMission?.name} — ${phaseCount} phase${phaseCount !== 1 ? "s" : ""} filed`,
-		);
+	const openPhaseListSheet = () => {
+		if (isAIMission) {
+			openSheet(
+				"right",
+				<CampaignView
+					mission={activeMission}
+					onFileReport={() => {
+						close();
+						openPhaseSheet();
+					}}
+					onAAR={() => {
+						close();
+						openAARSheet();
+					}}
+					onClose={close}
+				/>,
+				"Campaign — " + (activeMission?.name ?? ""),
+				`${activeMission?.name} — AI Operation Phase Chain`,
+			);
+		} else {
+			openSheet(
+				"right",
+				<PhaseList
+					phases={phases}
+					onNewPhase={() => {
+						close();
+						openPhaseSheet();
+					}}
+					onAAR={() => {
+						close();
+						openAARSheet();
+					}}
+				/>,
+				"Phase Log",
+				`${activeMission?.name} — ${phaseCount} phase${phaseCount !== 1 ? "s" : ""} filed`,
+			);
+		}
+	};
 
 	// ── MissionGenerator props ────────────────────────────────────────────────
 	const noop = () => {};
 	const mgProps = {
 		onGenerateRandomOps: handleGenerateRandomOps,
 		onGenerateOps: handleGenerateOps,
+		onGenerateAI: handleGenerateAI,
 		setMapBounds: noop,
 		setImgURL: noop,
 		generationMode,
@@ -583,7 +647,8 @@ function BriefingPage({ onNewMission }) {
 		locationSelection,
 		randomLocationSelection,
 		imgURL,
-		generationMode,
+		// AI missions render locationSelection (ops mode behavior) for objective markers
+		generationMode: isAIMission ? "ops" : generationMode,
 		infilPoint,
 		exfilPoint,
 		fallbackExfil: rallyPoint,
@@ -627,7 +692,9 @@ function BriefingPage({ onNewMission }) {
 				onClick={openPhaseListSheet}
 				className={[
 					"flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase px-2 py-1 rounded-sm border transition-all",
-					phaseCount > 0 ?
+					isAIMission && totalCampaignPhases > 0 ?
+						"text-btn border-btn/30 bg-btn/5 hover:bg-btn/15 hover:border-btn/60"
+					: phaseCount > 0 ?
 						"text-btn border-btn/30 bg-btn/5 hover:bg-btn/15 hover:border-btn/60"
 					:	"text-lines/35 border-lines/15 hover:border-lines/30 hover:text-lines/55",
 				].join(" ")}>
@@ -635,8 +702,15 @@ function BriefingPage({ onNewMission }) {
 					icon={faLayerGroup}
 					className='text-[8px]'
 				/>
-				<span className='hidden sm:inline'>Phases</span>
-				{phaseCount > 0 && (
+				<span className='hidden sm:inline'>
+					{isAIMission ? "Campaign" : "Phases"}
+				</span>
+				{isAIMission && totalCampaignPhases > 0 && (
+					<span className='font-mono text-[8px] text-btn tabular-nums'>
+						{completedCampaignPhases}/{totalCampaignPhases}
+					</span>
+				)}
+				{!isAIMission && phaseCount > 0 && (
 					<span className='font-mono text-[8px] text-btn tabular-nums'>
 						{phaseCount}
 					</span>
@@ -687,11 +761,35 @@ function BriefingPage({ onNewMission }) {
 						<span className='font-mono text-[9px] tracking-widest text-btn/70 uppercase truncate max-w-[150px]'>
 							{activeMission.name}
 						</span>
+
+						{isAIMission && activeMission.operationNarrative && (
+							<span className='w-full font-mono text-[8px] text-lines/30 italic truncate'>
+								{activeMission.operationNarrative}
+							</span>
+						)}
+
 						<div className='w-px h-3 bg-lines/20' />
+
 						<BriefStatChip
 							label='Mode'
-							value={generationMode === "random" ? "RAND" : "OPS"}
+							value={MODE_LABEL[generationMode] ?? generationMode.toUpperCase()}
 						/>
+
+						{/* AI Campaign tag — mobile */}
+						{isAIMission && (
+							<div className='flex items-center gap-1.5 bg-btn/8 border border-btn/25 px-2 py-1 rounded-sm'>
+								<span className='w-1.5 h-1.5 rounded-full bg-btn animate-pulse shrink-0' />
+								<span className='font-mono text-[8px] tracking-widest text-btn uppercase'>
+									AI OPS
+								</span>
+								{totalCampaignPhases > 0 && (
+									<span className='font-mono text-[8px] text-btn/70'>
+										{completedCampaignPhases}/{totalCampaignPhases}
+									</span>
+								)}
+							</div>
+						)}
+
 						{hasBriefing && (
 							<BriefStatChip
 								label='Brief'
@@ -706,12 +804,17 @@ function BriefingPage({ onNewMission }) {
 								live
 							/>
 						)}
-						{phaseCount > 0 && (
+						{(isAIMission ? totalCampaignPhases > 0 : phaseCount > 0) && (
 							<BriefStatChip
 								label='Phases'
-								value={phaseCount}
+								value={
+									isAIMission && totalCampaignPhases > 0 ?
+										`${completedCampaignPhases}/${totalCampaignPhases}`
+									:	phaseCount
+								}
 							/>
 						)}
+
 						<div className='ml-auto'>{ActionButtons}</div>
 					</div>
 
@@ -737,15 +840,40 @@ function BriefingPage({ onNewMission }) {
 			{/* ══ DESKTOP ═════════════════════════════════════════════════════ */}
 			<div className='hidden lg:flex flex-1 min-h-0 overflow-hidden flex-col p-4 gap-3'>
 				<div className='shrink-0 flex items-center gap-3'>
-					<span className='font-mono text-[9px] tracking-widest text-btn/70 uppercase truncate max-w-[200px] shrink-0'>
-						{activeMission.name}
-					</span>
+					<div className='flex flex-col shrink-0 max-w-[200px]'>
+						<span className='font-mono text-[9px] tracking-widest text-btn/70 uppercase truncate'>
+							{activeMission.name}
+						</span>
+						{isAIMission && activeMission.operationNarrative && (
+							<span className='font-mono text-[8px] text-lines/30 italic truncate'>
+								{activeMission.operationNarrative}
+							</span>
+						)}
+					</div>
+
 					<div className='w-px h-3 bg-lines/20 shrink-0' />
+
 					<div className='flex flex-wrap gap-2'>
 						<BriefStatChip
 							label='Mode'
-							value={generationMode === "random" ? "RANDOM" : "OPS"}
+							value={MODE_LABEL[generationMode] ?? generationMode.toUpperCase()}
 						/>
+
+						{/* AI Campaign tag — desktop, single instance */}
+						{isAIMission && (
+							<div className='flex items-center gap-1.5 bg-btn/8 border border-btn/25 px-2 py-1 rounded-sm'>
+								<span className='w-1.5 h-1.5 rounded-full bg-btn shadow-[0_0_4px_rgba(124,170,121,0.45)] shrink-0 animate-pulse' />
+								<span className='font-mono text-[8px] tracking-widest text-btn uppercase'>
+									AI Campaign
+								</span>
+								{totalCampaignPhases > 0 && (
+									<span className='font-mono text-[8px] text-btn/70 tabular-nums'>
+										{completedCampaignPhases}/{totalCampaignPhases}
+									</span>
+								)}
+							</div>
+						)}
+
 						{hasBriefing && (
 							<BriefStatChip
 								label='Brief'
@@ -774,13 +902,18 @@ function BriefingPage({ onNewMission }) {
 								live
 							/>
 						)}
-						{phaseCount > 0 && (
+						{(isAIMission ? totalCampaignPhases > 0 : phaseCount > 0) && (
 							<BriefStatChip
 								label='Phases'
-								value={phaseCount}
+								value={
+									isAIMission && totalCampaignPhases > 0 ?
+										`${completedCampaignPhases}/${totalCampaignPhases}`
+									:	phaseCount
+								}
 							/>
 						)}
 					</div>
+
 					<div className='flex-1 h-px bg-gradient-to-r from-lines/10 to-transparent' />
 					{ActionButtons}
 					<span className='font-mono text-[8px] tracking-[0.28em] text-lines/20 uppercase'>
@@ -789,7 +922,6 @@ function BriefingPage({ onNewMission }) {
 				</div>
 
 				<div className='grid grid-cols-[420px_1fr] gap-3 flex-1 min-h-0 overflow-hidden'>
-					{/* Left column — generator */}
 					<Panel
 						title='Ghost Operations AI'
 						badge='GEN-SYS'
@@ -797,9 +929,12 @@ function BriefingPage({ onNewMission }) {
 						bodyClass='p-3'>
 						<MissionGenerator {...mgProps} />
 					</Panel>
-					{/* Right column — map */}
 					<Panel
-						title={activeMission?.province ?? "Tactical Map"}
+						title={
+							isAIMission && activeCampaignPhase ?
+								`${activeMission?.province ?? "Tactical Map"} — ${activeCampaignPhase.label}`
+							:	(activeMission?.province ?? "Tactical Map")
+						}
 						badge='AO-LIVE'
 						badgeGreen
 						className='h-full'
@@ -813,7 +948,6 @@ function BriefingPage({ onNewMission }) {
 		</>
 	);
 }
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // OPERATORS PAGE — unchanged
 // ═══════════════════════════════════════════════════════════════════════════════

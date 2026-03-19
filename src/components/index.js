@@ -24,6 +24,7 @@ import SquadSelect from "./SquadSelect";
 import AARSheet from "./AARSheet";
 import PhaseList from "./PhaseList";
 import PhaseReportSheet from "./PhaseReportSheet";
+import CampaignView from "./CampaignView";
 
 export {
 	Header,
@@ -52,4 +53,5 @@ export {
 	AARSheet,
 	PhaseList,
 	PhaseReportSheet,
+	CampaignView,
 };

@@ -36,13 +36,8 @@ const useMissionsStore = create((set, get) => ({
 		}
 	},
 
-	setActiveMission: (mission) => {
-		set({ activeMission: mission });
-	},
-
-	clearActiveMission: () => {
-		set({ activeMission: null });
-	},
+	setActiveMission: (mission) => set({ activeMission: mission }),
+	clearActiveMission: () => set({ activeMission: null }),
 
 	createMission: async (name) => {
 		try {
@@ -60,7 +55,7 @@ const useMissionsStore = create((set, get) => ({
 		}
 	},
 
-	// Generic field patch — used by all convenience helpers below
+	// Generic field patch — used by all helpers below
 	updateMission: async (missionId, patch) => {
 		if (!missionId) return;
 		try {
@@ -107,43 +102,91 @@ const useMissionsStore = create((set, get) => ({
 		await get().updateMission(missionId, { notes });
 	},
 
-	// Called when MissionGenerator produces output — saves generator data,
-	// province, biome, missionType, all points, and briefing in one write.
+	// Standard random/ops mission generator save
 	saveMissionGenerator: async (missionId, generator, province, biome) => {
 		await get().updateMission(missionId, { generator, province, biome });
 	},
 
-	// Called separately when briefing text needs updating
 	saveMissionBriefing: async (missionId, briefingText) => {
 		await get().updateMission(missionId, { briefingText });
 	},
 
+	// ── AI mission generator save ─────────────────────────────────────────────
+	// Called when AIMissionGenerator produces output.
+	// Saves everything in one write: standard generator fields + AI campaign fields.
+	//
+	// payload shape from AIMissionGenerator.onGenerateAI():
+	//   operationName, narrative, opType, aiGenerated, campaignPhases,
+	//   selectedProvince, biome, bounds, imgURL, missionType,
+	//   briefing, infilPoint, exfilPoint, rallyPoint, infilMethod, exfilMethod, approachVector
+
+	saveMissionGeneratorAI: async (missionId, payload) => {
+		if (!missionId) return;
+
+		const patch = {
+			// Standard fields — same as saveMissionGenerator
+			province: payload.selectedProvince,
+			biome: payload.biome,
+			briefingText: payload.briefing,
+
+			// Generator sub-doc — first phase drives the top-level generator
+			generator: {
+				generationMode: "ai",
+				selectedLocations: payload.randomSelection ?? [],
+				mapBounds: payload.bounds,
+				imgURL: payload.imgURL,
+				missionType: payload.missionType,
+				infilPoint: payload.infilPoint,
+				exfilPoint: payload.exfilPoint,
+				rallyPoint: payload.rallyPoint,
+				infilMethod: payload.infilMethod,
+				exfilMethod: payload.exfilMethod,
+				approachVector: payload.approachVector,
+			},
+
+			// AI campaign fields
+			aiGenerated: true,
+			opType: payload.opType,
+			operationNarrative: payload.narrative,
+			campaignPhases: payload.campaignPhases,
+		};
+
+		await get().updateMission(missionId, patch);
+	},
+
 	// ─── Phase reports ─────────────────────────────────────────────────────────
 
-	// Append a completed phase debrief — called from PhaseReportSheet onSave()
-	// payload: phase object from PhaseReportSheet
 	addPhase: async (missionId, payload) => {
 		if (!missionId) return;
 		try {
-			const { phase } = await MissionsApi.addPhase(missionId, payload);
+			const result = await MissionsApi.addPhase(missionId, payload);
+			const { phase, campaignPhases, missionStatus } = result;
 
 			set((state) => {
-				const updatedMission =
+				const updatedActiveMission =
 					state.activeMission?._id === missionId ?
 						{
 							...state.activeMission,
 							phases: [...(state.activeMission.phases ?? []), phase],
+							// Update campaign phases unlock state if returned from server
+							...(campaignPhases ? { campaignPhases } : {}),
+							// Update mission status if final phase was completed
+							...(missionStatus ? { status: missionStatus } : {}),
 						}
 					:	state.activeMission;
 
 				const updatedMissions = state.missions.map((m) =>
 					m._id === missionId ?
-						{ ...m, phases: [...(m.phases ?? []), phase] }
+						{
+							...m,
+							phases: [...(m.phases ?? []), phase],
+							...(missionStatus ? { status: missionStatus } : {}),
+						}
 					:	m,
 				);
 
 				return {
-					activeMission: updatedMission,
+					activeMission: updatedActiveMission,
 					missions: updatedMissions,
 				};
 			});
@@ -165,7 +208,6 @@ const useMissionsStore = create((set, get) => ({
 			set((state) => {
 				const filter = (phases) =>
 					(phases ?? []).filter((p) => p._id !== phaseId);
-
 				return {
 					activeMission:
 						state.activeMission?._id === missionId ?
@@ -189,7 +231,6 @@ const useMissionsStore = create((set, get) => ({
 
 	// ─── AAR ───────────────────────────────────────────────────────────────────
 
-	// Save generated AAR text to the operation
 	saveAAR: async (missionId, aarText) => {
 		if (!missionId) return;
 		try {
