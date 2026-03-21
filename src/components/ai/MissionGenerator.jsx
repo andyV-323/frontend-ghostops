@@ -214,6 +214,7 @@ export default function MissionGenerator({
 	setImgURL,
 	generationMode,
 	setGenerationMode,
+	operationName = "",
 	priorPhases = [],
 }) {
 	const [selectedProvince, setSelectedProvince] = useState("");
@@ -283,7 +284,7 @@ export default function MissionGenerator({
 			});
 
 			const briefing = generateBriefing({
-				operationName: "",
+				operationName,
 				province: selectedProvince,
 				biome: pd.biome,
 				missionType,
@@ -513,11 +514,12 @@ export default function MissionGenerator({
 MissionGenerator.propTypes = {
 	onGenerateRandomOps: PropTypes.func.isRequired,
 	onGenerateOps: PropTypes.func.isRequired,
-	onGenerateAI: PropTypes.func.isRequired, // ← new
+	onGenerateAI: PropTypes.func.isRequired,
 	setMapBounds: PropTypes.func.isRequired,
 	setImgURL: PropTypes.func.isRequired,
 	generationMode: PropTypes.string.isRequired,
 	setGenerationMode: PropTypes.func.isRequired,
+	operationName: PropTypes.string,
 	priorPhases: PropTypes.array,
 };
 

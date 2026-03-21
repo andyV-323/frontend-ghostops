@@ -208,16 +208,22 @@ function OpTypeSelector({ value, onChange }) {
 	);
 }
 
-// ── Phase location row — location only, province locked at top level ──────────
+// ── Phase row — per-phase province + location ─────────────────────────────────
 
 function PhaseLocationRow({
 	phaseIndex,
+	province,
 	location,
-	onChange,
+	onProvinceChange,
+	onLocationChange,
 	onRemove,
 	isFinal,
-	provinceLocations,
+	allProvinceKeys,
 }) {
+	const provinceLocations = province ?
+		(PROVINCES[province]?.locations ?? [])
+	:	[];
+
 	return (
 		<div
 			className={[
@@ -242,24 +248,38 @@ function PhaseLocationRow({
 					</button>
 				)}
 			</div>
+			{/* Province */}
 			<div className='relative'>
 				<select
-					value={location}
-					onChange={(e) => onChange(e.target.value)}
+					value={province}
+					onChange={(e) => onProvinceChange(e.target.value)}
 					className='w-full appearance-none bg-blk/60 border border-lines/20 hover:border-lines/40 focus:border-btn/50 focus:outline-none rounded-sm px-2.5 py-1.5 font-mono text-[10px] text-fontz/70 cursor-pointer transition-colors'>
-					<option value=''>— Location —</option>
-					{provinceLocations.map((loc) => (
-						<option
-							key={loc.name}
-							value={loc.name}>
-							{loc.name}
-						</option>
+					<option value=''>— Province —</option>
+					{allProvinceKeys.map((p) => (
+						<option key={p} value={p}>{p}</option>
 					))}
 				</select>
 				<div className='absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none'>
 					<div className='w-0 h-0 border-l-[3px] border-r-[3px] border-t-[4px] border-l-transparent border-r-transparent border-t-lines/25' />
 				</div>
 			</div>
+			{/* Location — only shown once province is chosen */}
+			{province && (
+				<div className='relative'>
+					<select
+						value={location}
+						onChange={(e) => onLocationChange(e.target.value)}
+						className='w-full appearance-none bg-blk/60 border border-lines/20 hover:border-lines/40 focus:border-btn/50 focus:outline-none rounded-sm px-2.5 py-1.5 font-mono text-[10px] text-fontz/70 cursor-pointer transition-colors'>
+						<option value=''>— Location —</option>
+						{provinceLocations.map((loc) => (
+							<option key={loc.name} value={loc.name}>{loc.name}</option>
+						))}
+					</select>
+					<div className='absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none'>
+						<div className='w-0 h-0 border-l-[3px] border-r-[3px] border-t-[4px] border-l-transparent border-r-transparent border-t-lines/25' />
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
@@ -273,36 +293,25 @@ export default function AIMissionGenerator({
 	setMapBounds,
 	setImgURL,
 }) {
-	// ── State — all at top level ──────────────────────────────────────────────
+	// ── State ─────────────────────────────────────────────────────────────────
 	const [aiSubMode, setAiSubMode] = useState("ai-random");
-	const [selectedProvince, setSelectedProvince] = useState("");
 	const [opType, setOpType] = useState("");
 	const [context, setContext] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [missionPhases, setMissionPhases] = useState([
-		{ location: "" },
-		{ location: "" },
+		{ province: "", location: "" },
+		{ province: "", location: "" },
 	]);
 
 	// ── Derived ───────────────────────────────────────────────────────────────
-	const provinceKeys = Object.keys(PROVINCES_AI_CONTEXT);
-
-	// Full location objects for province — used in phase row dropdowns
-	const provinceLocations =
-		selectedProvince ? (PROVINCES[selectedProvince]?.locations ?? []) : [];
-
-	// ── Province change — reset phases ───────────────────────────────────────
-	const handleProvinceChange = (province) => {
-		setSelectedProvince(province);
-		setMissionPhases([{ location: "" }, { location: "" }]);
-	};
+	const allProvinceKeys = Object.keys(PROVINCES_AI_CONTEXT);
 
 	// ── Phase helpers ─────────────────────────────────────────────────────────
 	const addPhase = () => {
 		setMissionPhases((prev) => {
 			const withoutFinal = prev.slice(0, -1);
 			const final = prev[prev.length - 1];
-			return [...withoutFinal, { location: "" }, final];
+			return [...withoutFinal, { province: "", location: "" }, final];
 		});
 	};
 
@@ -310,30 +319,36 @@ export default function AIMissionGenerator({
 		setMissionPhases((prev) => prev.filter((_, i) => i !== index));
 	};
 
-	const updatePhaseLocation = (index, location) => {
+	const updatePhase = (index, field, value) => {
 		setMissionPhases((prev) =>
-			prev.map((p, i) => (i === index ? { location } : p)),
+			prev.map((p, i) => {
+				if (i !== index) return p;
+				// Reset location when province changes
+				if (field === "province") return { province: value, location: "" };
+				return { ...p, [field]: value };
+			}),
 		);
 	};
 
 	// ── Validation ────────────────────────────────────────────────────────────
 	const canGenerate = () => {
-		if (!opType || !selectedProvince) return false;
+		if (!opType) return false;
 		if (aiSubMode === "ai-mission") {
-			return missionPhases.every((p) => p.location);
+			return missionPhases.every((p) => p.province && p.location);
 		}
 		return true;
 	};
 
-	// ── Province context for Groq — single province, lean format ─────────────
-	const buildProvinceContext = (provinceKey) => {
-		const data = PROVINCES_AI_CONTEXT[provinceKey];
-		if (!data) return "";
-		const locs = data.locations
-			.map((l) => `  - ${l.name}: ${l.desc}`)
-			.join("\n");
-		return `${provinceKey} (${data.biome}):\n${locs}`;
-	};
+	// ── Full province context for Groq — all provinces, lean format ───────────
+	const buildAllProvincesContext = () =>
+		Object.entries(PROVINCES_AI_CONTEXT)
+			.map(([key, data]) => {
+				const locs = data.locations
+					.map((l) => `  - ${l.name}: ${l.desc}`)
+					.join("\n");
+				return `${key} (${data.biome}):\n${locs}`;
+			})
+			.join("\n\n");
 
 	// ── Process Groq phases → full payloads ───────────────────────────────────
 	const processCampaignPhases = (campaignJSON) => {
@@ -372,6 +387,9 @@ export default function AIMissionGenerator({
 				locations: [locationObj],
 				generator: points,
 				priorPhases: [],
+				timeOfDay: phase.timeOfDay ?? null,
+				threatLevel: phase.threatLevel ?? null,
+				enemyForce: phase.enemyForce ?? null,
 			});
 
 			return {
@@ -381,6 +399,9 @@ export default function AIMissionGenerator({
 				minibrief: phase.minibrief,
 				isFinal: phase.isFinal ?? false,
 				intelGate: phase.intelGate ?? null,
+				timeOfDay: phase.timeOfDay ?? null,
+				threatLevel: phase.threatLevel ?? null,
+				enemyForce: phase.enemyForce ?? null,
 				province: provinceKey,
 				biome: pd.biome,
 				missionTypeId: phase.missionTypeId,
@@ -403,22 +424,21 @@ export default function AIMissionGenerator({
 	const handleGenerate = async () => {
 		if (!canGenerate()) {
 			if (!opType) toast.warn("Select an operation type.");
-			else if (!selectedProvince) toast.warn("Select a province.");
-			else toast.warn("All phases need a location.");
+			else toast.warn("All phases need a province and location.");
 			return;
 		}
 
 		setLoading(true);
 
 		try {
-			const provinceContext = buildProvinceContext(selectedProvince);
+			const provinceContext = buildAllProvincesContext();
 			const opTypeDef = OPERATION_TYPES.find((o) => o.id === opType);
 
 			const playerPhases =
 				aiSubMode === "ai-mission" ?
 					missionPhases.map((p, i) => ({
 						phaseNumber: i + 1,
-						province: selectedProvince,
+						province: p.province,
 						location: p.location,
 						isFinal: i === missionPhases.length - 1,
 					}))
@@ -519,21 +539,6 @@ export default function AIMissionGenerator({
 					onChange={setOpType}
 				/>
 
-				{/* Province — both modes */}
-				<HudSelect
-					label='Province'
-					value={selectedProvince}
-					onChange={(e) => handleProvinceChange(e.target.value)}>
-					<option value=''>— Select Province —</option>
-					{provinceKeys.map((p) => (
-						<option
-							key={p}
-							value={p}>
-							{p}
-						</option>
-					))}
-				</HudSelect>
-
 				{/* Context — both modes */}
 				<div className='flex flex-col gap-1'>
 					<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
@@ -556,27 +561,21 @@ export default function AIMissionGenerator({
 				</div>
 
 				{/* AI Random — info blurb */}
-				{aiSubMode === "ai-random" && opType && selectedProvince && (
+				{aiSubMode === "ai-random" && opType && (
 					<div className='flex items-start gap-2 p-2.5 border border-btn/15 rounded-sm bg-btn/5'>
 						<FontAwesomeIcon
 							icon={faBrain}
 							className='text-btn/50 text-[10px] mt-0.5 shrink-0'
 						/>
 						<span className='font-mono text-[9px] text-lines/40 leading-relaxed'>
-							AI will select locations and phase sequence from{" "}
-							{selectedProvince}. Add context above to seed the narrative.
+							AI will select locations and phases freely across all of Auroa. Add
+							context above to seed the narrative.
 						</span>
 					</div>
 				)}
 
 				{/* AI Mission — phase location pickers */}
-				{aiSubMode === "ai-mission" && !selectedProvince && (
-					<span className='font-mono text-[9px] text-lines/25 italic'>
-						Select a province to configure phase locations.
-					</span>
-				)}
-
-				{aiSubMode === "ai-mission" && selectedProvince && (
+				{aiSubMode === "ai-mission" && (
 					<div className='flex flex-col gap-2'>
 						<div className='flex items-center justify-between'>
 							<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
@@ -602,17 +601,19 @@ export default function AIMissionGenerator({
 								<PhaseLocationRow
 									key={index}
 									phaseIndex={index}
+									province={phase.province}
 									location={phase.location}
-									onChange={(loc) => updatePhaseLocation(index, loc)}
+									onProvinceChange={(p) => updatePhase(index, "province", p)}
+									onLocationChange={(loc) => updatePhase(index, "location", loc)}
 									onRemove={() => removePhase(index)}
 									isFinal={index === missionPhases.length - 1}
-									provinceLocations={provinceLocations}
+									allProvinceKeys={allProvinceKeys}
 								/>
 							))}
 						</div>
 						<span className='font-mono text-[8px] text-lines/25 italic'>
 							AI builds the narrative and assigns mission types around your
-							locations.
+							locations across all of Auroa.
 						</span>
 					</div>
 				)}
@@ -666,9 +667,11 @@ OpTypeSelector.propTypes = {
 
 PhaseLocationRow.propTypes = {
 	phaseIndex: PropTypes.number.isRequired,
+	province: PropTypes.string.isRequired,
 	location: PropTypes.string.isRequired,
-	onChange: PropTypes.func.isRequired,
+	onProvinceChange: PropTypes.func.isRequired,
+	onLocationChange: PropTypes.func.isRequired,
 	onRemove: PropTypes.func.isRequired,
 	isFinal: PropTypes.bool,
-	provinceLocations: PropTypes.array.isRequired,
+	allProvinceKeys: PropTypes.array.isRequired,
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faCrosshairs,
@@ -48,6 +48,7 @@ import {
 	ActiveMissionChip,
 } from "@/components/mission";
 
+import { generateBriefing } from "@/utils/BriefingGenerator";
 import iconUrl from "/icons/GhostOpsAI.svg?url";
 import PropTypes from "prop-types";
 
@@ -56,7 +57,7 @@ import PropTypes from "prop-types";
 const NAV = [
 	{ id: "briefing", label: "Ops Room", sub: "SCIF", icon: faCrosshairs },
 	{ id: "operators", label: "Personnel", sub: "Team Room", icon: faUsers },
-	{ id: "vehicles", label: "Motor Pool", sub: "Fleet Assets", icon: faTruck },
+	{ id: "vehicles", label: "Asset Registry", sub: "Organic Assets", icon: faTruck },
 ];
 
 // ─── Normalize stored point → [row, col] array ───────────────────────────────
@@ -246,6 +247,8 @@ const SECTION_COLORS = {
 	"AREA OF OPERATIONS": "text-indigo-400",
 	OBJECTIVES: "text-violet-400",
 	"ENVIRONMENTAL CONDITIONS": "text-teal-400",
+	"ENEMY FORCES": "text-red-300",
+	"TIME OF OPERATION": "text-orange-300",
 };
 
 function getSectionColor(label) {
@@ -460,9 +463,23 @@ function BriefingPage({ onNewMission }) {
 		: [];
 
 	// ── Phase reports (player-filed) ──────────────────────────────────────────
-	const briefingText = activeMission?.briefingText || "";
 	const phases = activeMission?.phases ?? [];
 	const phaseCount = phases.length;
+
+	const briefingText = useMemo(() => {
+		if (isAIMission && activeCampaignPhase) {
+			return generateBriefing({
+				operationName: activeMission.name,
+				province: activeCampaignPhase.province,
+				biome: activeCampaignPhase.biome,
+				missionType: activeCampaignPhase.missionTypeId,
+				locations: [activeCampaignPhase.location],
+				generator: activeCampaignPhase,
+				priorPhases: activeMission?.phases ?? [],
+			});
+		}
+		return activeMission?.briefingText || "";
+	}, [isAIMission, activeCampaignPhase, activeMission]);
 
 	const hasBriefing = !!briefingText;
 	const hasPoints = !!(infilPoint || exfilPoint || rallyPoint);
@@ -584,7 +601,7 @@ function BriefingPage({ onNewMission }) {
 	const openPhaseListSheet = () => {
 		if (isAIMission) {
 			openSheet(
-				"right",
+				"bottom",
 				<CampaignView
 					mission={activeMission}
 					onFileReport={() => {
@@ -649,9 +666,6 @@ function BriefingPage({ onNewMission }) {
 		imgURL,
 		// AI missions render locationSelection (ops mode behavior) for objective markers
 		generationMode: isAIMission ? "ops" : generationMode,
-		infilPoint,
-		exfilPoint,
-		fallbackExfil: rallyPoint,
 	};
 
 	const biome = activeMission?.biome || null;
@@ -1100,8 +1114,8 @@ function VehiclesPage() {
 		<div className='flex-1 overflow-y-auto'>
 			<div className='p-3 sm:p-4'>
 				<Panel
-					title='Motor Pool — Vehicle Registry'
-					badge='FLEET'
+					title='Asset Registry — Organic Assets'
+					badge='S4-LOG'
 					className='min-h-[500px]'>
 					<Garage
 						dataUpdated={dataUpdated}

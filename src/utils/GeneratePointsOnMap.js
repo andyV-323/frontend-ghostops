@@ -206,15 +206,26 @@ function placeInfilPoint({ infilMethod, terrain, objectives, rng }) {
 	const isBoat = infilMethod === "Boat / water insertion";
 	const isVehicle = infilMethod === "Ground vehicle";
 
-	// Boat: must land inside a valid coastZone
+	// Boat: must land inside a valid coastZone — return { point, zoneName }
 	if (isBoat && terrain.hasCoast && terrain.coastZones?.length) {
 		const zones = terrain.coastZones;
+		let bestPt = null;
+		let bestZone = null;
+		let bestMinDist = -1;
 		for (let i = 0; i < MAX_PLACEMENT_TRIES; i++) {
 			const zone = zones[Math.floor(rng() * zones.length)];
 			const pt = randInRect(zone.bounds, rng);
 			if (objectives.every((obj) => dist(pt, obj) >= MIN_INFIL_FROM_OBJ))
-				return pt;
+				return { point: pt, zoneName: zone.label ?? zone.side };
+			const minD = Math.min(...objectives.map((obj) => dist(pt, obj)));
+			if (minD > bestMinDist) {
+				bestMinDist = minD;
+				bestPt = pt;
+				bestZone = zone;
+			}
 		}
+		if (bestPt)
+			return { point: bestPt, zoneName: bestZone?.label ?? bestZone?.side };
 	}
 
 	// Vehicle: near map edge, roads exist
@@ -244,12 +255,12 @@ function placeInfilPoint({ infilMethod, terrain, objectives, rng }) {
 					MAP_BOUNDS.colMax - rng() * 60,
 				);
 			if (objectives.every((obj) => dist(pt, obj) >= MIN_INFIL_FROM_OBJ))
-				return pt;
+				return { point: pt, zoneName: null };
 		}
 	}
 
 	// HALO/foot/helo: random map point with distance constraint
-	return randMapPoint(MIN_INFIL_FROM_OBJ, objectives, rng);
+	return { point: randMapPoint(MIN_INFIL_FROM_OBJ, objectives, rng), zoneName: null };
 }
 
 // ─── Exfil point placement ────────────────────────────────────────────────────
@@ -274,8 +285,10 @@ function placeExfilPoint({
 	const isBoat = exfilMethod === "Boat / water insertion";
 
 	if (isBoat && terrain.hasCoast && terrain.coastZones?.length) {
-		// For boat exfil, try to find a coast zone on the far side of the objectives
 		const zones = terrain.coastZones;
+		let bestPt = null;
+		let bestZone = null;
+		let bestScore = -1;
 		for (let i = 0; i < MAX_PLACEMENT_TRIES; i++) {
 			const zone = zones[Math.floor(rng() * zones.length)];
 			const pt = randInRect(zone.bounds, rng);
@@ -283,15 +296,26 @@ function placeExfilPoint({
 			const farFromObjs = objectives.every(
 				(obj) => dist(pt, obj) >= MIN_EXFIL_FROM_OBJ,
 			);
-			if (farFromInfil && farFromObjs) return pt;
+			if (farFromInfil && farFromObjs)
+				return { point: pt, zoneName: zone.label ?? zone.side };
+			const score =
+				dist(pt, infilPoint) +
+				Math.min(...objectives.map((obj) => dist(pt, obj)));
+			if (score > bestScore) {
+				bestScore = score;
+				bestPt = pt;
+				bestZone = zone;
+			}
 		}
+		if (bestPt)
+			return { point: bestPt, zoneName: bestZone?.label ?? bestZone?.side };
 	}
 
 	// Default: project past centroid with random distance variance
 	for (let i = 0; i < MAX_PLACEMENT_TRIES; i++) {
-		const projection = 150 + rng() * 200; // 150–350 units past centroid
-		const lateralOff = (rng() - 0.5) * 120; // small lateral scatter
-		const perpR = -normC; // perpendicular
+		const projection = 150 + rng() * 200;
+		const lateralOff = (rng() - 0.5) * 120;
+		const perpR = -normC;
 		const perpC = normR;
 		const row = objCentroid[0] + normR * projection + perpR * lateralOff;
 		const col = objCentroid[1] + normC * projection + perpC * lateralOff;
@@ -300,11 +324,10 @@ function placeExfilPoint({
 		const farFromObjs = objectives.every(
 			(obj) => dist(pt, obj) >= MIN_EXFIL_FROM_OBJ,
 		);
-		if (farFromInfil && farFromObjs) return pt;
+		if (farFromInfil && farFromObjs) return { point: pt, zoneName: null };
 	}
 
-	// Last resort fallback
-	return randMapPoint(MIN_EXFIL_FROM_OBJ, objectives, rng);
+	return { point: randMapPoint(MIN_EXFIL_FROM_OBJ, objectives, rng), zoneName: null };
 }
 
 // ─── Rally point placement ────────────────────────────────────────────────────
@@ -416,21 +439,25 @@ export function GeneratePointsOnMap({
 	});
 
 	// ── Step 2: Place infil ───────────────────────────────────────────────────
-	const infilPoint = placeInfilPoint({
+	const infilResult = placeInfilPoint({
 		infilMethod,
 		terrain,
 		objectives: objCoords,
 		rng,
 	});
+	const infilPoint = infilResult.point;
+	const infilZoneName = infilResult.zoneName;
 
 	// ── Step 3: Place exfil ───────────────────────────────────────────────────
-	const exfilPoint = placeExfilPoint({
+	const exfilResult = placeExfilPoint({
 		exfilMethod,
 		infilPoint,
 		terrain,
 		objectives: objCoords,
 		rng,
 	});
+	const exfilPoint = exfilResult.point;
+	const exfilZoneName = exfilResult.zoneName;
 
 	// ── Step 4: Place rally ───────────────────────────────────────────────────
 	const rallyPoint = placeRallyPoint({
@@ -450,8 +477,10 @@ export function GeneratePointsOnMap({
 	return {
 		infilPoint,
 		infilMethod,
+		infilZoneName,
 		exfilPoint,
 		exfilMethod,
+		exfilZoneName,
 		rallyPoint,
 		approachVector,
 	};

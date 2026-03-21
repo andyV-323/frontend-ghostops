@@ -55,10 +55,64 @@ function resolveBiome(province, biomeOverride) {
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
-function formatCoords(pt) {
-	if (!pt) return "NOT SET";
-	const arr = Array.isArray(pt) ? pt : [pt.row ?? pt[0], pt.col ?? pt[1]];
-	return `[${Math.round(arr[0])}, ${Math.round(arr[1])}]`;
+// Cardinal direction from point A to point B
+function cardinalDirection(from, to) {
+	if (!from || !to) return "unknown direction";
+	const dR = to[0] - from[0];
+	const dC = to[1] - from[1];
+	const absR = Math.abs(dR);
+	const absC = Math.abs(dC);
+	if (absR > absC * 2) return dR > 0 ? "south" : "north";
+	if (absC > absR * 2) return dC > 0 ? "east" : "west";
+	if (dR > 0) return dC > 0 ? "southeast" : "southwest";
+	return dC > 0 ? "northeast" : "northwest";
+}
+
+function describeInfilPoint(method, zoneName, infilPoint, objCoords) {
+	if (!infilPoint) return "Not designated";
+	if (method === "Boat / water insertion" && zoneName)
+		return `${zoneName} landing zone`;
+	const dir =
+		objCoords?.length ?
+			cardinalDirection(objCoords[0], infilPoint)
+		:	null;
+	const dirText = dir ? `, ${dir} of primary objective` : "";
+	const prefix = {
+		"HALO jump": "DZ Alpha",
+		"LALO parachute": "DZ Bravo",
+		"Helicopter fast rope": "LZ",
+		"Small bird assault insert": "LZ",
+		"Ground vehicle": "Vehicle mount point",
+		"On foot": "Departure point",
+	}[method] ?? "Insertion point";
+	return `${prefix}${dirText}`;
+}
+
+function describeExfilPoint(method, zoneName, exfilPoint, objCoords) {
+	if (!exfilPoint) return "Not designated";
+	if (method === "Boat / water insertion" && zoneName)
+		return `${zoneName} extraction zone`;
+	if (method === "Helicopter extract") {
+		const dir =
+			objCoords?.length ?
+				cardinalDirection(objCoords[0], exfilPoint)
+			:	null;
+		return dir ? `LZ ${dir} of objective` : "LZ";
+	}
+	const dir =
+		objCoords?.length ?
+			cardinalDirection(objCoords[0], exfilPoint)
+		:	null;
+	return dir ? `Extraction point ${dir} of objective` : "Extraction point";
+}
+
+function describeRallyPoint(infilPoint, rallyPoint, objCoords) {
+	if (!rallyPoint) return "Not designated";
+	const dir =
+		objCoords?.length ?
+			cardinalDirection(objCoords[0], rallyPoint)
+		:	null;
+	return dir ? `RP-1, ${dir} of objective` : "RP-1";
 }
 
 function formatTempRange(tempRange) {
@@ -279,6 +333,64 @@ function buildIntelStatus(priorPhases, provinceKey) {
 	return lines.join(" ");
 }
 
+// ─── Time of operation ────────────────────────────────────────────────────────
+
+function buildTimeOfOperation(timeOfDay, missionCategory) {
+	if (timeOfDay) {
+		const descriptions = {
+			night:
+				"Night operation. NVG mandatory. Ambient light minimal — civilian activity suppressed. Sentinel drone optical sensors degraded; thermal remains active. Element moves under darkness.",
+			dawn:
+				"Dawn insertion window. Low ambient light transitioning to day. Limited thermal advantage — transition period increases detection risk. Element must be on objective before full sunrise.",
+			dusk:
+				"Dusk window. Fading light provides partial concealment during infil. Enemy shift changes expected at last light — exploit the transition. Element must complete actions on objective before dark.",
+			day:
+				"Daylight operation. Full enemy sensor capability active. Drone overwatch at maximum effectiveness. Element relies on terrain masking and cover — no concealment advantage from darkness.",
+		};
+		return descriptions[timeOfDay] ?? `Time of operation: ${timeOfDay}.`;
+	}
+	// Fallback based on mission category
+	if (missionCategory === "Special Reconnaissance")
+		return "Night operation. NVG mandatory. Element operates under darkness to avoid sensor detection.";
+	if (missionCategory === "Counterterrorism")
+		return "Night operation preferred. Speed and surprise are decisive — move before enemy can establish a defensive posture.";
+	return "Time of operation at element discretion based on conditions on the ground.";
+}
+
+// ─── Enemy forces ─────────────────────────────────────────────────────────────
+
+function buildEnemyForces(enemyForce, threatLevel, missionCategory) {
+	const threatLabels = {
+		low: "LOW — limited enemy presence, minimal QRF threat",
+		medium: "MEDIUM — active patrols, QRF within 10 minutes",
+		high: "HIGH — fortified position, QRF on standby, drone overwatch probable",
+		critical:
+			"CRITICAL — reinforced enemy element, autonomous systems active, QRF pre-positioned",
+	};
+	const threat =
+		threatLevel ? (threatLabels[threatLevel] ?? threatLevel.toUpperCase()) : (
+			"UNKNOWN — no prior ISR coverage"
+		);
+
+	const force =
+		enemyForce ??
+		{
+			"Direct Action":
+				"Wolves security element of unknown strength. Expect armed personnel, possible vehicle support.",
+			"Special Reconnaissance":
+				"Enemy presence unknown — element must develop the intelligence picture during the collection window.",
+			Counterterrorism:
+				"Sentinel security or Wolves detachment. HVT likely has close protection detail.",
+			Overwatch:
+				"Enemy patrol activity in the AO. Exact disposition unknown — element establishes eyes-on from overwatch position.",
+			Support:
+				"Route security threat from roving Wolves vehicle patrols.",
+		}[missionCategory] ??
+		"Enemy disposition unknown. Treat all contacts as hostile.";
+
+	return `Threat level: ${threat}. ${force}`;
+}
+
 // ─── ROE ─────────────────────────────────────────────────────────────────────
 
 function buildROE(category) {
@@ -406,6 +518,9 @@ export function generateBriefing({
 	locations = [],
 	generator = {},
 	priorPhases = [],
+	timeOfDay = null,
+	threatLevel = null,
+	enemyForce = null,
 }) {
 	// ── Resolve config ────────────────────────────────────────────────────────
 	const missionDef = getMissionDef(missionType);
@@ -428,26 +543,47 @@ export function generateBriefing({
 	const intel = buildIntelStatus(priorPhases, province);
 	const roe = buildROE(missionCategory);
 	const cmdIntent = buildCommandersIntent(
-		operationName ?? "UNKNOWN",
+		operationName || "CLASSIFIED",
 		locations,
 		missionDef,
 		provinceLabel,
 	);
 	const objectives = buildObjectivesBlock(locations);
+	const timeOfOp = buildTimeOfOperation(timeOfDay, missionCategory);
+	const enemyForces = buildEnemyForces(enemyForce, threatLevel, missionCategory);
 
 	// ── Generator data ────────────────────────────────────────────────────────
-	const infilPoint = formatCoords(generator.infilPoint);
-	const exfilPoint = formatCoords(generator.exfilPoint);
-	const rallyPoint = formatCoords(generator.rallyPoint);
 	const infilMethod = generator.infilMethod ?? "Not specified";
 	const exfilMethod = generator.exfilMethod ?? "Not specified";
 	const approachVec = generator.approachVector ?? "Not specified";
+
+	const objCoords = locations
+		.map((l) => l.coordinates)
+		.filter(Boolean);
+
+	const infilDesc = describeInfilPoint(
+		infilMethod,
+		generator.infilZoneName ?? null,
+		generator.infilPoint,
+		objCoords,
+	);
+	const exfilDesc = describeExfilPoint(
+		exfilMethod,
+		generator.exfilZoneName ?? null,
+		generator.exfilPoint,
+		objCoords,
+	);
+	const rallyDesc = describeRallyPoint(
+		generator.infilPoint,
+		generator.rallyPoint,
+		objCoords,
+	);
 
 	// ── Assemble document ─────────────────────────────────────────────────────
 	const lines = [
 		`// ${stamp} //`,
 		"",
-		`OPERATION: ${operationName}`,
+		`OPERATION: ${operationName || "CLASSIFIED"}`,
 		`DTG: ${dtg}`,
 		`AO: ${provinceLabel} — ${resolvedBiome}`,
 		`MISSION TYPE: ${missionLabel}`,
@@ -458,11 +594,15 @@ export function generateBriefing({
 		"",
 		`OBJECTIVES:\n${objectives}`,
 		"",
-		`INFILTRATION: Method — ${infilMethod}. ${approachVec} Infil point: ${infilPoint}.`,
+		`ENEMY FORCES: ${enemyForces}`,
 		"",
-		`EXFILTRATION: Method — ${exfilMethod}. Exfil point: ${exfilPoint}.`,
+		`TIME OF OPERATION: ${timeOfOp}`,
 		"",
-		`RALLY POINT: ${rallyPoint}. Element consolidates at rally prior to objective approach and post-exfil if compromised.`,
+		`INFILTRATION: Method — ${infilMethod}. ${approachVec} Insertion: ${infilDesc}.`,
+		"",
+		`EXFILTRATION: Method — ${exfilMethod}. Extraction: ${exfilDesc}.`,
+		"",
+		`RALLY POINT: ${rallyDesc}. Element consolidates at rally prior to objective approach and post-exfil if compromised.`,
 		"",
 		`ENVIRONMENTAL CONDITIONS: ${enviro}`,
 		"",

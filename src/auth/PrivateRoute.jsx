@@ -6,6 +6,9 @@ import { PropTypes } from "prop-types";
 const PrivateRoute = ({ children }) => {
 	const auth = useAuth();
 
+	// Don't redirect during silent token renewal — isAuthenticated briefly flickers false
+	if (auth.isLoading) return null;
+
 	if (!auth.isAuthenticated) {
 		return (
 			<Navigate

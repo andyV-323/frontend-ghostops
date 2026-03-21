@@ -431,23 +431,23 @@ ${playerPhases
 	.join("\n")}
 
 Assign an appropriate missionTypeId from the list above to each phase based on its role in the narrative. The final phase missionTypeId must be one of: ${opTypeDef.finalPhaseTypes.join(", ")}.`
-		:	`Choose ${opTypeDef.finalPhaseTypes.length > 1 ? "one of" : ""} [${opTypeDef.finalPhaseTypes.join(", ")}] as the final phase mission type. Build 2–4 build-up phases before it using types from [${opTypeDef.buildupPhaseTypes.join(", ")}]. Choose provinces and locations that make narrative sense — build-up phases should feel like they lead logically to the final phase.`;
+		:	`Choose ${opTypeDef.finalPhaseTypes.length > 1 ? "one of" : ""} [${opTypeDef.finalPhaseTypes.join(", ")}] as the final phase mission type. Build 2–4 build-up phases before it using types from [${opTypeDef.buildupPhaseTypes.join(", ")}]. REQUIRED: spread phases across at least 2–3 DIFFERENT provinces — do not concentrate all phases in one province. Choose provinces and locations that make narrative sense — build-up phases in one region should logically connect to the final phase in another.`;
 
 	// ── System prompt ─────────────────────────────────────────────────────────
-	const systemPrompt = `You are a Ghost Recon Breakpoint special operations mission planner generating a classified operation briefing.
+	const systemPrompt = `You are a Ghost Recon Breakpoint special operations mission planner generating a classified operation order.
 
 You MUST return ONLY valid JSON — no preamble, no explanation, no markdown, no code blocks.
 Every province name and location name you use MUST exactly match a name from the provided list.
 Never invent province names or location names.
 
-The operation takes place on Auroa — a technology island controlled by Sentinel Corp and the Wolves faction. Players are Ghost operatives conducting covert and direct action missions. Write narrative in military style — terse, operational, no-nonsense.`;
+The operation takes place on Auroa — a remote technology island seized by Sentinel Corp and defended by the Wolves, a rogue special forces faction armed with advanced Skell Technology drones, autonomous weapons, and armed vehicles. Ghost operatives operate without official acknowledgment. Write in tight military prose — no filler, no civilian tone.`;
 
 	// ── User prompt ───────────────────────────────────────────────────────────
-	const userPrompt = `Generate a Ghost Recon Breakpoint operation.
+	const userPrompt = `Generate a Ghost Recon Breakpoint classified operation order.
 
 OPERATION TYPE: ${opTypeDef.label} (${opType})
-PLAYER CONTEXT: ${context || "No context provided — generate a compelling scenario."}
-MODE: ${isRandom ? "Full AI generation — choose all provinces and locations." : "Player-defined locations — build narrative around them."}
+PLAYER CONTEXT: ${context || "No additional context — generate a compelling, grounded scenario."}
+MODE: ${isRandom ? "Full AI generation — choose all provinces and locations from the list." : "Player-defined locations — build narrative around the player's chosen sequence."}
 
 AVAILABLE MISSION TYPE IDs (use these exactly):
 ${missionTypeRef}
@@ -459,20 +459,23 @@ ${playerPhaseBlock}
 
 Return this exact JSON structure:
 {
-  "operationName": "Two-word classified name in all caps e.g. IRON COVENANT",
-  "narrative": "2-3 sentence operational backstory. Who is involved, what happened, why this mission matters. Military tone.",
+  "operationName": "Two-word codename in ALL CAPS — sounds classified e.g. IRON COVENANT, PALE EMBER, DEAD RECKONING",
+  "narrative": "3-4 sentences. Name the specific threat actor or asset. Explain why Auroa command issued this tasking. Include one specific detail about Sentinel or Wolves activity that triggered this operation. Military tone — no vague generalities.",
   "opType": "${opType}",
   "phaseCount": <number 3-5>,
   "phases": [
     {
       "phaseIndex": 0,
-      "label": "Short phase name e.g. Cold Canvas",
+      "label": "Short phase codename e.g. Cold Canvas, Iron Vigil, Dead Drop",
       "province": "<exact province key from list>",
       "location": "<exact location name from list>",
       "missionTypeId": "<exact mission type ID from list>",
-      "objective": "One sentence — what the player does in this phase.",
-      "minibrief": "2-3 sentences of immersive narrative flavor for this phase. Reference the specific location. Make it feel real.",
-      "intelGate": "snake_case label for what this phase produces e.g. witness_statement",
+      "timeOfDay": "<one of: night, dawn, day, dusk — SR missions must use night or dawn; DA strikes prefer night or dusk; final phases prefer night>",
+      "threatLevel": "<one of: low, medium, high, critical — build-up phases escalate; final phase is always high or critical>",
+      "enemyForce": "One sentence describing the specific enemy presence at this location — unit type, rough size, and one notable capability e.g. 'Wolves security element of 10-15 personnel with drone overwatch and a roving vehicle patrol.'",
+      "objective": "Two sentences. First: what the player physically does. Second: why this matters to the campaign — what it unlocks or confirms.",
+      "minibrief": "3-4 sentences of tactical flavor. Reference the specific location by name. Describe the environmental or tactical challenge. End with the specific risk or complication the element must manage.",
+      "intelGate": "snake_case label for the intelligence this phase produces e.g. patrol_timing, facility_layout, hvt_confirmed",
       "isFinal": false
     }
   ]
@@ -480,13 +483,16 @@ Return this exact JSON structure:
 
 Rules:
 - phases array length must equal phaseCount
-- Last phase must have isFinal: true
-- All other phases must have isFinal: false  
+- Last phase must have isFinal: true, all others isFinal: false
 - province and location values must match the provided list EXACTLY (case-sensitive)
 - missionTypeId must match a value from the provided list EXACTLY
-- Build-up phases should feel like genuine intelligence-gathering steps
-- The final phase should feel like the payoff — the actual strike, rescue, or capture
-- Each phase objective must connect logically to the next`;
+- timeOfDay must be one of: night, dawn, day, dusk
+- threatLevel must be one of: low, medium, high, critical
+- Build-up phases should feel like genuine ISR or shaping steps that logically lead to the final phase
+- The final phase is the decisive action — make the stakes clear in the minibrief
+- Each phase's intelGate should reference something the next phase actually exploits
+- enemyForce must name a specific unit type (Wolves, Sentinel Security, autonomous drone element, etc.) — never generic
+- In random mode: phases MUST span at least 2 different provinces — never assign all phases the same province`;
 
 	// ── Groq call ─────────────────────────────────────────────────────────────
 	const response = await fetch(GROQ_URL, {
@@ -497,8 +503,8 @@ Rules:
 		},
 		body: JSON.stringify({
 			model: MODEL,
-			max_tokens: 1500,
-			temperature: 0.6,
+			max_tokens: 2400,
+			temperature: 0.72,
 			response_format: { type: "json_object" },
 			messages: [
 				{ role: "system", content: systemPrompt },

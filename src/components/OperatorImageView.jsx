@@ -1,5 +1,5 @@
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
-import { useOperatorsStore, useSquadStore, useTeamsStore } from "@/zustand";
+import { useOperatorsStore, useTeamsStore } from "@/zustand";
 import { useEffect, useMemo } from "react";
 import { WEAPONS, ITEMS, PERKS } from "@/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -16,16 +16,19 @@ const STATUS = {
 	Active: {
 		dot: "bg-green-500 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
 		text: "text-green-400",
+		badge: "text-green-400 border-green-900/50 bg-green-900/20",
 		label: "ACTIVE",
 	},
 	Injured: {
 		dot: "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]",
 		text: "text-amber-400",
+		badge: "text-amber-400 border-amber-900/50 bg-amber-900/20",
 		label: "WIA",
 	},
 	KIA: {
-		dot: "bg-red-500   shadow-[0_0_6px_rgba(239,68,68,0.6)]",
+		dot: "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)]",
 		text: "text-red-400",
+		badge: "text-red-400 border-red-900/50 bg-red-900/20",
 		label: "KIA",
 	},
 };
@@ -34,7 +37,7 @@ const STATUS = {
 function SectionHeader({ label }) {
 	return (
 		<div className='flex items-center gap-3 mb-3'>
-			<div className='w-1 h-3 bg-btn' />
+			<div className='w-1 h-3 bg-btn shrink-0' />
 			<span className='font-mono text-[10px] tracking-[0.22em] text-lines/50 uppercase'>
 				{label}
 			</span>
@@ -43,41 +46,33 @@ function SectionHeader({ label }) {
 	);
 }
 
-/* ─── Info row ───────────────────────────────────────────────── */
-function InfoRow({ label, value }) {
+/* ─── Stat pill ─────────────────────────────────────────────── */
+function StatPill({ label, value }) {
 	if (!value) return null;
 	return (
-		<div className='flex items-baseline gap-2 py-1.5 border-b border-lines/10 last:border-0'>
-			<span className='font-mono text-[9px] tracking-widest text-lines/35 uppercase w-20 shrink-0'>
+		<div className='flex flex-col gap-0.5 bg-blk/40 border border-lines/15 rounded-sm px-3 py-1.5 min-w-0'>
+			<span className='font-mono text-[8px] tracking-[0.2em] text-lines/30 uppercase'>
 				{label}
 			</span>
-			<span className='font-mono text-xs text-fontz/80'>{value}</span>
+			<span className='font-mono text-[11px] text-fontz/90 truncate'>{value}</span>
 		</div>
 	);
 }
 
 /* ─── Gear card ──────────────────────────────────────────────── */
-function GearCard({ imgSrc, name, sub }) {
+function GearCard({ imgSrc, name, invert }) {
 	return (
 		<div className='flex flex-col items-center gap-1.5 bg-blk/50 border border-lines/15 rounded-sm p-2.5 hover:border-lines/30 transition-colors'>
-			{imgSrc ?
-				<img
-					src={imgSrc}
-					alt={name}
-					className='w-10 h-10 object-contain'
-				/>
-			:	<div className='w-10 h-10 border border-lines/15 rounded-sm bg-lines/5 flex items-center justify-center'>
+			{imgSrc ? (
+				<img src={imgSrc} alt={name} className='w-10 h-10 object-contain' style={invert ? { filter: "invert(1) opacity(0.8)" } : undefined} />
+			) : (
+				<div className='w-10 h-10 border border-lines/15 rounded-sm bg-lines/5 flex items-center justify-center'>
 					<span className='font-mono text-[8px] text-lines/20'>N/A</span>
 				</div>
-			}
-			<span className='font-mono text-[9px] text-lines/50 text-center leading-tight'>
+			)}
+			<span className='font-mono text-[8px] text-lines/50 text-center leading-tight truncate w-full'>
 				{name}
 			</span>
-			{sub && (
-				<span className='font-mono text-[8px] text-lines/25 text-center'>
-					{sub}
-				</span>
-			)}
 		</div>
 	);
 }
@@ -91,21 +86,21 @@ const OperatorImageView = ({ operator, openSheet }) => {
 		fetchTeams();
 	}, [fetchTeams]);
 
+	useEffect(() => {
+		if (operator?._id) fetchOperatorById(operator._id);
+	}, [operator?._id, fetchOperatorById]);
+
 	const teamName = useMemo(() => {
 		const team = teams.find((t) =>
 			t.operators?.some((op) => op?._id === operator?._id),
 		);
-		return team ? team.name : "";
+		return team ? team.name : null;
 	}, [teams, operator?._id]);
 
 	const squadName =
 		selectedOperator?.squad?.name ||
 		(typeof selectedOperator?.squad === "string" && selectedOperator.squad) ||
-		"";
-
-	useEffect(() => {
-		if (operator?._id) fetchOperatorById(operator._id);
-	}, [operator?._id, fetchOperatorById]);
+		null;
 
 	if (!selectedOperator) {
 		return (
@@ -120,245 +115,144 @@ const OperatorImageView = ({ operator, openSheet }) => {
 
 	const displayImage =
 		selectedOperator.imageKey || selectedOperator.image || "/ghost/Default.png";
-	const status = STATUS[selectedOperator.status] || STATUS.Active;
-	const hasItems =
-		Array.isArray(selectedOperator.items) && selectedOperator.items.length > 0;
-	const hasPerks =
-		Array.isArray(selectedOperator.perks) && selectedOperator.perks.length > 0;
+	const status = STATUS[selectedOperator.status] ?? STATUS.Active;
+	const isKIA = selectedOperator.status === "KIA";
+	const hasItems = Array.isArray(selectedOperator.items) && selectedOperator.items.length > 0;
+	const hasPerks = Array.isArray(selectedOperator.perks) && selectedOperator.perks.length > 0;
 
 	return (
 		<section className='text-fontz bg-transparent'>
-			{/* ── Dossier header strip ── */}
-			<div className='relative overflow-hidden bg-blk/80 border-b border-lines/20 px-5 py-4'>
-				{/* Classification watermark */}
-				<div className='absolute inset-0 flex items-center justify-center pointer-events-none select-none'>
-					<span className='font-mono text-[9px] tracking-[0.4em] text-lines/5 uppercase rotate-[-20deg] text-nowrap scale-150'>
-						GHOST RECON // CLASSIFIED
+
+			{/* ── Hero — full body image + identity overlay ── */}
+			<div className='relative overflow-hidden bg-blk/80' style={{ maxHeight: 480 }}>
+				{/* Corner brackets */}
+				{["top-3 left-3 border-t border-l", "top-3 right-3 border-t border-r",
+				  "bottom-3 left-3 border-b border-l", "bottom-3 right-3 border-b border-r"].map((cls, i) => (
+					<div key={i} className={`absolute w-5 h-5 border-lines/30 z-20 pointer-events-none ${cls}`} />
+				))}
+
+				{/* Classification stamp */}
+				<div className='absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none'>
+					<span className='font-mono text-[8px] tracking-[0.35em] text-red-500/25 uppercase'>
+						// TOP SECRET //
 					</span>
 				</div>
 
-				<div className='relative flex items-start gap-4'>
-					{/* Avatar */}
-					<div className='relative shrink-0'>
-						<div className='w-16 h-16 rounded-full border-2 border-lines/30 overflow-hidden bg-highlight'>
-							<img
-								src={displayImage}
-								alt={selectedOperator.callSign}
-								className={[
-									"w-full h-full object-cover object-top",
-									selectedOperator.status === "KIA" ?
-										"grayscale opacity-60"
-									:	"",
-								].join(" ")}
-								onError={(e) => {
-									e.currentTarget.src = "/ghost/Default.png";
-								}}
-							/>
-						</div>
-						{/* Status dot */}
-						<span
-							className={[
-								"absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full border-2 border-blk",
-								status.dot,
-							].join(" ")}
-						/>
-					</div>
-
-					{/* Identity block */}
-					<div className='flex-1 min-w-0'>
-						<div className='flex items-start justify-between gap-2'>
-							<div>
-								<h2 className='font-mono text-base font-bold text-fontz tracking-wide truncate'>
-									{selectedOperator.callSign || "Unknown"}
-								</h2>
-								<p className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase mt-0.5'>
-									{selectedOperator.class || "No Class"} ·{" "}
-									{selectedOperator.role || "No Role"}
-								</p>
-							</div>
-							{/* Edit button */}
-							<button
-								onClick={(e) => {
-									e.stopPropagation();
-									openSheet("right", <EditOperatorForm operator={operator} />);
-								}}
-								className='flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-btn hover:text-white border border-btn/30 hover:border-btn/60 bg-btn/5 hover:bg-btn/15 px-2.5 py-1.5 rounded-sm transition-all shrink-0'>
-								<FontAwesomeIcon
-									icon={faUserPen}
-									className='text-[10px]'
-								/>
-								Edit
-							</button>
-						</div>
-
-						{/* Status + team tags */}
-						<div className='flex flex-wrap gap-2 mt-2.5'>
-							<div className='flex items-center gap-1.5'>
-								<span
-									className={["w-1.5 h-1.5 rounded-full", status.dot].join(" ")}
-								/>
-								<span
-									className={[
-										"font-mono text-[9px] tracking-widest uppercase",
-										status.text,
-									].join(" ")}>
-									{status.label}
-								</span>
-							</div>
-							<div className='w-px h-3 bg-lines/20 self-center' />
-							<span className='font-mono text-[9px] tracking-widest text-lines/40 uppercase'>
-								{teamName}
-							</span>
-							<div className='w-px h-3 bg-lines/20 self-center' />
-							<span className='font-mono text-[9px] tracking-widest text-lines/40 uppercase'>
-								{squadName}
-							</span>
-
-							{selectedOperator.support && (
-								<>
-									<div className='w-px h-3 bg-lines/20 self-center' />
-									<span className='font-mono text-[9px] tracking-widest text-blue-400/70 uppercase'>
-										Support
-									</span>
-								</>
-							)}
-							{selectedOperator.aviator && (
-								<>
-									<div className='w-px h-3 bg-lines/20 self-center' />
-									<span className='font-mono text-[9px] tracking-widest text-sky-400/70 uppercase'>
-										Aviator
-									</span>
-								</>
-							)}
-						</div>
-					</div>
-				</div>
-			</div>
-
-			{/* ── Full body image ── */}
-			<div
-				className='relative bg-blk/60 border-b border-lines/15 flex justify-center overflow-hidden'
-				style={{ maxHeight: 520 }}>
-				{/* Vignette */}
-				<div
-					className='absolute inset-0 pointer-events-none z-10'
-					style={{
-						background:
-							"radial-gradient(ellipse at center, transparent 40%, rgba(5,8,4,0.7) 100%)",
-					}}
-				/>
-				{/* Corner brackets */}
-				{[
-					"top-2 left-2 border-t-2 border-l-2",
-					"top-2 right-2 border-t-2 border-r-2",
-					"bottom-2 left-2 border-b-2 border-l-2",
-					"bottom-2 right-2 border-b-2 border-r-2",
-				].map((cls, i) => (
-					<div
-						key={i}
-						className={[
-							"absolute w-4 h-4 border-lines/30 z-20 pointer-events-none",
-							cls,
-						].join(" ")}
-					/>
-				))}
 				<img
 					src={displayImage}
 					alt={selectedOperator.callSign}
 					className={[
-						"max-w-full max-h-[520px] object-contain relative z-0",
-						selectedOperator.status === "KIA" ? "grayscale opacity-50" : "",
+						"w-full object-contain object-top relative z-0",
+						isKIA ? "grayscale opacity-50" : "",
 					].join(" ")}
-					onError={(e) => {
-						e.currentTarget.src = "/ghost/Default.png";
-					}}
+					style={{ maxHeight: 480 }}
+					onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
 				/>
+
+				{/* Gradient overlay — bottom */}
+				<div className='absolute bottom-0 left-0 right-0 z-10'
+					style={{ background: "linear-gradient(to top, rgba(5,10,8,0.97) 0%, rgba(5,10,8,0.6) 40%, transparent 100%)" }}>
+					<div className='px-4 pb-4 pt-8'>
+						{/* Callsign */}
+						<h2 className='font-mono text-xl font-bold text-white tracking-wide truncate leading-none'>
+							{selectedOperator.callSign || "Unknown"}
+						</h2>
+						<p className='font-mono text-[9px] tracking-[0.22em] text-lines/50 uppercase mt-1'>
+							{selectedOperator.class || "No Class"}{selectedOperator.role ? ` · ${selectedOperator.role}` : ""}
+						</p>
+
+						{/* Status + tags row */}
+						<div className='flex flex-wrap items-center gap-2 mt-2.5'>
+							<span className={`inline-flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border ${status.badge}`}>
+								<span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+								{status.label}
+							</span>
+							{teamName && (
+								<span className='font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border text-lines/60 border-lines/20 bg-blk/40'>
+									{teamName}
+								</span>
+							)}
+							{squadName && (
+								<span className='font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border text-lines/60 border-lines/20 bg-blk/40'>
+									{squadName}
+								</span>
+							)}
+							{selectedOperator.support && (
+								<span className='inline-flex items-center gap-1 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border text-blue-400/80 border-blue-800/40 bg-blue-900/20'>
+									<FontAwesomeIcon icon={faShieldHalved} className='text-[7px]' />
+									Enabler
+								</span>
+							)}
+							{selectedOperator.aviator && (
+								<span className='inline-flex items-center gap-1 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border text-sky-400/80 border-sky-800/40 bg-sky-900/20'>
+									<FontAwesomeIcon icon={faStar} className='text-[7px]' />
+									Aviator
+								</span>
+							)}
+						</div>
+					</div>
+				</div>
+
+				{/* Edit button — top right */}
+				<button
+					onClick={(e) => {
+						e.stopPropagation();
+						openSheet("right", <EditOperatorForm operator={operator} />);
+					}}
+					className='absolute top-3 right-10 z-30 flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-btn border border-btn/30 hover:border-btn/60 bg-blk/70 hover:bg-btn/15 px-2.5 py-1.5 rounded-sm transition-all'>
+					<FontAwesomeIcon icon={faUserPen} className='text-[9px]' />
+					Edit
+				</button>
 			</div>
 
 			{/* ── Content body ── */}
 			<div className='p-4 flex flex-col gap-5'>
-				{/* PROFILE ── */}
-				<div>
-					<SectionHeader label='Operator Profile' />
-					<div className='bg-blk/40 border border-lines/15 rounded-sm px-3 py-1'>
-						<InfoRow
-							label='Call Sign'
-							value={selectedOperator.callSign}
-						/>
-						<InfoRow
-							label='Class'
-							value={selectedOperator.class}
-						/>
-						<InfoRow
-							label='Role'
-							value={selectedOperator.role}
-						/>
-						<InfoRow
-							label='Team'
-							value={teamName}
-						/>
-						<InfoRow
-							label='Squad'
-							value={squadName}
-						/>
-						<InfoRow
-							label='Status'
-							value={selectedOperator.status}
-						/>
-					</div>
+
+				{/* QUICK STATS ── 2-col grid */}
+				<div className='grid grid-cols-2 gap-2'>
+					<StatPill label='Call Sign' value={selectedOperator.callSign} />
+					<StatPill label='Status' value={selectedOperator.status} />
+					<StatPill label='Class' value={selectedOperator.class} />
+					<StatPill label='Role' value={selectedOperator.role} />
+					{teamName && <StatPill label='Team' value={teamName} />}
+					{squadName && <StatPill label='Squad' value={squadName} />}
 				</div>
 
 				{/* LOADOUT ── */}
 				{(selectedOperator.weaponType || selectedOperator.sideArm) && (
 					<div>
-						<SectionHeader label='Primary Loadout' />
-
-						{/* Primary weapon */}
-						{selectedOperator.weaponType && (
-							<div className='flex items-center gap-4 bg-blk/40 border border-lines/15 rounded-sm p-3 mb-2'>
-								{WEAPONS[selectedOperator.weaponType]?.imgUrl && (
-									<img
-										src={WEAPONS[selectedOperator.weaponType].imgUrl}
-										alt='Primary'
-										className='w-24 h-16 object-contain shrink-0'
-									/>
-								)}
-								<div className='flex flex-col gap-0.5'>
-									<span className='font-mono text-[9px] tracking-widest text-lines/30 uppercase'>
-										Primary
-									</span>
-									<span className='font-mono text-xs text-fontz/85'>
-										{selectedOperator.weapon ||
-											WEAPONS[selectedOperator.weaponType]?.name ||
-											"Unknown"}
-									</span>
-									<span className='font-mono text-[9px] text-lines/35'>
-										{WEAPONS[selectedOperator.weaponType]?.name || ""}
-									</span>
+						<SectionHeader label='Loadout' />
+						<div className='flex flex-col gap-2'>
+							{selectedOperator.weaponType && (
+								<div className='flex items-center gap-4 bg-blk/40 border border-lines/15 rounded-sm p-3'>
+									{WEAPONS[selectedOperator.weaponType]?.imgUrl && (
+										<img
+											src={WEAPONS[selectedOperator.weaponType].imgUrl}
+											alt='Primary'
+											className='w-20 h-14 object-contain shrink-0'
+								style={{ filter: "invert(1) opacity(0.85)" }}
+										/>
+									)}
+									<div className='flex flex-col gap-0.5 min-w-0'>
+										<span className='font-mono text-[8px] tracking-widest text-lines/30 uppercase'>Primary</span>
+										<span className='font-mono text-xs text-fontz/85 truncate'>
+											{selectedOperator.weapon || WEAPONS[selectedOperator.weaponType]?.name || "Unknown"}
+										</span>
+									</div>
 								</div>
-							</div>
-						)}
-
-						{/* Sidearm */}
-						{selectedOperator.sideArm && (
-							<div className='flex items-center gap-4 bg-blk/40 border border-lines/15 rounded-sm p-3'>
-								{WEAPONS.Sidearm?.imgUrl && (
-									<img
-										src={WEAPONS.Sidearm.imgUrl}
-										alt='Sidearm'
-										className='w-24 h-16 object-contain shrink-0'
-									/>
-								)}
-								<div className='flex flex-col gap-0.5'>
-									<span className='font-mono text-[9px] tracking-widest text-lines/30 uppercase'>
-										Sidearm
-									</span>
-									<span className='font-mono text-xs text-fontz/85'>
-										{selectedOperator.sideArm}
-									</span>
+							)}
+							{selectedOperator.sideArm && (
+								<div className='flex items-center gap-4 bg-blk/40 border border-lines/15 rounded-sm p-3'>
+									{WEAPONS.Sidearm?.imgUrl && (
+										<img src={WEAPONS.Sidearm.imgUrl} alt='Sidearm' className='w-20 h-14 object-contain shrink-0' style={{ filter: "invert(1) opacity(0.85)" }} />
+									)}
+									<div className='flex flex-col gap-0.5 min-w-0'>
+										<span className='font-mono text-[8px] tracking-widest text-lines/30 uppercase'>Sidearm</span>
+										<span className='font-mono text-xs text-fontz/85 truncate'>{selectedOperator.sideArm}</span>
+									</div>
 								</div>
-							</div>
-						)}
+							)}
+						</div>
 					</div>
 				)}
 
@@ -366,13 +260,9 @@ const OperatorImageView = ({ operator, openSheet }) => {
 				{hasItems && (
 					<div>
 						<SectionHeader label='Equipment' />
-						<div className='grid grid-cols-3 gap-2'>
+						<div className='grid grid-cols-4 gap-2'>
 							{selectedOperator.items.map((item) => (
-								<GearCard
-									key={item}
-									imgSrc={ITEMS[item]}
-									name={item}
-								/>
+								<GearCard key={item} imgSrc={ITEMS[item]} name={item} invert />
 							))}
 						</div>
 					</div>
@@ -382,43 +272,11 @@ const OperatorImageView = ({ operator, openSheet }) => {
 				{hasPerks && (
 					<div>
 						<SectionHeader label='Perks' />
-						<div className='grid grid-cols-3 gap-2'>
+						<div className='grid grid-cols-4 gap-2'>
 							{selectedOperator.perks.map((perk) => (
-								<GearCard
-									key={perk}
-									imgSrc={PERKS[perk]}
-									name={perk}
-								/>
+								<GearCard key={perk} imgSrc={PERKS[perk]} name={perk} />
 							))}
 						</div>
-					</div>
-				)}
-
-				{/* SPECIALIST TAGS ── */}
-				{(selectedOperator.support || selectedOperator.aviator) && (
-					<div className='flex flex-col gap-2'>
-						{selectedOperator.support && (
-							<div className='flex items-center gap-3 bg-blue-900/15 border border-blue-800/30 rounded-sm px-3 py-2'>
-								<FontAwesomeIcon
-									icon={faShieldHalved}
-									className='text-blue-400/70 text-sm'
-								/>
-								<span className='font-mono text-[10px] tracking-[0.2em] text-blue-400/80 uppercase'>
-									Support Specialist
-								</span>
-							</div>
-						)}
-						{selectedOperator.aviator && (
-							<div className='flex items-center gap-3 bg-sky-900/15 border border-sky-800/30 rounded-sm px-3 py-2'>
-								<FontAwesomeIcon
-									icon={faStar}
-									className='text-sky-400/70 text-sm'
-								/>
-								<span className='font-mono text-[10px] tracking-[0.2em] text-sky-400/80 uppercase'>
-									Aviator
-								</span>
-							</div>
-						)}
 					</div>
 				)}
 
@@ -426,7 +284,7 @@ const OperatorImageView = ({ operator, openSheet }) => {
 				{selectedOperator.bio && (
 					<div>
 						<SectionHeader label='Operator Bio' />
-						<div className='bg-blk/40 border border-lines/15 rounded-sm p-3'>
+						<div className='bg-blk/40 border border-lines/15 rounded-sm p-3 border-l-2 border-l-btn/30'>
 							<p className='font-mono text-xs text-fontz/65 leading-[1.9] whitespace-pre-wrap'>
 								{selectedOperator.bio}
 							</p>
@@ -437,18 +295,10 @@ const OperatorImageView = ({ operator, openSheet }) => {
 		</section>
 	);
 };
-SectionHeader.propTypes = {
-	label: PropTypes.string,
-};
-InfoRow.propTypes = {
-	label: PropTypes.string,
-	value: PropTypes.string,
-};
-GearCard.propTypes = {
-	imgSrc: PropTypes.string,
-	name: PropTypes.string,
-	sub: PropTypes.string,
-};
+
+SectionHeader.propTypes = { label: PropTypes.string };
+StatPill.propTypes = { label: PropTypes.string, value: PropTypes.string };
+GearCard.propTypes = { imgSrc: PropTypes.string, name: PropTypes.string };
 OperatorImageView.propTypes = {
 	operator: OperatorPropTypes,
 	openSheet: PropTypes.func,
