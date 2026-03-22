@@ -1,7 +1,7 @@
 // Roster.jsx — compact card grid + inline squad filter pills
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUserPlus, faChevronRight } from "@fortawesome/free-solid-svg-icons";
+import { faUserPlus, faChevronRight, faPlus, faCheck, faTimes, faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
 import {
 	useOperatorsStore,
 	useTeamsStore,
@@ -149,13 +149,39 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 
 	const { operators, activeClasses, fetchOperators } = useOperatorsStore();
 	const { teams, fetchTeams } = useTeamsStore();
-	const { squads, fetchSquads } = useSquadStore();
+	const { squads, fetchSquads, createSquad, renameSquad, deleteSquad } = useSquadStore();
+	const [showSquadInput, setShowSquadInput] = useState(false);
+	const [newSquadName, setNewSquadName] = useState("");
+	const [editingSquadId, setEditingSquadId] = useState(null);
+	const [editSquadName, setEditSquadName] = useState("");
+	const squadInputRef = useRef(null);
 
 	useEffect(() => {
 		fetchOperators();
 		fetchTeams();
 		fetchSquads();
 	}, [fetchOperators, fetchTeams, fetchSquads, dataUpdated]);
+
+	const handleCreateSquad = async () => {
+		const name = newSquadName.trim();
+		if (!name) return;
+		await createSquad(name);
+		setNewSquadName("");
+		setShowSquadInput(false);
+	};
+
+	const handleRenameSquad = async (id) => {
+		const name = editSquadName.trim();
+		if (!name) return;
+		await renameSquad(id, name);
+		setEditingSquadId(null);
+		setEditSquadName("");
+	};
+
+	const handleDeleteSquad = async (id) => {
+		await deleteSquad(id);
+		if (activeSquadId === id) setActiveSquadId(null);
+	};
 
 	const aviatorOperators = operators.filter((op) => op.aviator === true);
 	const supportOperators = operators.filter((op) => op.support === true);
@@ -233,37 +259,114 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 			</div>
 
 			{/* ── Squad filter pills — operators tab only ────────── */}
-			{activeTab === "roster" && squads.length > 0 && (
-				<div className='shrink-0 flex items-center gap-1.5 px-3 py-2 border-b border-lines/10 bg-blk/20 overflow-x-auto scrollbar-none'>
-					<span className='font-mono text-[8px] tracking-[0.2em] text-lines/25 uppercase shrink-0'>
-						Squad
-					</span>
-					<div className='w-px h-3 bg-lines/15 shrink-0' />
-					<button
-						onClick={() => setActiveSquadId(null)}
-						className={[
-							"shrink-0 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border transition-all",
-							activeSquadId === null ?
-								"text-btn border-btn/40 bg-btn/10"
-							:	"text-lines/35 border-lines/15 hover:border-lines/30 hover:text-fontz",
-						].join(" ")}>
-						All
-					</button>
-					{squads.map((sq) => (
-						<button
-							key={sq._id}
-							onClick={() =>
-								setActiveSquadId(activeSquadId === sq._id ? null : sq._id)
-							}
-							className={[
-								"shrink-0 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border transition-all",
-								activeSquadId === sq._id ?
-									"text-btn border-btn/40 bg-btn/10"
-								:	"text-lines/35 border-lines/15 hover:border-lines/30 hover:text-fontz",
-							].join(" ")}>
-							{sq.name}
-						</button>
-					))}
+			{activeTab === "roster" && (
+				<div className='shrink-0 border-b border-lines/10 bg-blk/20'>
+					{/* Header row */}
+					<div className='flex items-center justify-between px-3 pt-2 pb-1'>
+						<span className='font-mono text-[8px] tracking-[0.22em] text-lines/35 uppercase'>
+							Squads
+						</span>
+						{!showSquadInput && (
+							<button
+								onClick={() => setShowSquadInput(true)}
+								className='flex items-center gap-1 font-mono text-[8px] tracking-widest uppercase text-btn border border-btn/30 hover:border-btn/60 bg-btn/5 hover:bg-btn/15 px-2 py-0.5 rounded-sm transition-all'>
+								<FontAwesomeIcon icon={faPlus} className='text-[7px]' />
+								New Squad
+							</button>
+						)}
+					</div>
+					{/* Pills row */}
+					<div className='flex items-center gap-1.5 px-3 pb-2 overflow-x-auto scrollbar-none flex-wrap'>
+						{squads.length > 0 && (
+							<button
+								onClick={() => setActiveSquadId(null)}
+								className={[
+									"font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border transition-all",
+									activeSquadId === null ?
+										"text-btn border-btn/40 bg-btn/10"
+									:	"text-lines/40 border-lines/15 hover:border-lines/30 hover:text-fontz",
+								].join(" ")}>
+								All
+							</button>
+						)}
+						{squads.map((sq) =>
+							editingSquadId === sq._id ? (
+								<form
+									key={sq._id}
+									className='flex items-center gap-1'
+									onSubmit={(e) => { e.preventDefault(); handleRenameSquad(sq._id); }}>
+									<input
+										autoFocus
+										value={editSquadName}
+										onChange={(e) => setEditSquadName(e.target.value)}
+										className='font-mono text-[8px] tracking-widest uppercase bg-blk/60 border border-btn/40 text-fontz px-2 py-0.5 rounded-sm outline-none w-28 focus:border-btn/70'
+									/>
+									<button type='submit' disabled={!editSquadName.trim()}
+										className='w-5 h-5 flex items-center justify-center bg-btn/80 hover:bg-btn disabled:opacity-30 disabled:cursor-not-allowed text-blk rounded-sm transition-colors'>
+										<FontAwesomeIcon icon={faCheck} className='text-[8px]' />
+									</button>
+									<button type='button' onClick={() => { setEditingSquadId(null); setEditSquadName(""); }}
+										className='w-5 h-5 flex items-center justify-center border border-lines/20 hover:border-lines/40 text-lines/40 hover:text-fontz rounded-sm transition-colors'>
+										<FontAwesomeIcon icon={faTimes} className='text-[8px]' />
+									</button>
+								</form>
+							) : (
+								<div key={sq._id} className='flex items-center rounded-sm border border-lines/20 overflow-hidden'>
+									<button
+										onClick={() => setActiveSquadId(activeSquadId === sq._id ? null : sq._id)}
+										className={[
+											"font-mono text-[8px] tracking-widest uppercase px-2.5 py-1 transition-all",
+											activeSquadId === sq._id ?
+												"text-btn bg-btn/10"
+											:	"text-lines/50 hover:text-fontz hover:bg-white/[0.03]",
+										].join(" ")}>
+										{sq.name}
+									</button>
+									<div className='w-px h-4 bg-lines/15' />
+									<button
+										onClick={() => { setEditingSquadId(sq._id); setEditSquadName(sq.name); }}
+										title='Rename'
+										className='w-6 h-6 flex items-center justify-center text-lines/30 hover:text-btn hover:bg-btn/10 transition-colors'>
+										<FontAwesomeIcon icon={faPen} className='text-[7px]' />
+									</button>
+									<button
+										onClick={() => handleDeleteSquad(sq._id)}
+										title='Delete'
+										className='w-6 h-6 flex items-center justify-center text-lines/30 hover:text-red-400 hover:bg-red-900/15 transition-colors'>
+										<FontAwesomeIcon icon={faTrash} className='text-[7px]' />
+									</button>
+								</div>
+							)
+						)}
+						{squads.length === 0 && !showSquadInput && (
+							<span className='font-mono text-[8px] text-lines/20 italic'>
+								No squads yet — create one above
+							</span>
+						)}
+						{showSquadInput && (
+							<form
+								className='flex items-center gap-1'
+								onSubmit={(e) => { e.preventDefault(); handleCreateSquad(); }}>
+								<input
+									ref={squadInputRef}
+									autoFocus
+									value={newSquadName}
+									onChange={(e) => setNewSquadName(e.target.value)}
+									placeholder='e.g. Bravo Squad'
+									className='font-mono text-[9px] bg-blk/60 border border-btn/40 text-fontz placeholder-lines/25 px-2 py-1 rounded-sm outline-none w-32 focus:border-btn/70'
+								/>
+								<button type='submit' disabled={!newSquadName.trim()}
+									className='flex items-center gap-1 font-mono text-[8px] tracking-widest uppercase px-2 py-1 bg-btn/80 hover:bg-btn disabled:opacity-30 disabled:cursor-not-allowed text-blk rounded-sm transition-colors'>
+									<FontAwesomeIcon icon={faCheck} className='text-[8px]' />
+									Save
+								</button>
+								<button type='button' onClick={() => { setShowSquadInput(false); setNewSquadName(""); }}
+									className='font-mono text-[8px] tracking-widest uppercase px-2 py-1 border border-lines/20 hover:border-lines/40 text-lines/40 hover:text-fontz rounded-sm transition-colors'>
+									Cancel
+								</button>
+							</form>
+						)}
+					</div>
 				</div>
 			)}
 
