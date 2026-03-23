@@ -37,7 +37,7 @@ const SheetSide = ({
 			}}>
 			<>
 				<SheetContent
-					className='bg-linear-45 from-blk via-background to-neutral-800 text-fontz flex flex-col items-center overflow-y-auto w-full p-4 max-h-[100vh]'
+					className='text-fontz flex flex-col items-center overflow-y-auto w-full p-4 max-h-[100vh]'
 					side={side}
 					aria-describedby='sheet-description'>
 					<SheetHeader>

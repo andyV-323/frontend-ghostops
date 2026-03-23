@@ -56,8 +56,13 @@ import PropTypes from "prop-types";
 
 const NAV = [
 	{ id: "briefing", label: "Ops Room", sub: "SCIF", icon: faCrosshairs },
-	{ id: "operators", label: "Personnel", sub: "Team Room", icon: faUsers },
-	{ id: "vehicles", label: "Asset Registry", sub: "Organic Assets", icon: faTruck },
+	{ id: "operators", label: "Personnel", sub: "FOB", icon: faUsers },
+	{
+		id: "vehicles",
+		label: "Asset Registry",
+		sub: "Organic Assets",
+		icon: faTruck,
+	},
 ];
 
 // ─── Normalize stored point → [row, col] array ───────────────────────────────
@@ -1005,8 +1010,8 @@ function OperatorsPage() {
 						/>
 					</Panel>
 					<Panel
-						title='Team Assignments'
-						badge='ODA'
+						title='Team Room'
+						badge='Fire Teams'
 						className='min-h-64'>
 						<Teams
 							dataUpdated={dataUpdated}
@@ -1053,8 +1058,8 @@ function OperatorsPage() {
 				</Panel>
 				<div className='flex flex-col flex-1 min-h-0 gap-4'>
 					<Panel
-						title='Team Assignments'
-						badge='ODA'
+						title='Team Room'
+						badge='Fire Teams'
 						className='flex-1 min-h-0'>
 						<Teams
 							dataUpdated={dataUpdated}
@@ -1180,7 +1185,7 @@ export default function UnifiedDashboard() {
 	};
 
 	return (
-		<div className='h-screen w-screen flex flex-col overflow-hidden bg-gradient-to-br from-blk via-background to-neutral-800 text-fontz'>
+		<div className='h-screen w-screen flex flex-col overflow-hidden bg-gradient-to-br from-background to-highlight text-fontz'>
 			{/* ══ TOPBAR ══════════════════════════════════════════════════════ */}
 			<header className='shrink-0 h-12 flex items-center gap-3 px-4 bg-blk/90 border-b border-lines/25'>
 				<div className='flex items-center gap-2 shrink-0'>
