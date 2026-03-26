@@ -1,15 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// PROVINCES_AI_CONTEXT.js
-// Lean version of PROVINCES for use in generateCampaign() Groq prompt only.
-//
-// Stripped: coordinates, bounds, AOO, imgURL
-// Trimmed: descriptions to one tactical sentence max
-//
-// This keeps the Groq prompt well under the 12k TPM limit.
-// Full PROVINCES config is still used by GeneratePointsOnMap() and
-// generateBriefing() — this file is prompt context only.
-// ─────────────────────────────────────────────────────────────────────────────
-
 export const PROVINCES_AI_CONTEXT = {
 	Golem1: {
 		biome: "Volcanic Rain Forest",

@@ -1,14 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// PhaseList.jsx
-// Displays all filed phase reports under the active operation.
-// Includes PhaseCard as a co-located sub-component.
-//
-// Props:
-//   phases      — array of phase objects from the operation
-//   onNewPhase  — () => void — opens PhaseReportSheet
-//   onAAR       — () => void — opens AARSheet (shown when phases.length > 0)
-// ─────────────────────────────────────────────────────────────────────────────
-
 import PropTypes from "prop-types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {

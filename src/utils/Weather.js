@@ -1,12 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// weatherUtils.js
-// Utility functions for biome-based weather generation.
-// Depends on BIOME_WEATHER from biome.jsx.
-//
-// Usage:
-//   import { getProvinceWeather, selectTemperature } from './weatherUtils';
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { BIOME_WEATHER } from "@/config";
 
 // Returns a random temperature within the biome range.

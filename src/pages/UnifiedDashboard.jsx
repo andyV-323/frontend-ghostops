@@ -19,6 +19,10 @@ import {
 	faFire,
 	faWind,
 	faCity,
+	faCheck,
+	faTrash,
+	faPen,
+	faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 
 import {
@@ -29,6 +33,7 @@ import {
 	PhaseList,
 	PhaseReportSheet,
 	CampaignView,
+	OperatorImageView,
 } from "@/components";
 import { MissionGenerator } from "@/components/ai";
 import {
@@ -38,7 +43,13 @@ import {
 	Teams,
 	Garage,
 } from "@/components/tables";
-import { useOperatorsStore, useSheetStore, useSquadStore } from "@/zustand";
+import { NewOperatorForm, AssignTeamSheet } from "@/components/forms";
+import {
+	useOperatorsStore,
+	useSheetStore,
+	useSquadStore,
+	useTeamsStore,
+} from "@/zustand";
 import { useAuthService } from "@/services/AuthService";
 import useMissionsStore from "@/zustand/useMissionsStore";
 
@@ -64,19 +75,6 @@ const NAV = [
 		icon: faTruck,
 	},
 ];
-
-// ─── Normalize stored point → [row, col] array ───────────────────────────────
-
-function normalizePoint(pt) {
-	if (!pt) return null;
-	if (Array.isArray(pt) && pt.length >= 2) return [pt[0], pt[1]];
-	if (typeof pt === "object") {
-		const lat = pt.lat ?? pt.latitude ?? pt.y;
-		const lng = pt.lng ?? pt.longitude ?? pt.x;
-		if (lat != null && lng != null) return [lat, lng];
-	}
-	return null;
-}
 
 // ─── Clock ────────────────────────────────────────────────────────────────────
 
@@ -118,28 +116,28 @@ function Panel({
 	return (
 		<div
 			className={[
-				"flex flex-col rounded-lg border border-lines/30 bg-blk/60 shadow-[0_4px_32px_rgba(0,0,0,0.75)] overflow-hidden",
+				"flex flex-col rounded border border-neutral-700/50 bg-neutral-800/80 shadow-[0_2px_16px_rgba(0,0,0,0.5)] overflow-hidden",
 				className,
 			].join(" ")}>
-			<div className='flex items-center gap-2 px-4 py-2.5 bg-blk/80 border-b border-lines/20 shrink-0'>
+			<div className='flex items-center gap-3 px-4 py-2.5 bg-neutral-800 border-b border-neutral-700/50 shrink-0'>
 				<span
 					className={[
 						"w-1.5 h-1.5 rounded-full shrink-0",
 						badgeGreen ?
-							"bg-green-500 shadow-[0_0_6px_rgba(74,222,128,0.55)]"
-						:	"bg-btn shadow-[0_0_6px_rgba(124,170,121,0.45)]",
+							"bg-green-500 shadow-[0_0_5px_rgba(74,222,128,0.6)]"
+						:	"bg-btn/80 shadow-[0_0_5px_rgba(124,170,121,0.4)]",
 					].join(" ")}
 				/>
-				<span className='font-mono text-[10px] tracking-[0.18em] text-lines uppercase flex-1 truncate'>
+				<span className='font-mono text-[10px] tracking-[0.2em] text-neutral-400 uppercase flex-1 truncate'>
 					{title}
 				</span>
 				{badge && (
 					<span
 						className={[
-							"font-mono text-[9px] tracking-widest px-1.5 py-0.5 border rounded-sm",
+							"font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border rounded-sm",
 							badgeGreen ?
-								"text-green-400 border-green-900"
-							:	"text-btn border-highlight/50",
+								"text-green-400/80 border-green-800/50 bg-green-950/30"
+							:	"text-btn/70 border-btn/20 bg-btn/5",
 						].join(" ")}>
 						{badge}
 					</span>
@@ -265,13 +263,7 @@ function getSectionColor(label) {
 
 // ─── IntelBody ────────────────────────────────────────────────────────────────
 
-function IntelBody({
-	hasBriefing,
-	missionBriefing,
-	infilPoint,
-	exfilPoint,
-	rallyPoint,
-}) {
+function IntelBody({ hasBriefing, missionBriefing }) {
 	if (!hasBriefing) {
 		return (
 			<div className='flex flex-col items-center justify-center flex-1 gap-4 p-6 h-full'>
@@ -293,27 +285,6 @@ function IntelBody({
 		);
 	}
 
-	const coords = [
-		infilPoint && {
-			label: "INFIL",
-			val: infilPoint,
-			color: "rgba(68,195,72,0.65)",
-			bg: "rgba(28,72,22,0.18)",
-		},
-		exfilPoint && {
-			label: "EXFIL",
-			val: exfilPoint,
-			color: "rgba(95,158,232,0.65)",
-			bg: "rgba(22,48,95,0.18)",
-		},
-		rallyPoint && {
-			label: "RALLY",
-			val: rallyPoint,
-			color: "rgba(215,162,52,0.65)",
-			bg: "rgba(88,58,12,0.18)",
-		},
-	].filter(Boolean);
-
 	const lines = missionBriefing.split("\n");
 
 	return (
@@ -326,29 +297,6 @@ function IntelBody({
 					GHOST PROTOCOL
 				</span>
 			</div>
-			{coords.length > 0 && (
-				<div className='shrink-0 flex flex-wrap border-b border-lines/10'>
-					{coords.map(({ label, val, color, bg }) => (
-						<div
-							key={label}
-							className='flex items-center gap-2 px-3 py-1.5 border-r border-lines/10 last:border-r-0'
-							style={{ background: bg }}>
-							<span
-								className='font-mono text-[8px] tracking-widest uppercase'
-								style={{ color: color.replace("0.65", "0.42") }}>
-								{label}
-							</span>
-							<span
-								className='font-mono text-[9px]'
-								style={{ color }}>
-								{Array.isArray(val) ?
-									`${Number(val[0]).toFixed(0)}, ${Number(val[1]).toFixed(0)}`
-								:	String(val)}
-							</span>
-						</div>
-					))}
-				</div>
-			)}
 			<div className='flex-1 min-h-0 overflow-y-auto px-4 py-3'>
 				<div className='flex flex-col gap-0.5'>
 					{lines.map((line, i) => {
@@ -446,11 +394,6 @@ function BriefingPage({ onNewMission }) {
 	const mapBounds = mapSource.bounds ?? mapSource.mapBounds ?? null;
 	const imgURL = mapSource.imgURL ?? "";
 
-	// ── Points ────────────────────────────────────────────────────────────────
-	const infilPoint = normalizePoint(mapSource.infilPoint);
-	const exfilPoint = normalizePoint(mapSource.exfilPoint);
-	const rallyPoint = normalizePoint(mapSource.rallyPoint);
-
 	// ── Location markers for map ──────────────────────────────────────────────
 	const selectedLocations = g.selectedLocations || [];
 
@@ -487,7 +430,6 @@ function BriefingPage({ onNewMission }) {
 	}, [isAIMission, activeCampaignPhase, activeMission]);
 
 	const hasBriefing = !!briefingText;
-	const hasPoints = !!(infilPoint || exfilPoint || rallyPoint);
 
 	// ── Generate callbacks ────────────────────────────────────────────────────
 
@@ -561,9 +503,6 @@ function BriefingPage({ onNewMission }) {
 			<IntelBody
 				hasBriefing={hasBriefing}
 				missionBriefing={briefingText}
-				infilPoint={infilPoint}
-				exfilPoint={exfilPoint}
-				rallyPoint={rallyPoint}
 			/>,
 			"Mission Brief",
 			hasBriefing ?
@@ -816,13 +755,6 @@ function BriefingPage({ onNewMission }) {
 								live
 							/>
 						)}
-						{hasPoints && (
-							<BriefStatChip
-								label='Points'
-								value='SET'
-								live
-							/>
-						)}
 						{(isAIMission ? totalCampaignPhases > 0 : phaseCount > 0) && (
 							<BriefStatChip
 								label='Phases'
@@ -900,27 +832,6 @@ function BriefingPage({ onNewMission }) {
 								live
 							/>
 						)}
-						{infilPoint && (
-							<BriefStatChip
-								label='Infil'
-								value='SET'
-								live
-							/>
-						)}
-						{exfilPoint && (
-							<BriefStatChip
-								label='Exfil'
-								value='SET'
-								live
-							/>
-						)}
-						{rallyPoint && (
-							<BriefStatChip
-								label='Rally'
-								value='SET'
-								live
-							/>
-						)}
 						{(isAIMission ? totalCampaignPhases > 0 : phaseCount > 0) && (
 							<BriefStatChip
 								label='Phases'
@@ -941,25 +852,36 @@ function BriefingPage({ onNewMission }) {
 				</div>
 
 				<div className='grid grid-cols-[420px_1fr] gap-3 flex-1 min-h-0 overflow-hidden'>
-					<Panel
-						title='Ghost Operations AI'
-						badge='GEN-SYS'
-						className='h-full'
-						bodyClass='p-3'>
-						<MissionGenerator {...mgProps} />
-					</Panel>
-					<Panel
-						title={
-							isAIMission && activeCampaignPhase ?
-								`${activeMission?.province ?? "Tactical Map"} — ${activeCampaignPhase.label}`
-							:	(activeMission?.province ?? "Tactical Map")
-						}
-						badge='AO-LIVE'
-						badgeGreen
-						className='h-full'
-						bodyClass='overflow-hidden p-0'>
-						<MapWrapper {...mapProps} />
-					</Panel>
+					<div className='flex flex-col min-h-0 bg-neutral-900/40 border border-neutral-800/60 rounded overflow-hidden'>
+						<div className='flex items-center gap-2 px-3 py-2 border-b border-neutral-800/60 shrink-0'>
+							<span className='w-1.5 h-1.5 rounded-full bg-btn/60 shrink-0' />
+							<span className='font-mono text-[8px] tracking-[0.2em] text-neutral-500 uppercase flex-1'>
+								Ghost Operations AI
+							</span>
+							<span className='font-mono text-[7px] tracking-widest text-neutral-600 border border-neutral-800/60 px-1.5 py-0.5 rounded-sm'>
+								GEN-SYS
+							</span>
+						</div>
+						<div className='flex-1 min-h-0 overflow-y-auto p-3'>
+							<MissionGenerator {...mgProps} />
+						</div>
+					</div>
+					<div className='flex flex-col min-h-0 bg-neutral-900/40 border border-neutral-800/60 rounded overflow-hidden'>
+						<div className='flex items-center gap-2 px-3 py-2 border-b border-neutral-800/60 shrink-0'>
+							<span className='w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(74,222,128,0.6)] shrink-0' />
+							<span className='font-mono text-[8px] tracking-[0.2em] text-neutral-500 uppercase flex-1'>
+								{isAIMission && activeCampaignPhase ?
+									`${activeMission?.province ?? "Tactical Map"} — ${activeCampaignPhase.label}`
+								:	(activeMission?.province ?? "Tactical Map")}
+							</span>
+							<span className='font-mono text-[7px] tracking-widest text-neutral-600 border border-neutral-800/60 px-1.5 py-0.5 rounded-sm'>
+								AO-LIVE
+							</span>
+						</div>
+						<div className='flex-1 min-h-0 flex flex-col overflow-hidden'>
+							<MapWrapper {...mapProps} />
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -971,42 +893,414 @@ function BriefingPage({ onNewMission }) {
 // OPERATORS PAGE — unchanged
 // ═══════════════════════════════════════════════════════════════════════════════
 
+function SquadEditSheet({ squad, onClose }) {
+	const { renameSquad, deleteSquad } = useSquadStore();
+	const [name, setName] = useState(squad.name);
+	const [confirmDelete, setConfirmDelete] = useState(false);
+	const handleSave = async () => {
+		const t = name.trim();
+		if (!t || t === squad.name) {
+			onClose();
+			return;
+		}
+		await renameSquad(squad._id, t);
+		onClose();
+	};
+	const handleDelete = async () => {
+		await deleteSquad(squad._id);
+		onClose();
+	};
+	return (
+		<div className='flex flex-col gap-4 p-4'>
+			<div>
+				<label className='font-mono text-[8px] tracking-[0.2em] uppercase text-lines/40 block mb-1'>
+					Squad Name
+				</label>
+				<input
+					autoFocus
+					value={name}
+					onChange={(e) => setName(e.target.value)}
+					onKeyDown={(e) => e.key === "Enter" && handleSave()}
+					className='w-full font-mono text-[11px] bg-blk/60 border border-lines/20 focus:border-btn/60 text-fontz px-3 py-2 rounded outline-none transition-colors'
+				/>
+			</div>
+			<button
+				onClick={handleSave}
+				disabled={!name.trim()}
+				className='w-full flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-widest uppercase bg-btn/80 hover:bg-btn disabled:opacity-30 text-blk py-2 rounded transition-colors'>
+				<FontAwesomeIcon
+					icon={faCheck}
+					className='text-[8px]'
+				/>{" "}
+				Save
+			</button>
+			<div className='border-t border-lines/10 pt-4'>
+				{!confirmDelete ?
+					<button
+						onClick={() => setConfirmDelete(true)}
+						className='w-full flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-widest uppercase border border-red-900/40 text-red-400/60 hover:text-red-400 hover:border-red-500/50 hover:bg-red-900/10 py-2 rounded transition-colors'>
+						<FontAwesomeIcon
+							icon={faTrash}
+							className='text-[8px]'
+						/>{" "}
+						Delete Squad
+					</button>
+				:	<div className='flex flex-col gap-2'>
+						<p className='font-mono text-[9px] text-lines/50 text-center'>
+							Delete <span className='text-red-400'>{squad.name}</span>? Cannot
+							be undone.
+						</p>
+						<div className='flex gap-2'>
+							<button
+								onClick={() => setConfirmDelete(false)}
+								className='flex-1 font-mono text-[9px] tracking-widest uppercase border border-lines/20 hover:border-lines/40 text-lines/40 hover:text-fontz py-1.5 rounded transition-colors'>
+								Cancel
+							</button>
+							<button
+								onClick={handleDelete}
+								className='flex-1 font-mono text-[9px] tracking-widest uppercase bg-red-700/80 hover:bg-red-700 text-white py-1.5 rounded transition-colors'>
+								Confirm
+							</button>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+	);
+}
+SquadEditSheet.propTypes = {
+	squad: PropTypes.object.isRequired,
+	onClose: PropTypes.func.isRequired,
+};
+
+function SquadsSheet({ activeSquad, onSelectSquad }) {
+	const { squads, fetchSquads, createSquad, renameSquad, deleteSquad } =
+		useSquadStore();
+	const [newName, setNewName] = useState("");
+	const [showAdd, setShowAdd] = useState(false);
+	const [editingId, setEditingId] = useState(null);
+	const [editName, setEditName] = useState("");
+	const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+	useEffect(() => {
+		fetchSquads();
+	}, [fetchSquads]);
+
+	const handleCreate = async () => {
+		const t = newName.trim();
+		if (!t) return;
+		await createSquad(t);
+		setNewName("");
+		setShowAdd(false);
+	};
+
+	const handleRename = async (id) => {
+		const t = editName.trim();
+		if (t) await renameSquad(id, t);
+		setEditingId(null);
+		setEditName("");
+	};
+
+	const handleDelete = async (id) => {
+		await deleteSquad(id);
+		if (activeSquad === id) onSelectSquad(null);
+		setConfirmDeleteId(null);
+	};
+
+	return (
+		<div className='flex flex-col gap-0 divide-y divide-lines/10'>
+			{squads.length === 0 && (
+				<p className='font-mono text-[9px] text-lines/30 text-center py-6'>
+					No squads yet.
+				</p>
+			)}
+			{squads.map((sq) =>
+				editingId === sq._id ?
+					<div
+						key={sq._id}
+						className='flex items-center gap-2 px-4 py-2.5'>
+						<input
+							autoFocus
+							value={editName}
+							onChange={(e) => setEditName(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") handleRename(sq._id);
+								if (e.key === "Escape") setEditingId(null);
+							}}
+							className='flex-1 font-mono text-[10px] bg-blk/60 border border-lines/20 focus:border-btn/60 text-fontz px-2 py-1 rounded outline-none'
+						/>
+						<button
+							onClick={() => handleRename(sq._id)}
+							disabled={!editName.trim()}
+							className='w-6 h-6 flex items-center justify-center bg-btn/70 hover:bg-btn disabled:opacity-30 text-neutral-900 rounded-sm transition-colors'>
+							<FontAwesomeIcon
+								icon={faCheck}
+								className='text-[7px]'
+							/>
+						</button>
+						<button
+							onClick={() => setEditingId(null)}
+							className='w-6 h-6 flex items-center justify-center text-neutral-600 hover:text-neutral-400 transition-colors'>
+							<FontAwesomeIcon
+								icon={faTimes}
+								className='text-[7px]'
+							/>
+						</button>
+					</div>
+				: confirmDeleteId === sq._id ?
+					<div
+						key={sq._id}
+						className='flex flex-col gap-2 px-4 py-2.5 bg-red-950/20'>
+						<p className='font-mono text-[9px] text-lines/50'>
+							Delete <span className='text-red-400'>{sq.name}</span>? Cannot be
+							undone.
+						</p>
+						<div className='flex gap-2'>
+							<button
+								onClick={() => setConfirmDeleteId(null)}
+								className='flex-1 font-mono text-[9px] tracking-widest uppercase border border-lines/20 hover:border-lines/40 text-lines/40 hover:text-fontz py-1 rounded transition-colors'>
+								Cancel
+							</button>
+							<button
+								onClick={() => handleDelete(sq._id)}
+								className='flex-1 font-mono text-[9px] tracking-widest uppercase bg-red-700/80 hover:bg-red-700 text-white py-1 rounded transition-colors'>
+								Confirm
+							</button>
+						</div>
+					</div>
+				:	<div
+						key={sq._id}
+						className={[
+							"flex items-center gap-2 px-4 py-2.5 transition-colors",
+							activeSquad === sq._id ? "bg-btn/10" : "hover:bg-lines/5",
+						].join(" ")}>
+						<button
+							onClick={() =>
+								onSelectSquad(activeSquad === sq._id ? null : sq._id)
+							}
+							className='flex-1 text-left'>
+							<span
+								className={[
+									"font-mono text-[10px] tracking-wide",
+									activeSquad === sq._id ?
+										"text-btn"
+									:	"text-fontz/70 hover:text-fontz",
+								].join(" ")}>
+								{sq.name}
+							</span>
+						</button>
+						<button
+							onClick={() => {
+								setEditingId(sq._id);
+								setEditName(sq.name);
+							}}
+							className='w-5 h-5 flex items-center justify-center text-neutral-700 hover:text-btn transition-colors'>
+							<FontAwesomeIcon
+								icon={faPen}
+								className='text-[7px]'
+							/>
+						</button>
+						<button
+							onClick={() => setConfirmDeleteId(sq._id)}
+							className='w-5 h-5 flex items-center justify-center text-neutral-700 hover:text-red-400 transition-colors'>
+							<FontAwesomeIcon
+								icon={faTrash}
+								className='text-[7px]'
+							/>
+						</button>
+					</div>,
+			)}
+			<div className='px-4 py-3'>
+				{showAdd ?
+					<div className='flex items-center gap-2'>
+						<input
+							autoFocus
+							value={newName}
+							onChange={(e) => setNewName(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") handleCreate();
+								if (e.key === "Escape") setShowAdd(false);
+							}}
+							placeholder='Squad name'
+							className='flex-1 font-mono text-[10px] bg-blk/60 border border-lines/20 focus:border-btn/60 text-fontz placeholder-lines/30 px-2 py-1 rounded outline-none'
+						/>
+						<button
+							onClick={handleCreate}
+							disabled={!newName.trim()}
+							className='w-6 h-6 flex items-center justify-center bg-btn/70 hover:bg-btn disabled:opacity-30 text-neutral-900 rounded-sm transition-colors'>
+							<FontAwesomeIcon
+								icon={faCheck}
+								className='text-[7px]'
+							/>
+						</button>
+						<button
+							onClick={() => setShowAdd(false)}
+							className='w-6 h-6 flex items-center justify-center text-neutral-600 hover:text-neutral-400 transition-colors'>
+							<FontAwesomeIcon
+								icon={faTimes}
+								className='text-[7px]'
+							/>
+						</button>
+					</div>
+				:	<button
+						onClick={() => setShowAdd(true)}
+						className='w-full flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-widest uppercase border border-lines/20 hover:border-btn/40 text-lines/40 hover:text-btn py-1.5 rounded transition-colors'>
+						<FontAwesomeIcon
+							icon={faPlus}
+							className='text-[7px]'
+						/>
+						New Squad
+					</button>
+				}
+			</div>
+		</div>
+	);
+}
+SquadsSheet.propTypes = {
+	activeSquad: PropTypes.string,
+	onSelectSquad: PropTypes.func.isRequired,
+};
+
 function OperatorsPage() {
 	const { setSelectedOperator, operators, fetchOperators } =
 		useOperatorsStore();
-	const { squads, activeSquadId } = useSquadStore();
+	const { squads, fetchSquads } = useSquadStore();
+	const { teams, fetchTeams } = useTeamsStore();
 	const { open, SheetEl } = usePageSheet();
 	const [dataUpdated, setDataUpdated] = useState(false);
-	const [clickedOperator, setClickedOperator] = useState(null);
+	const [selectedOp, setSelectedOp] = useState(null);
+	const [activeSquad, setActiveSquad] = useState(null);
+	const [activeOpTab, setActiveOpTab] = useState("operators");
 	const refreshData = () => setDataUpdated((p) => !p);
-
-	const PanelTitle =
-		activeSquadId ?
-			`${squads.find((s) => s._id === activeSquadId)?.name ?? "Squad"} `
-		:	"Special Operations Force";
+	const activeSquadName =
+		squads.find((s) => s._id === activeSquad)?.name ?? "Active";
 
 	useEffect(() => {
 		fetchOperators();
-	}, [fetchOperators]);
+		fetchSquads();
+		fetchTeams();
+	}, [fetchOperators, fetchSquads, fetchTeams, dataUpdated]);
+
+	// Auto-select first active operator
+	useEffect(() => {
+		if (!selectedOp && operators.length > 0) {
+			const first = operators.find(
+				(o) => !o.support && !o.aviator && o.status?.toLowerCase() !== "kia",
+			);
+			if (first) {
+				setSelectedOp(first);
+				setSelectedOperator(first._id);
+			}
+		}
+	}, [operators, selectedOp, setSelectedOperator]);
+
+	const selectOp = (op) => {
+		setSelectedOp(op);
+		setSelectedOperator(op._id);
+	};
+
+	// Grouping helpers
+	const getSquadId = (op) =>
+		(typeof op.squad === "object" ? op.squad?._id : op.squad) ?? null;
+	const regular = operators.filter((o) => !o.support && !o.aviator);
+	const filtered =
+		activeSquad ?
+			regular.filter((o) => getSquadId(o) === activeSquad)
+		:	regular;
+	const active = filtered.filter((o) => {
+		const s = o.status?.toLowerCase();
+		return s !== "kia" && s !== "injured" && s !== "wounded";
+	});
+	const wia = filtered.filter((o) => {
+		const s = o.status?.toLowerCase();
+		return s === "injured" || s === "wounded";
+	});
+	const kia = filtered.filter((o) => o.status?.toLowerCase() === "kia");
+	const support = operators.filter((o) => o.support);
+	const aviators = operators.filter((o) => o.aviator);
+
+	const statusDot = (op) => {
+		const s = op.status?.toLowerCase();
+		if (s === "kia") return "bg-red-500";
+		if (s === "injured" || s === "wounded") return "bg-amber-400";
+		return "bg-green-500";
+	};
+
+	const RowSection = ({ label, color, ops }) =>
+		ops.length === 0 ?
+			null
+		:	<>
+				<div
+					className={`px-3 py-1 font-mono text-[7px] tracking-[0.3em] uppercase border-b border-neutral-800/80 ${color}`}>
+					{label}
+				</div>
+				{ops.map((op) => {
+					const assignedTeam = teams.find((t) =>
+						t.operators?.some((m) => m._id === op._id),
+					);
+					return (
+						<div
+							key={op._id}
+							className={[
+								"w-full flex items-center gap-2 px-3 py-1.5 border-b border-neutral-800/40 transition-colors",
+								selectedOp?._id === op._id ?
+									"bg-neutral-700/60 border-l-2 border-l-btn"
+								:	"hover:bg-neutral-800/60 border-l-2 border-l-transparent",
+							].join(" ")}>
+							<button
+								onClick={() => selectOp(op)}
+								className='flex items-center gap-2 flex-1 min-w-0 text-left'>
+								<span
+									className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot(op)}`}
+								/>
+								<span className='font-mono text-[10px] text-neutral-200 truncate flex-1 leading-none'>
+									{op.callSign || "—"}
+								</span>
+							</button>
+							<button
+								onClick={() =>
+									open(
+										"bottom",
+										<AssignTeamSheet
+											operator={op}
+											onComplete={() => {
+												fetchTeams();
+												useSheetStore.getState().closeSheet();
+											}}
+										/>,
+										"Assign to Team",
+										`Assign ${op.callSign} to a team.`,
+									)
+								}
+								className='font-mono text-[7px] tracking-widest uppercase shrink-0 px-1.5 py-0.5 rounded border border-neutral-800 hover:border-btn/40 transition-colors'>
+								<span
+									className={assignedTeam ? "text-btn" : "text-neutral-700"}>
+									{assignedTeam ? assignedTeam.name : "—"}
+								</span>
+							</button>
+						</div>
+					);
+				})}
+			</>;
 
 	return (
 		<>
+			{/* ── MOBILE ─────────────────────────────────────────── */}
 			<div className='lg:hidden flex-1 overflow-y-auto'>
 				<div className='p-3 flex flex-col gap-3'>
 					<Panel
-						title={PanelTitle}
+						title='Special Operations Force'
 						badge='ACTIVE DUTY'
 						badgeGreen
 						className='min-h-[420px]'>
 						<Roster
-							operators={operators}
-							setClickedOperator={(op) => {
-								setClickedOperator(op);
-								setSelectedOperator(op._id);
-							}}
 							dataUpdated={dataUpdated}
 							refreshData={refreshData}
 							openSheet={open}
+							setClickedOperator={(op) => {
+								setSelectedOp(op);
+								setSelectedOperator(op._id);
+							}}
 						/>
 					</Panel>
 					<Panel
@@ -1039,61 +1333,177 @@ function OperatorsPage() {
 					</Panel>
 				</div>
 			</div>
-			<div className='hidden lg:flex flex-1 min-h-0 overflow-hidden p-4 gap-4'>
-				<Panel
-					title={PanelTitle}
-					badge='ACTIVE DUTY'
-					badgeGreen
-					className='w-[55%] shrink-0 min-h-0'>
-					<Roster
-						operators={operators}
-						setClickedOperator={(op) => {
-							setClickedOperator(op);
-							setSelectedOperator(op._id);
-						}}
-						dataUpdated={dataUpdated}
-						refreshData={refreshData}
-						openSheet={open}
-					/>
-				</Panel>
-				<div className='flex flex-col flex-1 min-h-0 gap-4'>
-					<Panel
-						title='Team Room'
-						badge='Fire Teams'
-						className='flex-1 min-h-0'>
-						<Teams
-							dataUpdated={dataUpdated}
-							refreshData={refreshData}
+
+			{/* ── DESKTOP ─────────────────────────────────────────── */}
+			<div className='hidden lg:flex flex-1 min-h-0 overflow-hidden'>
+				{/* LEFT — Operator list */}
+				<div className='w-80 shrink-0 flex flex-col border-r border-neutral-700/40 bg-neutral-900/60'>
+					{/* Tab row: Operators | Enablers | Aviators | [Squads] [+] */}
+					<div className='flex items-center border-b border-neutral-700/40 bg-neutral-900 shrink-0'>
+						{[
+							{ id: "operators", label: "Operators" },
+							{ id: "enablers", label: "Enablers" },
+							{ id: "aviators", label: "Aviators" },
+						].map((tab) => (
+							<button
+								key={tab.id}
+								onClick={() => setActiveOpTab(tab.id)}
+								className={[
+									"font-mono text-[8px] tracking-widest uppercase px-3 py-2 border-b-2 shrink-0 transition-all",
+									activeOpTab === tab.id ?
+										"border-btn text-btn"
+									:	"border-transparent text-neutral-600 hover:text-neutral-400",
+								].join(" ")}>
+								{tab.label}
+							</button>
+						))}
+						<div className='ml-auto flex items-center gap-0.5 pr-2'>
+							<button
+								onClick={() =>
+									open(
+										"left",
+										<SquadsSheet
+											activeSquad={activeSquad}
+											onSelectSquad={(id) => {
+												setActiveSquad(id);
+												useSheetStore.getState().closeSheet();
+											}}
+										/>,
+										"Squads",
+										"Manage fire team squads",
+									)
+								}
+								className='font-mono text-[8px] tracking-widest uppercase px-2 py-1 border border-neutral-700/60 hover:border-btn/50 text-neutral-600 hover:text-btn rounded-sm transition-all'>
+								Squads
+							</button>
+							<button
+								onClick={() =>
+									open(
+										"left",
+										<NewOperatorForm />,
+										"New Operator",
+										"Add an elite operator.",
+									)
+								}
+								className='w-5 h-5 flex items-center justify-center bg-btn/80 hover:bg-btn text-neutral-900 rounded-sm transition-colors ml-1'
+								title='Add operator'>
+								<FontAwesomeIcon
+									icon={faPlus}
+									className='text-[8px]'
+								/>
+							</button>
+						</div>
+					</div>
+
+					{/* Operator rows */}
+					<div className='flex-1 overflow-y-auto '>
+						{activeOpTab === "operators" && (
+							<>
+								<RowSection
+									label={activeSquadName}
+									color='text-neutral-600'
+									ops={active}
+								/>
+								<RowSection
+									label='WIA'
+									color='text-amber-600/70'
+									ops={wia}
+								/>
+								<RowSection
+									label='KIA'
+									color='text-red-700/60'
+									ops={kia}
+								/>
+							</>
+						)}
+						{activeOpTab === "enablers" && (
+							<RowSection
+								label='Enablers'
+								color='text-neutral-600'
+								ops={support}
+							/>
+						)}
+						{activeOpTab === "aviators" && (
+							<RowSection
+								label='Aviation'
+								color='text-neutral-600'
+								ops={aviators}
+							/>
+						)}
+						{operators.length === 0 && (
+							<div className='flex flex-col items-center justify-center gap-2 py-10'>
+								<div className='w-5 h-5 border border-neutral-700 rotate-45' />
+								<span className='font-mono text-[8px] tracking-widest text-neutral-700 uppercase'>
+									No operators
+								</span>
+							</div>
+						)}
+					</div>
+				</div>
+
+				{/* CENTER — Operator profile */}
+				<div className='w-80 shrink-0 min-h-0 overflow-y-auto border-r border-neutral-700/40 bg-neutral-950/30'>
+					{selectedOp ?
+						<OperatorImageView
+							operator={selectedOp}
 							openSheet={open}
 						/>
-					</Panel>
-					<div className='shrink-0 flex flex-col rounded-lg border border-lines/30 bg-blk/60 shadow-[0_4px_32px_rgba(0,0,0,0.75)] overflow-hidden'>
-						<div className='flex items-center gap-2 px-4 py-2.5 bg-blk/80 border-b border-lines/20 shrink-0'>
-							<span className='w-1.5 h-1.5 rounded-full shrink-0 bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.5)]' />
-							<span className='font-mono text-[10px] tracking-[0.18em] text-lines uppercase flex-1'>
+					:	<div className='flex flex-col items-center justify-center h-full gap-3'>
+							<div className='w-10 h-10 border border-neutral-700/50 rotate-45' />
+							<span className='font-mono text-[9px] tracking-[0.3em] text-neutral-700 uppercase'>
+								Select Operator
+							</span>
+						</div>
+					}
+				</div>
+
+				{/* RIGHT — Teams + WIA/KIA */}
+
+				<div className='flex-1 min-h-0 flex flex-col border-l border-neutral-800/40'>
+					<div className='flex-1 min-h-0 flex flex-col bg-neutral-900/40'>
+						<div className='flex items-center gap-2 px-3 py-2 border-b border-neutral-800/60 shrink-0'>
+							<span className='w-1.5 h-1.5 rounded-full bg-btn/60 shrink-0' />
+							<span className='font-mono text-[8px] tracking-[0.2em] text-neutral-500 uppercase flex-1'>
+								Team Room
+							</span>
+							<span className='font-mono text-[7px] tracking-widest text-neutral-600 border border-neutral-800/60 px-1.5 py-0.5 rounded-sm'>
+								Fire Teams
+							</span>
+						</div>
+						<div className='flex-1 min-h-0 overflow-y-auto'>
+							<Teams
+								dataUpdated={dataUpdated}
+								refreshData={refreshData}
+								openSheet={open}
+							/>
+						</div>
+					</div>
+					<div className='shrink-0 flex flex-col border-t border-amber-900/20 bg-neutral-900/40'>
+						<div className='flex items-center gap-2 px-3 py-2 border-b border-amber-900/20'>
+							<span className='w-1.5 h-1.5 rounded-full bg-amber-400/60 shrink-0' />
+							<span className='font-mono text-[8px] tracking-[0.2em] text-neutral-500 uppercase flex-1'>
 								Infirmary
 							</span>
-							<span className='font-mono text-[9px] tracking-widest text-amber-400 border border-amber-900/50 px-1.5 py-0.5 rounded-sm'>
+							<span className='font-mono text-[7px] tracking-widest text-amber-500/50 border border-amber-800/30 px-1.5 py-0.5 rounded-sm'>
 								WIA
 							</span>
 						</div>
-						<div className='overflow-y-auto max-h-36'>
+						<div className='overflow-y-auto max-h-32'>
 							<Infirmary
 								dataUpdated={dataUpdated}
 								refreshData={refreshData}
 							/>
 						</div>
-						<div className='flex items-center gap-3 px-4 py-1.5 bg-blk/50 border-y border-lines/15 shrink-0'>
-							<span className='w-1 h-1 rounded-full bg-red-500/40' />
-							<span className='font-mono text-[9px] tracking-[0.2em] text-lines/30 uppercase'>
+						<div className='flex items-center gap-2 px-3 py-2 border-y border-red-900/15'>
+							<span className='w-1.5 h-1.5 rounded-full bg-red-500/40 shrink-0' />
+							<span className='font-mono text-[8px] tracking-[0.2em] text-neutral-500 uppercase flex-1'>
 								Fallen Ghost
 							</span>
-							<div className='flex-1 h-px bg-gradient-to-r from-lines/10 to-transparent' />
-							<span className='font-mono text-[9px] tracking-widest text-red-500/40 border border-red-900/30 px-1.5 py-0.5 rounded-sm'>
+							<span className='font-mono text-[7px] tracking-widest text-red-500/40 border border-red-900/25 px-1.5 py-0.5 rounded-sm'>
 								KIA
 							</span>
 						</div>
-						<div className='overflow-y-auto max-h-36'>
+						<div className='overflow-y-auto max-h-32'>
 							<Memorial
 								dataUpdated={dataUpdated}
 								refreshData={refreshData}
@@ -1185,9 +1595,9 @@ export default function UnifiedDashboard() {
 	};
 
 	return (
-		<div className='h-screen w-screen flex flex-col overflow-hidden bg-gradient-to-br from-background to-highlight text-fontz'>
+		<div className='h-screen w-screen flex flex-col overflow-hidden bg-neutral-900 text-fontz'>
 			{/* ══ TOPBAR ══════════════════════════════════════════════════════ */}
-			<header className='shrink-0 h-12 flex items-center gap-3 px-4 bg-blk/90 border-b border-lines/25'>
+			<header className='shrink-0 h-12 flex items-center gap-3 px-4 bg-neutral-950 border-b border-lines/25'>
 				<div className='flex items-center gap-2 shrink-0'>
 					<img
 						src={iconUrl}
@@ -1253,7 +1663,7 @@ export default function UnifiedDashboard() {
 
 			{/* ══ BODY ════════════════════════════════════════════════════════ */}
 			<div className='flex flex-1 min-h-0 overflow-hidden'>
-				<nav className='hidden lg:flex shrink-0 w-44 flex-col bg-blk/70 border-r border-lines/15'>
+				<nav className='hidden lg:flex shrink-0 w-44 flex-col bg-neutral-950 border-r border-neutral-700/40'>
 					<div className='px-3 pt-3 pb-1 flex items-center justify-between'>
 						<span className='font-mono text-[9px] tracking-[0.28em] text-lines/25 uppercase'>
 							Navigation
@@ -1314,11 +1724,11 @@ export default function UnifiedDashboard() {
 							);
 						})}
 					</div>
-					<div className='mt-auto border-t border-lines/15'>
+					<div className='mt-auto border-t border-neutral-700/40'>
 						{isAuthenticated ?
 							<>
-								<div className='flex items-center gap-2.5 px-3 py-3 border-b border-lines/10'>
-									<div className='w-8 h-8 rounded-full border border-lines/25 overflow-hidden bg-highlight shrink-0'>
+								<div className='flex items-center gap-2.5 px-3 py-3 border-b border-neutral-700/30'>
+									<div className='w-8 h-8 rounded-full border border-neutral-600/40 overflow-hidden bg-neutral-700 shrink-0'>
 										{user?.profile?.picture ?
 											<img
 												src={user.profile.picture}
@@ -1335,7 +1745,10 @@ export default function UnifiedDashboard() {
 									</div>
 									<div className='flex flex-col min-w-0'>
 										<span className='font-mono text-[9px] text-fontz/70 truncate leading-none'>
-											{user?.profile?.email || "GHOST-1"}
+											{user?.profile?.["cognito:username"] ||
+												user?.profile?.preferred_username ||
+												user?.profile?.email ||
+												"GHOST-1"}
 										</span>
 										<span className='font-mono text-[8px] text-green-600 tracking-widest leading-none mt-1'>
 											SYS:ONLINE
@@ -1371,7 +1784,7 @@ export default function UnifiedDashboard() {
 				</nav>
 
 				<main className='flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden'>
-					<div className='shrink-0 h-9 flex items-center gap-2 px-3 sm:px-4 bg-blk/35 border-b border-lines/15'>
+					<div className='shrink-0 h-9 flex items-center gap-2 px-3 sm:px-4 bg-neutral-900/80 border-b border-neutral-700/40'>
 						<span className='font-mono text-[11px] tracking-[0.18em] text-btn uppercase whitespace-nowrap'>
 							{activeNav?.label}
 						</span>
@@ -1393,11 +1806,14 @@ export default function UnifiedDashboard() {
 			</div>
 
 			{/* ══ BOTTOM TAB BAR ══════════════════════════════════════════════ */}
-			<nav className='lg:hidden shrink-0 flex flex-col border-t border-lines/20 bg-blk/95'>
+			<nav className='lg:hidden shrink-0 flex flex-col border-t border-neutral-700/40 bg-neutral-950'>
 				{isAuthenticated && mobileMenuOpen && (
-					<div className='flex items-center justify-between px-4 py-2.5 border-b border-lines/10 bg-blk/60'>
+					<div className='flex items-center justify-between px-4 py-2.5 border-b border-neutral-700/30 bg-neutral-800/60'>
 						<span className='font-mono text-[8px] tracking-widest text-fontz/40 truncate'>
-							{user?.profile?.email || "GHOST-1"}
+							{user?.profile?.["cognito:username"] ||
+								user?.profile?.preferred_username ||
+								user?.profile?.email ||
+								"GHOST-1"}
 						</span>
 						<button
 							onClick={signOut}

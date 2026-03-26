@@ -69,7 +69,7 @@ const Header = () => {
 								className='mt-10'
 								alt='User Avatar'
 							/>
-							<p className='mt-2 text-sm'>{user?.profile?.email || "User"}</p>
+							<p className='mt-2 text-sm'>{user?.profile?.['cognito:username'] || user?.profile?.preferred_username || user?.profile?.email || "User"}</p>
 						</div>
 
 						{/* Quick Links */}

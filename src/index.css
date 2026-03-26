@@ -252,12 +252,12 @@
 	--color-white: #fff;
 
 	/*custom colors*/
-	--color-lines: #5e7c74;
-	--color-highlight: #233c30;
-	--color-btn: #6aad68;
-	--color-background: #2a3f35;
-	--color-fontz: #e2ebe7;
-	--color-blk: #0f1714;
+	--color-lines: #8ca89e;
+	--color-highlight: #2e4a40;
+	--color-btn: #7caa79;
+	--color-background: #182420;
+	--color-fontz: #c4d4c8;
+	--color-blk: #000000;
 
 	--font-sans: "Courier New", mono;
 }

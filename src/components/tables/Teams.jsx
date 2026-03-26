@@ -20,11 +20,17 @@ const STATUS_DOT = {
 	wounded: "bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.7)]",
 	kia: "bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.7)]",
 };
-const getDot = (s = "") =>
-	STATUS_DOT[s.toLowerCase()] ?? STATUS_DOT.active;
+const getDot = (s = "") => STATUS_DOT[s.toLowerCase()] ?? STATUS_DOT.active;
 
 // ─── Single operator avatar in team ──────────────────────────
-function TeamOperator({ op, teamId, isMobile, onDragStart, onDragEnd, onOperatorClick }) {
+function TeamOperator({
+	op,
+	teamId,
+	isMobile,
+	onDragStart,
+	onDragEnd,
+	onOperatorClick,
+}) {
 	return (
 		<div
 			className={[
@@ -37,20 +43,22 @@ function TeamOperator({ op, teamId, isMobile, onDragStart, onDragEnd, onOperator
 			onClick={(e) => onOperatorClick(op, e)}>
 			<div className='relative'>
 				<img
-					className='w-10 h-10 rounded-full border border-lines/30 group-hover:border-btn/60 bg-highlight object-cover object-top transition-all'
+					className='w-10 h-10 rounded-full border border-neutral-700/40 group-hover:border-btn/50 bg-neutral-900 object-cover object-top transition-all'
 					src={op.imageKey || op.image || "/ghost/Default.png"}
-					onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
+					onError={(e) => {
+						e.currentTarget.src = "/ghost/Default.png";
+					}}
 					alt={op.callSign}
 					title={op.callSign}
 				/>
 				<span
 					className={[
-						"absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-blk",
+						"absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-neutral-950",
 						getDot(op.status),
 					].join(" ")}
 				/>
 			</div>
-			<span className='font-mono text-[7px] tracking-wide text-lines/40 group-hover:text-fontz transition-colors text-center max-w-[40px] truncate leading-none'>
+			<span className='font-mono text-[7px] tracking-wide text-neutral-600 group-hover:text-neutral-300 transition-colors text-center max-w-[40px] truncate leading-none'>
 				{op.callSign}
 			</span>
 		</div>
@@ -81,35 +89,37 @@ function TeamCard({
 	return (
 		<div
 			className={[
-				"flex flex-col rounded border transition-all duration-150 overflow-hidden",
+				"flex flex-col border transition-all duration-150 overflow-hidden",
 				isOver ?
-					"border-btn/50 bg-btn/8 shadow-[0_0_12px_rgba(124,170,121,0.15)]"
-				:	"border-lines/20 bg-blk/50",
+					"border-btn/40 bg-btn/5 shadow-[0_0_10px_rgba(124,170,121,0.08)]"
+				:	"border-neutral-800/60 bg-neutral-950/40",
 			].join(" ")}
 			onDragOver={!isMobile ? onDragOver : undefined}
 			onDragEnter={!isMobile ? (e) => onDragEnter(e, team._id) : undefined}
 			onDragLeave={!isMobile ? onDragLeave : undefined}
 			onDrop={!isMobile ? (e) => onDrop(e, team._id) : undefined}>
-
 			{/* ── Card header ─────────────────────────────── */}
-			<div className={[
-				"flex items-center gap-2 px-3 py-2 border-b transition-colors",
-				isOver ? "border-btn/30 bg-btn/10" : "border-lines/15 bg-blk/40",
-			].join(" ")}>
-				<span className={[
-					"w-1.5 h-1.5 rounded-full shrink-0",
-					isOver ? "bg-btn animate-pulse" : "bg-lines/30",
-				].join(" ")} />
-				<span className='font-mono text-[10px] tracking-[0.18em] text-fontz uppercase flex-1 truncate'>
+			<div
+				className={[
+					"flex items-center gap-2 px-3 py-2 border-b transition-colors bg-neutral-950/60",
+					isOver ? "border-btn/30" : "border-neutral-800/50",
+				].join(" ")}>
+				<span
+					className={[
+						"w-1.5 h-1.5 rounded-full shrink-0",
+						isOver ? "bg-btn animate-pulse" : "bg-neutral-700/60",
+					].join(" ")}
+				/>
+				<span className='font-mono text-[10px] tracking-[0.18em] text-neutral-200 uppercase flex-1 truncate'>
 					{team.name}
 				</span>
-				<span className='font-mono text-[8px] text-lines/30 tabular-nums shrink-0'>
+				<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-500 tabular-nums shrink-0 uppercase'>
 					{team.operators.length} op{team.operators.length !== 1 ? "s" : ""}
 				</span>
 				<button
 					onClick={() => openSheet("bottom", <TeamView teamId={team._id} />)}
 					title='Team View'
-					className='font-mono text-[8px] tracking-widest uppercase text-lines/30 hover:text-btn border border-lines/15 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
+					className='font-mono text-[7px] tracking-widest uppercase text-neutral-600 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
 					View
 				</button>
 				<button
@@ -122,14 +132,20 @@ function TeamCard({
 						)
 					}
 					title='Edit Team'
-					className='text-lines/30 hover:text-btn transition-colors'>
-					<FontAwesomeIcon icon={faUsersGear} className='text-[10px]' />
+					className='text-neutral-600 hover:text-btn transition-colors'>
+					<FontAwesomeIcon
+						icon={faUsersGear}
+						className='text-[10px]'
+					/>
 				</button>
 			</div>
 
 			{/* ── Operators ───────────────────────────────── */}
-			<div className='px-3 py-3 flex-1'>
-				{team.operators.length > 0 ? (
+			<div className='px-3 py-2.5 flex-1'>
+				<p className='font-mono text-[7px] tracking-[0.25em] text-neutral-700 uppercase mb-2'>
+					Operators
+				</p>
+				{team.operators.length > 0 ?
 					<div className='flex flex-wrap gap-3'>
 						{team.operators.map((op) => (
 							<TeamOperator
@@ -143,29 +159,29 @@ function TeamCard({
 							/>
 						))}
 					</div>
-				) : (
-					<p className={[
-						"font-mono text-[9px] text-lines/25 italic",
-						isOver ? "text-btn/60" : "",
-					].join(" ")}>
+				:	<p
+						className={[
+							"font-mono text-[8px] text-neutral-700",
+							isOver ? "text-btn/60" : "",
+						].join(" ")}>
 						{isOver ? "Drop operator here" : "No operators assigned"}
 					</p>
-				)}
+				}
 			</div>
 
 			{/* ── Assets ──────────────────────────────────── */}
-			<div className='px-3 pb-3 flex flex-col gap-1.5'>
-				<div className='h-px bg-lines/10 mb-1' />
-				{/* Assigned vehicles */}
-				<div className='flex flex-wrap gap-1.5 min-h-[18px]'>
-					{(team.assets || []).length === 0 ? (
-						<span className='font-mono text-[8px] text-lines/20 italic'>No assets</span>
-					) : (
-						(team.assets || []).map((asset) => {
+			<div className='px-3 pb-3 flex flex-col gap-1.5 border-t border-neutral-800/60'>
+				<div className='pt-2 flex flex-wrap gap-1.5 min-h-[18px]'>
+					{(team.assets || []).length === 0 ?
+						<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-700 uppercase italic'>
+							No assets
+						</span>
+					:	(team.assets || []).map((asset) => {
 							const assetId = typeof asset === "object" ? asset._id : asset;
 							const assetObj =
-								typeof asset === "object" ? asset
-								: fullVehicleList.find((v) => v._id === assetId);
+								typeof asset === "object" ? asset : (
+									fullVehicleList.find((v) => v._id === assetId)
+								);
 							const label =
 								assetObj?.nickName && assetObj.nickName !== "None" ?
 									assetObj.nickName
@@ -173,31 +189,37 @@ function TeamCard({
 							return (
 								<span
 									key={assetId}
-									className='inline-flex items-center gap-1 font-mono text-[8px] tracking-widest text-lines/50 bg-blk/60 border border-lines/15 px-1.5 py-0.5 rounded-sm'>
+									className='inline-flex items-center gap-1 font-mono text-[7px] tracking-widest text-neutral-500 bg-neutral-900/60 border border-neutral-800/60 px-1.5 py-0.5 rounded-sm uppercase'>
 									{label}
 									<button
 										onClick={(e) => {
 											e.stopPropagation();
 											removeVehicleFromTeam(assetId, team._id);
 										}}
-										className='text-lines/30 hover:text-red-400 transition-colors ml-0.5'>
-										<FontAwesomeIcon icon={faXmark} className='text-[7px]' />
+										className='text-neutral-600 hover:text-red-400 transition-colors ml-0.5'>
+										<FontAwesomeIcon
+											icon={faXmark}
+											className='text-[7px]'
+										/>
 									</button>
 								</span>
 							);
 						})
-					)}
+					}
 					<button
 						onClick={() => setShowAddAsset((v) => !v)}
-						className='inline-flex items-center gap-1 font-mono text-[8px] tracking-widest text-lines/30 hover:text-btn border border-lines/15 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
-						<FontAwesomeIcon icon={faPlus} className='text-[7px]' />
+						className='inline-flex items-center gap-1 font-mono text-[7px] tracking-widest uppercase text-neutral-700 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
+						<FontAwesomeIcon
+							icon={faPlus}
+							className='text-[7px]'
+						/>
 						Asset
 					</button>
 				</div>
 				{/* Add asset dropdown */}
 				{showAddAsset && (
 					<select
-						className='w-full bg-blk/60 border border-lines/25 rounded-sm px-2 py-1 font-mono text-[9px] text-fontz outline-none focus:border-btn/50 transition-colors'
+						className='w-full bg-neutral-950 border border-neutral-800/60 rounded-sm px-2 py-1 font-mono text-[9px] text-neutral-300 outline-none focus:border-btn/50 transition-colors'
 						defaultValue=''
 						onChange={(e) => {
 							if (e.target.value) {
@@ -207,7 +229,9 @@ function TeamCard({
 						}}>
 						<option value=''>— Select Asset —</option>
 						{allVehicles.map((v) => (
-							<option key={v._id} value={v._id}>
+							<option
+								key={v._id}
+								value={v._id}>
 								{v.nickName && v.nickName !== "None" ? `${v.nickName} — ` : ""}
 								{v.vehicle} · {v.condition} · {v.remainingFuel}%
 								{v.isRepairing ? " · Repairing" : ""}
@@ -318,33 +342,42 @@ const Teams = ({ dataUpdated, openSheet }) => {
 
 	return (
 		<div className='flex flex-col h-full min-h-0'>
-			{/* ── Header bar ──────────────────────────────── */}
-			<div className='shrink-0 flex items-center gap-2 px-3 py-2 border-b border-lines/20 bg-blk/40'>
-				<button
-					onClick={() =>
-						openSheet("top", <NewTeamForm />, "New Team", "Create a team or let A.I generate one.")
-					}
-					className='w-6 h-6 flex items-center justify-center bg-btn hover:bg-highlight text-blk rounded transition-colors'
-					title='New Team'>
-					<FontAwesomeIcon icon={faPeopleGroup} className='text-[9px]' />
-				</button>
-				<span className='font-mono text-[9px] tracking-[0.2em] text-lines/35 uppercase flex-1'>
-					{teams.length} team{teams.length !== 1 ? "s" : ""}
-				</span>
-				<button
-					className='font-mono text-[9px] tracking-widest uppercase text-red-500/40 hover:text-red-400 border border-red-900/20 hover:border-red-500/40 px-2 py-0.5 rounded-sm transition-all'
-					onClick={() =>
-						openRemoveAllDialog(async () => {
-							await removeAllOperatorsFromTeams();
-						})
-					}>
-					Clear All
-				</button>
-			</div>
-
 			{/* ── Team card grid ───────────────────────────── */}
 			<div className='flex-1 min-h-0 overflow-y-auto p-3'>
-				{teams.length > 0 ? (
+				{/* ── Compact action row ───────────────────── */}
+				<div className='flex items-center gap-2 mb-3'>
+					<button
+						onClick={() =>
+							openSheet(
+								"top",
+								<NewTeamForm />,
+								"New Team",
+								"Create a team or let A.I generate one.",
+							)
+						}
+						className='flex items-center gap-1.5 font-mono text-[7px] tracking-widest uppercase text-neutral-600 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-2 py-0.5 rounded-sm transition-all'
+						title='New Team'>
+						<FontAwesomeIcon
+							icon={faPeopleGroup}
+							className='text-[9px]'
+						/>
+						New Team
+					</button>
+					<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-700 uppercase flex-1'>
+						{teams.length} team{teams.length !== 1 ? "s" : ""}
+					</span>
+					<button
+						className='font-mono text-[7px] tracking-widest uppercase text-red-500/40 hover:text-red-400 border border-red-900/20 hover:border-red-500/40 px-2 py-0.5 rounded-sm transition-all'
+						onClick={() =>
+							openRemoveAllDialog(async () => {
+								await removeAllOperatorsFromTeams();
+							})
+						}>
+						Clear All
+					</button>
+				</div>
+
+				{teams.length > 0 ?
 					<div className='grid grid-cols-1 xl:grid-cols-2 gap-3'>
 						{teams.map((team) => (
 							<TeamCard
@@ -367,21 +400,21 @@ const Teams = ({ dataUpdated, openSheet }) => {
 							/>
 						))}
 					</div>
-				) : (
-					<div className='flex flex-col items-center justify-center h-32 gap-2'>
-						<p className='font-mono text-[10px] tracking-widest text-lines/25 uppercase'>
+				:	<div className='flex flex-col items-center justify-center h-32 gap-2'>
+						<div className='w-5 h-5 border border-neutral-700/40 rotate-45' />
+						<p className='font-mono text-[10px] tracking-widest text-neutral-700 uppercase'>
 							No teams yet
 						</p>
-						<p className='font-mono text-[9px] text-lines/15'>
-							Click + to create your first team
+						<p className='font-mono text-[9px] text-neutral-800'>
+							Click New Team to create your first team
 						</p>
 					</div>
-				)}
+				}
 			</div>
 
 			{/* Drag indicator */}
 			{!isMobile && draggedOperator && (
-				<div className='fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-blk border border-btn/50 px-3 py-1.5 rounded shadow-lg pointer-events-none'>
+				<div className='fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-neutral-950 border border-btn/50 px-3 py-1.5 shadow-lg pointer-events-none'>
 					<p className='font-mono text-[10px] tracking-widest text-btn uppercase'>
 						Moving: {draggedOperator.operator.callSign}
 					</p>

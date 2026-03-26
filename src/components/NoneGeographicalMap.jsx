@@ -160,7 +160,13 @@ const addGrid = (map, bounds) => {
 	/* Vertical lines + column labels */
 	for (let i = 0; i <= COLS; i++) {
 		const x = minX + i * stepX;
-		L.polyline([[minY, x], [maxY, x]], lineStyle).addTo(map);
+		L.polyline(
+			[
+				[minY, x],
+				[maxY, x],
+			],
+			lineStyle,
+		).addTo(map);
 		if (i < COLS) {
 			L.marker([maxY, x + stepX / 2], {
 				icon: L.divIcon({
@@ -176,7 +182,13 @@ const addGrid = (map, bounds) => {
 	/* Horizontal lines + row labels */
 	for (let j = 0; j <= ROWS; j++) {
 		const y = minY + j * stepY;
-		L.polyline([[y, minX], [y, maxX]], lineStyle).addTo(map);
+		L.polyline(
+			[
+				[y, minX],
+				[y, maxX],
+			],
+			lineStyle,
+		).addTo(map);
 		if (j < ROWS) {
 			L.marker([y + stepY / 2, minX], {
 				icon: L.divIcon({
@@ -228,14 +240,18 @@ const buildCompass = () => {
 				<circle cx="26" cy="26" r="24" stroke="rgba(143,184,64,0.35)" stroke-width="1"/>
 				<circle cx="26" cy="26" r="20" stroke="rgba(143,184,64,0.15)" stroke-width="0.5" stroke-dasharray="3,4"/>
 				<!-- Tick marks at 45° intervals -->
-				${[0,45,90,135,180,225,270,315].map(deg => {
-					const r = deg % 90 === 0 ? 20 : 21.5;
-					const r2 = 24;
-					const rad = (deg - 90) * Math.PI / 180;
-					const x1 = 26 + r * Math.cos(rad), y1 = 26 + r * Math.sin(rad);
-					const x2 = 26 + r2 * Math.cos(rad), y2 = 26 + r2 * Math.sin(rad);
-					return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="rgba(143,184,64,0.5)" stroke-width="${deg % 90 === 0 ? 1.5 : 0.8}"/>`;
-				}).join('')}
+				${[0, 45, 90, 135, 180, 225, 270, 315]
+					.map((deg) => {
+						const r = deg % 90 === 0 ? 20 : 21.5;
+						const r2 = 24;
+						const rad = ((deg - 90) * Math.PI) / 180;
+						const x1 = 26 + r * Math.cos(rad),
+							y1 = 26 + r * Math.sin(rad);
+						const x2 = 26 + r2 * Math.cos(rad),
+							y2 = 26 + r2 * Math.sin(rad);
+						return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="rgba(143,184,64,0.5)" stroke-width="${deg % 90 === 0 ? 1.5 : 0.8}"/>`;
+					})
+					.join("")}
 				<!-- N arrow (north = up) -->
 				<polygon points="26,5 23,22 26,19 29,22" fill="rgba(193,255,114,0.9)" opacity="0.9"/>
 				<!-- S arrow -->
@@ -324,11 +340,7 @@ const toGridRef = (coords, bounds) => {
 };
 
 /* ════════════════════════════════════════════════════════ */
-const NoneGeographicalMap = ({
-	bounds,
-	locationsInProvince,
-	imgURL,
-}) => {
+const NoneGeographicalMap = ({ bounds, locationsInProvince, imgURL }) => {
 	const mapRef = useRef(null);
 	const mapInst = useRef(null);
 	const coordsRef = useRef(null);
@@ -353,14 +365,14 @@ const NoneGeographicalMap = ({
 
 		const map = L.map(mapRef.current, {
 			center: [bounds[1][0] / 2, bounds[1][1] / 2],
-			zoom: -1,
+			zoom: 2,
 			crs: L.CRS.Simple,
 			dragging: true,
 			zoomControl: true,
 			scrollWheelZoom: true,
 			zoomAnimation: false,
 		});
-		map.setMinZoom(-1);
+		map.setMinZoom(-3);
 		map.setMaxZoom(2);
 		mapInst.current = map;
 
@@ -433,12 +445,15 @@ const NoneGeographicalMap = ({
 		/* ── Auto-fit to objectives ── */
 		if (objCoords.length > 0) {
 			try {
-				map.fitBounds(L.latLngBounds(objCoords), { padding: [80, 80], maxZoom: 1 });
+				map.fitBounds(L.latLngBounds(objCoords), {
+					padding: [120, 120],
+					maxZoom: -1,
+				});
 			} catch (_) {
-				map.setZoom(-1);
+				map.setZoom(-2);
 			}
 		} else {
-			map.setZoom(-1);
+			map.setZoom(-2);
 		}
 
 		return () => {
@@ -456,12 +471,10 @@ const NoneGeographicalMap = ({
 	}, [bounds, locationsInProvince, imgURL]);
 
 	/* Derive intel header data from first objective */
-	const firstObj =
-		Array.isArray(locationsInProvince) && locationsInProvince[0];
-	const gridRef = firstObj
-		? toGridRef(firstObj.coordinates, bounds)
-		: "??-??";
-	const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19) + "Z";
+	const firstObj = Array.isArray(locationsInProvince) && locationsInProvince[0];
+	const gridRef = firstObj ? toGridRef(firstObj.coordinates, bounds) : "??-??";
+	const timestamp =
+		new Date().toISOString().replace("T", " ").slice(0, 19) + "Z";
 
 	return (
 		<div
@@ -476,7 +489,9 @@ const NoneGeographicalMap = ({
 			<div
 				style={{
 					position: "absolute",
-					top: 0, left: 0, right: 0,
+					top: 0,
+					left: 0,
+					right: 0,
 					zIndex: 800,
 					background: "rgba(5,8,4,0.88)",
 					borderBottom: "1px solid rgba(143,184,64,0.2)",
@@ -491,17 +506,30 @@ const NoneGeographicalMap = ({
 					gap: "12px",
 				}}>
 				<span style={{ color: "rgba(255,68,68,0.6)" }}>// TOP SECRET //</span>
-				<span style={{ color: "rgba(143,184,64,0.4)" }}>TACTICAL SATELLITE FEED</span>
+				<span style={{ color: "rgba(143,184,64,0.4)" }}>
+					TACTICAL SATELLITE FEED
+				</span>
 				<span style={{ color: "rgba(143,184,64,0.35)" }}>
 					GRID {gridRef} · {locationsInProvince?.length ?? 0} OBJ
 				</span>
 				<span style={{ color: "rgba(143,184,64,0.3)" }}>{timestamp}</span>
-				<span style={{ color: "rgba(193,255,114,0.5)", display: "flex", alignItems: "center", gap: 5 }}>
-					<span style={{
-						display: "inline-block", width: 6, height: 6,
-						borderRadius: "50%", background: "#c1ff72",
-						boxShadow: "0 0 5px #c1ff72",
-					}} />
+				<span
+					style={{
+						color: "rgba(193,255,114,0.5)",
+						display: "flex",
+						alignItems: "center",
+						gap: 5,
+					}}>
+					<span
+						style={{
+							display: "inline-block",
+							width: 6,
+							height: 6,
+							borderRadius: "50%",
+							background: "#c1ff72",
+							boxShadow: "0 0 5px #c1ff72",
+						}}
+					/>
 					LIVE
 				</span>
 			</div>
@@ -525,12 +553,42 @@ const NoneGeographicalMap = ({
 					key={corner}
 					style={{
 						position: "absolute",
-						width: 28, height: 28,
-						zIndex: 800, pointerEvents: "none",
-						...(corner === "tl" ? { top: 8, left: 8, borderTop: "2px solid rgba(143,184,64,0.5)", borderLeft: "2px solid rgba(143,184,64,0.5)" } : {}),
-						...(corner === "tr" ? { top: 8, right: 8, borderTop: "2px solid rgba(143,184,64,0.5)", borderRight: "2px solid rgba(143,184,64,0.5)" } : {}),
-						...(corner === "bl" ? { bottom: 8, left: 8, borderBottom: "2px solid rgba(143,184,64,0.5)", borderLeft: "2px solid rgba(143,184,64,0.5)" } : {}),
-						...(corner === "br" ? { bottom: 8, right: 8, borderBottom: "2px solid rgba(143,184,64,0.5)", borderRight: "2px solid rgba(143,184,64,0.5)" } : {}),
+						width: 28,
+						height: 28,
+						zIndex: 800,
+						pointerEvents: "none",
+						...(corner === "tl" ?
+							{
+								top: 8,
+								left: 8,
+								borderTop: "2px solid rgba(143,184,64,0.5)",
+								borderLeft: "2px solid rgba(143,184,64,0.5)",
+							}
+						:	{}),
+						...(corner === "tr" ?
+							{
+								top: 8,
+								right: 8,
+								borderTop: "2px solid rgba(143,184,64,0.5)",
+								borderRight: "2px solid rgba(143,184,64,0.5)",
+							}
+						:	{}),
+						...(corner === "bl" ?
+							{
+								bottom: 8,
+								left: 8,
+								borderBottom: "2px solid rgba(143,184,64,0.5)",
+								borderLeft: "2px solid rgba(143,184,64,0.5)",
+							}
+						:	{}),
+						...(corner === "br" ?
+							{
+								bottom: 8,
+								right: 8,
+								borderBottom: "2px solid rgba(143,184,64,0.5)",
+								borderRight: "2px solid rgba(143,184,64,0.5)",
+							}
+						:	{}),
 					}}
 				/>
 			))}
@@ -538,9 +596,12 @@ const NoneGeographicalMap = ({
 			{/* ── Vignette ── */}
 			<div
 				style={{
-					position: "absolute", inset: 0,
-					zIndex: 700, pointerEvents: "none",
-					background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.7) 100%)",
+					position: "absolute",
+					inset: 0,
+					zIndex: 700,
+					pointerEvents: "none",
+					background:
+						"radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.7) 100%)",
 				}}
 			/>
 

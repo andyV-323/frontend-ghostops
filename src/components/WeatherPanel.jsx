@@ -1,16 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// BiomeWeatherPanel.jsx
-// Displays biome-based pre-op conditions for the selected province.
-// Pulls from BIOME_WEATHER via getProvinceWeather utility.
-//
-// Props:
-//   province  — province key string (e.g. 'FenBog') or province object
-//   userUnit  — 'C' or 'F' (default 'C')
-//
-// Usage:
-//   <BiomeWeatherPanel province={selectedProvince} userUnit="F" />
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { getProvinceWeather } from "../utils/Weather";
