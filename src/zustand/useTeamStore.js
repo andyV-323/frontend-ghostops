@@ -19,9 +19,6 @@ const useTeamsStore = create((set, get) => ({
 	operators: [],
 	loading: false,
 	allOperators: [],
-	aiTeam: [],
-	selectedTeamType: "",
-	missionDescription: "",
 	teamName: "",
 	fullOperatorList: [],
 	assets: [],
@@ -291,134 +288,6 @@ const useTeamsStore = create((set, get) => ({
 		set({ operators: get().operators.filter((id) => id !== operatorId) });
 	},
 
-	// ─────────────────────────────────────────────────────────────────────────────
-
-	generateAITeam: async () => {
-		set({ loading: true });
-		try {
-			const { selectedTeamType, missionDescription, allOperators } = get();
-
-			if (!selectedTeamType && !missionDescription.trim()) {
-				toast.warn("Select a team type or describe the mission.");
-				return;
-			}
-
-			const key = import.meta.env.VITE_GROQ_KEY;
-			if (!key) throw new Error("VITE_GROQ_KEY is not set");
-
-			// ── Build full operator context ─────────────────────────────────────
-			// Keep payload slim to avoid truncation — only what the AI needs to decide
-			const operatorContext = allOperators.map((op) => ({
-				id: op._id,
-				callSign: op.callSign,
-				class: op.class || "",
-				role: op.role || "",
-				weaponType: op.weaponType || "",
-				support: !!op.support,
-				aviator: !!op.aviator,
-			}));
-
-			// ── System prompt ───────────────────────────────────────────────────
-			const system = `You are a Ghost Recon special operations team commander selecting operators for a mission. \
-You will receive a list of available operators with their class, role, weapon type, perks, and special flags. \
-Select the best 2–4 operators for the given mission type or description. \
-Respond ONLY with a valid JSON array. No markdown, no explanation outside the JSON. \
-Each element must have exactly these fields: id (string), callSign (string), justification (string — one tactical sentence explaining why this operator fits). \
-Example: [{"id":"abc123","callSign":"NOMAD","justification":"Assault class with silenced SMG loadout ideal for close-quarters direct action."}]`;
-
-			// ── User prompt ─────────────────────────────────────────────────────
-			const missionContext = [
-				selectedTeamType ? `Team type: ${selectedTeamType}` : null,
-				missionDescription?.trim() ? `Mission: ${missionDescription}` : null,
-			]
-				.filter(Boolean)
-				.join("\n");
-
-			const user = `${missionContext}
-
-Available operators:
-${JSON.stringify(operatorContext, null, 2)}
-
-Select the best 2–4 operators. Return only the JSON array.`;
-
-			// ── Groq call ───────────────────────────────────────────────────────
-			const response = await fetch(
-				"https://api.groq.com/openai/v1/chat/completions",
-				{
-					method: "POST",
-					headers: {
-						Authorization: `Bearer ${key}`,
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						model: "llama-3.3-70b-versatile",
-						max_tokens: 800,
-						temperature: 0.5,
-						messages: [
-							{ role: "system", content: system },
-							{ role: "user", content: user },
-						],
-					}),
-				},
-			);
-
-			if (!response.ok) {
-				const err = await response.text();
-				throw new Error(`Groq ${response.status}: ${err}`);
-			}
-
-			const data = await response.json();
-			const raw = data.choices?.[0]?.message?.content ?? "";
-
-			// ── Parse JSON — robustly extract array from anywhere in the response
-			// Model sometimes wraps in markdown, adds preamble, or truncates
-			let parsed;
-			try {
-				// First try: strip fences and parse directly
-				const clean = raw.replace(/```json|```/gi, "").trim();
-				parsed = JSON.parse(clean);
-			} catch {
-				// Second try: extract just the [...] portion with regex
-				const match = raw.match(/\[\s*\{[\s\S]*?\}\s*\]/);
-				if (!match)
-					throw new Error("Could not extract JSON array from AI response.");
-				parsed = JSON.parse(match[0]);
-			}
-
-			if (!Array.isArray(parsed) || parsed.length === 0) {
-				throw new Error("AI returned empty or invalid team.");
-			}
-
-			// ── Match back to full operator objects, attach justification ───────
-			const suggested = parsed
-				.map((item) => {
-					const op = allOperators.find(
-						(o) => o._id === item.id || o.callSign === item.callSign,
-					);
-					if (!op) return null;
-					return { ...op, justification: item.justification || "" };
-				})
-				.filter(Boolean);
-
-			if (suggested.length === 0) {
-				throw new Error("AI suggested operators not found in roster.");
-			}
-
-			set({
-				aiTeam: suggested,
-				operators: suggested.map((op) => op._id),
-			});
-
-			toast.success(
-				`AI selected ${suggested.length} operator${suggested.length > 1 ? "s" : ""}.`,
-			);
-		} catch (error) {
-			console.error("ERROR generating AI team:", error);
-			toast.error(error.message || "Failed to generate team.");
-		} finally {
-			set({ loading: false });
-		}
-	},
 	// Create a new team
 	createTeam: async (teamData) => {
 		try {
@@ -852,9 +721,6 @@ Select the best 2–4 operators. Return only the JSON array.`;
 			teamName: "",
 			operators: [],
 			assets: [],
-			aiTeam: [],
-			selectedTeamType: "",
-			missionDescription: "",
 			team: null,
 		});
 	},

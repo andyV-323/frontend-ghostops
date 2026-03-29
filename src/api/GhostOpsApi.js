@@ -4,11 +4,23 @@
 //
 // Point placement → GeneratePoints.js (algorithmic, no AI)
 // Briefing generation → BriefingGenerator.js (pure function, no AI)
-// AAR generation → generateAAR() below (single Groq call per operation)
+// AAR generation → generateAAR() below — proxied through POST /api/ai/aar
+// Campaign generation → generateCampaign() below — proxied through POST /api/ai/campaign
+// Groq key lives on the backend only — never exposed to the browser.
+//
+// PROVINCES_AI_CONTEXT has been removed entirely.
+// Province context is now built at call time via buildProvinceContext() utility.
+// Import that utility and PROVINCES in your caller (AIMissionGenerator.jsx).
+//
+// Mode structure:
+//   Random Mission — zero Groq, deterministic
+//   Mission        — zero Groq, deterministic
+//   AI Mode
+//     AI Random    — user picks province + location count, AI builds campaign
+//     AI Mission   — user picks province + specific locations, AI sequences them
 // ─────────────────────────────────────────────────────────────────────────────
-import { PROVINCES_AI_CONTEXT } from "@/config";
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "llama-3.3-70b-versatile";
+
+import api from "./ApiClient";
 
 // ─── Mission type registry ────────────────────────────────────────────────────
 // Single source of truth for the UI, BriefingGenerator, and GeneratePoints.
@@ -270,9 +282,6 @@ const INTEL_LABELS = {
 };
 
 export async function generateAAR({ mission, selectedPhases }) {
-	const key = import.meta.env.VITE_GROQ_KEY;
-	if (!key) throw new Error("VITE_GROQ_KEY is not set in environment");
-
 	if (!selectedPhases?.length) {
 		throw new Error("At least one phase must be selected to generate an AAR.");
 	}
@@ -354,105 +363,97 @@ ${phaseLog}
 
 Write the after action report.`;
 
-	// ── Groq call ─────────────────────────────────────────────────────────────
-	const response = await fetch(GROQ_URL, {
-		method: "POST",
-		headers: {
-			Authorization: `Bearer ${key}`,
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			model: MODEL,
-			max_tokens: 600,
-			temperature: 0.4,
-			messages: [
-				{
-					role: "system",
-					content:
-						"You are a Ghost Recon special operations debrief officer writing an after action report. " +
-						"Military prose. No bullet points. No lists. No markdown headers. " +
-						"One continuous document, 300–400 words. " +
-						"Cover: what the operation set out to achieve, how each phase executed, " +
-						"casualties sustained and their circumstances, intelligence developed, " +
-						"Sentinel adaptation or threat posture changes observed, " +
-						"and one specific recommended follow-on action based on the outcomes and any unresolved leads.",
-				},
-				{ role: "user", content: userContent },
-			],
-		}),
-	});
+	// ── Backend proxy call ───────────────────────────────────────────────────
+	const systemPrompt =
+		"You are a Ghost Recon special operations debrief officer writing an after action report. " +
+		"Military prose. No bullet points. No lists. No markdown headers. " +
+		"One continuous document, 300\u2013400 words. " +
+		"Cover: what the operation set out to achieve, how each phase executed, " +
+		"casualties sustained and their circumstances, intelligence developed, " +
+		"Sentinel adaptation or threat posture changes observed, " +
+		"and one specific recommended follow-on action based on the outcomes and any unresolved leads.";
 
-	if (!response.ok) {
-		const err = await response.text();
-		throw new Error(`Groq API ${response.status}: ${err}`);
-	}
-
-	const data = await response.json();
-	return data.choices?.[0]?.message?.content?.trim() ?? "";
+	const res = await api.post("/ai/aar", { systemPrompt, userContent });
+	return res.data.text;
 }
+
 // ─────────────────────────────────────────────────────────────────────────────
-// ADD TO ghostOpsApi.js
-// generateCampaign — single Groq call that produces the full phase chain.
+// generateCampaign
+// Single Groq call producing the full phase chain for AI mode operations.
 //
 // Called by AIMissionGenerator.jsx after player configures inputs.
 // Returns structured JSON — no further Groq calls needed for this operation.
 //
-// Random mode: AI picks provinces, locations, phase count, narrative.
-// Mission mode: AI sequences player-chosen locations into a narrative.
+// Caller is responsible for building provinceContext before this call:
+//   import { buildProvinceContext } from '@/utils/buildProvinceContext';
+//   import { PROVINCES } from '@/config';
+//   const provinceContext = buildProvinceContext(selectedProvince, PROVINCES);
+//   const provinceData = PROVINCES[selectedProvince];
+//
+// AI Random:  playerLocations = null,  locationCount = number (2–6)
+// AI Mission: playerLocations = array of location name strings, locationCount = null
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function generateCampaign({
 	opType,
 	opTypeDef,
 	context,
-	provinceContext,
-	playerPhases, // null = random mode, array = mission mode
+	province, // single province key string e.g. "FenBog"
+	provinceData, // full province object from PROVINCES[province]
+	provinceContext, // string built by buildProvinceContext() before this call
+	playerLocations, // null = AI Random | array of location name strings = AI Mission
+	locationCount, // number = AI Random only | null = AI Mission
 	missionTypes,
 }) {
-	const key = import.meta.env.VITE_GROQ_KEY;
-	if (!key) throw new Error("VITE_GROQ_KEY is not set in environment");
-
-	const isRandom = !playerPhases;
+	const isRandom = !playerLocations;
 
 	// ── Build the mission type reference list ─────────────────────────────────
 	const missionTypeRef = missionTypes
 		.map((m) => `  ${m.id} — ${m.fullLabel} (${m.category})`)
 		.join("\n");
 
-	// ── Build player phase instructions (mission mode only) ───────────────────
-	const playerPhaseBlock =
-		playerPhases ?
-			`The player has selected the following phase locations in order. Use these EXACTLY — do not change the province or location names:
-${playerPhases
-	.map(
-		(p) =>
-			`  Phase ${p.phaseNumber}${p.isFinal ? " (FINAL)" : ""}: Province "${p.province}", Location "${p.location}"`,
-	)
-	.join("\n")}
+	// ── Build player phase block ──────────────────────────────────────────────
+	// AI Random: AI picks locations and phase count from the province.
+	// AI Mission: locations are locked to player selection, AI assigns types and narrative.
 
-Assign an appropriate missionTypeId from the list above to each phase based on its role in the narrative. The final phase missionTypeId must be one of: ${opTypeDef.finalPhaseTypes.join(", ")}.`
-		:	`Choose ${opTypeDef.finalPhaseTypes.length > 1 ? "one of" : ""} [${opTypeDef.finalPhaseTypes.join(", ")}] as the final phase mission type. Build 2–4 build-up phases before it using types from [${opTypeDef.buildupPhaseTypes.join(", ")}]. REQUIRED: spread phases across at least 2–3 DIFFERENT provinces — do not concentrate all phases in one province. Choose provinces and locations that make narrative sense — build-up phases in one region should logically connect to the final phase in another.`;
+	const playerPhaseBlock =
+		playerLocations ?
+			`The player has selected the following locations in order. Use these EXACTLY — do not change or substitute any location name:
+${playerLocations.map((loc, i) => `  Phase ${i + 1}: "${loc}"`).join("\n")}
+
+Assign an appropriate missionTypeId from the list above to each phase based on its role in the narrative.
+The final phase missionTypeId must be one of: ${opTypeDef.finalPhaseTypes.join(", ")}.
+Phase count equals the number of locations the player selected — do not add or remove phases.
+The final location is the decisive action — make it the operational climax.`
+		:	`Choose locations from the province that form a logical operational sequence.
+Generate between 2 and 6 phases — choose the count that fits the narrative, not a default.
+The player requested approximately ${locationCount} locations as a guide, but adjust by 1 if narrative coherence requires it.
+A tight 2-phase direct action is valid. A 6-phase multi-stage campaign is valid. Never pad phases to reach a number.
+Each phase must produce intelligence or shape the battlefield that the next phase directly exploits.
+The final phase missionTypeId must be one of: ${opTypeDef.finalPhaseTypes.join(", ")}.
+Build-up phases use types from: [${opTypeDef.buildupPhaseTypes.join(", ")}].
+The final phase is the decisive action — make it the operational climax.`;
 
 	// ── System prompt ─────────────────────────────────────────────────────────
 	const systemPrompt = `You are a Ghost Recon Breakpoint special operations mission planner generating a classified operation order.
 
 You MUST return ONLY valid JSON — no preamble, no explanation, no markdown, no code blocks.
-Every province name and location name you use MUST exactly match a name from the provided list.
-Never invent province names or location names.
+Every location name you use MUST exactly match a name from the provided province location list.
+Never invent location names.
 
-The operation takes place on Auroa — a remote technology island seized by Sentinel Corp and defended by the Wolves, a rogue special forces faction armed with advanced Skell Technology drones, autonomous weapons, and armed vehicles. Ghost operatives operate without official acknowledgment. Write in tight military prose — no filler, no civilian tone.`;
+The operation takes place on Auroa — a remote technology archipelago seized by Sentinel Corp and defended by the Wolves, a rogue special forces faction armed with advanced Skell Technology drones, autonomous weapons, and armed vehicles. Ghost operatives operate without official acknowledgment. Write in tight military prose — no filler, no civilian tone.`;
 
 	// ── User prompt ───────────────────────────────────────────────────────────
 	const userPrompt = `Generate a Ghost Recon Breakpoint classified operation order.
 
 OPERATION TYPE: ${opTypeDef.label} (${opType})
-PLAYER CONTEXT: ${context || "No additional context — generate a compelling, grounded scenario."}
-MODE: ${isRandom ? "Full AI generation — choose all provinces and locations from the list." : "Player-defined locations — build narrative around the player's chosen sequence."}
+PLAYER CONTEXT: ${context || "No additional context provided — generate a compelling, grounded scenario."}
+MODE: ${isRandom ? "AI Random — choose locations and phase sequence from the province list below." : "AI Mission — player has locked the locations, build the narrative around them."}
 
 AVAILABLE MISSION TYPE IDs (use these exactly):
 ${missionTypeRef}
 
-AVAILABLE PROVINCES AND LOCATIONS:
+PROVINCE AND AVAILABLE LOCATIONS:
 ${provinceContext}
 
 ${playerPhaseBlock}
@@ -462,19 +463,16 @@ Return this exact JSON structure:
   "operationName": "Two-word codename in ALL CAPS — sounds classified e.g. IRON COVENANT, PALE EMBER, DEAD RECKONING",
   "narrative": "3-4 sentences. Name the specific threat actor or asset. Explain why Auroa command issued this tasking. Include one specific detail about Sentinel or Wolves activity that triggered this operation. Military tone — no vague generalities.",
   "opType": "${opType}",
-  "phaseCount": <number 3-5>,
+  "phaseCount": <number between 2 and 6 — chosen by narrative need, not defaulted to 4>,
   "phases": [
     {
       "phaseIndex": 0,
       "label": "Short phase codename e.g. Cold Canvas, Iron Vigil, Dead Drop",
-      "province": "<exact province key from list>",
-      "location": "<exact location name from list>",
-      "missionTypeId": "<exact mission type ID from list>",
+      "location": "<exact location name from the province list above>",
+      "missionTypeId": "<exact mission type ID from the list above>",
       "timeOfDay": "<one of: night, dawn, day, dusk — SR missions must use night or dawn; DA strikes prefer night or dusk; final phases prefer night>",
       "threatLevel": "<one of: low, medium, high, critical — build-up phases escalate; final phase is always high or critical>",
-      "enemyForce": "One sentence describing the specific enemy presence at this location — unit type, rough size, and one notable capability e.g. 'Wolves security element of 10-15 personnel with drone overwatch and a roving vehicle patrol.'",
-      "objective": "Two sentences. First: what the player physically does. Second: why this matters to the campaign — what it unlocks or confirms.",
-      "minibrief": "3-4 sentences of tactical flavor. Reference the specific location by name. Describe the environmental or tactical challenge. End with the specific risk or complication the element must manage.",
+      "objective": "Two sentences. First: what the player physically does at this location. Second: why this matters to the campaign — what it unlocks or confirms for the next phase.",
       "intelGate": "snake_case label for the intelligence this phase produces e.g. patrol_timing, facility_layout, hvt_confirmed",
       "isFinal": false
     }
@@ -484,75 +482,24 @@ Return this exact JSON structure:
 Rules:
 - phases array length must equal phaseCount
 - Last phase must have isFinal: true, all others isFinal: false
-- province and location values must match the provided list EXACTLY (case-sensitive)
-- missionTypeId must match a value from the provided list EXACTLY
+- location values must match the provided province location list EXACTLY (case-sensitive)
+- missionTypeId must match a value from the mission type list EXACTLY
 - timeOfDay must be one of: night, dawn, day, dusk
 - threatLevel must be one of: low, medium, high, critical
-- Build-up phases should feel like genuine ISR or shaping steps that logically lead to the final phase
-- The final phase is the decisive action — make the stakes clear in the minibrief
-- Each phase's intelGate should reference something the next phase actually exploits
-- enemyForce must name a specific unit type (Wolves, Sentinel Security, autonomous drone element, etc.) — never generic
-- In random mode: phases MUST span at least 2 different provinces — never assign all phases the same province`;
+- phaseCount is determined by operation complexity — a 2-phase op is valid, a 6-phase op is valid, never default to 4
+- Build-up phases must feel like genuine ISR or shaping actions that logically enable the next phase
+- The final phase is the decisive action — objective text must reflect the operational climax
+- Each phase intelGate must reference something the following phase actually exploits
+- Do NOT include a province field in phases — all phases are in ${province}
+- Do NOT include minibrief — tactical environmental detail is handled by BriefingGenerator
+- Do NOT include enemyForce — enemy presence is handled by a separate config`;
 
-	// ── Groq call ─────────────────────────────────────────────────────────────
-	const response = await fetch(GROQ_URL, {
-		method: "POST",
-		headers: {
-			Authorization: `Bearer ${key}`,
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			model: MODEL,
-			max_tokens: 2400,
-			temperature: 0.72,
-			response_format: { type: "json_object" },
-			messages: [
-				{ role: "system", content: systemPrompt },
-				{ role: "user", content: userPrompt },
-			],
-		}),
+	// ── Backend proxy call ───────────────────────────────────────────────────
+	const res = await api.post("/ai/campaign", {
+		systemPrompt,
+		userPrompt,
+		province,
+		provinceLocationNames: provinceData.locations.map((l) => l.name),
 	});
-
-	if (!response.ok) {
-		const err = await response.text();
-		throw new Error(`Groq API ${response.status}: ${err}`);
-	}
-
-	const data = await response.json();
-	const raw = data.choices?.[0]?.message?.content?.trim() ?? "";
-
-	// ── Parse and validate ────────────────────────────────────────────────────
-	let campaign;
-	try {
-		campaign = JSON.parse(raw);
-	} catch {
-		throw new Error("Campaign generation returned invalid JSON. Try again.");
-	}
-
-	if (!campaign.phases?.length) {
-		throw new Error("Campaign generation returned no phases. Try again.");
-	}
-
-	// Validate province + location names against config
-	// Import PROVINCES at top of ghostOpsApi.js if not already imported:
-	// import { PROVINCES } from "@/config";
-	const invalidPhases = campaign.phases.filter((p) => {
-		const pd = PROVINCES_AI_CONTEXT[p.province];
-		if (!pd) return true;
-		const locExists = pd.locations.some(
-			(l) => l.name.trim() === p.location.trim(),
-		);
-		return !locExists;
-	});
-
-	if (invalidPhases.length > 0) {
-		const details = invalidPhases
-			.map((p) => `"${p.province}" / "${p.location}"`)
-			.join(", ");
-		throw new Error(
-			`AI selected invalid province/location combinations: ${details}. Try generating again.`,
-		);
-	}
-
-	return campaign;
+	return res.data.campaign;
 }

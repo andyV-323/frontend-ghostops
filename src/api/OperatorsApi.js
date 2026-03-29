@@ -64,7 +64,7 @@ export const uploadOperatorImage = async (imageFile) => {
 export const deleteOperatorImage = async (imagePath) => {
 	try {
 		const response = await api.delete("/operators/delete-image", {
-			data: { imagePath },
+			data: { imageUrl: imagePath },
 		});
 		return response.data;
 	} catch (error) {

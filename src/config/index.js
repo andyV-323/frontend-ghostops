@@ -14,7 +14,6 @@ import { PERKS } from "./perks";
 import { BIOME_WEATHER } from "./biome";
 import { PROVINCE_BIOMES } from "./provinceBiomes";
 import { PROVINCE_TERRAIN } from "./provinceTerrain";
-import { PROVINCES_AI_CONTEXT } from "./provinceAIContext";
 
 export {
 	about,
@@ -33,5 +32,4 @@ export {
 	BIOME_WEATHER,
 	PROVINCE_BIOMES,
 	PROVINCE_TERRAIN,
-	PROVINCES_AI_CONTEXT,
 };

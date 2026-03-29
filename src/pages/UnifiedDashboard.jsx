@@ -720,12 +720,6 @@ function BriefingPage({ onNewMission }) {
 							{activeMission.name}
 						</span>
 
-						{isAIMission && activeMission.operationNarrative && (
-							<span className='w-full font-mono text-[8px] text-lines/30 italic truncate'>
-								{activeMission.operationNarrative}
-							</span>
-						)}
-
 						<div className='w-px h-3 bg-lines/20' />
 
 						<BriefStatChip
@@ -795,11 +789,6 @@ function BriefingPage({ onNewMission }) {
 						<span className='font-mono text-[9px] tracking-widest text-btn/70 uppercase truncate'>
 							{activeMission.name}
 						</span>
-						{isAIMission && activeMission.operationNarrative && (
-							<span className='font-mono text-[8px] text-lines/30 italic truncate'>
-								{activeMission.operationNarrative}
-							</span>
-						)}
 					</div>
 
 					<div className='w-px h-3 bg-lines/20 shrink-0' />
@@ -1241,24 +1230,24 @@ function OperatorsPage() {
 					return (
 						<div
 							key={op._id}
+							onClick={() => selectOp(op)}
 							className={[
-								"w-full flex items-center gap-2 px-3 py-1.5 border-b border-neutral-800/40 transition-colors",
+								"w-full flex items-center gap-2 px-3 py-1.5 border-b border-neutral-800/40 transition-colors cursor-pointer",
 								selectedOp?._id === op._id ?
 									"bg-neutral-700/60 border-l-2 border-l-btn"
 								:	"hover:bg-neutral-800/60 border-l-2 border-l-transparent",
 							].join(" ")}>
-							<button
-								onClick={() => selectOp(op)}
-								className='flex items-center gap-2 flex-1 min-w-0 text-left'>
+							<div className='flex items-center gap-2 flex-1 min-w-0'>
 								<span
 									className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot(op)}`}
 								/>
 								<span className='font-mono text-[10px] text-neutral-200 truncate flex-1 leading-none'>
 									{op.callSign || "—"}
 								</span>
-							</button>
+							</div>
 							<button
-								onClick={() =>
+								onClick={(e) => {
+									e.stopPropagation();
 									open(
 										"bottom",
 										<AssignTeamSheet
@@ -1270,8 +1259,8 @@ function OperatorsPage() {
 										/>,
 										"Assign to Team",
 										`Assign ${op.callSign} to a team.`,
-									)
-								}
+									);
+								}}
 								className='font-mono text-[7px] tracking-widest uppercase shrink-0 px-1.5 py-0.5 rounded border border-neutral-800 hover:border-btn/40 transition-colors'>
 								<span
 									className={assignedTeam ? "text-btn" : "text-neutral-700"}>

@@ -1,5 +1,5 @@
 import { Button } from "@material-tailwind/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ghostID, CLASS, WEAPONS, ITEMS, PERKS } from "@/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
@@ -7,6 +7,7 @@ import { useOperatorsStore, useSheetStore } from "@/zustand";
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { useHandleChange, useFormActions, useConfirmDialog } from "@/hooks";
 import { ConfirmDialog, ImageUpload, SquadSelect } from "@/components";
+import { deleteOperatorImage } from "@/api/OperatorsApi";
 
 const EditOperatorForm = ({ operator }) => {
 	const handleChange = useHandleChange();
@@ -23,6 +24,7 @@ const EditOperatorForm = ({ operator }) => {
 		loading,
 	} = useOperatorsStore();
 	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
+	const [removingImage, setRemovingImage] = useState(false);
 
 	useEffect(() => {
 		if (operator) {
@@ -46,11 +48,25 @@ const EditOperatorForm = ({ operator }) => {
 		});
 	};
 
-	const handleFullBodyUpload = (imageUrl) => {
+	const handleFullBodyUpload = async (imageUrl) => {
+		if (selectedOperator.imageKey) {
+			await deleteOperatorImage(selectedOperator.imageKey);
+		}
 		setSelectedOperator({
 			...selectedOperator,
 			imageKey: imageUrl,
 		});
+	};
+
+	const handleRemoveImage = async () => {
+		if (!selectedOperator.imageKey) return;
+		setRemovingImage(true);
+		try {
+			await deleteOperatorImage(selectedOperator.imageKey);
+			setSelectedOperator({ ...selectedOperator, imageKey: null });
+		} finally {
+			setRemovingImage(false);
+		}
 	};
 
 	// Simplified URL handler for S3
@@ -145,6 +161,13 @@ const EditOperatorForm = ({ operator }) => {
 											}}
 										/>
 									</div>
+									<button
+										type='button'
+										onClick={handleRemoveImage}
+										disabled={removingImage}
+										className='mt-2 w-full font-mono text-[9px] tracking-widest uppercase px-3 py-1.5 rounded border border-red-900/50 text-red-400 hover:bg-red-900/20 disabled:opacity-40 transition-colors'>
+										{removingImage ? "Removing..." : "Remove Image"}
+									</button>
 								</div>
 							)}
 

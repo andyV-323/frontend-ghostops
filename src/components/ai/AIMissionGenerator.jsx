@@ -3,18 +3,22 @@
 // AI-powered mission generation — single Groq call produces a full phase chain.
 //
 // Sub-modes:
-//   ai-random  — province + op type + optional context. AI picks locations + phases.
-//   ai-mission — province + op type + player-chosen locations. AI builds narrative.
+//   ai-random  — user picks province + op type + optional context + location count.
+//                AI picks which locations and how many phases (2–6).
+//   ai-mission — user picks province + op type + specific locations in order.
+//                AI assigns mission types and builds narrative around them.
 //
-// Single province per operation — keeps Groq prompt under token limits.
+// Single province per operation — full province data sent to Groq, no compression.
 // Zero additional Groq calls after initial generation.
+// PROVINCES_AI_CONTEXT is no longer used — removed entirely.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from "react";
 import PropTypes from "prop-types";
 import { toast } from "react-toastify";
-import { PROVINCES, PROVINCES_AI_CONTEXT, PROVINCE_TERRAIN } from "@/config";
+import { PROVINCES, PROVINCE_TERRAIN } from "@/config";
 import { MISSION_TYPES, generateCampaign } from "@/api/GhostOpsApi";
+import { buildProvinceContext } from "@/utils/BuildProvinceContext";
 import { GeneratePointsOnMap } from "@/utils/GeneratePointsOnMap";
 import { generateBriefing } from "@/utils/BriefingGenerator";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -107,27 +111,6 @@ export const OPERATION_TYPES = [
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function HudSelect({ label, value, onChange, children }) {
-	return (
-		<div className='flex flex-col gap-1'>
-			<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
-				{label}
-			</span>
-			<div className='relative'>
-				<select
-					value={value}
-					onChange={onChange}
-					className='w-full appearance-none bg-blk/60 border border-lines/25 hover:border-lines/50 focus:border-btn/60 focus:outline-none rounded-sm px-3 py-2 font-mono text-[11px] text-fontz/80 cursor-pointer transition-colors'>
-					{children}
-				</select>
-				<div className='absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none'>
-					<div className='w-0 h-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-lines/30' />
-				</div>
-			</div>
-		</div>
-	);
-}
-
 function ActionBtn({
 	onClick,
 	disabled,
@@ -208,26 +191,92 @@ function OpTypeSelector({ value, onChange }) {
 	);
 }
 
-// ── Phase row — per-phase province + location ─────────────────────────────────
+// ── Province selector ─────────────────────────────────────────────────────────
+// Shared between both sub-modes. Single province per operation.
 
-function PhaseLocationRow({
-	phaseIndex,
-	province,
+function ProvinceSelector({ value, onChange }) {
+	const allProvinceKeys = Object.keys(PROVINCES);
+	return (
+		<div className='flex flex-col gap-1'>
+			<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
+				Province
+			</span>
+			<div className='relative'>
+				<select
+					value={value}
+					onChange={(e) => onChange(e.target.value)}
+					className='w-full appearance-none bg-blk/60 border border-lines/25 hover:border-lines/50 focus:border-btn/60 focus:outline-none rounded-sm px-3 py-2 font-mono text-[11px] text-fontz/80 cursor-pointer transition-colors'>
+					<option value=''>— Select Province —</option>
+					{allProvinceKeys.map((p) => (
+						<option
+							key={p}
+							value={p}>
+							{p}
+						</option>
+					))}
+				</select>
+				<div className='absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none'>
+					<div className='w-0 h-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-lines/30' />
+				</div>
+			</div>
+			{value && (
+				<span className='font-mono text-[8px] text-lines/30 italic'>
+					Biome: {PROVINCES[value]?.biome ?? "Unknown"}
+				</span>
+			)}
+		</div>
+	);
+}
+
+// ── Location count selector — AI Random only ──────────────────────────────────
+
+function LocationCountSelector({ value, onChange }) {
+	return (
+		<div className='flex flex-col gap-1'>
+			<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
+				Locations{" "}
+				<span className='text-lines/25 normal-case tracking-normal'>
+					AI picks phases (2–6)
+				</span>
+			</span>
+			<div className='flex gap-1'>
+				{[2, 3, 4, 5, 6].map((n) => (
+					<button
+						key={n}
+						onClick={() => onChange(n)}
+						className={[
+							"flex-1 py-1.5 border rounded-sm font-mono text-[11px] transition-all",
+							value === n ?
+								"border-btn/50 bg-btn/10 text-btn"
+							:	"border-lines/15 text-lines/40 hover:border-lines/30 hover:text-fontz/60",
+						].join(" ")}>
+						{n}
+					</button>
+				))}
+			</div>
+			<span className='font-mono text-[8px] text-lines/25 italic'>
+				AI may adjust by ±1 based on narrative complexity.
+			</span>
+		</div>
+	);
+}
+
+// ── Location list — AI Mission only ──────────────────────────────────────────
+// User picks specific locations from the selected province in order.
+
+function LocationRow({
+	index,
 	location,
-	onProvinceChange,
+	provinceLocations,
 	onLocationChange,
 	onRemove,
 	isFinal,
-	allProvinceKeys,
+	totalCount,
 }) {
-	const provinceLocations = province ?
-		(PROVINCES[province]?.locations ?? [])
-	:	[];
-
 	return (
 		<div
 			className={[
-				"flex flex-col gap-1.5 p-2 border rounded-sm",
+				"flex flex-col gap-1 p-2 border rounded-sm",
 				isFinal ?
 					"border-red-400/30 bg-red-400/5"
 				:	"border-lines/15 bg-blk/30",
@@ -235,9 +284,9 @@ function PhaseLocationRow({
 			<div className='flex items-center justify-between'>
 				<span
 					className={`font-mono text-[8px] tracking-widest uppercase ${isFinal ? "text-red-400/60" : "text-lines/35"}`}>
-					{isFinal ? "Final Phase" : `Phase ${phaseIndex + 1}`}
+					{isFinal ? "Final Phase" : `Phase ${index + 1}`}
 				</span>
-				{!isFinal && (
+				{totalCount > 2 && !isFinal && (
 					<button
 						onClick={onRemove}
 						className='text-lines/25 hover:text-red-400/60 transition-colors'>
@@ -248,38 +297,24 @@ function PhaseLocationRow({
 					</button>
 				)}
 			</div>
-			{/* Province */}
 			<div className='relative'>
 				<select
-					value={province}
-					onChange={(e) => onProvinceChange(e.target.value)}
+					value={location}
+					onChange={(e) => onLocationChange(e.target.value)}
 					className='w-full appearance-none bg-blk/60 border border-lines/20 hover:border-lines/40 focus:border-btn/50 focus:outline-none rounded-sm px-2.5 py-1.5 font-mono text-[10px] text-fontz/70 cursor-pointer transition-colors'>
-					<option value=''>— Province —</option>
-					{allProvinceKeys.map((p) => (
-						<option key={p} value={p}>{p}</option>
+					<option value=''>— Select Location —</option>
+					{provinceLocations.map((loc) => (
+						<option
+							key={loc.name}
+							value={loc.name}>
+							{loc.name}
+						</option>
 					))}
 				</select>
 				<div className='absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none'>
 					<div className='w-0 h-0 border-l-[3px] border-r-[3px] border-t-[4px] border-l-transparent border-r-transparent border-t-lines/25' />
 				</div>
 			</div>
-			{/* Location — only shown once province is chosen */}
-			{province && (
-				<div className='relative'>
-					<select
-						value={location}
-						onChange={(e) => onLocationChange(e.target.value)}
-						className='w-full appearance-none bg-blk/60 border border-lines/20 hover:border-lines/40 focus:border-btn/50 focus:outline-none rounded-sm px-2.5 py-1.5 font-mono text-[10px] text-fontz/70 cursor-pointer transition-colors'>
-						<option value=''>— Location —</option>
-						{provinceLocations.map((loc) => (
-							<option key={loc.name} value={loc.name}>{loc.name}</option>
-						))}
-					</select>
-					<div className='absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none'>
-						<div className='w-0 h-0 border-l-[3px] border-r-[3px] border-t-[4px] border-l-transparent border-r-transparent border-t-lines/25' />
-					</div>
-				</div>
-			)}
 		</div>
 	);
 }
@@ -295,76 +330,71 @@ export default function AIMissionGenerator({
 }) {
 	// ── State ─────────────────────────────────────────────────────────────────
 	const [aiSubMode, setAiSubMode] = useState("ai-random");
+	const [province, setProvince] = useState("");
 	const [opType, setOpType] = useState("");
 	const [context, setContext] = useState("");
+	const [locationCount, setLocationCount] = useState(3);
 	const [loading, setLoading] = useState(false);
-	const [missionPhases, setMissionPhases] = useState([
-		{ province: "", location: "" },
-		{ province: "", location: "" },
-	]);
+
+	// AI Mission: ordered list of location name strings within the selected province
+	const [selectedLocations, setSelectedLocations] = useState(["", ""]);
 
 	// ── Derived ───────────────────────────────────────────────────────────────
-	const allProvinceKeys = Object.keys(PROVINCES_AI_CONTEXT);
+	const provinceLocations =
+		province ? (PROVINCES[province]?.locations ?? []) : [];
 
-	// ── Phase helpers ─────────────────────────────────────────────────────────
-	const addPhase = () => {
-		setMissionPhases((prev) => {
+	// ── Location list helpers — AI Mission ────────────────────────────────────
+	const addLocation = () => {
+		setSelectedLocations((prev) => {
 			const withoutFinal = prev.slice(0, -1);
 			const final = prev[prev.length - 1];
-			return [...withoutFinal, { province: "", location: "" }, final];
+			return [...withoutFinal, "", final];
 		});
 	};
 
-	const removePhase = (index) => {
-		setMissionPhases((prev) => prev.filter((_, i) => i !== index));
+	const removeLocation = (index) => {
+		setSelectedLocations((prev) => prev.filter((_, i) => i !== index));
 	};
 
-	const updatePhase = (index, field, value) => {
-		setMissionPhases((prev) =>
-			prev.map((p, i) => {
-				if (i !== index) return p;
-				// Reset location when province changes
-				if (field === "province") return { province: value, location: "" };
-				return { ...p, [field]: value };
-			}),
+	const updateLocation = (index, value) => {
+		setSelectedLocations((prev) =>
+			prev.map((loc, i) => (i === index ? value : loc)),
 		);
+	};
+
+	// Reset location list when province changes
+	const handleProvinceChange = (newProvince) => {
+		setProvince(newProvince);
+		setSelectedLocations(["", ""]);
 	};
 
 	// ── Validation ────────────────────────────────────────────────────────────
 	const canGenerate = () => {
 		if (!opType) return false;
+		if (!province) return false;
 		if (aiSubMode === "ai-mission") {
-			return missionPhases.every((p) => p.province && p.location);
+			if (selectedLocations.length < 2) return false;
+			return selectedLocations.every((loc) => loc !== "");
 		}
 		return true;
 	};
 
-	// ── Full province context for Groq — all provinces, lean format ───────────
-	const buildAllProvincesContext = () =>
-		Object.entries(PROVINCES_AI_CONTEXT)
-			.map(([key, data]) => {
-				const locs = data.locations
-					.map((l) => `  - ${l.name}: ${l.desc}`)
-					.join("\n");
-				return `${key} (${data.biome}):\n${locs}`;
-			})
-			.join("\n\n");
-
 	// ── Process Groq phases → full payloads ───────────────────────────────────
+	// province is now stamped onto every phase by generateCampaign before returning.
+	// No multi-province handling needed here.
+
 	const processCampaignPhases = (campaignJSON) => {
 		return campaignJSON.phases.map((phase, index) => {
-			const provinceKey = phase.province;
-
-			// ← Always use full PROVINCES — has coordinates, bounds, imgURL
+			const provinceKey = phase.province; // stamped by generateCampaign
 			const pd = PROVINCES[provinceKey];
 			const terrain = PROVINCE_TERRAIN?.[provinceKey] ?? null;
 
 			if (!pd) {
-				console.warn(`AI returned unknown province: ${provinceKey}`);
+				console.warn(`Phase ${index}: unknown province "${provinceKey}"`);
 				return { ...phase, error: "Province not found" };
 			}
 
-			// ← Trim both sides — PROVINCES has trailing spaces on some names
+			// Trim both sides — some location names have trailing spaces
 			const locationObj = pd.locations.find(
 				(l) => l.name.trim() === phase.location.trim(),
 			) ?? {
@@ -389,19 +419,17 @@ export default function AIMissionGenerator({
 				priorPhases: [],
 				timeOfDay: phase.timeOfDay ?? null,
 				threatLevel: phase.threatLevel ?? null,
-				enemyForce: phase.enemyForce ?? null,
+				// enemyForce removed from Groq output — BriefingGenerator handles this
 			});
 
 			return {
 				phaseIndex: index,
 				label: phase.label,
 				objective: phase.objective,
-				minibrief: phase.minibrief,
 				isFinal: phase.isFinal ?? false,
 				intelGate: phase.intelGate ?? null,
 				timeOfDay: phase.timeOfDay ?? null,
 				threatLevel: phase.threatLevel ?? null,
-				enemyForce: phase.enemyForce ?? null,
 				province: provinceKey,
 				biome: pd.biome,
 				missionTypeId: phase.missionTypeId,
@@ -424,32 +452,32 @@ export default function AIMissionGenerator({
 	const handleGenerate = async () => {
 		if (!canGenerate()) {
 			if (!opType) toast.warn("Select an operation type.");
-			else toast.warn("All phases need a province and location.");
+			else if (!province) toast.warn("Select a province.");
+			else toast.warn("All phases need a location selected.");
 			return;
 		}
 
 		setLoading(true);
 
 		try {
-			const provinceContext = buildAllProvincesContext();
+			// Build province context from PROVINCES at call time — no PROVINCES_AI_CONTEXT
+			const provinceContext = buildProvinceContext(province, PROVINCES);
+			const provinceData = PROVINCES[province];
 			const opTypeDef = OPERATION_TYPES.find((o) => o.id === opType);
-
-			const playerPhases =
-				aiSubMode === "ai-mission" ?
-					missionPhases.map((p, i) => ({
-						phaseNumber: i + 1,
-						province: p.province,
-						location: p.location,
-						isFinal: i === missionPhases.length - 1,
-					}))
-				:	null;
 
 			const campaignJSON = await generateCampaign({
 				opType,
 				opTypeDef,
 				context: context.trim(),
+				province,
+				provinceData,
 				provinceContext,
-				playerPhases,
+				// AI Random: null — AI picks locations freely from the province
+				// AI Mission: ordered array of location name strings
+				playerLocations: aiSubMode === "ai-mission" ? selectedLocations : null,
+				// AI Random: how many locations the player wants (AI may adjust ±1)
+				// AI Mission: null — count is determined by selectedLocations length
+				locationCount: aiSubMode === "ai-random" ? locationCount : null,
 				missionTypes: MISSION_TYPES.map((m) => ({
 					id: m.id,
 					fullLabel: m.fullLabel,
@@ -539,6 +567,12 @@ export default function AIMissionGenerator({
 					onChange={setOpType}
 				/>
 
+				{/* Province — both modes, single selection */}
+				<ProvinceSelector
+					value={province}
+					onChange={handleProvinceChange}
+				/>
+
 				{/* Context — both modes */}
 				<div className='flex flex-col gap-1'>
 					<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
@@ -560,33 +594,42 @@ export default function AIMissionGenerator({
 					</span>
 				</div>
 
-				{/* AI Random — info blurb */}
-				{aiSubMode === "ai-random" && opType && (
-					<div className='flex items-start gap-2 p-2.5 border border-btn/15 rounded-sm bg-btn/5'>
-						<FontAwesomeIcon
-							icon={faBrain}
-							className='text-btn/50 text-[10px] mt-0.5 shrink-0'
+				{/* AI Random — location count picker */}
+				{aiSubMode === "ai-random" && (
+					<>
+						<LocationCountSelector
+							value={locationCount}
+							onChange={setLocationCount}
 						/>
-						<span className='font-mono text-[9px] text-lines/40 leading-relaxed'>
-							AI will select locations and phases freely across all of Auroa. Add
-							context above to seed the narrative.
-						</span>
-					</div>
+						{opType && province && (
+							<div className='flex items-start gap-2 p-2.5 border border-btn/15 rounded-sm bg-btn/5'>
+								<FontAwesomeIcon
+									icon={faBrain}
+									className='text-btn/50 text-[10px] mt-0.5 shrink-0'
+								/>
+								<span className='font-mono text-[9px] text-lines/40 leading-relaxed'>
+									AI will select locations and sequence phases within{" "}
+									<span className='text-btn/70'>{province}</span>. Add context
+									above to seed the narrative.
+								</span>
+							</div>
+						)}
+					</>
 				)}
 
-				{/* AI Mission — phase location pickers */}
+				{/* AI Mission — ordered location pickers within selected province */}
 				{aiSubMode === "ai-mission" && (
 					<div className='flex flex-col gap-2'>
 						<div className='flex items-center justify-between'>
 							<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
-								Phases{" "}
+								Locations{" "}
 								<span className='text-btn/60'>
-									{missionPhases.length} total
+									{selectedLocations.length} phases
 								</span>
 							</span>
-							{missionPhases.length < 5 && (
+							{selectedLocations.length < 6 && province && (
 								<button
-									onClick={addPhase}
+									onClick={addLocation}
 									className='flex items-center gap-1.5 font-mono text-[9px] text-lines/35 hover:text-btn transition-colors'>
 									<FontAwesomeIcon
 										icon={faPlus}
@@ -596,24 +639,33 @@ export default function AIMissionGenerator({
 								</button>
 							)}
 						</div>
-						<div className='flex flex-col gap-1.5'>
-							{missionPhases.map((phase, index) => (
-								<PhaseLocationRow
-									key={index}
-									phaseIndex={index}
-									province={phase.province}
-									location={phase.location}
-									onProvinceChange={(p) => updatePhase(index, "province", p)}
-									onLocationChange={(loc) => updatePhase(index, "location", loc)}
-									onRemove={() => removePhase(index)}
-									isFinal={index === missionPhases.length - 1}
-									allProvinceKeys={allProvinceKeys}
-								/>
-							))}
-						</div>
+
+						{!province && (
+							<span className='font-mono text-[9px] text-lines/30 italic'>
+								Select a province above to choose locations.
+							</span>
+						)}
+
+						{province && (
+							<div className='flex flex-col gap-1.5'>
+								{selectedLocations.map((loc, index) => (
+									<LocationRow
+										key={index}
+										index={index}
+										location={loc}
+										provinceLocations={provinceLocations}
+										onLocationChange={(val) => updateLocation(index, val)}
+										onRemove={() => removeLocation(index)}
+										isFinal={index === selectedLocations.length - 1}
+										totalCount={selectedLocations.length}
+									/>
+								))}
+							</div>
+						)}
+
 						<span className='font-mono text-[8px] text-lines/25 italic'>
-							AI builds the narrative and assigns mission types around your
-							locations across all of Auroa.
+							AI assigns mission types and builds the narrative around your
+							locations. Phase count matches your selection.
 						</span>
 					</div>
 				)}
@@ -643,13 +695,6 @@ AIMissionGenerator.propTypes = {
 	setImgURL: PropTypes.func.isRequired,
 };
 
-HudSelect.propTypes = {
-	label: PropTypes.string,
-	value: PropTypes.string,
-	onChange: PropTypes.func,
-	children: PropTypes.node,
-};
-
 ActionBtn.propTypes = {
 	onClick: PropTypes.func,
 	disabled: PropTypes.bool,
@@ -665,13 +710,22 @@ OpTypeSelector.propTypes = {
 	onChange: PropTypes.func.isRequired,
 };
 
-PhaseLocationRow.propTypes = {
-	phaseIndex: PropTypes.number.isRequired,
-	province: PropTypes.string.isRequired,
+ProvinceSelector.propTypes = {
+	value: PropTypes.string.isRequired,
+	onChange: PropTypes.func.isRequired,
+};
+
+LocationCountSelector.propTypes = {
+	value: PropTypes.number.isRequired,
+	onChange: PropTypes.func.isRequired,
+};
+
+LocationRow.propTypes = {
+	index: PropTypes.number.isRequired,
 	location: PropTypes.string.isRequired,
-	onProvinceChange: PropTypes.func.isRequired,
+	provinceLocations: PropTypes.array.isRequired,
 	onLocationChange: PropTypes.func.isRequired,
 	onRemove: PropTypes.func.isRequired,
 	isFinal: PropTypes.bool,
-	allProvinceKeys: PropTypes.array.isRequired,
+	totalCount: PropTypes.number.isRequired,
 };

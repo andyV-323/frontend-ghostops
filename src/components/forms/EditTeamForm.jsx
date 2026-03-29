@@ -2,30 +2,33 @@ import { useEffect } from "react";
 import { useTeamsStore, useSheetStore } from "@/zustand";
 import { useAuth } from "react-oidc-context";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { Button } from "@material-tailwind/react";
-import { AITeamGenerator } from "@/components/ai";
 import { useConfirmDialog } from "@/hooks";
 import { ConfirmDialog } from "@/components";
 import { PropTypes } from "prop-types";
 import { toast } from "react-toastify";
+import useSquadStore from "@/zustand/useSquadStore";
+import OperatorPicker from "./OperatorPicker";
+import AssetPicker from "./AssetPicker";
 
 const EditTeamForm = ({ teamId }) => {
 	const auth = useAuth();
 	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
 
-	// Get reactive store values - these will update when store changes
-	const teamName = useTeamsStore((state) => state.teamName);
-	const operators = useTeamsStore((state) => state.operators);
+	const teamName     = useTeamsStore((state) => state.teamName);
+	const operators    = useTeamsStore((state) => state.operators);
 	const allOperators = useTeamsStore((state) => state.allOperators);
-	const fullOperatorList = useTeamsStore((state) => state.fullOperatorList);
+	const assets       = useTeamsStore((state) => state.assets);
+	const allVehicles  = useTeamsStore((state) => state.allVehicles);
+	const fullVehicleList = useTeamsStore((state) => state.fullVehicleList);
 
-	// Get functions from store
+	const { squads, fetchSquads } = useSquadStore();
+
 	const {
 		teams,
 		fetchOperators,
 		fetchTeamById,
-
 		setTeamName,
 		updateTeam,
 		deleteTeam,
@@ -38,9 +41,6 @@ const EditTeamForm = ({ teamId }) => {
 	} = useTeamsStore();
 
 	const { closeSheet } = useSheetStore();
-	const assets = useTeamsStore((state) => state.assets);
-	const allVehicles = useTeamsStore((state) => state.allVehicles);
-	const fullVehicleList = useTeamsStore((state) => state.fullVehicleList);
 
 	useEffect(() => {
 		resetStore();
@@ -48,21 +48,19 @@ const EditTeamForm = ({ teamId }) => {
 			fetchTeams();
 			fetchTeamById(teamId);
 			fetchOperators();
+			fetchSquads();
 		}
-	}, [teamId, fetchTeams, fetchTeamById, fetchOperators, resetStore]);
+	}, [teamId, fetchTeams, fetchTeamById, fetchOperators, resetStore, fetchSquads]);
 
-	// Set `createdBy` from authentication
 	useEffect(() => {
 		if (auth.isAuthenticated && auth.user) {
 			useTeamsStore.setState({ createdBy: auth.user.profile.sub });
 		}
 	}, [auth.isAuthenticated, auth.user]);
 
-	//handle Update form
 	const handleUpdateTeam = async (e) => {
 		e.preventDefault();
 		const storeState = useTeamsStore.getState();
-
 		const teamData = {
 			_id: teamId,
 			createdBy: storeState.createdBy,
@@ -70,7 +68,6 @@ const EditTeamForm = ({ teamId }) => {
 			operators: operators.length > 0 ? operators : [],
 			assets: storeState.assets.length ? storeState.assets : [],
 		};
-
 		try {
 			await updateTeam(teamData);
 			await fetchTeams();
@@ -88,180 +85,75 @@ const EditTeamForm = ({ teamId }) => {
 			await closeSheet();
 		});
 	};
-	const getOperatorTeam = (operatorId) => {
-		const team = teams.find((team) =>
-			team.operators.some((op) => op._id === operatorId),
-		);
-		return team ? team.name : "Unassigned";
-	};
 
 	return (
-		<section className='bg-transparent p-4'>
-			<div className='flex flex-col items-end'>
-				<FontAwesomeIcon
-					icon={faTrash}
-					className=' text-red-600 text-2xl cursor-pointer hover:text-red-800'
-					onClick={handleDeleteTeam}
-					title='Delete Team'
-				/>
+		<section className="bg-transparent p-4">
+			<div className="flex flex-col gap-6">
+				<div className="flex justify-end">
+					<button
+						type="button"
+						onClick={handleDeleteTeam}
+						className="text-red-600/60 hover:text-red-500 transition-colors"
+						title="Delete Team">
+						<FontAwesomeIcon icon={faTrash} className="text-lg" />
+					</button>
+				</div>
 
-				<form onSubmit={handleUpdateTeam}>
-					<div className='grid  gap-4 sm:grid-cols-2 sm:gap-6'>
-						{/* Team Name Input */}
-						<div className='sm:col-span-2'>
-							<label className='block mb-2 text-lg font-bold text-fontz '>
-								Team Name
-							</label>
-							<input
-								type='text'
-								name='name'
-								className='bg-blk/50 border border-lines text-fontz text-lg rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 flex outline-lines'
-								value={teamName || ""} // Use reactive value with fallback
-								onChange={(e) => setTeamName(e.target.value)}
-								required
-							/>
-						</div>
-						{/* Assets (Vehicles) Dropdown */}
-						<h2 className='mb-4 text-lg font-bold text-fontz'>
-							Assets (Vehicles)
-						</h2>
-
-						<select
-							className='bg-blk/50 border border-lines rounded-lg block w-full p-2.5 text-fontz outline-lines'
-							onChange={(e) => {
-								const selectedVehicleId = e.target.value;
-								if (selectedVehicleId) {
-									addAsset(selectedVehicleId);
-									e.target.value = "";
-								}
-							}}>
-							<option value=''>
-								-- Select an Asset (Available Vehicles) --
-							</option>
-
-							{allVehicles
-								.filter((v) => !assets.includes(v._id)) // extra safety
-								.map((v) => (
-									<option
-										key={v._id}
-										value={v._id}
-										disabled={v.isRepairing}>
-										{v.nickName && v.nickName !== "None" ?
-											`${v.nickName} - `
-										:	""}
-										{v.vehicle} • {v.condition} • Fuel {v.remainingFuel}%
-										{v.isRepairing ? " • Repairing" : ""}
-									</option>
-								))}
-						</select>
-
-						{/* Display Selected Assets */}
-						{assets.length > 0 && (
-							<div className='sm:col-span-2'>
-								<h3 className='mb-2 text-lg font-semibold text-fontz'>
-									Selected Assets:
-								</h3>
-
-								<ul className='list-disc pl-4 text-fontz bg-blk/50 border border-lines rounded-lg p-3'>
-									{assets.map((vehId) => {
-										const vehicle = fullVehicleList.find(
-											(v) => v._id === vehId,
-										);
-										return (
-											<li
-												key={vehId}
-												className='flex justify-between items-center text-lg py-1'>
-												{vehicle ?
-													`${
-														vehicle.nickName && vehicle.nickName !== "None" ?
-															vehicle.nickName + " - "
-														:	""
-													}${vehicle.vehicle}`
-												:	"Unknown Vehicle"}
-												<FontAwesomeIcon
-													icon={faXmark}
-													className='text-2xl text-btn hover:text-white cursor-pointer'
-													onClick={() => removeAsset(vehId)}
-												/>
-											</li>
-										);
-									})}
-								</ul>
-							</div>
-						)}
-
-						{/* Operators Dropdown */}
-						<h2 className='mb-4 text-lg font-bold text-fontz'>Operators</h2>
-						<select
-							className='bg-blk/50 border border-lines rounded-lg block w-full p-2.5 text-fontz outline-lines'
-							onChange={(e) => {
-								const selectedOperator = e.target.value;
-								if (selectedOperator) {
-									addOperator(selectedOperator);
-									e.target.value = ""; // Reset select
-								}
-							}}>
-							<option value=''>-- Select an Operator --</option>
-							{allOperators.map((operator) => (
-								<option
-									key={operator._id}
-									value={operator._id}>
-									{operator.callSign} - {operator.class} -{" "}
-									{operator.specialization} {operator.secondaryClass} - Team:{" "}
-									{getOperatorTeam(operator._id)}
-								</option>
-							))}
-						</select>
-
-						{/* Display Selected Operators */}
-						{operators.length > 0 && (
-							<div className='sm:col-span-2'>
-								<h3 className='mb-2 text-lg font-semibold text-fontz'>
-									Selected Operators:
-								</h3>
-
-								<ul className='list-disc pl-4 text-fontz bg-blk/50 border border-lines rounded-lg p-3'>
-									{operators.map((opId) => {
-										const operator = fullOperatorList.find(
-											(op) => op._id === opId,
-										);
-										return (
-											<li
-												key={opId}
-												className='flex justify-between items-center text-lg py-1'>
-												{operator ? operator.callSign : "Unknown Operator"}
-												<FontAwesomeIcon
-													icon={faXmark}
-													className='text-2xl text-btn hover:text-white cursor-pointer'
-													onClick={() => removeOperator(opId)}
-												/>
-											</li>
-										);
-									})}
-								</ul>
-							</div>
-						)}
+				<form onSubmit={handleUpdateTeam} className="flex flex-col gap-6">
+					{/* Team Name */}
+					<div>
+						<label className="block mb-1.5 font-mono text-[9px] tracking-[0.25em] text-lines/50 uppercase">
+							Team Name
+						</label>
+						<input
+							type="text"
+							name="name"
+							className="bg-blk/50 border border-lines/40 text-fontz font-mono text-sm rounded-sm outline-none focus:border-lines/70 block w-full px-3 py-2"
+							value={teamName || ""}
+							onChange={(e) => setTeamName(e.target.value)}
+							required
+						/>
 					</div>
-					<br />
-					{/* AI Team Generator */}
-					<h1 className='text-lg font-bold flex flex-col items-center'>
-						A.I Team Generator
-					</h1>
-					<AITeamGenerator />
-					<br />
-					{/* Submit Button */}
-					<Button
-						type='submit'
-						className='btn '>
+
+					{/* Operators */}
+					<div>
+						<label className="block mb-3 font-mono text-[9px] tracking-[0.25em] text-lines/50 uppercase">
+							Operators
+						</label>
+						<OperatorPicker
+							allOperators={allOperators}
+							selected={operators}
+							squads={squads}
+							teams={teams}
+							onAdd={addOperator}
+							onRemove={removeOperator}
+						/>
+					</div>
+
+					{/* Assets */}
+					<div>
+						<label className="block mb-2 font-mono text-[9px] tracking-[0.25em] text-lines/50 uppercase">
+							Assets (Vehicles)
+						</label>
+						<AssetPicker
+							allVehicles={allVehicles}
+							fullVehicleList={fullVehicleList}
+							selected={assets}
+							onAdd={addAsset}
+							onRemove={removeAsset}
+						/>
+					</div>
+
+					<Button type="submit" className="btn">
 						Update Team
-					</Button>{" "}
+					</Button>
 				</form>
 			</div>
 
 			<ConfirmDialog
-				className='text-fontz'
-				title='Confirm Team Deletion'
-				description='This will permanently remove the team and unassign all its operators. This action cannot be undone.'
+				className="text-fontz"
+				title="Confirm Team Deletion"
+				description="This will permanently remove the team and unassign all its operators. This action cannot be undone."
 				message={`Are you sure you want to delete ${teamName}? Once deleted, the team and its assignments will be lost forever.`}
 				isOpen={isOpen}
 				closeDialog={closeDialog}
@@ -274,4 +166,5 @@ const EditTeamForm = ({ teamId }) => {
 EditTeamForm.propTypes = {
 	teamId: PropTypes.string,
 };
+
 export default EditTeamForm;

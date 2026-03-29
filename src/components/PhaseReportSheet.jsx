@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // PhaseReportSheet.jsx
-// Post-mission phase debrief questionnaire — 4 screens, all taps.
+// Post-mission phase debrief questionnaire — 3 screens, all taps.
 // Saves a Phase record to the operation. Replaces ReconTool.
 //
 // Props:
@@ -22,7 +22,7 @@ import { MISSION_TYPES } from "@/api/GhostOpsApi";
 
 // ─── Screen list ──────────────────────────────────────────────────────────────
 
-const SCREENS = ["OUTCOME", "COMPLICATIONS", "CASUALTIES", "INTEL"];
+const SCREENS = ["OUTCOME", "COMPLICATIONS", "CASUALTIES"];
 
 // ─── Casualties (universal) ───────────────────────────────────────────────────
 
@@ -212,74 +212,15 @@ const COMPLICATIONS_BY_CATEGORY = {
 	],
 };
 
-// ─── Intel by category ────────────────────────────────────────────────────────
-
-const I = (id, label, exclusive = false) => ({ id, label, exclusive });
-
-const INTEL_BY_CATEGORY = {
-	"Direct Action": [
-		I("nothing_new",       "Nothing new — intel gap remains",          true),
-		I("patrol_timing",     "Enemy patrol patterns and timing confirmed", false),
-		I("enemy_strength",    "Enemy force strength and disposition assessed", false),
-		I("facility_layout",   "Facility layout and access points mapped", false),
-		I("hvt_location",      "HVT or target location updated",           false),
-		I("supply_route",      "Supply or logistics route identified",      false),
-		I("comms_net",         "Enemy communications network identified",   false),
-		I("weapons_cache",     "Weapons cache or arms storage located",     false),
-		I("command_element",   "Command element or CP location confirmed",  false),
-		I("civilian_network",  "Civilian informant or local contact activated", false),
-	],
-	"Special Reconnaissance": [
-		I("nothing_new",       "Collection objective not met",             true),
-		I("patrol_timing",     "Enemy patrol patterns and shift timings confirmed", false),
-		I("enemy_strength",    "Enemy force strength and disposition fully assessed", false),
-		I("facility_layout",   "Facility layout, access points, and guard positions mapped", false),
-		I("hvt_confirmed",     "HVT presence at location confirmed",       false),
-		I("supply_route",      "Supply route and traffic patterns identified", false),
-		I("air_defense",       "Air defense positions and radar coverage mapped", false),
-		I("vehicle_count",     "Enemy vehicle type and count confirmed",   false),
-		I("sigint",            "SIGINT / comms intercept achieved",        false),
-		I("tunnels_cache",     "Underground network or cache location identified", false),
-	],
-	"Counterterrorism": [
-		I("nothing_new",       "No additional intelligence developed",     true),
-		I("network_structure", "Terrorist network structure partially mapped", false),
-		I("safe_house",        "Additional safe house locations identified", false),
-		I("facilitator",       "Key facilitator or financier identified",  false),
-		I("foreign_link",      "Foreign support or state sponsor link confirmed", false),
-		I("hvt_location",      "Secondary HVT location or movement established", false),
-		I("weapons_cache",     "Weapons or materiel cache discovered",     false),
-		I("propaganda",        "Propaganda materials or media recovered",  false),
-		I("comms_devices",     "Communications devices or codes recovered", false),
-	],
-	"Overwatch": [
-		I("nothing_new",       "Nothing new — intel gap remains",         true),
-		I("patrol_timing",     "Enemy patrol patterns and timing confirmed", false),
-		I("enemy_strength",    "Enemy force disposition and strength assessed", false),
-		I("position_mapped",   "Enemy defensive positions and fighting holes mapped", false),
-		I("supply_route",      "Logistics or supply movement observed",   false),
-		I("comms_net",         "Enemy radio or signal communications identified", false),
-	],
-	"Support": [
-		I("nothing_new",       "Nothing new — intel gap remains",         true),
-		I("patrol_timing",     "Enemy patrol activity and patterns noted", false),
-		I("route_intel",       "Route condition and threat assessment updated", false),
-		I("enemy_strength",    "Enemy presence and disposition along route assessed", false),
-		I("cache_sighted",     "Possible cache or supply point observed", false),
-	],
-};
-
 // ─── Questionnaire builder ────────────────────────────────────────────────────
 
 function getQuestionnaire(missionTypeId) {
-	const entry   = MISSION_TYPES.find((m) => m.id === missionTypeId);
+	const entry    = MISSION_TYPES.find((m) => m.id === missionTypeId);
 	const category = entry?.category ?? "Direct Action";
 
-	const outcomes     = OUTCOME_BY_MISSION[missionTypeId]         ?? OUTCOME_BY_MISSION["DA_RAID"];
-	const complications = COMPLICATIONS_BY_CATEGORY[category]      ?? COMPLICATIONS_BY_CATEGORY["Direct Action"];
-	const intel        = INTEL_BY_CATEGORY[category]               ?? INTEL_BY_CATEGORY["Direct Action"];
+	const outcomes      = OUTCOME_BY_MISSION[missionTypeId]    ?? OUTCOME_BY_MISSION["DA_RAID"];
+	const complications = COMPLICATIONS_BY_CATEGORY[category]  ?? COMPLICATIONS_BY_CATEGORY["Direct Action"];
 
-	// Screen subtitles vary by category
 	const outcomeSub = {
 		"Special Reconnaissance": "How did the collection window end?",
 		"Counterterrorism":       "What was the outcome of the operation?",
@@ -287,14 +228,7 @@ function getQuestionnaire(missionTypeId) {
 		"Support":                "How did the resupply run end?",
 	}[category] ?? "How did the mission end?";
 
-	const intelSub = {
-		"Special Reconnaissance": "What intelligence was collected?",
-		"Counterterrorism":       "What network intelligence was developed?",
-		"Overwatch":              "What was observed from position?",
-		"Support":                "What route intelligence was gathered?",
-	}[category] ?? "What actionable intelligence was developed?";
-
-	return { outcomes, complications, intel, outcomeSub, intelSub };
+	return { outcomes, complications, outcomeSub };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -454,7 +388,7 @@ function ComplicationsScreen({ value, onChange, options }) {
 
 // ─── Screen 3 — Casualties ────────────────────────────────────────────────────
 
-function CasualtiesScreen({ value, note, onSelect, onNote }) {
+function CasualtiesScreen({ value, note, onSelect, onNote, fieldNotes, onFieldNotes }) {
 	return (
 		<div className='flex flex-col gap-3 p-4'>
 			<div className='flex flex-col gap-2'>
@@ -471,10 +405,10 @@ function CasualtiesScreen({ value, note, onSelect, onNote }) {
 							<span className={[
 								"w-2 h-2 rounded-full shrink-0 transition-all",
 								active ?
-									opt.id === "none"          ? "bg-green-400"
-									: opt.id === "injured"     ? "bg-yellow-400"
+									opt.id === "none"           ? "bg-green-400"
+									: opt.id === "injured"      ? "bg-yellow-400"
 									: opt.id === "multiple_wia" ? "bg-orange-400"
-									: opt.id === "missing"     ? "bg-purple-400"
+									: opt.id === "missing"      ? "bg-purple-400"
 									: "bg-red-400"
 								: "bg-lines/15",
 							].join(" ")} />
@@ -505,57 +439,19 @@ function CasualtiesScreen({ value, note, onSelect, onNote }) {
 					<span className='font-mono text-[8px] text-lines/20 text-right'>{note.length}/200</span>
 				</div>
 			)}
-		</div>
-	);
-}
-
-// ─── Screen 4 — Intel ─────────────────────────────────────────────────────────
-
-function IntelScreen({ value, notes, onChange, onNotes, options }) {
-	return (
-		<div className='flex flex-col gap-3 p-4'>
-			<div className='flex flex-col gap-1.5'>
-				{options.map((opt) => {
-					const active = value.includes(opt.id);
-					return (
-						<button
-							key={opt.id}
-							onClick={() => onChange(toggleMulti(value, opt.id, options))}
-							className={[
-								"w-full flex items-center gap-3 px-3 py-2.5 rounded-sm border transition-all text-left",
-								active ? "border-indigo-500/40 bg-indigo-500/8" : "border-lines/10 hover:border-lines/25 bg-transparent hover:bg-white/[0.02]",
-								opt.exclusive ? "border-dashed" : "",
-							].join(" ")}>
-							<div className={[
-								"w-3.5 h-3.5 rounded-sm border shrink-0 flex items-center justify-center transition-all",
-								active ? "border-indigo-400 bg-indigo-400/20" : "border-lines/20 bg-transparent",
-							].join(" ")}>
-								{active && <FontAwesomeIcon icon={faCheck} className='text-indigo-400 text-[7px]' />}
-							</div>
-							<span className={[
-								"font-mono text-[10px] tracking-wider",
-								active ? "text-indigo-300" : "text-lines/40",
-								opt.exclusive ? "uppercase" : "",
-							].join(" ")}>
-								{opt.label}
-							</span>
-						</button>
-					);
-				})}
-			</div>
 			<div className='flex flex-col gap-1.5 mt-1'>
 				<label className='font-mono text-[9px] tracking-widest text-lines/30 uppercase'>
 					Field notes (optional)
 				</label>
 				<textarea
-					value={notes}
-					onChange={(e) => onNotes(e.target.value)}
+					value={fieldNotes}
+					onChange={(e) => onFieldNotes(e.target.value)}
 					maxLength={200}
 					rows={2}
 					placeholder='Anything worth noting for the record...'
 					className='w-full bg-blk/60 border border-lines/15 focus:border-btn/40 rounded-sm px-3 py-2 font-mono text-[10px] text-fontz/70 placeholder:text-lines/20 resize-none outline-none transition-colors'
 				/>
-				<span className='font-mono text-[8px] text-lines/20 text-right'>{notes.length}/200</span>
+				<span className='font-mono text-[8px] text-lines/20 text-right'>{fieldNotes.length}/200</span>
 			</div>
 		</div>
 	);
@@ -569,7 +465,6 @@ export default function PhaseReportSheet({ mission, phaseNumber, onSave }) {
 	const [complications, setComplications] = useState([]);
 	const [casualties, setCasualties]       = useState(null);
 	const [casualtyNote, setCasualtyNote]   = useState("");
-	const [intelDeveloped, setIntelDeveloped] = useState([]);
 	const [fieldNotes, setFieldNotes]       = useState("");
 	const [loading, setLoading]             = useState(false);
 
@@ -582,18 +477,16 @@ export default function PhaseReportSheet({ mission, phaseNumber, onSave }) {
 		1: { title: "Outcome",       sub: q.outcomeSub },
 		2: { title: "Complications", sub: "Select all that apply" },
 		3: { title: "Casualties",    sub: "Personnel status" },
-		4: { title: "Intel",         sub: q.intelSub },
 	};
 
 	const canProceed = {
 		1: !!outcome,
 		2: complications.length > 0,
 		3: !!casualties,
-		4: intelDeveloped.length > 0,
 	};
 
 	const handleSubmit = async () => {
-		if (!canProceed[4]) return;
+		if (!canProceed[3]) return;
 		setLoading(true);
 		const phaseData = {
 			phaseNumber,
@@ -604,7 +497,7 @@ export default function PhaseReportSheet({ mission, phaseNumber, onSave }) {
 			complications,
 			casualties,
 			casualtyNote:     casualtyNote.trim()  || null,
-			intelDeveloped,
+			intelDeveloped:   [],
 			notes:            fieldNotes.trim()    || null,
 			generatorSnapshot: {
 				infilPoint:  mission?.generator?.infilPoint  ?? null,
@@ -644,15 +537,8 @@ export default function PhaseReportSheet({ mission, phaseNumber, onSave }) {
 						note={casualtyNote}
 						onSelect={setCasualties}
 						onNote={setCasualtyNote}
-					/>
-				)}
-				{screen === 4 && (
-					<IntelScreen
-						value={intelDeveloped}
-						notes={fieldNotes}
-						onChange={setIntelDeveloped}
-						onNotes={setFieldNotes}
-						options={q.intel}
+						fieldNotes={fieldNotes}
+						onFieldNotes={setFieldNotes}
 					/>
 				)}
 			</div>
@@ -710,16 +596,10 @@ ComplicationsScreen.propTypes = {
 };
 
 CasualtiesScreen.propTypes = {
-	value:    PropTypes.string,
-	note:     PropTypes.string,
-	onSelect: PropTypes.func,
-	onNote:   PropTypes.func,
-};
-
-IntelScreen.propTypes = {
-	value:    PropTypes.array,
-	notes:    PropTypes.string,
-	onChange: PropTypes.func,
-	onNotes:  PropTypes.func,
-	options:  PropTypes.array,
+	value:        PropTypes.string,
+	note:         PropTypes.string,
+	onSelect:     PropTypes.func,
+	onNote:       PropTypes.func,
+	fieldNotes:   PropTypes.string,
+	onFieldNotes: PropTypes.func,
 };
