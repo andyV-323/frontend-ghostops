@@ -34,6 +34,7 @@ import {
 	PhaseReportSheet,
 	CampaignView,
 	OperatorImageView,
+	ImageManager,
 } from "@/components";
 import { MissionGenerator } from "@/components/ai";
 import {
@@ -491,7 +492,7 @@ function BriefingPage({ onNewMission }) {
 		if (!activeMission?.biome) return;
 		openSheet(
 			"left",
-			<WeatherPanel province={activeMission.biome} />,
+			<WeatherPanel province={activeMission.biome} provinceKey={activeMission.province} />,
 			"Pre-Op Conditions",
 			`${activeMission.biome} — Environmental Brief`,
 		);
@@ -628,7 +629,7 @@ function BriefingPage({ onNewMission }) {
 						className={`text-[10px] ${weatherMeta.color}`}
 					/>
 					<span className={`hidden sm:inline ${weatherMeta.color}`}>
-						Weather
+						AO Brief
 					</span>
 				</button>
 			)}
@@ -1347,6 +1348,18 @@ function OperatorsPage() {
 							</button>
 						))}
 						<div className='ml-auto flex items-center gap-0.5 pr-2'>
+							<button
+								onClick={() =>
+									open(
+										"left",
+										<ImageManager />,
+										"Image Manager",
+										"Manage uploaded operator images",
+									)
+								}
+								className='font-mono text-[8px] tracking-widest uppercase px-2 py-1 border border-neutral-700/60 hover:border-btn/50 text-neutral-600 hover:text-btn rounded-sm transition-all'>
+								Images
+							</button>
 							<button
 								onClick={() =>
 									open(

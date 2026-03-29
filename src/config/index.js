@@ -14,6 +14,7 @@ import { PERKS } from "./perks";
 import { BIOME_WEATHER } from "./biome";
 import { PROVINCE_BIOMES } from "./provinceBiomes";
 import { PROVINCE_TERRAIN } from "./provinceTerrain";
+import { PROVINCE_RESTRICTIONS, SOURCE, STATUS } from "./provinceRestrictions";
 
 export {
 	about,
@@ -32,4 +33,7 @@ export {
 	BIOME_WEATHER,
 	PROVINCE_BIOMES,
 	PROVINCE_TERRAIN,
+	PROVINCE_RESTRICTIONS,
+	SOURCE,
+	STATUS,
 };

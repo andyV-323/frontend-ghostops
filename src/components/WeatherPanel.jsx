@@ -2,6 +2,11 @@ import { useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { getProvinceWeather } from "../utils/Weather";
 import { PROVINCE_BIOMES } from "@/config";
+import {
+	resolveRestrictions,
+	RESTRICTION_LABELS,
+} from "@/utils/Restrictions";
+import { STATUS } from "@/config";
 
 // ─── Icons (inline SVG — no dependency) ──────────────────────────────────────
 
@@ -178,7 +183,7 @@ const DEFAULT_ACCENT = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function WeatherPanel({ province, userUnit = "C" }) {
+export default function WeatherPanel({ province, provinceKey: provinceKeyProp, userUnit = "C" }) {
 	const [unit, setUnit] = useState(userUnit);
 
 	const biomeKey = useMemo(() => {
@@ -200,6 +205,22 @@ export default function WeatherPanel({ province, userUnit = "C" }) {
 	}, [biomeKey]);
 
 	const weather = weatherC; // base data always from C instance
+
+	// Resolve province key — prefer explicit prop, fall back to province string
+	const provinceKey = provinceKeyProp ?? (typeof province === "string" ? province : null);
+
+	const restrictions = useMemo(
+		() => resolveRestrictions(provinceKey, null),
+		[provinceKey],
+	);
+
+	const restrictedEntries = useMemo(() => {
+		if (!restrictions) return [];
+		return Object.entries(restrictions).filter(
+			([, v]) => v.status !== STATUS.NOMINAL,
+		);
+	}, [restrictions]);
+
 	if (!weather) return null;
 
 	const displayTemp =
@@ -328,6 +349,33 @@ export default function WeatherPanel({ province, userUnit = "C" }) {
 				))}
 			</div>
 
+			{/* ── Asset Restrictions ── */}
+			{restrictedEntries.length > 0 && (
+				<div className='px-3 py-2.5 space-y-1.5'>
+					<div className='text-[9px] text-zinc-600 uppercase tracking-widest mb-2'>
+						Asset Restrictions
+					</div>
+					{restrictedEntries.map(([key, entry]) => (
+						<div
+							key={key}
+							className='flex items-center justify-between gap-2'>
+							<span className='text-zinc-500 text-[10px] uppercase tracking-wider'>
+								{RESTRICTION_LABELS[key] ?? key}
+							</span>
+							<span
+								className={[
+									"text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded-sm font-semibold",
+									entry.status === STATUS.DENIED ?
+										"bg-red-500/10 text-red-400"
+									:	"bg-amber-500/10 text-amber-400",
+								].join(" ")}>
+								{entry.status}
+							</span>
+						</div>
+					))}
+				</div>
+			)}
+
 			{/* ── Footer ── */}
 			<div className='px-3 py-1.5 flex items-center justify-between'>
 				<span className='text-[9px] text-zinc-700 uppercase tracking-widest'>
@@ -342,5 +390,6 @@ export default function WeatherPanel({ province, userUnit = "C" }) {
 }
 WeatherPanel.propTypes = {
 	province: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+	provinceKey: PropTypes.string,
 	userUnit: PropTypes.oneOf(["C", "F"]),
 };

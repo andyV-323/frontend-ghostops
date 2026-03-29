@@ -20,6 +20,10 @@ import {
 	BIOME_WEATHER,
 } from "@/config";
 import { MISSION_TYPES } from "@/api/GhostOpsApi";
+import {
+	resolveRestrictions,
+	formatRestrictionsForBriefing,
+} from "@/utils/Restrictions";
 
 // ─── Config lookups ───────────────────────────────────────────────────────────
 
@@ -521,6 +525,7 @@ export function generateBriefing({
 	timeOfDay = null,
 	threatLevel = null,
 	enemyForce = null,
+	weatherEvent = null,
 }) {
 	// ── Resolve config ────────────────────────────────────────────────────────
 	const missionDef = getMissionDef(missionType);
@@ -551,6 +556,9 @@ export function generateBriefing({
 	const objectives = buildObjectivesBlock(locations);
 	const timeOfOp = buildTimeOfOperation(timeOfDay, missionCategory);
 	const enemyForces = buildEnemyForces(enemyForce, threatLevel, missionCategory);
+	const assetRestrictions = formatRestrictionsForBriefing(
+		resolveRestrictions(province, weatherEvent),
+	);
 
 	// ── Generator data ────────────────────────────────────────────────────────
 	const infilMethod = generator.infilMethod ?? "Not specified";
@@ -608,7 +616,9 @@ export function generateBriefing({
 		"",
 		`GEAR: ${gear}`,
 		"",
-		`ASSET STATUS: ${intel}`,
+		`OPERATIONAL ASSET STATUS:\n${assetRestrictions}`,
+		"",
+		`INTEL STATUS: ${intel}`,
 		"",
 		`RULES OF ENGAGEMENT: ${roe}`,
 		"",
