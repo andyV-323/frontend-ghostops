@@ -11,6 +11,8 @@ const MapWrapper = ({
 	infilPoint,
 	exfilPoint,
 	fallbackExfil,
+	infilMethod,
+	province,
 }) => {
 	const locationsToDisplay =
 		Array.isArray(locationSelection) && locationSelection.length > 0 ?
@@ -61,6 +63,8 @@ const MapWrapper = ({
 				infilPoint={infilPoint}
 				exfilPoint={exfilPoint}
 				fallbackExfil={fallbackExfil}
+				infilMethod={infilMethod}
+				province={province}
 			/>
 		</div>
 	);
@@ -76,6 +80,8 @@ MapWrapper.propTypes = {
 	infilPoint: PropTypes.array,
 	exfilPoint: PropTypes.array,
 	fallbackExfil: PropTypes.array,
+	infilMethod: PropTypes.string,
+	province: PropTypes.string,
 };
 
 export default MapWrapper;

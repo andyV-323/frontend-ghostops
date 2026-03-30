@@ -25,7 +25,6 @@ import AARSheet from "./AARSheet";
 import PhaseList from "./PhaseList";
 import PhaseReportSheet from "./PhaseReportSheet";
 import CampaignView from "./CampaignView";
-import ImageManager from "./ImageManager";
 
 export {
 	Header,
@@ -55,5 +54,4 @@ export {
 	PhaseList,
 	PhaseReportSheet,
 	CampaignView,
-	ImageManager,
 };

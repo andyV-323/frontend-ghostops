@@ -1,8 +1,5 @@
-// Desc: Contact form component for the website
-
 import emailjs from "@emailjs/browser";
 import { useRef, useState } from "react";
-import { Button, Card, Input } from "@material-tailwind/react";
 import { useAlert } from "@/hooks";
 import { Alert } from "@/components";
 
@@ -12,23 +9,17 @@ const Contact = () => {
 	const { alert, showAlert, hideAlert } = useAlert();
 	const [loading, setLoading] = useState(false);
 
-	const handleChange = ({ target: { name, value } }) => {
-		setForm({ ...form, [name]: value });
-	};
+	const handleChange = ({ target: { name, value } }) =>
+		setForm((prev) => ({ ...prev, [name]: value }));
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
 		if (!form.name || !form.email) {
-			showAlert({
-				show: true,
-				text: "Please fill in all required fields.",
-				type: "danger",
-			});
+			showAlert({ show: true, text: "Name and email are required.", type: "danger" });
 			return;
 		}
 
 		setLoading(true);
-
 		emailjs
 			.send(
 				import.meta.env.VITE_APP_EMAILJS_SERVICE_ID,
@@ -40,17 +31,12 @@ const Contact = () => {
 					to_email: "andyvalencia.cs@gmail.com",
 					message: form.message,
 				},
-				import.meta.env.VITE_APP_EMAILJS_PUBLIC_KEY
+				import.meta.env.VITE_APP_EMAILJS_PUBLIC_KEY,
 			)
 			.then(
 				() => {
 					setLoading(false);
-					showAlert({
-						show: true,
-						text: "Thank you for your message 😃",
-						type: "success",
-					});
-
+					showAlert({ show: true, text: "Message sent — thanks for reaching out.", type: "success" });
 					setTimeout(() => {
 						hideAlert();
 						setForm({ name: "", email: "", message: "" });
@@ -59,99 +45,89 @@ const Contact = () => {
 				(error) => {
 					setLoading(false);
 					console.error(error);
-					showAlert({
-						show: true,
-						text: "I didn't receive your message 😢",
-						type: "danger",
-					});
-				}
+					showAlert({ show: true, text: "Failed to send. Please try again.", type: "danger" });
+				},
 			);
 	};
 
+	const inputClass =
+		"w-full bg-neutral-900 border border-neutral-700/60 rounded-sm px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 transition-colors font-mono";
+
 	return (
-		<div className='flex flex-col items-center w-full bg-neutral-800 min-h-screen'>
-			{/* Responsive Layout */}
-			<div className='flex flex-col lg:flex-row w-full h-auto lg:h-screen  bg-cover bg-center p-6 md:p-12 lg:p-20'>
-				{/* Left Section (Text) */}
-				<div className='w-full lg:w-1/2 flex items-center justify-center p-6 md:p-10'>
-					<div className='flex flex-col items-center text-center lg:text-left max-w-lg'>
-						<h1 className='text-3xl md:text-5xl font-bold text-white mb-4'>
-							Contact
-						</h1>
-						<p className='text-md md:text-lg text-fontz'>
-							Have a question or feedback? Reach out , and I’ll get back to you
-							as soon as possible.
-						</p>
-					</div>
+		<div className='w-full bg-neutral-800 py-20 px-6 md:px-10 lg:px-20'>
+			<div className='max-w-3xl mx-auto'>
+				{/* Header */}
+				<div className='mb-10 text-center'>
+					<p className='font-mono text-[10px] tracking-[0.3em] uppercase text-btn mb-3'>
+						Get in Touch
+					</p>
+					<h2 className='text-3xl md:text-4xl font-bold text-white'>Contact</h2>
+					<p className='mt-3 text-sm text-fontz'>
+						Have a question, feedback, or idea? Send a message and I&apos;ll get back to you.
+					</p>
 				</div>
 
-				{/* Right Section (Form) */}
-				<div className='w-full lg:w-1/2 flex items-center justify-center p-6 md:p-10'>
-					<Card
-						ref={formRef}
-						className='w-full max-w-md md:max-w-xl bg-black p-6 md:p-10 rounded-2xl shadow-lg'>
-						{alert.show && <Alert {...alert} />}
-						<h2 className='text-2xl md:text-3xl font-bold text-white text-center mb-6'>
-							Get in Touch
-						</h2>
+				{/* Form */}
+				<div
+					ref={formRef}
+					className='border border-neutral-700/50 rounded-sm bg-neutral-900 p-6 md:p-8'>
+					{alert.show && <Alert {...alert} />}
 
-						<form
-							onSubmit={handleSubmit}
-							className='flex flex-col gap-6'>
-							{/* Name Input */}
-							<div className='flex flex-col'>
-								<label className='text-white font-semibold mb-2'>
+					<form onSubmit={handleSubmit} className='flex flex-col gap-5'>
+						<div className='grid grid-cols-1 md:grid-cols-2 gap-5'>
+							{/* Name */}
+							<div className='flex flex-col gap-1.5'>
+								<label className='font-mono text-[9px] tracking-widest uppercase text-neutral-500'>
 									Name <span className='text-red-500'>*</span>
 								</label>
-								<Input
+								<input
 									type='text'
 									name='name'
-									className='w-full rounded-md border border-gray-500 bg-white py-3 px-6 text-base font-medium text-gray-700 focus:border-blue-500 focus:shadow-md'
-									placeholder='John Doe'
+									className={inputClass}
+									placeholder='Call sign or real name'
 									value={form.name}
 									onChange={handleChange}
 								/>
 							</div>
 
-							{/* Email Input */}
-							<div className='flex flex-col'>
-								<label className='text-white font-semibold mb-2'>
+							{/* Email */}
+							<div className='flex flex-col gap-1.5'>
+								<label className='font-mono text-[9px] tracking-widest uppercase text-neutral-500'>
 									Email <span className='text-red-500'>*</span>
 								</label>
-								<Input
+								<input
 									type='email'
 									name='email'
-									className='w-full rounded-md border border-gray-500 bg-white py-3 px-6 text-base font-medium text-gray-700 focus:border-blue-500 focus:shadow-md'
-									placeholder='john@example.com'
+									className={inputClass}
+									placeholder='your@email.com'
 									value={form.email}
 									onChange={handleChange}
 								/>
 							</div>
+						</div>
 
-							{/* Message Input */}
-							<div className='flex flex-col'>
-								<label className='text-white font-semibold mb-2'>
-									Your Message
-								</label>
-								<textarea
-									name='message'
-									rows='4'
-									className='w-full resize-none rounded-md border border-gray-500 bg-white py-3 px-6 text-base font-medium text-gray-700 focus:border-blue-500 focus:shadow-md'
-									placeholder='Write your thoughts here...'
-									value={form.message}
-									onChange={handleChange}
-								/>
-							</div>
+						{/* Message */}
+						<div className='flex flex-col gap-1.5'>
+							<label className='font-mono text-[9px] tracking-widest uppercase text-neutral-500'>
+								Message
+							</label>
+							<textarea
+								name='message'
+								rows='5'
+								className={`${inputClass} resize-none`}
+								placeholder='Write your message here...'
+								value={form.message}
+								onChange={handleChange}
+							/>
+						</div>
 
-							{/* Submit Button */}
-							<Button
-								type='submit'
-								disabled={loading}
-								className='btn'>
-								{loading ? "Sending..." : "Submit"}
-							</Button>
-						</form>
-					</Card>
+						<button
+							type='submit'
+							disabled={loading}
+							className='btn self-start font-mono text-[10px] tracking-widest uppercase px-6 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity'>
+							{loading ? "Sending..." : "Send Message"}
+						</button>
+					</form>
 				</div>
 			</div>
 		</div>

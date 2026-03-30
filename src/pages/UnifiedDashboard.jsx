@@ -34,7 +34,6 @@ import {
 	PhaseReportSheet,
 	CampaignView,
 	OperatorImageView,
-	ImageManager,
 } from "@/components";
 import { MissionGenerator } from "@/components/ai";
 import {
@@ -611,6 +610,10 @@ function BriefingPage({ onNewMission }) {
 		imgURL,
 		// AI missions render locationSelection (ops mode behavior) for objective markers
 		generationMode: isAIMission ? "ops" : generationMode,
+		infilPoint: mapSource.infilPoint ?? null,
+		exfilPoint: mapSource.exfilPoint ?? null,
+		infilMethod: mapSource.infilMethod ?? null,
+		province: activeMission?.province ?? null,
 	};
 
 	const biome = activeMission?.biome || null;
@@ -1348,19 +1351,7 @@ function OperatorsPage() {
 							</button>
 						))}
 						<div className='ml-auto flex items-center gap-0.5 pr-2'>
-							<button
-								onClick={() =>
-									open(
-										"left",
-										<ImageManager />,
-										"Image Manager",
-										"Manage uploaded operator images",
-									)
-								}
-								className='font-mono text-[8px] tracking-widest uppercase px-2 py-1 border border-neutral-700/60 hover:border-btn/50 text-neutral-600 hover:text-btn rounded-sm transition-all'>
-								Images
-							</button>
-							<button
+	<button
 								onClick={() =>
 									open(
 										"left",

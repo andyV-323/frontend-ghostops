@@ -1,53 +1,39 @@
 import { useState } from "react";
-import { Button, Card, CardHeader, Typography } from "@material-tailwind/react";
 import { features } from "@/config";
 import PropTypes from "prop-types";
 
 const FeatureCard = ({ title, icon, description }) => {
 	const [isExpanded, setIsExpanded] = useState(false);
-
-	const handleToggle = () => {
-		setIsExpanded(!isExpanded);
-	};
+	const visible = isExpanded ? description : description.slice(0, 2);
 
 	return (
-		<Card className='text-white bg-neutral-900 p-4 md:p-6  flex flex-col items-center shadow-black shadow-2xl rounded-2xl w-full max-w-xs md:max-w-sm lg:max-w-md'>
-			<CardHeader className='flex flex-col items-center font-semibold text-lg md:text-xl text-white bg-transparent p-4 md:p-5'>
-				<img
-					src={icon}
-					alt={`${title} icon`}
-					className='w-10 h-10 mb-2'
-				/>
-				<h3>{title}</h3>
-			</CardHeader>
-			<Typography className='text-center text-sm md:text-base text-fontz'>
-				{description
-					.slice(0, isExpanded ? description.length : 2)
-					.map((item, index) => (
-						<li key={index}>{item}</li>
-					))}
-			</Typography>
-			<Button
-				onClick={handleToggle}
-				className='bg-btn hover:bg-highlight hover:text-white text-black font-semibold py-2 px-6 md:py-3 md:px-8 rounded-lg shadow-lg transition duration-300 ease-in-out mt-4 md:mt-6'>
-				{isExpanded ? "Show Less" : "Read More"}
-			</Button>
-		</Card>
-	);
-};
-
-const Features = () => {
-	return (
-		<div className='flex flex-col min-h-screen w-full bg-cover bg-center bg-neutral-800'>
-			{/* Features Section */}
-			<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-6 md:px-10 lg:px-20 mt-20 mb-10 place-items-center'>
-				{features.map((feature, index) => (
-					<FeatureCard
-						key={index}
-						{...feature}
-					/>
-				))}
+		<div className='flex flex-col bg-neutral-900 border border-neutral-700/50 rounded-sm p-5 w-full shadow-black shadow-xl hover:border-neutral-600/60 transition-colors'>
+			{/* Header */}
+			<div className='flex items-center gap-3 mb-4'>
+				<img src={icon} alt={`${title} icon`} className='w-7 h-7 shrink-0' />
+				<h3 className='font-mono text-[11px] tracking-widest uppercase text-white'>
+					{title}
+				</h3>
 			</div>
+
+			{/* Bullet list */}
+			<ul className='flex flex-col gap-2 flex-1'>
+				{visible.map((item, i) => (
+					<li key={i} className='flex items-start gap-2 text-fontz text-sm leading-relaxed'>
+						<span className='mt-1.5 w-1 h-1 rounded-full bg-btn shrink-0' />
+						{item}
+					</li>
+				))}
+			</ul>
+
+			{/* Toggle */}
+			{description.length > 2 && (
+				<button
+					onClick={() => setIsExpanded((p) => !p)}
+					className='mt-4 self-start font-mono text-[9px] tracking-widest uppercase text-neutral-500 hover:text-btn transition-colors'>
+					{isExpanded ? "Show less ↑" : "Show more ↓"}
+				</button>
+			)}
 		</div>
 	);
 };
@@ -57,5 +43,23 @@ FeatureCard.propTypes = {
 	icon: PropTypes.string.isRequired,
 	description: PropTypes.array.isRequired,
 };
+
+const Features = () => (
+	<div className='w-full bg-neutral-800 py-20 px-6 md:px-10 lg:px-20'>
+		<div className='mb-12 text-center'>
+			<p className='font-mono text-[10px] tracking-[0.3em] uppercase text-btn mb-3'>
+				Capabilities
+			</p>
+			<h2 className='text-3xl md:text-4xl font-bold text-white'>
+				Everything Your Unit Needs
+			</h2>
+		</div>
+		<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5'>
+			{features.map((feature, i) => (
+				<FeatureCard key={i} {...feature} />
+			))}
+		</div>
+	</div>
+);
 
 export default Features;
