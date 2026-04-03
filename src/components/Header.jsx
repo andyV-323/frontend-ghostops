@@ -120,12 +120,20 @@ const Header = () => {
 							</ul>
 						</div>
 
-						{/* Logout Button */}
-						<Button
-							onClick={signOut}
-							className='btn px-6 py-2 rounded-lg mt-6 w-full'>
-							Sign out
-						</Button>
+						<div className='flex flex-col gap-2'>
+							<a
+								href="https://ko-fi.com/andyv41628"
+								target="_blank"
+								rel="noreferrer"
+								className='text-center text-xs text-white/60 hover:text-white hover:underline py-1'>
+								☕ Support GhostOpsAI
+							</a>
+							<Button
+								onClick={signOut}
+								className='btn px-6 py-2 rounded-lg w-full'>
+								Sign out
+							</Button>
+						</div>
 					</div>
 				</>
 			)}

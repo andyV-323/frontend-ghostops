@@ -1748,7 +1748,14 @@ export default function UnifiedDashboard() {
 										</span>
 									</div>
 								</div>
-								<div className='px-3 py-2.5'>
+								<div className='px-3 py-2.5 flex flex-col gap-2'>
+									<a
+										href='https://ko-fi.com/andyv41628'
+										target='_blank'
+										rel='noreferrer'
+										className='w-full flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-lines/35 hover:text-btn border border-lines/15 hover:border-btn/30 rounded-sm py-1.5 transition-all'>
+										☕ Support
+									</a>
 									<button
 										onClick={signOut}
 										className='w-full flex items-center justify-center gap-2 font-mono text-[9px] tracking-widest uppercase text-lines/35 hover:text-red-400 border border-lines/15 hover:border-red-900/40 bg-transparent hover:bg-red-900/10 rounded-sm py-1.5 transition-all'>
@@ -1808,15 +1815,24 @@ export default function UnifiedDashboard() {
 								user?.profile?.email ||
 								"GHOST-1"}
 						</span>
-						<button
-							onClick={signOut}
-							className='flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase text-lines/35 hover:text-red-400 border border-lines/15 hover:border-red-900/40 hover:bg-red-900/10 px-2 py-1 rounded-sm transition-all'>
-							<FontAwesomeIcon
-								icon={faRightFromBracket}
-								className='text-[8px]'
-							/>
-							Sign Out
-						</button>
+						<div className='flex items-center gap-2'>
+							<a
+								href='https://ko-fi.com/andyv41628'
+								target='_blank'
+								rel='noreferrer'
+								className='flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase text-lines/35 hover:text-btn border border-lines/15 hover:border-btn/30 px-2 py-1 rounded-sm transition-all'>
+								☕ Support
+							</a>
+							<button
+								onClick={signOut}
+								className='flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase text-lines/35 hover:text-red-400 border border-lines/15 hover:border-red-900/40 hover:bg-red-900/10 px-2 py-1 rounded-sm transition-all'>
+								<FontAwesomeIcon
+									icon={faRightFromBracket}
+									className='text-[8px]'
+								/>
+								Sign Out
+							</button>
+						</div>
 					</div>
 				)}
 				<div className='flex'>
