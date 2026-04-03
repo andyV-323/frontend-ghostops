@@ -1,6 +1,6 @@
 import { Button } from "@material-tailwind/react";
 import { useEffect, useState } from "react";
-import { Features, About, Contact } from "@/components";
+import { Features, About, Contact, TacticalTerminal } from "@/components";
 import { useAuthService } from "@/services/AuthService";
 
 const Home = () => {
@@ -41,13 +41,9 @@ const Home = () => {
 					</div>
 				</div>
 
-				{/* Right — dashboard preview */}
+				{/* Right — tactical terminal */}
 				<div className='w-full lg:w-1/2 flex items-center justify-center p-6'>
-					<img
-						src='/img/dash.png'
-						alt='GhostOpsAI Dashboard'
-						className='shadow-black shadow-2xl rounded-sm'
-					/>
+					<TacticalTerminal />
 				</div>
 			</div>
 
