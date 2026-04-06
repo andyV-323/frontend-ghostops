@@ -81,11 +81,11 @@ export const updateMissionBriefing = async (id, briefingText) =>
 
 // Append a completed phase debrief to a mission.
 // payload: phase object from PhaseReportSheet
-// Returns: { message, phase }
+// Returns: { message, phase, campaignPhases?, missionStatus }
 export const addPhase = async (missionId, payload) => {
 	try {
 		const response = await api.post(`/missions/${missionId}/phases`, payload);
-		return response.data; // { message, phase }
+		return response.data; // { message, phase, campaignPhases (AI missions only), missionStatus }
 	} catch (error) {
 		console.error("ERROR saving phase:", error);
 		throw error;

@@ -322,6 +322,8 @@ export async function generateAAR({ mission, selectedPhases }) {
 			return [
 				`Phase ${p.phaseNumber} — ${getMissionFullLabel(p.missionType)} — ${p.province ?? "Unknown AO"}`,
 				`Outcome: ${outcomeLabel}`,
+				`Squad: ${p.squadUsed || "Unknown"}`,
+				`Insertion: ${p.infilMethodUsed || "Unknown"}`,
 				`Complications: ${complications}`,
 				`Casualties: ${casualty}`,
 				`Intel developed: ${intel}`,
@@ -379,7 +381,7 @@ Write the after action report.`;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // generateCampaign
-// Single Groq call producing the full phase chain for AI mode operations.
+// Single Groq call producing the full operation structure for AI mode.
 //
 // Called by AIMissionGenerator.jsx after player configures inputs.
 // Returns structured JSON — no further Groq calls needed for this operation.
@@ -390,9 +392,17 @@ Write the after action report.`;
 //   const provinceContext = buildProvinceContext(selectedProvince, PROVINCES);
 //   const provinceData = PROVINCES[selectedProvince];
 //
+// Structure A (direct_action, convoy_interdiction, sabotage):
+//   Multiple teams, simultaneous objectives → returns { teams: [...] }
+//
+// Structure B (hvt_hunt, rescue, intel_gathering):
+//   Two-act intel-then-strike → returns { act1: {...}, act2: {...} }
+//
 // AI Random:  playerLocations = null,  locationCount = number (2–6)
 // AI Mission: playerLocations = array of location name strings, locationCount = null
 // ─────────────────────────────────────────────────────────────────────────────
+
+const STRUCTURE_A_OP_TYPES = ["direct_action", "convoy_interdiction", "sabotage"];
 
 export async function generateCampaign({
 	opType,
@@ -406,100 +416,179 @@ export async function generateCampaign({
 	missionTypes,
 }) {
 	const isRandom = !playerLocations;
+	const isStructureA = STRUCTURE_A_OP_TYPES.includes(opType);
+
+	const provinceLocationNames = provinceData.locations.map((l) => l.name);
+	const validMissionTypeIds = new Set(missionTypes.map((m) => m.id));
 
 	// ── Build the mission type reference list ─────────────────────────────────
 	const missionTypeRef = missionTypes
 		.map((m) => `  ${m.id} — ${m.fullLabel} (${m.category})`)
 		.join("\n");
 
-	// ── Build player phase block ──────────────────────────────────────────────
-	// AI Random: AI picks locations and phase count from the province.
-	// AI Mission: locations are locked to player selection, AI assigns types and narrative.
-
-	const playerPhaseBlock =
-		playerLocations ?
-			`The player has selected the following locations in order. Use these EXACTLY — do not change or substitute any location name:
-${playerLocations.map((loc, i) => `  Phase ${i + 1}: "${loc}"`).join("\n")}
-
-Assign an appropriate missionTypeId from the list above to each phase based on its role in the narrative.
-The final phase missionTypeId must be one of: ${opTypeDef.finalPhaseTypes.join(", ")}.
-Phase count equals the number of locations the player selected — do not add or remove phases.
-The final location is the decisive action — make it the operational climax.`
-		:	`Choose locations from the province that form a logical operational sequence.
-Generate between 2 and 6 phases — choose the count that fits the narrative, not a default.
-The player requested approximately ${locationCount} locations as a guide, but adjust by 1 if narrative coherence requires it.
-A tight 2-phase direct action is valid. A 6-phase multi-stage campaign is valid. Never pad phases to reach a number.
-Each phase must produce intelligence or shape the battlefield that the next phase directly exploits.
-The final phase missionTypeId must be one of: ${opTypeDef.finalPhaseTypes.join(", ")}.
-Build-up phases use types from: [${opTypeDef.buildupPhaseTypes.join(", ")}].
-The final phase is the decisive action — make it the operational climax.`;
-
 	// ── System prompt ─────────────────────────────────────────────────────────
-	const systemPrompt = `You are a Ghost Recon Breakpoint special operations mission planner generating a classified operation order.
+	const systemPrompt =
+		`You are a Ghost Recon Breakpoint special operations mission planner. ` +
+		`You generate classified operation orders for Ghost operatives on Auroa — ` +
+		`a remote technology archipelago seized by Sentinel Corp and defended by the Wolves, ` +
+		`a rogue special forces faction.\n\n` +
+		`Return ONLY valid JSON. No markdown. No explanation. No preamble.\n` +
+		`All location names must exactly match names from the provided province list.\n` +
+		`All missionTypeId values must exactly match values from the provided list.\n` +
+		`Write in tight military prose — terse, operational, no civilian tone.`;
 
-You MUST return ONLY valid JSON — no preamble, no explanation, no markdown, no code blocks.
-Every location name you use MUST exactly match a name from the provided province location list.
-Never invent location names.
+	// ── User prompt — branched by operation structure ─────────────────────────
+	let userPrompt;
 
-The operation takes place on Auroa — a remote technology archipelago seized by Sentinel Corp and defended by the Wolves, a rogue special forces faction armed with advanced Skell Technology drones, autonomous weapons, and armed vehicles. Ghost operatives operate without official acknowledgment. Write in tight military prose — no filler, no civilian tone.`;
+	if (isStructureA) {
+		// Structure A — Direct Action: simultaneous multi-team strike
+		const locationsBlock =
+			playerLocations ?
+				`The player has selected the following locations. Assign one team per location — use EXACTLY as listed:\n` +
+				playerLocations.map((loc, i) => `  Team ${i + 1}: "${loc}"`).join("\n")
+			:	`Choose ${locationCount ?? 2} distinct locations from the province list. Each becomes one team's objective.`;
 
-	// ── User prompt ───────────────────────────────────────────────────────────
-	const userPrompt = `Generate a Ghost Recon Breakpoint classified operation order.
+		userPrompt =
+			`Generate a Ghost Recon Breakpoint classified operation order.\n\n` +
+			`OPERATION TYPE: ${opTypeDef.label} (${opType})\n` +
+			`PLAYER CONTEXT: ${context || "No additional context provided — generate a compelling, grounded scenario."}\n` +
+			`PROVINCE: ${province}\n` +
+			`MODE: ${isRandom ? "AI Random" : "AI Mission"}\n\n` +
+			`AVAILABLE MISSION TYPE IDs (use these exactly):\n${missionTypeRef}\n\n` +
+			`PROVINCE AND AVAILABLE LOCATIONS:\n${provinceContext}\n\n` +
+			`${locationsBlock}\n\n` +
+			`Generate a Structure A — Direct Action operation.\n` +
+			`Multiple teams strike multiple objectives simultaneously in a single deployment.\n` +
+			`Each team gets one objective. Teams operate independently and exfil separately.\n\n` +
+			`Return this exact JSON:\n` +
+			`{\n` +
+			`  "operationName": "TWO WORD CODENAME IN CAPS",\n` +
+			`  "narrative": "3-4 sentences. Name the specific threat. Explain why command issued this tasking now. Include one specific Sentinel or Wolves activity detail. Military tone.",\n` +
+			`  "structure": "direct_action",\n` +
+			`  "friendlyConcerns": "One sentence about a secondary concern in the AO, or null if none.",\n` +
+			`  "exfilPlan": "One sentence describing exfil for all teams.",\n` +
+			`  "teams": [\n` +
+			`    {\n` +
+			`      "teamLabel": "Team 1",\n` +
+			`      "objective": "<exact location name from province list>",\n` +
+			`      "missionTypeId": "<exact ID from mission type list>",\n` +
+			`      "task": "2-3 sentences. What this team physically does. What they must confirm or destroy. What success looks like.",\n` +
+			`      "specialistRequired": "one word specialty or null"\n` +
+			`    }\n` +
+			`  ]\n` +
+			`}\n\n` +
+			`Rules:\n` +
+			`- One team per location the player selected\n` +
+			`- All missionTypeId values must be from the Direct Action or Overwatch categories\n` +
+			`- teamLabel is Team 1, Team 2, Team 3 etc\n` +
+			`- specialistRequired: "Demolition", "Sniper", "Medic", or null\n` +
+			`- narrative must reference the specific province and at least one location name`;
+	} else {
+		// Structure B — Intel Then Strike: covert recon unlocks decisive action
+		userPrompt =
+			`Generate a Ghost Recon Breakpoint classified operation order.\n\n` +
+			`OPERATION TYPE: ${opTypeDef.label} (${opType})\n` +
+			`PLAYER CONTEXT: ${context || "No additional context provided — generate a compelling, grounded scenario."}\n` +
+			`PROVINCE: ${province}\n` +
+			`MODE: ${isRandom ? "AI Random" : "AI Mission"}\n\n` +
+			`AVAILABLE MISSION TYPE IDs (use these exactly):\n${missionTypeRef}\n\n` +
+			`PROVINCE AND AVAILABLE LOCATIONS:\n${provinceContext}\n\n` +
+			`Generate a Structure B — Intel Then Strike operation.\n` +
+			`Act 1 is a covert recon phase at a standoff position observing the target.\n` +
+			`Act 2 is the strike phase at the actual target, unlocked after Act 1 is filed.\n` +
+			`Act 1 and Act 2 happen at DIFFERENT locations — recon observes from distance, strike hits the target.\n\n` +
+			`Return this exact JSON:\n` +
+			`{\n` +
+			`  "operationName": "TWO WORD CODENAME IN CAPS",\n` +
+			`  "narrative": "3-4 sentences. Name the specific HVT or target asset. Explain why intel is needed before striking. Include time pressure or intel gap detail. Military tone.",\n` +
+			`  "structure": "intel_then_strike",\n` +
+			`  "friendlyConcerns": "One sentence about a secondary concern, or null.",\n` +
+			`  "exfilPlan": "One sentence. Act 1 exfils quietly. Act 2 exfil method matches mission type.",\n` +
+			`  "act1": {\n` +
+			`    "teamLabel": "Team 1",\n` +
+			`    "teamSize": "1-2 operators",\n` +
+			`    "objective": "<standoff/observation location from province list — NOT the target>",\n` +
+			`    "missionTypeId": "<SR_POINT or SR_AREA or OW_OVERWATCH>",\n` +
+			`    "task": "2-3 sentences. Establish covert OP. What to observe. What intel to collect. No contact.",\n` +
+			`    "intelGate": "snake_case_label for what this phase produces e.g. vasquez_confirmed"\n` +
+			`  },\n` +
+			`  "act2": {\n` +
+			`    "teamLabel": "Team 2",\n` +
+			`    "teamSize": "2-4 operators",\n` +
+			`    "objective": "<actual target location from province list>",\n` +
+			`    "missionTypeId": "<mission type matching the opType finalPhaseTypes>",\n` +
+			`    "task": "2-3 sentences. The decisive action using intel from Act 1. What success looks like.",\n` +
+			`    "unlockedBy": "<same value as act1 intelGate>",\n` +
+			`    "specialistRequired": "one word or null"\n` +
+			`  }\n` +
+			`}\n\n` +
+			`Rules:\n` +
+			`- act1 objective and act2 objective must be DIFFERENT locations from the province list\n` +
+			`- act1 missionTypeId must be SR_POINT, SR_AREA, or OW_OVERWATCH\n` +
+			`- act2 missionTypeId must be one of: ${opTypeDef.finalPhaseTypes.join(", ")}\n` +
+			`- intelGate and unlockedBy must match exactly\n` +
+			`- narrative must reference the specific province and target`;
+	}
 
-OPERATION TYPE: ${opTypeDef.label} (${opType})
-PLAYER CONTEXT: ${context || "No additional context provided — generate a compelling, grounded scenario."}
-MODE: ${isRandom ? "AI Random — choose locations and phase sequence from the province list below." : "AI Mission — player has locked the locations, build the narrative around them."}
-
-AVAILABLE MISSION TYPE IDs (use these exactly):
-${missionTypeRef}
-
-PROVINCE AND AVAILABLE LOCATIONS:
-${provinceContext}
-
-${playerPhaseBlock}
-
-Return this exact JSON structure:
-{
-  "operationName": "Two-word codename in ALL CAPS — sounds classified e.g. IRON COVENANT, PALE EMBER, DEAD RECKONING",
-  "narrative": "3-4 sentences. Name the specific threat actor or asset. Explain why Auroa command issued this tasking. Include one specific detail about Sentinel or Wolves activity that triggered this operation. Military tone — no vague generalities.",
-  "opType": "${opType}",
-  "phaseCount": <number between 2 and 6 — chosen by narrative need, not defaulted to 4>,
-  "phases": [
-    {
-      "phaseIndex": 0,
-      "label": "Short phase codename e.g. Cold Canvas, Iron Vigil, Dead Drop",
-      "location": "<exact location name from the province list above>",
-      "missionTypeId": "<exact mission type ID from the list above>",
-      "timeOfDay": "<one of: night, dawn, day, dusk — SR missions must use night or dawn; DA strikes prefer night or dusk; final phases prefer night>",
-      "threatLevel": "<one of: low, medium, high, critical — build-up phases escalate; final phase is always high or critical>",
-      "objective": "Two sentences. First: what the player physically does at this location. Second: why this matters to the campaign — what it unlocks or confirms for the next phase.",
-      "intelGate": "snake_case label for the intelligence this phase produces e.g. patrol_timing, facility_layout, hvt_confirmed",
-      "isFinal": false
-    }
-  ]
-}
-
-Rules:
-- phases array length must equal phaseCount
-- Last phase must have isFinal: true, all others isFinal: false
-- location values must match the provided province location list EXACTLY (case-sensitive)
-- missionTypeId must match a value from the mission type list EXACTLY
-- timeOfDay must be one of: night, dawn, day, dusk
-- threatLevel must be one of: low, medium, high, critical
-- phaseCount is determined by operation complexity — a 2-phase op is valid, a 6-phase op is valid, never default to 4
-- Build-up phases must feel like genuine ISR or shaping actions that logically enable the next phase
-- The final phase is the decisive action — objective text must reflect the operational climax
-- Each phase intelGate must reference something the following phase actually exploits
-- Do NOT include a province field in phases — all phases are in ${province}
-- Do NOT include minibrief — tactical environmental detail is handled by BriefingGenerator
-- Do NOT include enemyForce — enemy presence is handled by a separate config`;
-
-	// ── Backend proxy call ───────────────────────────────────────────────────
+	// ── Backend proxy call ────────────────────────────────────────────────────
 	const res = await api.post("/ai/campaign", {
 		systemPrompt,
 		userPrompt,
 		province,
-		provinceLocationNames: provinceData.locations.map((l) => l.name),
+		provinceLocationNames,
 	});
-	return res.data.campaign;
+
+	const campaign = res.data.campaign;
+
+	// ── Frontend validation ───────────────────────────────────────────────────
+	const isValidLoc  = (loc) => provinceLocationNames.some((n) => n.trim() === loc?.trim());
+	const isValidType = (id)  => validMissionTypeIds.has(id);
+
+	if (isStructureA) {
+		if (!Array.isArray(campaign.teams) || !campaign.teams.length) {
+			throw new Error("Campaign generation returned no teams. Try again.");
+		}
+		const bad = campaign.teams.filter(
+			(t) => !isValidLoc(t.objective) || !isValidType(t.missionTypeId),
+		);
+		if (bad.length) {
+			const detail = bad
+				.map((t) => `objective="${t.objective}" type="${t.missionTypeId}"`)
+				.join("; ");
+			throw new Error(`Campaign returned invalid team data: ${detail}. Try again.`);
+		}
+	} else {
+		const { act1, act2 } = campaign;
+		if (!act1 || !act2) {
+			throw new Error("Campaign generation missing act1 or act2. Try again.");
+		}
+		if (!isValidLoc(act1.objective)) {
+			throw new Error(`Act 1 objective "${act1.objective}" not found in province list. Try again.`);
+		}
+		if (!isValidLoc(act2.objective)) {
+			throw new Error(`Act 2 objective "${act2.objective}" not found in province list. Try again.`);
+		}
+		if (!isValidType(act1.missionTypeId)) {
+			throw new Error(`Act 1 missionTypeId "${act1.missionTypeId}" is invalid. Try again.`);
+		}
+		if (!isValidType(act2.missionTypeId)) {
+			throw new Error(`Act 2 missionTypeId "${act2.missionTypeId}" is invalid. Try again.`);
+		}
+		if (act1.intelGate !== act2.unlockedBy) {
+			throw new Error(
+				`intelGate "${act1.intelGate}" does not match unlockedBy "${act2.unlockedBy}". Try again.`,
+			);
+		}
+		if (act1.objective === act2.objective) {
+			throw new Error("Act 1 and Act 2 must use different locations. Try again.");
+		}
+	}
+
+	// ── Return with normalised top-level fields ───────────────────────────────
+	return {
+		...campaign,
+		operationStructure: campaign.structure,
+		friendlyConcerns:   campaign.friendlyConcerns ?? null,
+		exfilPlan:          campaign.exfilPlan ?? null,
+	};
 }

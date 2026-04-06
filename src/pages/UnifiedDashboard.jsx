@@ -6,6 +6,7 @@ import {
 	faTruck,
 	faClock,
 	faWifi,
+	faChevronLeft,
 	faChevronRight,
 	faRightFromBracket,
 	faUser,
@@ -377,11 +378,26 @@ function BriefingPage({ onNewMission }) {
 		(p) => p.status === "complete",
 	).length;
 	const isAIMission = !!activeMission?.aiGenerated;
+	const operationStructure = activeMission?.operationStructure ?? "";
+	const friendlyConcerns   = activeMission?.friendlyConcerns ?? "";
+	const exfilPlan          = activeMission?.exfilPlan ?? "";
+
+	// For Structure A, multiple phases can be active simultaneously
+	const activePhases = isAIMission ? campaignPhases.filter((p) => p.status === "active") : [];
+
+	// Which active team phase the map is currently showing (Structure A only)
+	const [activePhaseIndex, setActivePhaseIndex] = useState(0);
+	useEffect(() => {
+		setActivePhaseIndex(0);
+	}, [activePhases.length]);
 
 	// Active campaign phase — drives map for AI missions
+	// Structure A: use indexed active phase; Structure B / legacy: first active phase
 	const activeCampaignPhase =
 		isAIMission ?
-			(campaignPhases.find((p) => p.status === "active") ?? null)
+			operationStructure === "direct_action" && activePhases.length > 0 ?
+				activePhases[Math.min(activePhaseIndex, activePhases.length - 1)]
+			:	(campaignPhases.find((p) => p.status === "active") ?? null)
 		:	null;
 
 	// ── Generation mode ───────────────────────────────────────────────────────
@@ -548,6 +564,9 @@ function BriefingPage({ onNewMission }) {
 				"bottom",
 				<CampaignView
 					mission={activeMission}
+					operationStructure={operationStructure}
+					friendlyConcerns={friendlyConcerns}
+					exfilPlan={exfilPlan}
 					onFileReport={() => {
 						close();
 						openPhaseSheet();
@@ -776,12 +795,37 @@ function BriefingPage({ onNewMission }) {
 					</Panel>
 
 					<Panel
-						title={activeMission?.province ?? "Tactical Map"}
+						title={
+							isAIMission && activeCampaignPhase && operationStructure === "direct_action"
+								? `${activeMission?.province ?? "Tactical Map"} — ${activeCampaignPhase.teamLabel || activeCampaignPhase.label}`
+								: (activeMission?.province ?? "Tactical Map")
+						}
 						badge='AO-LIVE'
 						badgeGreen
 						className='h-72'
 						bodyClass='overflow-hidden p-0'>
-						<MapWrapper {...mapProps} />
+						{operationStructure === "direct_action" && activePhases.length > 1 && (
+							<div className='shrink-0 flex items-center justify-between px-3 py-1 border-b border-neutral-800/40 bg-neutral-900/70'>
+								<button
+									onClick={() => setActivePhaseIndex((i) => Math.max(0, i - 1))}
+									disabled={activePhaseIndex === 0}
+									className='w-6 h-6 flex items-center justify-center rounded-sm border border-neutral-700/60 text-neutral-500 hover:text-neutral-300 hover:border-neutral-600 disabled:opacity-25 disabled:cursor-not-allowed transition-all'>
+									<FontAwesomeIcon icon={faChevronLeft} className='text-[8px]' />
+								</button>
+								<span className='font-mono text-[8px] text-neutral-500 tabular-nums'>
+									Team {activePhaseIndex + 1} of {activePhases.length}
+								</span>
+								<button
+									onClick={() => setActivePhaseIndex((i) => Math.min(activePhases.length - 1, i + 1))}
+									disabled={activePhaseIndex === activePhases.length - 1}
+									className='w-6 h-6 flex items-center justify-center rounded-sm border border-neutral-700/60 text-neutral-500 hover:text-neutral-300 hover:border-neutral-600 disabled:opacity-25 disabled:cursor-not-allowed transition-all'>
+									<FontAwesomeIcon icon={faChevronRight} className='text-[8px]' />
+								</button>
+							</div>
+						)}
+						<div className='flex-1 min-h-0 overflow-hidden'>
+							<MapWrapper {...mapProps} />
+						</div>
 					</Panel>
 				</div>
 			</div>
@@ -864,9 +908,29 @@ function BriefingPage({ onNewMission }) {
 							<span className='w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(74,222,128,0.6)] shrink-0' />
 							<span className='font-mono text-[8px] tracking-[0.2em] text-neutral-500 uppercase flex-1'>
 								{isAIMission && activeCampaignPhase ?
-									`${activeMission?.province ?? "Tactical Map"} — ${activeCampaignPhase.label}`
+									`${activeMission?.province ?? "Tactical Map"} — ${activeCampaignPhase.teamLabel || activeCampaignPhase.label}`
 								:	(activeMission?.province ?? "Tactical Map")}
 							</span>
+							{/* Structure A — cycle through simultaneous active team phases */}
+							{operationStructure === "direct_action" && activePhases.length > 1 && (
+								<div className='flex items-center gap-1 shrink-0'>
+									<button
+										onClick={() => setActivePhaseIndex((i) => Math.max(0, i - 1))}
+										disabled={activePhaseIndex === 0}
+										className='w-5 h-5 flex items-center justify-center rounded-sm border border-neutral-700/60 text-neutral-500 hover:text-neutral-300 hover:border-neutral-600 disabled:opacity-25 disabled:cursor-not-allowed transition-all'>
+										<FontAwesomeIcon icon={faChevronLeft} className='text-[8px]' />
+									</button>
+									<span className='font-mono text-[8px] text-neutral-600 tabular-nums'>
+										{activePhaseIndex + 1}/{activePhases.length}
+									</span>
+									<button
+										onClick={() => setActivePhaseIndex((i) => Math.min(activePhases.length - 1, i + 1))}
+										disabled={activePhaseIndex === activePhases.length - 1}
+										className='w-5 h-5 flex items-center justify-center rounded-sm border border-neutral-700/60 text-neutral-500 hover:text-neutral-300 hover:border-neutral-600 disabled:opacity-25 disabled:cursor-not-allowed transition-all'>
+										<FontAwesomeIcon icon={faChevronRight} className='text-[8px]' />
+									</button>
+								</div>
+							)}
 							<span className='font-mono text-[7px] tracking-widest text-neutral-600 border border-neutral-800/60 px-1.5 py-0.5 rounded-sm'>
 								AO-LIVE
 							</span>

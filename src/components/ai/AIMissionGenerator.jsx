@@ -379,60 +379,55 @@ export default function AIMissionGenerator({
 		return true;
 	};
 
-	// ── Process Groq phases → full payloads ───────────────────────────────────
-	// province is now stamped onto every phase by generateCampaign before returning.
-	// No multi-province handling needed here.
+	// ── Shared location/points/briefing resolver ────────────────────────────
+	const resolvePhaseAssets = (campaignJSON, objectiveName, missionTypeId) => {
+		const pd = PROVINCES[province];
+		const terrain = PROVINCE_TERRAIN?.[province] ?? null;
+		const locationObj = pd.locations.find(
+			(l) => l.name.trim() === objectiveName.trim(),
+		) ?? {
+			name: objectiveName,
+			description: "Location data unavailable.",
+			coordinates: pd.AOO ?? [0, 0],
+		};
+		const points = GeneratePointsOnMap({
+			missionType: missionTypeId,
+			terrain,
+			objectives: [locationObj],
+		});
+		const briefingText = generateBriefing({
+			operationName: campaignJSON.operationName,
+			province,
+			biome: pd.biome,
+			missionType: missionTypeId,
+			locations: [locationObj],
+			generator: points,
+			priorPhases: [],
+		});
+		return { pd, locationObj, points, briefingText };
+	};
 
-	const processCampaignPhases = (campaignJSON) => {
-		return campaignJSON.phases.map((phase, index) => {
-			const provinceKey = phase.province; // stamped by generateCampaign
-			const pd = PROVINCES[provinceKey];
-			const terrain = PROVINCE_TERRAIN?.[provinceKey] ?? null;
-
-			if (!pd) {
-				console.warn(`Phase ${index}: unknown province "${provinceKey}"`);
-				return { ...phase, error: "Province not found" };
-			}
-
-			// Trim both sides — some location names have trailing spaces
-			const locationObj = pd.locations.find(
-				(l) => l.name.trim() === phase.location.trim(),
-			) ?? {
-				name: phase.location,
-				description: "Location data unavailable.",
-				coordinates: pd.AOO ?? [0, 0],
-			};
-
-			const points = GeneratePointsOnMap({
-				missionType: phase.missionTypeId,
-				terrain,
-				objectives: [locationObj],
-			});
-
-			const briefingText = generateBriefing({
-				operationName: campaignJSON.operationName,
-				province: provinceKey,
-				biome: pd.biome,
-				missionType: phase.missionTypeId,
-				locations: [locationObj],
-				generator: points,
-				priorPhases: [],
-				timeOfDay: phase.timeOfDay ?? null,
-				threatLevel: phase.threatLevel ?? null,
-				// enemyForce removed from Groq output — BriefingGenerator handles this
-			});
-
+	// ── Structure A — Direct Action (simultaneous multi-team) ─────────────────
+	const processStructureA = (campaignJSON) => {
+		return campaignJSON.teams.map((team, index) => {
+			const { pd, locationObj, points, briefingText } = resolvePhaseAssets(
+				campaignJSON, team.objective, team.missionTypeId,
+			);
 			return {
 				phaseIndex: index,
-				label: phase.label,
-				objective: phase.objective,
-				isFinal: phase.isFinal ?? false,
-				intelGate: phase.intelGate ?? null,
-				timeOfDay: phase.timeOfDay ?? null,
-				threatLevel: phase.threatLevel ?? null,
-				province: provinceKey,
+				actIndex: 0,
+				teamLabel: team.teamLabel,
+				teamSize: "2-4 operators",
+				task: team.task,
+				specialistRequired: team.specialistRequired ?? null,
+				label: team.teamLabel,
+				objective: team.task,
+				isFinal: false,
+				intelGate: null,
+				unlockedBy: null,
+				province,
 				biome: pd.biome,
-				missionTypeId: phase.missionTypeId,
+				missionTypeId: team.missionTypeId,
 				location: locationObj,
 				infilPoint: points.infilPoint,
 				exfilPoint: points.exfilPoint,
@@ -443,9 +438,74 @@ export default function AIMissionGenerator({
 				bounds: pd.coordinates.bounds,
 				imgURL: pd.imgURL,
 				briefingText,
-				status: index === 0 ? "active" : "pending",
+				status: "active",
 			};
 		});
+	};
+
+	// ── Structure B — Intel Then Strike (two-act sequential) ──────────────────
+	const processStructureB = (campaignJSON) => {
+		const { act1, act2 } = campaignJSON;
+
+		const a1 = resolvePhaseAssets(campaignJSON, act1.objective, act1.missionTypeId);
+		const a2 = resolvePhaseAssets(campaignJSON, act2.objective, act2.missionTypeId);
+
+		return [
+			{
+				phaseIndex: 0,
+				actIndex: 0,
+				teamLabel: act1.teamLabel,
+				teamSize: act1.teamSize ?? "1-2 operators",
+				task: act1.task,
+				specialistRequired: null,
+				label: act1.teamLabel,
+				objective: act1.task,
+				isFinal: false,
+				intelGate: act1.intelGate ?? null,
+				unlockedBy: null,
+				province,
+				biome: a1.pd.biome,
+				missionTypeId: act1.missionTypeId,
+				location: a1.locationObj,
+				infilPoint: a1.points.infilPoint,
+				exfilPoint: a1.points.exfilPoint,
+				rallyPoint: a1.points.rallyPoint,
+				infilMethod: a1.points.infilMethod,
+				exfilMethod: a1.points.exfilMethod,
+				approachVector: a1.points.approachVector,
+				bounds: a1.pd.coordinates.bounds,
+				imgURL: a1.pd.imgURL,
+				briefingText: a1.briefingText,
+				status: "active",
+			},
+			{
+				phaseIndex: 1,
+				actIndex: 1,
+				teamLabel: act2.teamLabel,
+				teamSize: act2.teamSize ?? "2-4 operators",
+				task: act2.task,
+				specialistRequired: act2.specialistRequired ?? null,
+				label: act2.teamLabel,
+				objective: act2.task,
+				isFinal: true,
+				intelGate: null,
+				unlockedBy: act1.intelGate ?? null,
+				province,
+				biome: a2.pd.biome,
+				missionTypeId: act2.missionTypeId,
+				location: a2.locationObj,
+				infilPoint: a2.points.infilPoint,
+				exfilPoint: a2.points.exfilPoint,
+				rallyPoint: a2.points.rallyPoint,
+				infilMethod: a2.points.infilMethod,
+				exfilMethod: a2.points.exfilMethod,
+				approachVector: a2.points.approachVector,
+				bounds: a2.pd.coordinates.bounds,
+				imgURL: a2.pd.imgURL,
+				briefingText: a2.briefingText,
+				status: "pending",
+			},
+		];
 	};
 
 	// ── Generate handler ──────────────────────────────────────────────────────
@@ -485,7 +545,10 @@ export default function AIMissionGenerator({
 				})),
 			});
 
-			const processedPhases = processCampaignPhases(campaignJSON);
+			const processedPhases =
+				campaignJSON.structure === "direct_action"
+					? processStructureA(campaignJSON)
+					: processStructureB(campaignJSON);
 
 			if (!processedPhases.length) {
 				throw new Error("Campaign generation returned no phases.");
@@ -498,6 +561,9 @@ export default function AIMissionGenerator({
 				narrative: campaignJSON.narrative,
 				opType,
 				aiGenerated: true,
+				operationStructure: campaignJSON.structure,
+				friendlyConcerns: campaignJSON.friendlyConcerns ?? "",
+				exfilPlan: campaignJSON.exfilPlan ?? "",
 				campaignPhases: processedPhases,
 				selectedProvince: firstPhase.province,
 				biome: firstPhase.biome,
@@ -519,7 +585,7 @@ export default function AIMissionGenerator({
 			setImgURL(firstPhase.imgURL);
 
 			toast.success(
-				`Operation ${campaignJSON.operationName} — ${processedPhases.length} phases generated.`,
+				`Operation ${campaignJSON.operationName} — ${processedPhases.length} phase(s) generated.`,
 			);
 		} catch (err) {
 			console.error(err);

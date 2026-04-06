@@ -117,6 +117,7 @@ const useMissionsStore = create((set, get) => ({
 	//
 	// payload shape from AIMissionGenerator.onGenerateAI():
 	//   operationName, narrative, opType, aiGenerated, campaignPhases,
+	//   operationStructure, friendlyConcerns, exfilPlan,
 	//   selectedProvince, biome, bounds, imgURL, missionType,
 	//   briefing, infilPoint, exfilPoint, rallyPoint, infilMethod, exfilMethod, approachVector
 
@@ -149,6 +150,9 @@ const useMissionsStore = create((set, get) => ({
 			opType: payload.opType,
 			operationNarrative: payload.narrative,
 			campaignPhases: payload.campaignPhases,
+			operationStructure: payload.operationStructure,
+			friendlyConcerns: payload.friendlyConcerns,
+			exfilPlan: payload.exfilPlan,
 		};
 
 		await get().updateMission(missionId, patch);
