@@ -270,23 +270,15 @@ function LocationRow({
 	provinceLocations,
 	onLocationChange,
 	onRemove,
-	isFinal,
 	totalCount,
 }) {
 	return (
-		<div
-			className={[
-				"flex flex-col gap-1 p-2 border rounded-sm",
-				isFinal ?
-					"border-red-400/30 bg-red-400/5"
-				:	"border-lines/15 bg-blk/30",
-			].join(" ")}>
+		<div className='flex flex-col gap-1 p-2 border rounded-sm border-lines/15 bg-blk/30'>
 			<div className='flex items-center justify-between'>
-				<span
-					className={`font-mono text-[8px] tracking-widest uppercase ${isFinal ? "text-red-400/60" : "text-lines/35"}`}>
-					{isFinal ? "Final Phase" : `Phase ${index + 1}`}
+				<span className='font-mono text-[8px] tracking-widest uppercase text-lines/35'>
+					{`Location ${index + 1}`}
 				</span>
-				{totalCount > 2 && !isFinal && (
+				{totalCount > 2 && (
 					<button
 						onClick={onRemove}
 						className='text-lines/25 hover:text-red-400/60 transition-colors'>
@@ -443,69 +435,76 @@ export default function AIMissionGenerator({
 		});
 	};
 
-	// ── Structure B — Intel Then Strike (two-act sequential) ──────────────────
+	// ── Structure B — Intel Then Strike (multi-phase recon → multi-phase strike) ─
 	const processStructureB = (campaignJSON) => {
-		const { act1, act2 } = campaignJSON;
+		const intelGate = campaignJSON.intelGate ?? null;
+		const act1Arr = Array.isArray(campaignJSON.act1) ? campaignJSON.act1 : [campaignJSON.act1];
+		const act2Arr = Array.isArray(campaignJSON.act2) ? campaignJSON.act2 : [campaignJSON.act2];
 
-		const a1 = resolvePhaseAssets(campaignJSON, act1.objective, act1.missionTypeId);
-		const a2 = resolvePhaseAssets(campaignJSON, act2.objective, act2.missionTypeId);
-
-		return [
-			{
-				phaseIndex: 0,
+		const act1Phases = act1Arr.map((phase, index) => {
+			const assets = resolvePhaseAssets(campaignJSON, phase.objective, phase.missionTypeId);
+			return {
+				phaseIndex: index,
 				actIndex: 0,
-				teamLabel: act1.teamLabel,
-				teamSize: act1.teamSize ?? "1-2 operators",
-				task: act1.task,
+				teamLabel: phase.teamLabel ?? `Recon ${index + 1}`,
+				teamSize: phase.teamSize ?? "1-2 operators",
+				task: phase.task,
 				specialistRequired: null,
-				label: act1.teamLabel,
-				objective: act1.task,
+				label: phase.teamLabel ?? `Recon ${index + 1}`,
+				objective: phase.task,
 				isFinal: false,
-				intelGate: act1.intelGate ?? null,
+				intelGate,
 				unlockedBy: null,
 				province,
-				biome: a1.pd.biome,
-				missionTypeId: act1.missionTypeId,
-				location: a1.locationObj,
-				infilPoint: a1.points.infilPoint,
-				exfilPoint: a1.points.exfilPoint,
-				rallyPoint: a1.points.rallyPoint,
-				infilMethod: a1.points.infilMethod,
-				exfilMethod: a1.points.exfilMethod,
-				approachVector: a1.points.approachVector,
-				bounds: a1.pd.coordinates.bounds,
-				imgURL: a1.pd.imgURL,
-				briefingText: a1.briefingText,
+				biome: assets.pd.biome,
+				missionTypeId: phase.missionTypeId,
+				location: assets.locationObj,
+				infilPoint: assets.points.infilPoint,
+				exfilPoint: assets.points.exfilPoint,
+				rallyPoint: assets.points.rallyPoint,
+				infilMethod: assets.points.infilMethod,
+				exfilMethod: assets.points.exfilMethod,
+				approachVector: assets.points.approachVector,
+				bounds: assets.pd.coordinates.bounds,
+				imgURL: assets.pd.imgURL,
+				briefingText: assets.briefingText,
 				status: "active",
-			},
-			{
-				phaseIndex: 1,
+			};
+		});
+
+		const act2Phases = act2Arr.map((phase, index) => {
+			const assets = resolvePhaseAssets(campaignJSON, phase.objective, phase.missionTypeId);
+			const isLast = index === act2Arr.length - 1;
+			return {
+				phaseIndex: act1Phases.length + index,
 				actIndex: 1,
-				teamLabel: act2.teamLabel,
-				teamSize: act2.teamSize ?? "2-4 operators",
-				task: act2.task,
-				specialistRequired: act2.specialistRequired ?? null,
-				label: act2.teamLabel,
-				objective: act2.task,
-				isFinal: true,
+				teamLabel: phase.teamLabel ?? `Strike ${index + 1}`,
+				teamSize: phase.teamSize ?? "2-4 operators",
+				task: phase.task,
+				specialistRequired: phase.specialistRequired ?? null,
+				label: phase.teamLabel ?? `Strike ${index + 1}`,
+				objective: phase.task,
+				isFinal: isLast,
 				intelGate: null,
-				unlockedBy: act1.intelGate ?? null,
+				unlockedBy: intelGate,
 				province,
-				biome: a2.pd.biome,
-				missionTypeId: act2.missionTypeId,
-				location: a2.locationObj,
-				infilPoint: a2.points.infilPoint,
-				exfilPoint: a2.points.exfilPoint,
-				rallyPoint: a2.points.rallyPoint,
-				infilMethod: a2.points.infilMethod,
-				exfilMethod: a2.points.exfilMethod,
-				approachVector: a2.points.approachVector,
-				bounds: a2.pd.coordinates.bounds,
-				imgURL: a2.pd.imgURL,
-				briefingText: a2.briefingText,
+				biome: assets.pd.biome,
+				missionTypeId: phase.missionTypeId,
+				location: assets.locationObj,
+				infilPoint: assets.points.infilPoint,
+				exfilPoint: assets.points.exfilPoint,
+				rallyPoint: assets.points.rallyPoint,
+				infilMethod: assets.points.infilMethod,
+				exfilMethod: assets.points.exfilMethod,
+				approachVector: assets.points.approachVector,
+				bounds: assets.pd.coordinates.bounds,
+				imgURL: assets.pd.imgURL,
+				briefingText: assets.briefingText,
 				status: "pending",
-			},
-		];
+			};
+		});
+
+		return [...act1Phases, ...act2Phases];
 	};
 
 	// ── Generate handler ──────────────────────────────────────────────────────
@@ -513,7 +512,7 @@ export default function AIMissionGenerator({
 		if (!canGenerate()) {
 			if (!opType) toast.warn("Select an operation type.");
 			else if (!province) toast.warn("Select a province.");
-			else toast.warn("All phases need a location selected.");
+			else toast.warn("All locations must be selected.");
 			return;
 		}
 
@@ -690,7 +689,7 @@ export default function AIMissionGenerator({
 							<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
 								Locations{" "}
 								<span className='text-btn/60'>
-									{selectedLocations.length} phases
+									{selectedLocations.length} selected
 								</span>
 							</span>
 							{selectedLocations.length < 6 && province && (
@@ -701,7 +700,7 @@ export default function AIMissionGenerator({
 										icon={faPlus}
 										className='text-[8px]'
 									/>
-									Add Phase
+									Add Location
 								</button>
 							)}
 						</div>
@@ -722,7 +721,6 @@ export default function AIMissionGenerator({
 										provinceLocations={provinceLocations}
 										onLocationChange={(val) => updateLocation(index, val)}
 										onRemove={() => removeLocation(index)}
-										isFinal={index === selectedLocations.length - 1}
 										totalCount={selectedLocations.length}
 									/>
 								))}
@@ -730,8 +728,7 @@ export default function AIMissionGenerator({
 						)}
 
 						<span className='font-mono text-[8px] text-lines/25 italic'>
-							AI assigns mission types and builds the narrative around your
-							locations. Phase count matches your selection.
+							AI assigns mission types and distributes your locations across recon and strike phases.
 						</span>
 					</div>
 				)}
@@ -792,6 +789,5 @@ LocationRow.propTypes = {
 	provinceLocations: PropTypes.array.isRequired,
 	onLocationChange: PropTypes.func.isRequired,
 	onRemove: PropTypes.func.isRequired,
-	isFinal: PropTypes.bool,
 	totalCount: PropTypes.number.isRequired,
 };

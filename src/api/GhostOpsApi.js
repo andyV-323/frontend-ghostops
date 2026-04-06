@@ -484,7 +484,17 @@ export async function generateCampaign({
 			`- specialistRequired: "Demolition", "Sniper", "Medic", or null\n` +
 			`- narrative must reference the specific province and at least one location name`;
 	} else {
-		// Structure B — Intel Then Strike: covert recon unlocks decisive action
+		// Structure B — Intel Then Strike: multi-phase recon unlocks multi-phase strike
+		// Both act1 and act2 are arrays — AI decides how many phases per act.
+		const locationsLine =
+			playerLocations && playerLocations.length > 0 ?
+				`The player has selected ${playerLocations.length} location(s). Use ALL of them. ` +
+				`Decide how many go to act1 (recon) and how many to act2 (strike) based on the op type and context. ` +
+				`At least 1 location must appear in each act. Use each location EXACTLY as listed:\n` +
+				playerLocations.map((loc, i) => `  ${i + 1}. "${loc}"`).join("\n")
+			:	`Choose locations from the province list. Decide how many phases each act needs (at least 1 each). ` +
+				`Aim for ${locationCount ?? 3} total locations distributed across both acts.`;
+
 		userPrompt =
 			`Generate a Ghost Recon Breakpoint classified operation order.\n\n` +
 			`OPERATION TYPE: ${opTypeDef.label} (${opType})\n` +
@@ -493,40 +503,44 @@ export async function generateCampaign({
 			`MODE: ${isRandom ? "AI Random" : "AI Mission"}\n\n` +
 			`AVAILABLE MISSION TYPE IDs (use these exactly):\n${missionTypeRef}\n\n` +
 			`PROVINCE AND AVAILABLE LOCATIONS:\n${provinceContext}\n\n` +
+			`${locationsLine}\n\n` +
 			`Generate a Structure B — Intel Then Strike operation.\n` +
-			`Act 1 is a covert recon phase at a standoff position observing the target.\n` +
-			`Act 2 is the strike phase at the actual target, unlocked after Act 1 is filed.\n` +
-			`Act 1 and Act 2 happen at DIFFERENT locations — recon observes from distance, strike hits the target.\n\n` +
+			`Act 1 contains one or more COVERT RECON phases. All must complete before Act 2 unlocks.\n` +
+			`Act 2 contains one or more STRIKE phases at the actual targets.\n` +
+			`Act 1 and Act 2 phases use DIFFERENT locations — recon observes from standoff, strike hits the objective.\n\n` +
 			`Return this exact JSON:\n` +
 			`{\n` +
 			`  "operationName": "TWO WORD CODENAME IN CAPS",\n` +
 			`  "narrative": "3-4 sentences. Name the specific HVT or target asset. Explain why intel is needed before striking. Include time pressure or intel gap detail. Military tone.",\n` +
 			`  "structure": "intel_then_strike",\n` +
 			`  "friendlyConcerns": "One sentence about a secondary concern, or null.",\n` +
-			`  "exfilPlan": "One sentence. Act 1 exfils quietly. Act 2 exfil method matches mission type.",\n` +
-			`  "act1": {\n` +
-			`    "teamLabel": "Team 1",\n` +
-			`    "teamSize": "1-2 operators",\n` +
-			`    "objective": "<standoff/observation location from province list — NOT the target>",\n` +
-			`    "missionTypeId": "<SR_POINT or SR_AREA or OW_OVERWATCH>",\n` +
-			`    "task": "2-3 sentences. Establish covert OP. What to observe. What intel to collect. No contact.",\n` +
-			`    "intelGate": "snake_case_label for what this phase produces e.g. vasquez_confirmed"\n` +
-			`  },\n` +
-			`  "act2": {\n` +
-			`    "teamLabel": "Team 2",\n` +
-			`    "teamSize": "2-4 operators",\n` +
-			`    "objective": "<actual target location from province list>",\n` +
-			`    "missionTypeId": "<mission type matching the opType finalPhaseTypes>",\n` +
-			`    "task": "2-3 sentences. The decisive action using intel from Act 1. What success looks like.",\n` +
-			`    "unlockedBy": "<same value as act1 intelGate>",\n` +
-			`    "specialistRequired": "one word or null"\n` +
-			`  }\n` +
+			`  "exfilPlan": "One sentence. Act 1 elements exfil quietly. Act 2 exfil matches mission type.",\n` +
+			`  "intelGate": "snake_case_label shared by all act1 phases e.g. vasquez_confirmed",\n` +
+			`  "act1": [\n` +
+			`    {\n` +
+			`      "teamLabel": "Recon 1",\n` +
+			`      "objective": "<standoff/observation location from province list>",\n` +
+			`      "missionTypeId": "<SR_POINT or SR_AREA or OW_OVERWATCH>",\n` +
+			`      "task": "2-3 sentences. Establish covert OP. What to observe. What intel to collect."\n` +
+			`    }\n` +
+			`  ],\n` +
+			`  "act2": [\n` +
+			`    {\n` +
+			`      "teamLabel": "Strike 1",\n` +
+			`      "objective": "<target location from province list>",\n` +
+			`      "missionTypeId": "<mission type matching the opType finalPhaseTypes>",\n` +
+			`      "task": "2-3 sentences. The decisive action using intel from Act 1.",\n` +
+			`      "specialistRequired": "one word or null"\n` +
+			`    }\n` +
+			`  ]\n` +
 			`}\n\n` +
 			`Rules:\n` +
-			`- act1 objective and act2 objective must be DIFFERENT locations from the province list\n` +
+			`- act1 and act2 are arrays — include as many phase objects as needed to cover all locations\n` +
+			(playerLocations?.length > 0 ? `- ALL ${playerLocations.length} player-selected locations must appear across act1 and act2 combined\n` : "") +
+			`- No location may appear in both act1 and act2\n` +
 			`- act1 missionTypeId must be SR_POINT, SR_AREA, or OW_OVERWATCH\n` +
 			`- act2 missionTypeId must be one of: ${opTypeDef.finalPhaseTypes.join(", ")}\n` +
-			`- intelGate and unlockedBy must match exactly\n` +
+			`- intelGate is a single top-level field shared by all act2 phases as their unlock condition\n` +
 			`- narrative must reference the specific province and target`;
 	}
 
@@ -558,29 +572,28 @@ export async function generateCampaign({
 			throw new Error(`Campaign returned invalid team data: ${detail}. Try again.`);
 		}
 	} else {
-		const { act1, act2 } = campaign;
-		if (!act1 || !act2) {
-			throw new Error("Campaign generation missing act1 or act2. Try again.");
+		// intel_then_strike — act1 and act2 are now arrays of phases
+		const act1 = campaign.act1;
+		const act2 = campaign.act2;
+		if (!Array.isArray(act1) || !act1.length) {
+			throw new Error("Campaign generation returned no act1 phases. Try again.");
 		}
-		if (!isValidLoc(act1.objective)) {
-			throw new Error(`Act 1 objective "${act1.objective}" not found in province list. Try again.`);
+		if (!Array.isArray(act2) || !act2.length) {
+			throw new Error("Campaign generation returned no act2 phases. Try again.");
 		}
-		if (!isValidLoc(act2.objective)) {
-			throw new Error(`Act 2 objective "${act2.objective}" not found in province list. Try again.`);
+		const allPhases = [...act1, ...act2];
+		const badLoc = allPhases.filter((p) => !isValidLoc(p.objective));
+		if (badLoc.length) {
+			const details = badLoc.map((p) => `"${p.objective}"`).join(", ");
+			throw new Error(`Campaign returned invalid location(s) not in ${province}: ${details}. Try again.`);
 		}
-		if (!isValidType(act1.missionTypeId)) {
-			throw new Error(`Act 1 missionTypeId "${act1.missionTypeId}" is invalid. Try again.`);
+		const badType = allPhases.filter((p) => !isValidType(p.missionTypeId));
+		if (badType.length) {
+			const details = badType.map((p) => `"${p.missionTypeId}"`).join(", ");
+			throw new Error(`Campaign returned invalid missionTypeId(s): ${details}. Try again.`);
 		}
-		if (!isValidType(act2.missionTypeId)) {
-			throw new Error(`Act 2 missionTypeId "${act2.missionTypeId}" is invalid. Try again.`);
-		}
-		if (act1.intelGate !== act2.unlockedBy) {
-			throw new Error(
-				`intelGate "${act1.intelGate}" does not match unlockedBy "${act2.unlockedBy}". Try again.`,
-			);
-		}
-		if (act1.objective === act2.objective) {
-			throw new Error("Act 1 and Act 2 must use different locations. Try again.");
+		if (!campaign.intelGate) {
+			throw new Error("Campaign generation missing intelGate. Try again.");
 		}
 	}
 

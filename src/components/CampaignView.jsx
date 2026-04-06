@@ -347,29 +347,49 @@ export default function CampaignView({
 
 	// ── Structure B rendering ─────────────────────────────────────────────────
 	const renderStructureB = () => {
-		const act1 = campaignPhases.find((p) => p.actIndex === 0);
-		const act2 = campaignPhases.find((p) => p.actIndex === 1);
+		const act1Phases = campaignPhases.filter((p) => p.actIndex === 0);
+		const act2Phases = campaignPhases.filter((p) => p.actIndex === 1);
 		return (
 			<div className='flex flex-col gap-3 p-4'>
 				<span className='font-mono text-[8px] tracking-[0.25em] text-lines/25 uppercase'>
 					Act 1 — Intelligence
 				</span>
-				{act1 &&
-					(act1.status === "complete" ? (
-						<CompletePhaseCard phase={act1} phaseLabel='Act 1' />
+				{act1Phases.map((phase, i) =>
+					phase.status === "complete" ? (
+						<CompletePhaseCard
+							key={phase.phaseIndex ?? i}
+							phase={phase}
+							phaseLabel={phase.teamLabel ?? `Recon ${i + 1}`}
+						/>
 					) : (
-						<StructureBActCard phase={act1} actLabel='Act 1' onFileReport={onFileReport} />
-					))}
+						<StructureBActCard
+							key={phase.phaseIndex ?? i}
+							phase={phase}
+							actLabel={phase.teamLabel ?? `Recon ${i + 1}`}
+							onFileReport={onFileReport}
+						/>
+					),
+				)}
 
 				<span className='font-mono text-[8px] tracking-[0.25em] text-lines/25 uppercase mt-1'>
 					Act 2 — Strike
 				</span>
-				{act2 &&
-					(act2.status === "complete" ? (
-						<CompletePhaseCard phase={act2} phaseLabel='Act 2' />
+				{act2Phases.map((phase, i) =>
+					phase.status === "complete" ? (
+						<CompletePhaseCard
+							key={phase.phaseIndex ?? i}
+							phase={phase}
+							phaseLabel={phase.teamLabel ?? `Strike ${i + 1}`}
+						/>
 					) : (
-						<StructureBActCard phase={act2} actLabel='Act 2' onFileReport={onFileReport} />
-					))}
+						<StructureBActCard
+							key={phase.phaseIndex ?? i}
+							phase={phase}
+							actLabel={phase.teamLabel ?? `Strike ${i + 1}`}
+							onFileReport={onFileReport}
+						/>
+					),
+				)}
 
 				{isComplete && <OperationCompleteBlock onAAR={onAAR} />}
 			</div>
