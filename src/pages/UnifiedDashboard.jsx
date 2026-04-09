@@ -24,6 +24,8 @@ import {
 	faTrash,
 	faPen,
 	faTimes,
+	faExpand,
+	faCompress,
 } from "@fortawesome/free-solid-svg-icons";
 
 import {
@@ -110,6 +112,7 @@ function Panel({
 	title,
 	badge,
 	badgeGreen = false,
+	actions,
 	children,
 	className = "",
 	bodyClass = "",
@@ -132,6 +135,7 @@ function Panel({
 				<span className='font-mono text-[10px] tracking-[0.2em] text-neutral-400 uppercase flex-1 truncate'>
 					{title}
 				</span>
+				{actions}
 				{badge && (
 					<span
 						className={[
@@ -391,6 +395,9 @@ function BriefingPage({ onNewMission }) {
 		setActivePhaseIndex(0);
 	}, [activePhases.length]);
 
+	// Mobile map expand toggle
+	const [mapExpanded, setMapExpanded] = useState(false);
+
 	// Active campaign phase — drives map for AI missions
 	// Structure A: use indexed active phase; Structure B / legacy: first active phase
 	const activeCampaignPhase =
@@ -400,12 +407,17 @@ function BriefingPage({ onNewMission }) {
 			:	(campaignPhases.find((p) => p.status === "active") ?? null)
 		:	null;
 
-	// ── Generation mode ───────────────────────────────────────────────────────
-	const generationMode = g.generationMode || "random";
+	// ── Generation mode — local state for instant UI feedback ────────────────
+	const serverGenerationMode = g.generationMode || "random";
+	const [generationMode, setGenerationModeLocal] = useState(serverGenerationMode);
+	// Sync whenever the server value changes (e.g. after load or AI generation)
+	useEffect(() => {
+		setGenerationModeLocal(serverGenerationMode);
+	}, [serverGenerationMode]);
 	const MODE_LABEL = { random: "RAND", ops: "OPS", ai: "AI OPS" };
 
-	// ── Map source — AI uses active phase, standard uses generator ─────────────
-	const mapSource = activeCampaignPhase ?? g;
+	// ── Map source — AI uses active phase only when in AI mode ────────────────
+	const mapSource = (isAIMission && generationMode === "ai") ? (activeCampaignPhase ?? g) : g;
 
 	const mapBounds = mapSource.bounds ?? mapSource.mapBounds ?? null;
 	const imgURL = mapSource.imgURL ?? "";
@@ -431,7 +443,7 @@ function BriefingPage({ onNewMission }) {
 	const phaseCount = phases.length;
 
 	const briefingText = useMemo(() => {
-		if (isAIMission && activeCampaignPhase) {
+		if (isAIMission && generationMode === "ai" && activeCampaignPhase) {
 			return generateBriefing({
 				operationName: activeMission.name,
 				province: activeCampaignPhase.province,
@@ -443,7 +455,7 @@ function BriefingPage({ onNewMission }) {
 			});
 		}
 		return activeMission?.briefingText || "";
-	}, [isAIMission, activeCampaignPhase, activeMission]);
+	}, [isAIMission, generationMode, activeCampaignPhase, activeMission]);
 
 	const hasBriefing = !!briefingText;
 
@@ -612,6 +624,7 @@ function BriefingPage({ onNewMission }) {
 		operationName: activeMission?.name ?? "",
 		priorPhases: phases,
 		setGenerationMode: (mode) => {
+			setGenerationModeLocal(mode); // instant UI update
 			if (!activeMission?._id) return;
 			saveMissionGenerator(
 				activeMission._id,
@@ -802,8 +815,16 @@ function BriefingPage({ onNewMission }) {
 						}
 						badge='AO-LIVE'
 						badgeGreen
-						className='h-72'
-						bodyClass='overflow-hidden p-0'>
+						className={mapExpanded ? "h-[70vh]" : "h-72"}
+						bodyClass='overflow-hidden p-0'
+						actions={
+							<button
+								onClick={() => setMapExpanded((v) => !v)}
+								className='w-6 h-6 flex items-center justify-center rounded-sm border border-neutral-700/60 text-neutral-500 hover:text-neutral-300 hover:border-neutral-600 transition-all'
+								title={mapExpanded ? "Collapse map" : "Expand map"}>
+								<FontAwesomeIcon icon={mapExpanded ? faCompress : faExpand} className='text-[9px]' />
+							</button>
+						}>
 						{operationStructure === "direct_action" && activePhases.length > 1 && (
 							<div className='shrink-0 flex items-center justify-between px-3 py-1 border-b border-neutral-800/40 bg-neutral-900/70'>
 								<button
@@ -823,7 +844,7 @@ function BriefingPage({ onNewMission }) {
 								</button>
 							</div>
 						)}
-						<div className='flex-1 min-h-0 overflow-hidden'>
+						<div className='flex flex-col flex-1 min-h-0 overflow-hidden'>
 							<MapWrapper {...mapProps} />
 						</div>
 					</Panel>
@@ -1988,6 +2009,7 @@ Panel.propTypes = {
 	title: PropTypes.string,
 	badge: PropTypes.string,
 	badgeGreen: PropTypes.bool,
+	actions: PropTypes.node,
 	children: PropTypes.node,
 	className: PropTypes.string,
 	bodyClass: PropTypes.string,
