@@ -13,31 +13,6 @@ const Home = () => {
 		return () => window.removeEventListener("scroll", handleScroll);
 	}, []);
 
-	useEffect(() => {
-		const draw = () => {
-			window.kofiWidgetOverlay?.draw("andyv41628", {
-				type: "floating-chat",
-				"floating-chat.donateButton.text": "Support me",
-				"floating-chat.donateButton.background-color": "#72a230",
-				"floating-chat.donateButton.text-color": "#fff",
-			});
-		};
-
-		if (window.kofiWidgetOverlay) {
-			draw();
-		} else if (!document.querySelector("script[src*='ko-fi']")) {
-			const script = document.createElement("script");
-			script.src = "https://storage.ko-fi.com/cdn/scripts/overlay-widget.js";
-			script.async = true;
-			script.onload = draw;
-			document.body.appendChild(script);
-		}
-
-		return () => {
-			document.querySelectorAll("[id^='kofi']").forEach((el) => el.remove());
-		};
-	}, []);
-
 	const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 	return (
