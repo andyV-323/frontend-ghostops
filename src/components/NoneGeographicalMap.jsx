@@ -534,7 +534,19 @@ const NoneGeographicalMap = ({
 			map.setZoom(-2);
 		}
 
+		/* ── Mobile: recalculate size after layout is settled ── */
+		// Mobile browsers defer layout for off-screen elements; Leaflet may read
+		// 0 dimensions if the map panel is below the fold when it mounts.
+		const rafId = requestAnimationFrame(() => {
+			if (mapInst.current) mapInst.current.invalidateSize();
+		});
+		const timerId = setTimeout(() => {
+			if (mapInst.current) mapInst.current.invalidateSize();
+		}, 300);
+
 		return () => {
+			cancelAnimationFrame(rafId);
+			clearTimeout(timerId);
 			coordsRef.current = null;
 			if (mapInst.current) {
 				try { mapInst.current.stop(); mapInst.current.remove(); } catch { /* already removed */ }
