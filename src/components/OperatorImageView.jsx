@@ -1,15 +1,17 @@
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { useOperatorsStore, useTeamsStore } from "@/zustand";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { WEAPONS, ITEMS, PERKS } from "@/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faUserPen,
 	faShieldHalved,
 	faStar,
+	faSkull,
 } from "@fortawesome/free-solid-svg-icons";
 import { PropTypes } from "prop-types";
 import { EditOperatorForm } from "./forms";
+import ConfirmDialog from "./ConfirmDialog";
 
 /* ─── Status config ──────────────────────────────────────────── */
 const STATUS = {
@@ -36,7 +38,8 @@ const STATUS = {
 /* ═══════════════════════════════════════════════════════════════ */
 const OperatorImageView = ({ operator, openSheet }) => {
 	const { selectedOperator, fetchOperatorById } = useOperatorsStore();
-	const { teams, fetchTeams } = useTeamsStore();
+	const { teams, fetchTeams, assignRandomInjury, assignRandomKIAInjury, assignUnknownFate } = useTeamsStore();
+	const [injuryDialogOpen, setInjuryDialogOpen] = useState(false);
 
 	useEffect(() => {
 		fetchTeams();
@@ -281,12 +284,38 @@ const OperatorImageView = ({ operator, openSheet }) => {
 					openSheet("right", <EditOperatorForm operator={operator} />);
 				}}
 				className='absolute top-3 right-10 z-30 flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-btn border border-btn/30 hover:border-btn/60 bg-blk/70 hover:bg-btn/15 px-2.5 py-1.5 rounded-sm transition-all'>
-				<FontAwesomeIcon
-					icon={faUserPen}
-					className='text-[9px]'
-				/>
+				<FontAwesomeIcon icon={faUserPen} className='text-[9px]' />
 				Edit
 			</button>
+
+			{/* Injury button */}
+			{!isKIA && (
+				<button
+					onClick={() => setInjuryDialogOpen(true)}
+					className='absolute top-3 left-10 z-30 flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-red-400/50 border border-red-900/30 hover:border-red-500/50 hover:text-red-400 bg-blk/70 hover:bg-red-950/30 px-2.5 py-1.5 rounded-sm transition-all'>
+					<FontAwesomeIcon icon={faSkull} className='text-[9px]' />
+					Casualty
+				</button>
+			)}
+
+			<ConfirmDialog
+				isOpen={injuryDialogOpen}
+				closeDialog={() => setInjuryDialogOpen(false)}
+				injuryType='choice'
+				selectedOperator={selectedOperator}
+				onRandomInjury={() => {
+					assignRandomInjury(selectedOperator._id, selectedOperator.user);
+					setInjuryDialogOpen(false);
+				}}
+				onUnknownFate={() => {
+					assignUnknownFate(selectedOperator._id, selectedOperator.user);
+					setInjuryDialogOpen(false);
+				}}
+				onKIAInjury={() => {
+					assignRandomKIAInjury(selectedOperator._id, selectedOperator.user);
+					setInjuryDialogOpen(false);
+				}}
+			/>
 		</div>
 	);
 };
