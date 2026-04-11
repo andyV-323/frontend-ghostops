@@ -125,18 +125,6 @@ function formatTempRange(tempRange) {
 	return `${min}–${max}°C / ${fahrenheit.min}–${fahrenheit.max}°F`;
 }
 
-// ─── Classification stamp ─────────────────────────────────────────────────────
-
-const STAMPS = [
-	"TOP SECRET // SCI // NOFORN",
-	"TOP SECRET // COMINT // ORCON",
-	"TOP SECRET // SI // TK // NOFORN",
-];
-
-function classificationStamp() {
-	return STAMPS[Math.floor(Math.random() * STAMPS.length)];
-}
-
 // ─── DTG ─────────────────────────────────────────────────────────────────────
 
 function buildDTG() {
@@ -540,7 +528,6 @@ export function generateBriefing({
 	const provinceLabel = province ?? "Unknown";
 
 	// ── Build sections ────────────────────────────────────────────────────────
-	const stamp = classificationStamp();
 	const dtg = buildDTG();
 	const terrain = buildTerrainSection(terrainData, provinceData);
 	const enviro = buildEnvironmentalSection(biomeData, resolvedBiome);
@@ -589,8 +576,6 @@ export function generateBriefing({
 
 	// ── Assemble document ─────────────────────────────────────────────────────
 	const lines = [
-		`// ${stamp} //`,
-		"",
 		`OPERATION: ${operationName || "CLASSIFIED"}`,
 		`DTG: ${dtg}`,
 		`AO: ${provinceLabel} — ${resolvedBiome}`,
@@ -623,8 +608,6 @@ export function generateBriefing({
 		`RULES OF ENGAGEMENT: ${roe}`,
 		"",
 		`COMMANDER'S INTENT: ${cmdIntent}`,
-		"",
-		`// ${stamp} //`,
 	];
 
 	return lines.join("\n");

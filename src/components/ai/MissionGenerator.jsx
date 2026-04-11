@@ -193,11 +193,6 @@ function MissionTypeGrid({ value, onChange }) {
 				);
 			})}
 
-			{selected && (
-				<span className='font-mono text-[8px] text-lines/40 italic'>
-					{selected.fullLabel ?? selected.label}
-				</span>
-			)}
 		</div>
 	);
 }

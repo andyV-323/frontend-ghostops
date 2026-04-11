@@ -123,31 +123,25 @@ function Panel({
 				"flex flex-col rounded border border-neutral-700/50 bg-neutral-800/80 shadow-[0_2px_16px_rgba(0,0,0,0.5)] overflow-hidden",
 				className,
 			].join(" ")}>
-			<div className='flex items-center gap-3 px-4 py-2.5 bg-neutral-800 border-b border-neutral-700/50 shrink-0'>
-				<span
-					className={[
-						"w-1.5 h-1.5 rounded-full shrink-0",
-						badgeGreen ?
-							"bg-green-500 shadow-[0_0_5px_rgba(74,222,128,0.6)]"
-						:	"bg-btn/80 shadow-[0_0_5px_rgba(124,170,121,0.4)]",
-					].join(" ")}
-				/>
-				<span className='font-mono text-[10px] tracking-[0.2em] text-neutral-400 uppercase flex-1 truncate'>
-					{title}
-				</span>
-				{actions}
-				{badge && (
-					<span
-						className={[
-							"font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border rounded-sm",
-							badgeGreen ?
-								"text-green-400/80 border-green-800/50 bg-green-950/30"
-							:	"text-btn/70 border-btn/20 bg-btn/5",
-						].join(" ")}>
-						{badge}
+			{(title || badge || actions) && (
+				<div className='flex items-center gap-3 px-4 py-2.5 bg-neutral-800 border-b border-neutral-700/50 shrink-0'>
+					<span className='font-mono text-[10px] tracking-[0.2em] text-neutral-400 uppercase flex-1 truncate'>
+						{title}
 					</span>
-				)}
-			</div>
+					{actions}
+					{badge && (
+						<span
+							className={[
+								"font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border rounded-sm",
+								badgeGreen ?
+									"text-green-400/80 border-green-800/50 bg-green-950/30"
+								:	"text-btn/70 border-btn/20 bg-btn/5",
+							].join(" ")}>
+							{badge}
+						</span>
+					)}
+				</div>
+			)}
 			<div
 				className={[
 					"flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden",
@@ -215,31 +209,6 @@ function getWeatherIcon(biome) {
 	return BIOME_ICON_MAP[biome] ?? { icon: faCloudSun, color: "text-lines/40" };
 }
 
-// ─── BriefStatChip ────────────────────────────────────────────────────────────
-
-function BriefStatChip({ label, value, live = false }) {
-	return (
-		<div className='flex items-center gap-2 bg-blk/50 border border-lines/15 px-2.5 py-1.5 rounded-sm'>
-			<span
-				className={[
-					"w-1.5 h-1.5 rounded-full shrink-0",
-					live ?
-						"bg-green-500 shadow-[0_0_5px_rgba(74,222,128,0.6)]"
-					:	"bg-btn shadow-[0_0_4px_rgba(124,170,121,0.45)]",
-				].join(" ")}
-			/>
-			<span className='font-mono text-[9px] tracking-widest text-lines/35 uppercase'>
-				{label}
-			</span>
-			{value !== undefined && (
-				<span className='font-mono text-[10px] text-btn tabular-nums'>
-					{value}
-				</span>
-			)}
-		</div>
-	);
-}
-
 // ─── Section colors — updated to match BriefingGenerator output ───────────────
 
 const SECTION_COLORS = {
@@ -281,11 +250,8 @@ function IntelBody({ hasBriefing, missionBriefing }) {
 					))}
 				</div>
 				<p className='font-mono text-[9px] tracking-[0.3em] text-lines/25 uppercase text-center'>
-					// Awaiting Mission Brief //
-				</p>
-				<p className='font-mono text-[8px] text-lines/15 text-center leading-relaxed'>
-					Select province → mission type → Generate
-				</p>
+				No OPORD Generated
+			</p>
 			</div>
 		);
 	}
@@ -294,14 +260,6 @@ function IntelBody({ hasBriefing, missionBriefing }) {
 
 	return (
 		<div className='flex flex-col h-full'>
-			<div className='shrink-0 flex items-center justify-between px-3 py-1.5 border-b border-lines/15 bg-blk/50'>
-				<span className='font-mono text-[8px] tracking-[0.35em] text-red-500/35 uppercase'>
-					// TOP SECRET //
-				</span>
-				<span className='font-mono text-[8px] tracking-widest text-lines/20'>
-					GHOST PROTOCOL
-				</span>
-			</div>
 			<div className='flex-1 min-h-0 overflow-y-auto px-4 py-3'>
 				<div className='flex flex-col gap-0.5'>
 					{lines.map((line, i) => {
@@ -326,15 +284,6 @@ function IntelBody({ hasBriefing, missionBriefing }) {
 										</p>
 									)}
 								</div>
-							);
-						}
-						if (line.trim().startsWith("//")) {
-							return (
-								<p
-									key={i}
-									className='font-mono text-[9px] text-lines/25 italic mt-2 border-t border-lines/10 pt-2'>
-									{line}
-								</p>
 							);
 						}
 						if (!line.trim())
@@ -414,7 +363,6 @@ function BriefingPage({ onNewMission }) {
 	useEffect(() => {
 		setGenerationModeLocal(serverGenerationMode);
 	}, [serverGenerationMode]);
-	const MODE_LABEL = { random: "RAND", ops: "OPS", ai: "AI OPS" };
 
 	// ── Map source — AI uses active phase only when in AI mode ────────────────
 	const mapSource = (isAIMission && generationMode === "ai") ? (activeCampaignPhase ?? g) : g;
@@ -532,10 +480,10 @@ function BriefingPage({ onNewMission }) {
 				hasBriefing={hasBriefing}
 				missionBriefing={briefingText}
 			/>,
-			"Mission Brief",
+			"OPORD",
 			hasBriefing ?
-				"TS//SCI — Ghost Protocol Package"
-			:	"STANDBY — No brief generated",
+			""
+		:	"STANDBY — No brief generated",
 		);
 
 	const openPhaseSheet = () => {
@@ -680,7 +628,7 @@ function BriefingPage({ onNewMission }) {
 					icon={faFileShield}
 					className='text-[8px]'
 				/>
-				<span className='hidden sm:inline'>Brief</span>
+				<span className='hidden sm:inline'>OPORD</span>
 			</button>
 			<button
 				onClick={openPhaseListSheet}
@@ -751,57 +699,9 @@ function BriefingPage({ onNewMission }) {
 			{/* ══ MOBILE ══════════════════════════════════════════════════════ */}
 			<div className='lg:hidden flex-1 overflow-y-auto'>
 				<div className='p-3 flex flex-col gap-3'>
-					<div className='flex flex-wrap items-center gap-2'>
-						<span className='font-mono text-[9px] tracking-widest text-btn/70 uppercase truncate max-w-[150px]'>
-							{activeMission.name}
-						</span>
-
-						<div className='w-px h-3 bg-lines/20' />
-
-						<BriefStatChip
-							label='Mode'
-							value={MODE_LABEL[generationMode] ?? generationMode.toUpperCase()}
-						/>
-
-						{/* AI Campaign tag — mobile */}
-						{isAIMission && (
-							<div className='flex items-center gap-1.5 bg-btn/8 border border-btn/25 px-2 py-1 rounded-sm'>
-								<span className='w-1.5 h-1.5 rounded-full bg-btn animate-pulse shrink-0' />
-								<span className='font-mono text-[8px] tracking-widest text-btn uppercase'>
-									AI OPS
-								</span>
-								{totalCampaignPhases > 0 && (
-									<span className='font-mono text-[8px] text-btn/70'>
-										{completedCampaignPhases}/{totalCampaignPhases}
-									</span>
-								)}
-							</div>
-						)}
-
-						{hasBriefing && (
-							<BriefStatChip
-								label='Brief'
-								value='READY'
-								live
-							/>
-						)}
-						{(isAIMission ? totalCampaignPhases > 0 : phaseCount > 0) && (
-							<BriefStatChip
-								label='Phases'
-								value={
-									isAIMission && totalCampaignPhases > 0 ?
-										`${completedCampaignPhases}/${totalCampaignPhases}`
-									:	phaseCount
-								}
-							/>
-						)}
-
-						<div className='ml-auto'>{ActionButtons}</div>
-					</div>
+					{ActionButtons}
 
 					<Panel
-						title='Mission Generator'
-						badge='GEN-SYS'
 						className='h-[420px]'
 						bodyClass='p-3'>
 						<MissionGenerator {...mgProps} />
@@ -853,73 +753,10 @@ function BriefingPage({ onNewMission }) {
 
 			{/* ══ DESKTOP ═════════════════════════════════════════════════════ */}
 			<div className='hidden lg:flex flex-1 min-h-0 overflow-hidden flex-col p-4 gap-3'>
-				<div className='shrink-0 flex items-center gap-3'>
-					<div className='flex flex-col shrink-0 max-w-[200px]'>
-						<span className='font-mono text-[9px] tracking-widest text-btn/70 uppercase truncate'>
-							{activeMission.name}
-						</span>
-					</div>
-
-					<div className='w-px h-3 bg-lines/20 shrink-0' />
-
-					<div className='flex flex-wrap gap-2'>
-						<BriefStatChip
-							label='Mode'
-							value={MODE_LABEL[generationMode] ?? generationMode.toUpperCase()}
-						/>
-
-						{/* AI Campaign tag — desktop, single instance */}
-						{isAIMission && (
-							<div className='flex items-center gap-1.5 bg-btn/8 border border-btn/25 px-2 py-1 rounded-sm'>
-								<span className='w-1.5 h-1.5 rounded-full bg-btn shadow-[0_0_4px_rgba(124,170,121,0.45)] shrink-0 animate-pulse' />
-								<span className='font-mono text-[8px] tracking-widest text-btn uppercase'>
-									AI Campaign
-								</span>
-								{totalCampaignPhases > 0 && (
-									<span className='font-mono text-[8px] text-btn/70 tabular-nums'>
-										{completedCampaignPhases}/{totalCampaignPhases}
-									</span>
-								)}
-							</div>
-						)}
-
-						{hasBriefing && (
-							<BriefStatChip
-								label='Brief'
-								value='READY'
-								live
-							/>
-						)}
-						{(isAIMission ? totalCampaignPhases > 0 : phaseCount > 0) && (
-							<BriefStatChip
-								label='Phases'
-								value={
-									isAIMission && totalCampaignPhases > 0 ?
-										`${completedCampaignPhases}/${totalCampaignPhases}`
-									:	phaseCount
-								}
-							/>
-						)}
-					</div>
-
-					<div className='flex-1 h-px bg-gradient-to-r from-lines/10 to-transparent' />
-					{ActionButtons}
-					<span className='font-mono text-[8px] tracking-[0.28em] text-lines/20 uppercase'>
-						Mission Control
-					</span>
-				</div>
+				{ActionButtons}
 
 				<div className='grid grid-cols-[420px_1fr] gap-3 flex-1 min-h-0 overflow-hidden'>
 					<div className='flex flex-col min-h-0 bg-neutral-900/40 border border-neutral-800/60 rounded overflow-hidden'>
-						<div className='flex items-center gap-2 px-3 py-2 border-b border-neutral-800/60 shrink-0'>
-							<span className='w-1.5 h-1.5 rounded-full bg-btn/60 shrink-0' />
-							<span className='font-mono text-[8px] tracking-[0.2em] text-neutral-500 uppercase flex-1'>
-								Ghost Operations AI
-							</span>
-							<span className='font-mono text-[7px] tracking-widest text-neutral-600 border border-neutral-800/60 px-1.5 py-0.5 rounded-sm'>
-								GEN-SYS
-							</span>
-						</div>
 						<div className='flex-1 min-h-0 overflow-y-auto p-3'>
 							<MissionGenerator {...mgProps} />
 						</div>
@@ -1367,9 +1204,6 @@ function OperatorsPage() {
 			<div className='lg:hidden flex-1 overflow-y-auto'>
 				<div className='p-3 flex flex-col gap-3'>
 					<Panel
-						title='Special Operations Force'
-						badge='ACTIVE DUTY'
-						badgeGreen
 						className='min-h-[420px]'>
 						<Roster
 							dataUpdated={dataUpdated}
@@ -1382,8 +1216,6 @@ function OperatorsPage() {
 						/>
 					</Panel>
 					<Panel
-						title='Team Room'
-						badge='Fire Teams'
 						className='min-h-64'>
 						<Teams
 							dataUpdated={dataUpdated}
@@ -1539,15 +1371,6 @@ function OperatorsPage() {
 
 				<div className='flex-1 min-h-0 flex flex-col border-l border-neutral-800/40'>
 					<div className='flex-1 min-h-0 flex flex-col bg-neutral-900/40'>
-						<div className='flex items-center gap-2 px-3 py-2 border-b border-neutral-800/60 shrink-0'>
-							<span className='w-1.5 h-1.5 rounded-full bg-btn/60 shrink-0' />
-							<span className='font-mono text-[8px] tracking-[0.2em] text-neutral-500 uppercase flex-1'>
-								Team Room
-							</span>
-							<span className='font-mono text-[7px] tracking-widest text-neutral-600 border border-neutral-800/60 px-1.5 py-0.5 rounded-sm'>
-								Fire Teams
-							</span>
-						</div>
 						<div className='flex-1 min-h-0 overflow-y-auto'>
 							<Teams
 								dataUpdated={dataUpdated}
@@ -1557,29 +1380,11 @@ function OperatorsPage() {
 						</div>
 					</div>
 					<div className='shrink-0 flex flex-col border-t border-amber-900/20 bg-neutral-900/40'>
-						<div className='flex items-center gap-2 px-3 py-2 border-b border-amber-900/20'>
-							<span className='w-1.5 h-1.5 rounded-full bg-amber-400/60 shrink-0' />
-							<span className='font-mono text-[8px] tracking-[0.2em] text-neutral-500 uppercase flex-1'>
-								Infirmary
-							</span>
-							<span className='font-mono text-[7px] tracking-widest text-amber-500/50 border border-amber-800/30 px-1.5 py-0.5 rounded-sm'>
-								WIA
-							</span>
-						</div>
 						<div className='overflow-y-auto max-h-32'>
 							<Infirmary
 								dataUpdated={dataUpdated}
 								refreshData={refreshData}
 							/>
-						</div>
-						<div className='flex items-center gap-2 px-3 py-2 border-y border-red-900/15'>
-							<span className='w-1.5 h-1.5 rounded-full bg-red-500/40 shrink-0' />
-							<span className='font-mono text-[8px] tracking-[0.2em] text-neutral-500 uppercase flex-1'>
-								Fallen Ghost
-							</span>
-							<span className='font-mono text-[7px] tracking-widest text-red-500/40 border border-red-900/25 px-1.5 py-0.5 rounded-sm'>
-								KIA
-							</span>
 						</div>
 						<div className='overflow-y-auto max-h-32'>
 							<Memorial
@@ -1607,8 +1412,6 @@ function VehiclesPage() {
 		<div className='flex-1 overflow-y-auto'>
 			<div className='p-3 sm:p-4'>
 				<Panel
-					title='Asset Registry — Organic Assets'
-					badge='S4-LOG'
 					className='min-h-[500px]'>
 					<Garage
 						dataUpdated={dataUpdated}
@@ -1780,7 +1583,6 @@ export default function UnifiedDashboard() {
 											),
 										].join(" ")}
 									/>
-									<div className='flex flex-col gap-0.5 flex-1 min-w-0'>
 										<span
 											className={[
 												"font-mono text-[11px] tracking-widest uppercase leading-none truncate",
@@ -1788,10 +1590,6 @@ export default function UnifiedDashboard() {
 											].join(" ")}>
 											{n.label}
 										</span>
-										<span className='font-mono text-[8px] tracking-widest text-lines/25 leading-none'>
-											{n.sub}
-										</span>
-									</div>
 									{active && (
 										<FontAwesomeIcon
 											icon={faChevronRight}
@@ -1862,21 +1660,6 @@ export default function UnifiedDashboard() {
 				</nav>
 
 				<main className='flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden'>
-					<div className='shrink-0 h-9 flex items-center gap-2 px-3 sm:px-4 bg-neutral-900/80 border-b border-neutral-700/40'>
-						<span className='font-mono text-[11px] tracking-[0.18em] text-btn uppercase whitespace-nowrap'>
-							{activeNav?.label}
-						</span>
-						<span className='font-mono text-[10px] text-lines/25'>//</span>
-						<span className='hidden md:block font-mono text-[10px] tracking-widest text-lines/25 uppercase truncate'>
-							{activeMission ?
-								activeMission.name
-							:	"Ghost Recon Breakpoint — Tactical Operations Center"}
-						</span>
-						<div className='flex-1 h-px bg-gradient-to-r from-lines/10 to-transparent' />
-						<span className='font-mono text-[9px] tracking-widest text-green-500 border border-green-900 px-1.5 py-0.5 rounded-sm whitespace-nowrap'>
-							{activeNav?.sub}
-						</span>
-					</div>
 					<div className='flex flex-col flex-1 min-h-0 overflow-hidden'>
 						{renderPage()}
 					</div>
@@ -2013,11 +1796,6 @@ Panel.propTypes = {
 	children: PropTypes.node,
 	className: PropTypes.string,
 	bodyClass: PropTypes.string,
-};
-BriefStatChip.propTypes = {
-	label: PropTypes.string,
-	value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-	live: PropTypes.bool,
 };
 IntelBody.propTypes = {
 	hasBriefing: PropTypes.bool,

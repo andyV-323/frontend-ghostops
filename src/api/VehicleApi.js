@@ -56,13 +56,43 @@ export const refuelVehicle = async (vehicleId, fuelAmount = 25) => {
 	}
 };
 
-// Check vehicle availability - NEW FUNCTION
+// Check vehicle availability
 export const checkVehicleAvailability = async (vehicleId) => {
 	try {
 		const response = await api.get(`/vehicles/${vehicleId}/availability`);
 		return response.data;
 	} catch (error) {
 		console.error("ERROR checking vehicle availability from API:", error);
+		throw error;
+	}
+};
+
+// Log a ground vehicle trip — increments mileage and derives condition from wear
+// distanceKm: distance covered; fuelBurned: % fuel consumed (calc'd by frontend)
+export const logTrip = async (vehicleId, distanceKm, fuelBurned) => {
+	try {
+		const response = await api.post(`/vehicles/${vehicleId}/trip`, {
+			distanceKm,
+			fuelBurned,
+		});
+		return response.data;
+	} catch (error) {
+		console.error("ERROR logging trip:", error);
+		throw error;
+	}
+};
+
+// Log an aircraft sortie — increments flight hours and derives condition from wear
+// hours: flight time in hours; fuelBurned: % fuel consumed
+export const logSortie = async (vehicleId, hours, fuelBurned) => {
+	try {
+		const response = await api.post(`/vehicles/${vehicleId}/sortie`, {
+			hours,
+			fuelBurned,
+		});
+		return response.data;
+	} catch (error) {
+		console.error("ERROR logging sortie:", error);
 		throw error;
 	}
 };

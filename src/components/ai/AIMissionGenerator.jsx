@@ -182,11 +182,6 @@ function OpTypeSelector({ value, onChange }) {
 					);
 				})}
 			</div>
-			{value && (
-				<span className='font-mono text-[8px] text-lines/35 italic'>
-					{OPERATION_TYPES.find((o) => o.id === value)?.description}
-				</span>
-			)}
 		</div>
 	);
 }
@@ -219,11 +214,6 @@ function ProvinceSelector({ value, onChange }) {
 					<div className='w-0 h-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-lines/30' />
 				</div>
 			</div>
-			{value && (
-				<span className='font-mono text-[8px] text-lines/30 italic'>
-					Biome: {PROVINCES[value]?.biome ?? "Unknown"}
-				</span>
-			)}
 		</div>
 	);
 }
@@ -234,10 +224,7 @@ function LocationCountSelector({ value, onChange }) {
 	return (
 		<div className='flex flex-col gap-1'>
 			<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
-				Locations{" "}
-				<span className='text-lines/25 normal-case tracking-normal'>
-					AI picks phases (2–6)
-				</span>
+				Locations
 			</span>
 			<div className='flex gap-1'>
 				{[2, 3, 4, 5, 6].map((n) => (
@@ -254,9 +241,6 @@ function LocationCountSelector({ value, onChange }) {
 					</button>
 				))}
 			</div>
-			<span className='font-mono text-[8px] text-lines/25 italic'>
-				AI may adjust by ±1 based on narrative complexity.
-			</span>
 		</div>
 	);
 }
@@ -654,32 +638,14 @@ export default function AIMissionGenerator({
 						placeholder='e.g. find and rescue a captured Skell engineer'
 						className='w-full bg-blk/60 border border-lines/25 hover:border-lines/40 focus:border-btn/50 focus:outline-none rounded-sm px-3 py-2 font-mono text-[10px] text-fontz/70 placeholder:text-lines/20 resize-none transition-colors'
 					/>
-					<span className='font-mono text-[8px] text-lines/20 text-right'>
-						{context.length}/200
-					</span>
 				</div>
 
 				{/* AI Random — location count picker */}
 				{aiSubMode === "ai-random" && (
-					<>
-						<LocationCountSelector
-							value={locationCount}
-							onChange={setLocationCount}
-						/>
-						{opType && province && (
-							<div className='flex items-start gap-2 p-2.5 border border-btn/15 rounded-sm bg-btn/5'>
-								<FontAwesomeIcon
-									icon={faBrain}
-									className='text-btn/50 text-[10px] mt-0.5 shrink-0'
-								/>
-								<span className='font-mono text-[9px] text-lines/40 leading-relaxed'>
-									AI will select locations and sequence phases within{" "}
-									<span className='text-btn/70'>{province}</span>. Add context
-									above to seed the narrative.
-								</span>
-							</div>
-						)}
-					</>
+					<LocationCountSelector
+						value={locationCount}
+						onChange={setLocationCount}
+					/>
 				)}
 
 				{/* AI Mission — ordered location pickers within selected province */}
@@ -705,12 +671,6 @@ export default function AIMissionGenerator({
 							)}
 						</div>
 
-						{!province && (
-							<span className='font-mono text-[9px] text-lines/30 italic'>
-								Select a province above to choose locations.
-							</span>
-						)}
-
 						{province && (
 							<div className='flex flex-col gap-1.5'>
 								{selectedLocations.map((loc, index) => (
@@ -726,10 +686,6 @@ export default function AIMissionGenerator({
 								))}
 							</div>
 						)}
-
-						<span className='font-mono text-[8px] text-lines/25 italic'>
-							AI assigns mission types and distributes your locations across recon and strike phases.
-						</span>
 					</div>
 				)}
 			</div>

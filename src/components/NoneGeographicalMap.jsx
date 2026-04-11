@@ -83,11 +83,6 @@ const injectStyles = () => {
 			font-size: 9px; color: rgba(143,184,64,0.5);
 			letter-spacing: 0.08em; pointer-events: none; white-space: nowrap;
 		}
-		.coordinates-container {
-			background: rgba(8,10,5,0.88); border: 1px solid rgba(74,90,40,0.3);
-			color: #5a6a40; font-family:'Share Tech Mono',monospace;
-			font-size:10px; letter-spacing:0.12em;
-			padding: 3px 8px; border-radius:1px; pointer-events:none;
 		}
 		.tac-popup-obj .leaflet-popup-content-wrapper {
 			background: rgba(10,5,5,0.97);
@@ -154,35 +149,6 @@ const buildObjLabelIcon = (index) =>
 		iconAnchor: [30, -OBJ_SIZE / 2 - 4],
 		html: `<div class="obj-ext-label">OBJ-${String(index + 1).padStart(2, "0")}</div>`,
 	});
-
-/* ── MGRS-style grid ── */
-const addGrid = (map, bounds) => {
-	const [[minY, minX], [maxY, maxX]] = bounds;
-	const stepX = (maxX - minX) / COLS;
-	const stepY = (maxY - minY) / ROWS;
-	const lineStyle = { color: "rgba(143,184,64,0.1)", weight: 1, interactive: false };
-
-	for (let i = 0; i <= COLS; i++) {
-		const x = minX + i * stepX;
-		L.polyline([[minY, x], [maxY, x]], lineStyle).addTo(map);
-		if (i < COLS) {
-			L.marker([maxY, x + stepX / 2], {
-				icon: L.divIcon({ className: "map-grid-label", html: COL_LETTERS[i] || String(i + 1), iconAnchor: [6, -4] }),
-				interactive: false,
-			}).addTo(map);
-		}
-	}
-	for (let j = 0; j <= ROWS; j++) {
-		const y = minY + j * stepY;
-		L.polyline([[y, minX], [y, maxX]], lineStyle).addTo(map);
-		if (j < ROWS) {
-			L.marker([y + stepY / 2, minX], {
-				icon: L.divIcon({ className: "map-grid-label", html: String(ROWS - j), iconAnchor: [36, 6] }),
-				interactive: false,
-			}).addTo(map);
-		}
-	}
-};
 
 /* ── AO boundary rings ── */
 const addAORings = (map, coords) => {
@@ -266,66 +232,6 @@ const addExfilMarker = (map, exfilPoint, fallbackExfil) => {
 		interactive: false,
 		zIndexOffset: 50,
 	}).addTo(map);
-};
-
-/* ── Province restriction badges HUD ── */
-const buildRestrictionBadges = (restrictions) => {
-	const control = L.control({ position: "topleft" });
-	control.onAdd = () => {
-		const div = L.DomUtil.create("div");
-		div.style.cssText = "pointer-events:none;margin-top:32px;";
-
-		const denied = Object.entries(restrictions).filter(([, v]) => v.status === STATUS.DENIED);
-		const degraded = Object.entries(restrictions).filter(([, v]) => v.status === STATUS.DEGRADED);
-		const items = [
-			...denied.slice(0, 3).map(([k]) => ({ key: k, type: "denied" })),
-			...degraded.slice(0, 2).map(([k]) => ({ key: k, type: "degraded" })),
-		].slice(0, 4);
-
-		if (!items.length) return div;
-
-		div.innerHTML = `<div style="display:flex;flex-direction:column;gap:3px;">${items.map(({ key, type }) =>
-			`<div style="font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:0.12em;padding:2px 7px;border-radius:1px;white-space:nowrap;${
-				type === "denied" ?
-					"background:rgba(160,20,20,0.25);border:1px solid rgba(255,68,68,0.4);color:#FF6666;"
-					: "background:rgba(150,90,0,0.25);border:1px solid rgba(255,170,0,0.35);color:#FBBF24;"
-			}">${RESTRICTION_LABELS[key] ?? key.toUpperCase()} ${type.toUpperCase()}</div>`
-		).join("")}</div>`;
-		return div;
-	};
-	return control;
-};
-
-/* ── Compass rose ── */
-const buildCompass = () => {
-	const control = L.control({ position: "topright" });
-	control.onAdd = () => {
-		const div = L.DomUtil.create("div");
-		div.style.cssText = "pointer-events:none;margin:10px;";
-		div.innerHTML = `
-			<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"
-				style="filter:drop-shadow(0 0 6px rgba(143,184,64,0.3))">
-				<circle cx="26" cy="26" r="24" stroke="rgba(143,184,64,0.35)" stroke-width="1"/>
-				<circle cx="26" cy="26" r="20" stroke="rgba(143,184,64,0.15)" stroke-width="0.5" stroke-dasharray="3,4"/>
-				${[0,45,90,135,180,225,270,315].map((deg) => {
-					const r = deg % 90 === 0 ? 20 : 21.5, r2 = 24;
-					const rad = ((deg - 90) * Math.PI) / 180;
-					const x1 = 26 + r * Math.cos(rad), y1 = 26 + r * Math.sin(rad);
-					const x2 = 26 + r2 * Math.cos(rad), y2 = 26 + r2 * Math.sin(rad);
-					return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="rgba(143,184,64,0.5)" stroke-width="${deg % 90 === 0 ? 1.5 : 0.8}"/>`;
-				}).join("")}
-				<polygon points="26,5 23,22 26,19 29,22" fill="rgba(193,255,114,0.9)" opacity="0.9"/>
-				<polygon points="26,47 23,30 26,33 29,30" fill="rgba(143,184,64,0.35)"/>
-				<text x="26" y="4.5" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="7" fill="#c1ff72" font-weight="700" letter-spacing="0.05em">N</text>
-				<text x="26" y="51" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6" fill="rgba(143,184,64,0.5)">S</text>
-				<text x="50" y="27.5" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6" fill="rgba(143,184,64,0.5)">E</text>
-				<text x="2" y="27.5" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6" fill="rgba(143,184,64,0.5)">W</text>
-				<circle cx="26" cy="26" r="2.5" fill="rgba(193,255,114,0.8)"/>
-				<circle cx="26" cy="26" r="1" fill="#c1ff72"/>
-			</svg>`;
-		return div;
-	};
-	return control;
 };
 
 /* ── Scale bar ── */
@@ -431,7 +337,6 @@ const NoneGeographicalMap = ({
 }) => {
 	const mapRef = useRef(null);
 	const mapInst = useRef(null);
-	const coordsRef = useRef(null);
 
 	useEffect(() => {
 		if (!bounds || !imgURL || !Array.isArray(locationsInProvince)) {
@@ -476,9 +381,6 @@ const NoneGeographicalMap = ({
 			addSAMZone(map, bounds);
 		}
 
-		/* ── MGRS grid ── */
-		addGrid(map, bounds);
-
 		/* ── Collect objective coords ── */
 		const objCoords = locationsInProvince
 			.filter((m) => Array.isArray(m.coordinates) && m.coordinates.length === 2)
@@ -503,28 +405,8 @@ const NoneGeographicalMap = ({
 		});
 
 		/* ── Controls ── */
-		buildCompass().addTo(map);
 		buildScale().addTo(map);
 		buildLegend().addTo(map);
-		if (restrictions) buildRestrictionBadges(restrictions).addTo(map);
-
-		/* ── Coordinates display ── */
-		const coordControl = L.control({ position: "bottomright" });
-		coordControl.onAdd = () => {
-			const div = L.DomUtil.create("div", "coordinates-container");
-			div.style.marginBottom = "4px";
-			coordsRef.current = div;
-			div.textContent = "—, —";
-			return div;
-		};
-		coordControl.addTo(map);
-		map.on("mousemove", (e) => {
-			if (coordsRef.current) {
-				const ref = toGridRef([e.latlng.lat, e.latlng.lng], bounds);
-				coordsRef.current.textContent = `${ref} · ${e.latlng.lat.toFixed(0)}, ${e.latlng.lng.toFixed(0)}`;
-			}
-		});
-
 		/* ── Auto-fit to objectives + infil ── */
 		const fitCoords = [...objCoords, ...(infilPoint ? [infilPoint] : [])];
 		if (fitCoords.length > 0) {
@@ -547,7 +429,6 @@ const NoneGeographicalMap = ({
 		return () => {
 			cancelAnimationFrame(rafId);
 			clearTimeout(timerId);
-			coordsRef.current = null;
 			if (mapInst.current) {
 				try { mapInst.current.stop(); mapInst.current.remove(); } catch { /* already removed */ }
 				mapInst.current = null;
@@ -555,69 +436,10 @@ const NoneGeographicalMap = ({
 		};
 	}, [bounds, locationsInProvince, imgURL, infilPoint, exfilPoint, fallbackExfil, infilMethod, province]);
 
-	/* ── Derive header data ── */
-	const firstObj = Array.isArray(locationsInProvince) && locationsInProvince[0];
-	const gridRef = firstObj ? toGridRef(firstObj.coordinates, bounds) : "??-??";
-	const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19) + "Z";
-	const restrictions = province ? resolveRestrictions(province, null) : null;
-	const samActive =
-		restrictions?.aviation?.status === STATUS.DENIED &&
-		restrictions?.aviation?.source === SOURCE.THREAT;
 
 	return (
 		<div style={{ position: "relative", width: "100%", height: "100%", background: "#050704", overflow: "hidden" }}>
 
-			{/* ── Intel feed header ── */}
-			<div style={{
-				position: "absolute", top: 0, left: 0, right: 0, zIndex: 800,
-				background: "rgba(5,8,4,0.88)", borderBottom: "1px solid rgba(143,184,64,0.2)",
-				padding: "5px 12px", display: "flex", alignItems: "center", justifyContent: "space-between",
-				pointerEvents: "none", fontFamily: "'Share Tech Mono', monospace",
-				fontSize: "8.5px", letterSpacing: "0.14em", gap: "12px",
-			}}>
-				<span style={{ color: "rgba(255,68,68,0.6)" }}>// TOP SECRET //</span>
-				<span style={{ color: "rgba(143,184,64,0.4)" }}>TACTICAL SATELLITE FEED</span>
-				<span style={{ color: "rgba(143,184,64,0.35)" }}>
-					GRID {gridRef} · {locationsInProvince?.length ?? 0} OBJ
-				</span>
-				<span style={{ color: "rgba(143,184,64,0.3)" }}>{timestamp}</span>
-				{samActive && (
-					<span style={{ color: "rgba(255,68,68,0.7)", display: "flex", alignItems: "center", gap: 4 }}>
-						<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: "#FF4444", boxShadow: "0 0 5px #FF4444" }} />
-						SAM ACTIVE
-					</span>
-				)}
-				<span style={{ color: "rgba(193,255,114,0.5)", display: "flex", alignItems: "center", gap: 5 }}>
-					<span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#c1ff72", boxShadow: "0 0 5px #c1ff72" }} />
-					LIVE
-				</span>
-			</div>
-
-			{/* ── Scanlines ── */}
-			<div style={{
-				position: "absolute", inset: 0, zIndex: 750, pointerEvents: "none",
-				backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px)",
-				mixBlendMode: "multiply",
-			}} />
-
-			{/* ── Corner brackets ── */}
-			{["tl", "tr", "bl", "br"].map((corner) => (
-				<div key={corner} style={{
-					position: "absolute", width: 28, height: 28, zIndex: 800, pointerEvents: "none",
-					...(corner === "tl" ? { top: 8, left: 8, borderTop: "2px solid rgba(143,184,64,0.5)", borderLeft: "2px solid rgba(143,184,64,0.5)" } : {}),
-					...(corner === "tr" ? { top: 8, right: 8, borderTop: "2px solid rgba(143,184,64,0.5)", borderRight: "2px solid rgba(143,184,64,0.5)" } : {}),
-					...(corner === "bl" ? { bottom: 8, left: 8, borderBottom: "2px solid rgba(143,184,64,0.5)", borderLeft: "2px solid rgba(143,184,64,0.5)" } : {}),
-					...(corner === "br" ? { bottom: 8, right: 8, borderBottom: "2px solid rgba(143,184,64,0.5)", borderRight: "2px solid rgba(143,184,64,0.5)" } : {}),
-				}} />
-			))}
-
-			{/* ── Vignette ── */}
-			<div style={{
-				position: "absolute", inset: 0, zIndex: 700, pointerEvents: "none",
-				background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.7) 100%)",
-			}} />
-
-			{/* ── Leaflet mount ── */}
 			<div ref={mapRef} style={{ width: "100%", height: "100%", background: "#050704" }} />
 		</div>
 	);

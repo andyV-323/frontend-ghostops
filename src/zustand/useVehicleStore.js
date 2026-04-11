@@ -97,6 +97,40 @@ const useVehicleStore = create((set, get) => ({
 		}
 	},
 
+	// Log a ground vehicle trip — burns fuel and accumulates wear
+	logTrip: async (vehicleId, distanceKm, fuelBurned) => {
+		if (!vehicleId) return;
+		try {
+			const result = await VehicleAPI.logTrip(vehicleId, distanceKm, fuelBurned);
+			if (result.conditionChanged) {
+				toast.warn(`Vehicle condition changed to ${result.vehicle.condition} after trip.`);
+			}
+			get().fetchVehicles();
+			return result;
+		} catch (error) {
+			console.error("ERROR logging trip:", error);
+			toast.error("Failed to log trip.");
+			throw error;
+		}
+	},
+
+	// Log an aircraft sortie — burns fuel and accumulates flight hours
+	logSortie: async (vehicleId, hours, fuelBurned) => {
+		if (!vehicleId) return;
+		try {
+			const result = await VehicleAPI.logSortie(vehicleId, hours, fuelBurned);
+			if (result.conditionChanged) {
+				toast.warn(`Aircraft condition changed to ${result.vehicle.condition} after sortie.`);
+			}
+			get().fetchVehicles();
+			return result;
+		} catch (error) {
+			console.error("ERROR logging sortie:", error);
+			toast.error("Failed to log sortie.");
+			throw error;
+		}
+	},
+
 	// Reset store
 	resetVehicleStore: () =>
 		set({ vehicles: [], selectedVehicle: { ...defaultVehicle } }),
