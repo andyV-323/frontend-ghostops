@@ -1223,24 +1223,26 @@ function OperatorsPage() {
 							openSheet={open}
 						/>
 					</Panel>
-					<Panel
-						title='Infirmary'
-						badge='WIA'
-						className='min-h-40'>
-						<Infirmary
-							dataUpdated={dataUpdated}
-							refreshData={refreshData}
-						/>
-					</Panel>
-					<Panel
-						title='Fallen Ghost'
-						badge='KIA'
-						className='min-h-40'>
-						<Memorial
-							dataUpdated={dataUpdated}
-							refreshData={refreshData}
-						/>
-					</Panel>
+					<div className='grid grid-cols-2 gap-2'>
+						<Panel
+							title='Infirmary'
+							badge='WIA'
+							className='min-h-40'>
+							<Infirmary
+								dataUpdated={dataUpdated}
+								refreshData={refreshData}
+							/>
+						</Panel>
+						<Panel
+							title='Fallen Ghost'
+							badge='KIA'
+							className='min-h-40'>
+							<Memorial
+								dataUpdated={dataUpdated}
+								refreshData={refreshData}
+							/>
+						</Panel>
+					</div>
 				</div>
 			</div>
 
@@ -1379,14 +1381,14 @@ function OperatorsPage() {
 							/>
 						</div>
 					</div>
-					<div className='shrink-0 flex flex-col border-t border-amber-900/20 bg-neutral-900/40'>
-						<div className='overflow-y-auto max-h-32'>
+					<div className='shrink-0 flex flex-row border-t border-amber-900/20 bg-neutral-900/40 divide-x divide-lines/10'>
+						<div className='flex-1 overflow-y-auto max-h-32'>
 							<Infirmary
 								dataUpdated={dataUpdated}
 								refreshData={refreshData}
 							/>
 						</div>
-						<div className='overflow-y-auto max-h-32'>
+						<div className='flex-1 overflow-y-auto max-h-32'>
 							<Memorial
 								dataUpdated={dataUpdated}
 								refreshData={refreshData}

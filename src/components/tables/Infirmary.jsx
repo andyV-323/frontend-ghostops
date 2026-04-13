@@ -1,169 +1,100 @@
-// Infirmary.jsx — redesigned to match UnifiedDashboard HUD aesthetic
-
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-	faCaretDown,
-	faCaretUp,
-	faSyringe,
-} from "@fortawesome/free-solid-svg-icons";
+import { faSyringe } from "@fortawesome/free-solid-svg-icons";
 import { PropTypes } from "prop-types";
-import { useToggleExpand } from "@/hooks";
 import { useInfirmaryStore } from "@/zustand";
 
+function RecoveryBar({ progress }) {
+	const color =
+		progress >= 75 ? "bg-green-500"
+		: progress >= 40 ? "bg-amber-400"
+		: "bg-red-500/70";
+	return (
+		<div className='w-full h-0.5 bg-blk/60 rounded-full overflow-hidden border border-lines/10'>
+			<div
+				className={["h-full rounded-full transition-all duration-500", color].join(" ")}
+				style={{ width: `${progress}%` }}
+			/>
+		</div>
+	);
+}
+
+RecoveryBar.propTypes = { progress: PropTypes.number };
+
 const Infirmary = () => {
-	const { injuredOperators, fetchInjuredOperators, recoverOperator } =
-		useInfirmaryStore();
-	const [expandedOperator, toggleExpand] = useToggleExpand();
+	const { injuredOperators, fetchInjuredOperators, recoverOperator } = useInfirmaryStore();
 
 	useEffect(() => {
 		fetchInjuredOperators();
 	}, [injuredOperators.length]);
 
+	if (injuredOperators.length === 0) {
+		return (
+			<div className='flex items-center justify-center py-6'>
+				<span className='font-mono text-[9px] tracking-widest text-lines/20 uppercase'>No Wounded</span>
+			</div>
+		);
+	}
+
 	return (
-		<div className='flex flex-col'>
-			<table className='w-full text-left'>
-				<thead className='sticky top-0 z-10 bg-blk/90 border-b border-lines/20'>
-					<tr>
-						<th className='px-4 py-3 font-mono text-[10px] tracking-widest text-lines/50 uppercase'>
-							Operator
-						</th>
-						<th className='px-4 py-3 font-mono text-[10px] tracking-widest text-lines/50 uppercase'>
-							Recovery
-						</th>
-						<th className='px-4 py-3 font-mono text-[10px] tracking-widest text-lines/50 uppercase text-right'>
-							Action
-						</th>
-					</tr>
-				</thead>
+		<div className='p-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2'>
+			{injuredOperators.map((entry, index) => {
+				const recoverySeconds = entry.recoveryHours * 3600;
+				const elapsed = Math.floor((Date.now() - new Date(entry.injuredAt)) / 1000);
+				const progress = Math.min(100, Math.floor((elapsed / recoverySeconds) * 100));
+				const hoursLeft = Math.max(0, (recoverySeconds - elapsed) / 3600).toFixed(1);
 
-				<tbody>
-					{injuredOperators.length > 0 ?
-						injuredOperators.map((entry, index) => {
-							const recoverySeconds = entry.recoveryHours * 3600;
-							const elapsed = Math.floor(
-								(Date.now() - new Date(entry.injuredAt)) / 1000,
-							);
-							const progress = Math.min(
-								100,
-								Math.floor((elapsed / recoverySeconds) * 100),
-							);
+				return (
+					<div
+						key={entry.operator?._id || entry.injuredAt || index}
+						className='group flex flex-col items-center gap-1.5 p-2.5 rounded border border-amber-900/25 bg-blk/40 hover:bg-amber-900/10 hover:border-amber-900/50 transition-all duration-150'>
 
-							// Color the bar based on recovery progress
-							const barColor =
-								progress >= 75 ? "bg-green-500"
-								: progress >= 40 ? "bg-amber-400"
-								: "bg-red-500/70";
+						{/* Avatar */}
+						<div className='relative shrink-0'>
+							<div className='w-10 h-10 rounded-full border border-amber-900/40 overflow-hidden bg-highlight'>
+								<img
+									className='w-full h-full object-cover object-top'
+									src={entry.operator?.imageKey || entry.operator?.image || "/ghost/Default.png"}
+									alt={entry.operator?.callSign || "Operator"}
+									onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
+								/>
+							</div>
+							<span className='absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-blk bg-amber-400 shadow-[0_0_5px_rgba(251,191,36,0.7)]' />
+						</div>
 
-							return (
-								<React.Fragment
-									key={entry.operator?._id || entry.injuredAt || index}>
-									{/* Main row */}
-									<tr
-										onClick={() => toggleExpand(index)}
-										className='border-b border-lines/10 hover:bg-highlight/20 cursor-pointer transition-colors duration-150'>
-										{/* Operator */}
-										<td className='px-4 py-3'>
-											<div className='flex items-center gap-3'>
-												<div className='relative shrink-0'>
-													<img
-														className='w-8 h-8 rounded-full border border-lines/30 bg-highlight object-cover'
-														src={entry.operator?.image || "/ghost/Default.png"}
-														alt='Operator'
-													/>
-													{/* Amber injury indicator */}
-													<span className='absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-blk bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]' />
-												</div>
-												<span className='font-mono text-xs text-fontz'>
-													{entry.operator?.callSign || "Unknown"}
-												</span>
-											</div>
-										</td>
+						{/* Callsign */}
+						<span className='font-mono text-[9px] text-fontz group-hover:text-white truncate max-w-full text-center leading-none transition-colors'>
+							{entry.operator?.callSign || "Unknown"}
+						</span>
 
-										{/* Recovery bar */}
-										<td className='px-4 py-3'>
-											<div className='flex flex-col gap-1.5 min-w-[100px]'>
-												<div className='w-full h-1.5 bg-blk/60 rounded-full overflow-hidden border border-lines/10'>
-													<div
-														className={[
-															"h-full rounded-full transition-all duration-500",
-															barColor,
-														].join(" ")}
-														style={{ width: `${progress}%` }}
-													/>
-												</div>
-												<div className='flex items-center justify-between'>
-													<span className='font-mono text-[9px] text-lines/40 tracking-widest'>
-														{entry.recoveryHours}h
-													</span>
-													<span
-														className={[
-															"font-mono text-[9px] tracking-widest",
-															progress >= 75 ? "text-green-500"
-															: progress >= 40 ? "text-amber-400"
-															: "text-red-400",
-														].join(" ")}>
-														{progress}%
-													</span>
-												</div>
-											</div>
-										</td>
+						{/* Status */}
+						<span className='font-mono text-[8px] tracking-widest uppercase text-amber-400 leading-none'>
+							WIA
+						</span>
 
-										{/* Actions */}
-										<td className='px-4 py-3'>
-											<div className='flex items-center justify-end gap-3'>
-												<button
-													onClick={(e) => {
-														e.stopPropagation();
-														recoverOperator(entry._id);
-													}}
-													className='w-7 h-7 flex items-center justify-center bg-btn/20 hover:bg-btn text-btn hover:text-blk border border-btn/30 rounded transition-all'
-													title='Discharge operator'>
-													<FontAwesomeIcon
-														icon={faSyringe}
-														className='text-[11px]'
-													/>
-												</button>
-												<FontAwesomeIcon
-													icon={
-														expandedOperator === index ? faCaretUp : faCaretDown
-													}
-													className='text-lines/30 text-sm'
-												/>
-											</div>
-										</td>
-									</tr>
+						{/* Injury type */}
+						<span className='font-mono text-[7px] text-lines/35 truncate max-w-full text-center leading-none'>
+							{entry.injuryType || "Injury on file"}
+						</span>
 
-									{/* Expanded: injury details */}
-									{expandedOperator === index && (
-										<tr>
-											<td
-												colSpan={3}
-												className='px-4 py-3 bg-blk/50 border-b border-lines/10'>
-												<p className='font-mono text-[9px] tracking-[0.18em] text-lines/30 uppercase mb-1'>
-													Injury Report
-												</p>
-												<p className='font-mono text-xs text-fontz/70 leading-relaxed'>
-													{entry.injuryType || "Details unavailable."}
-												</p>
-											</td>
-										</tr>
-									)}
-								</React.Fragment>
-							);
-						})
-					:	<tr>
-							<td
-								colSpan={3}
-								className='py-10 text-center'>
-								<p className='font-mono text-[10px] tracking-widest text-lines/25 uppercase'>
-									No Wounded
-								</p>
-							</td>
-						</tr>
-					}
-				</tbody>
-			</table>
+						{/* Recovery bar + time */}
+						<div className='w-full flex flex-col gap-1'>
+							<RecoveryBar progress={progress} />
+							<span className='font-mono text-[7px] text-lines/30 text-center tabular-nums'>
+								{progress < 100 ? `${hoursLeft}h left` : "Ready"}
+							</span>
+						</div>
+
+						{/* Discharge */}
+						<button
+							onClick={() => recoverOperator(entry._id)}
+							className='w-full flex items-center justify-center gap-1 font-mono text-[7px] tracking-widest uppercase px-1.5 py-1 rounded border border-btn/25 bg-btn/10 hover:bg-btn text-btn hover:text-blk hover:border-btn transition-all'>
+							<FontAwesomeIcon icon={faSyringe} className='text-[7px]' />
+							Discharge
+						</button>
+					</div>
+				);
+			})}
 		</div>
 	);
 };
