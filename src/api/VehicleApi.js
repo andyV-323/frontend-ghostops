@@ -67,12 +67,13 @@ export const checkVehicleAvailability = async (vehicleId) => {
 	}
 };
 
-// Log a ground vehicle trip — increments mileage and derives condition from wear
-// distanceKm: distance covered; fuelBurned: % fuel consumed (calc'd by frontend)
-export const logTrip = async (vehicleId, distanceKm, fuelBurned) => {
+// Log a ground vehicle trip — burns fuel and applies pre-calculated wear
+// minutesUsed: how long the vehicle was operated; wearAdded: % wear (calc'd by frontend)
+export const logTrip = async (vehicleId, minutesUsed, wearAdded, fuelBurned) => {
 	try {
 		const response = await api.post(`/vehicles/${vehicleId}/trip`, {
-			distanceKm,
+			minutesUsed,
+			wearAdded,
 			fuelBurned,
 		});
 		return response.data;
@@ -82,12 +83,13 @@ export const logTrip = async (vehicleId, distanceKm, fuelBurned) => {
 	}
 };
 
-// Log an aircraft sortie — increments flight hours and derives condition from wear
-// hours: flight time in hours; fuelBurned: % fuel consumed
-export const logSortie = async (vehicleId, hours, fuelBurned) => {
+// Log an aircraft sortie — burns fuel and applies pre-calculated wear
+// minutesUsed: flight duration in minutes; wearAdded: % wear (calc'd by frontend)
+export const logSortie = async (vehicleId, minutesUsed, wearAdded, fuelBurned) => {
 	try {
 		const response = await api.post(`/vehicles/${vehicleId}/sortie`, {
-			hours,
+			minutesUsed,
+			wearAdded,
 			fuelBurned,
 		});
 		return response.data;

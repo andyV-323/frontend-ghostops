@@ -97,13 +97,13 @@ const useVehicleStore = create((set, get) => ({
 		}
 	},
 
-	// Log a ground vehicle trip — burns fuel and accumulates wear
-	logTrip: async (vehicleId, distanceKm, fuelBurned) => {
+	// Log a ground vehicle deployment — burns fuel and applies wear
+	logTrip: async (vehicleId, minutesUsed, wearAdded, fuelBurned) => {
 		if (!vehicleId) return;
 		try {
-			const result = await VehicleAPI.logTrip(vehicleId, distanceKm, fuelBurned);
+			const result = await VehicleAPI.logTrip(vehicleId, minutesUsed, wearAdded, fuelBurned);
 			if (result.conditionChanged) {
-				toast.warn(`Vehicle condition changed to ${result.vehicle.condition} after trip.`);
+				toast.warn(`Vehicle condition changed to ${result.newCondition} after deployment.`);
 			}
 			get().fetchVehicles();
 			return result;
@@ -114,13 +114,13 @@ const useVehicleStore = create((set, get) => ({
 		}
 	},
 
-	// Log an aircraft sortie — burns fuel and accumulates flight hours
-	logSortie: async (vehicleId, hours, fuelBurned) => {
+	// Log an aircraft sortie — burns fuel and applies wear
+	logSortie: async (vehicleId, minutesUsed, wearAdded, fuelBurned) => {
 		if (!vehicleId) return;
 		try {
-			const result = await VehicleAPI.logSortie(vehicleId, hours, fuelBurned);
+			const result = await VehicleAPI.logSortie(vehicleId, minutesUsed, wearAdded, fuelBurned);
 			if (result.conditionChanged) {
-				toast.warn(`Aircraft condition changed to ${result.vehicle.condition} after sortie.`);
+				toast.warn(`Aircraft condition changed to ${result.newCondition} after sortie.`);
 			}
 			get().fetchVehicles();
 			return result;

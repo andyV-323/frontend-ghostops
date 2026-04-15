@@ -113,7 +113,7 @@ function VehicleCard({ vehicle, openSheet, onDelete, onRefuel, onRepair, onTripC
 	const garageData = GARAGE.find((v) => v.name === vehicle.vehicle);
 	const imgUrl     = garageData?.imgUrl || "/img/default-vehicle.png";
 	const vType      = garageData?.type || "Unknown";
-	const isAircraft = !!garageData?.timer;
+	const isAircraft = garageData?.type === "Aircraft" || garageData?.type === "UAV";
 	const isCritical = wear >= 75;
 	const isRepairing = vehicle.isRepairing;
 
@@ -173,7 +173,7 @@ function VehicleCard({ vehicle, openSheet, onDelete, onRefuel, onRepair, onTripC
 				<div className='flex flex-col gap-1'>
 					<div className='flex items-center justify-between'>
 						<span className='font-mono text-[8px] tracking-[0.2em] text-lines/30 uppercase'>
-							{isAircraft ? "Flight Time" : "Fuel"}
+							Op. Time
 						</span>
 						{isRepairing && (
 							<span className='font-mono text-[8px] text-btn/60'>~{repairHrs}h repair</span>
@@ -187,9 +187,7 @@ function VehicleCard({ vehicle, openSheet, onDelete, onRefuel, onRepair, onTripC
 					<div className='flex items-center justify-between'>
 						<span className='font-mono text-[8px] tracking-[0.2em] text-lines/30 uppercase'>Wear</span>
 						<span className='font-mono text-[8px] text-lines/25'>
-							{isAircraft
-								? `${(vehicle.flightHours ?? 0).toFixed(1)} hrs total`
-								: `${Math.round(vehicle.totalMileage ?? 0)} km total`}
+							{`${Math.round(vehicle.totalMinutes ?? vehicle.totalMileage ?? 0)} min total`}
 						</span>
 					</div>
 					<WearBar wear={wear} style={style} />
@@ -306,15 +304,16 @@ const Garage = ({ dataUpdated, openSheet }) => {
 		if (!v) return;
 
 		const garageData = GARAGE.find((g) => g.name === v.vehicle);
-		const isAircraft = !!garageData?.timer;
+		const isAircraft = garageData?.type === "Aircraft" || garageData?.type === "UAV";
 		const fuelBurned = Math.max(0, (v.remainingFuel ?? 100) - tripData.newEnergyLevel);
+		const minutes    = tripData.minutesUsed ?? 0;
+		const wearAdded  = tripData.wearAdded ?? 0;
 
 		try {
 			if (isAircraft) {
-				const hours = (tripData.travelTime ?? 0) / 60;
-				await logSortie(tripData.vehicleId, hours, fuelBurned);
+				await logSortie(tripData.vehicleId, minutes, wearAdded, fuelBurned);
 			} else {
-				await logTrip(tripData.vehicleId, tripData.distance ?? 0, fuelBurned);
+				await logTrip(tripData.vehicleId, minutes, wearAdded, fuelBurned);
 			}
 		} catch { console.error("Usage log failed."); }
 	};
