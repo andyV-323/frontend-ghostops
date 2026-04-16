@@ -18,7 +18,9 @@ const Header = () => {
 					<img
 						src='/icons/GhostOpsAI.svg'
 						alt='GhostOpsAI Logo'
-						className='h-10'
+						className='h-10 w-auto'
+						width='160'
+						height='40'
 					/>
 
 					<div className='flex space-x-4'>

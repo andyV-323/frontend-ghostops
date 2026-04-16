@@ -7,10 +7,10 @@ const MainLayout = () => {
 			<div className='fixed top-0 left-0 w-full z-[1000]'>
 				<Header />
 			</div>
-			<div className='pt-[4rem]'>
+			<main className='pt-[4rem]'>
 				{" "}
 				<Outlet />
-			</div>
+			</main>
 			<MainFooter />
 		</div>
 	);

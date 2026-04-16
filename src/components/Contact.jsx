@@ -77,7 +77,7 @@ const Contact = () => {
 						<div className='grid grid-cols-1 md:grid-cols-2 gap-5'>
 							{/* Name */}
 							<div className='flex flex-col gap-1.5'>
-								<label className='font-mono text-[9px] tracking-widest uppercase text-neutral-500'>
+								<label className='font-mono text-[9px] tracking-widest uppercase text-neutral-400'>
 									Name <span className='text-red-500'>*</span>
 								</label>
 								<input
@@ -92,7 +92,7 @@ const Contact = () => {
 
 							{/* Email */}
 							<div className='flex flex-col gap-1.5'>
-								<label className='font-mono text-[9px] tracking-widest uppercase text-neutral-500'>
+								<label className='font-mono text-[9px] tracking-widest uppercase text-neutral-400'>
 									Email <span className='text-red-500'>*</span>
 								</label>
 								<input
@@ -108,7 +108,7 @@ const Contact = () => {
 
 						{/* Message */}
 						<div className='flex flex-col gap-1.5'>
-							<label className='font-mono text-[9px] tracking-widest uppercase text-neutral-500'>
+							<label className='font-mono text-[9px] tracking-widest uppercase text-neutral-400'>
 								Message
 							</label>
 							<textarea

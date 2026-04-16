@@ -4,7 +4,7 @@ const MainFooter = () => {
 			<p className='text-sm'>
 				&copy; {new Date().getFullYear()} GhostOpsAI. All Rights Reserved.
 			</p>
-			<p className='text-gray-600'>
+			<p className='text-gray-400'>
 				{" "}
 				This project is not affiliated with Ubisoft Entertainment. Tom Clancy’s,
 				Ghost Recon Breakpoint, and all related marks are trademarks of Ubisoft

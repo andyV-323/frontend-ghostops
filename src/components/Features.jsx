@@ -30,7 +30,7 @@ const FeatureCard = ({ title, icon, description }) => {
 			{description.length > 2 && (
 				<button
 					onClick={() => setIsExpanded((p) => !p)}
-					className='mt-4 self-start font-mono text-[9px] tracking-widest uppercase text-neutral-500 hover:text-btn transition-colors'>
+					className='mt-4 self-start font-mono text-[9px] tracking-widest uppercase text-neutral-400 hover:text-btn transition-colors'>
 					{isExpanded ? "Show less ↑" : "Show more ↓"}
 				</button>
 			)}

@@ -46,7 +46,7 @@ const TacticalTerminal = () => {
 	}, []);
 
 	return (
-		<div className='w-full max-w-sm bg-black/80 border border-btn/30 rounded-sm shadow-2xl shadow-black font-mono text-[10px] leading-relaxed p-3 flex flex-col justify-start overflow-hidden'>
+		<div className='w-full max-w-sm bg-black/80 border border-btn/30 rounded-sm shadow-2xl shadow-black font-mono text-[10px] leading-relaxed p-3 flex flex-col justify-start overflow-hidden min-h-[280px]'>
 			{/* header bar */}
 			<div className='flex items-center gap-2 mb-4 pb-3 border-b border-btn/20'>
 				<span className='ml-2 tracking-[0.2em] uppercase text-[9px] text-fontz/50'>
