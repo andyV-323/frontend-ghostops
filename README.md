@@ -29,7 +29,7 @@ AI-powered tactical operations platform for Ghost Recon Breakpoint. Manage opera
 
 ## Architecture
 
-![GhostOpsAI AWS Architecture](docs/architecture.png)
+![GhostOpsAI AWS Architecture](docs/GhostopsAI_Diagram.png)
 
 The platform runs entirely on AWS. DNS and WAF sit in front of CloudFront, which routes traffic to the Amplify-hosted frontend and the LightSail Express backend. Cognito handles authentication. MongoDB stores all operational data. Two independent **Serverless Recovery Engines** (Step Functions + Lambda + EventBridge) drive the infirmary recovery timer and the vehicle repair workflow. AI mission generation is powered by **Groq**.
 
