@@ -3,11 +3,11 @@ import { Routes, Route } from "react-router-dom";
 import { PrivateRoute, AuthRedirector } from "@/auth";
 import MainLayout from "./layout/MainLayout";
 
-// Eagerly load the two public pages — they're on the critical path
-import Home    from "@/pages/Home";
-import Login   from "@/pages/Login";
+// Eagerly load public pages — on the critical render path
+import Home  from "@/pages/Home";
+import Login from "@/pages/Login";
 
-// Lazy-load everything behind auth — none of this is needed for first paint
+// Lazy-load everything behind auth — split into separate chunks at build time
 const UnifiedDashboard = lazy(() => import("@/pages/UnifiedDashboard"));
 const Memorial         = lazy(() => import("@/components/tables/Memorial"));
 const Roster           = lazy(() => import("@/components/tables/Roster"));
@@ -32,7 +32,7 @@ const AppRoutes = () => {
 				</Route>
 				<Route path='login' element={<Login />} />
 
-				{/* Private — wrapped in Suspense so lazy chunks load gracefully */}
+				{/* Private — single Suspense covers the whole dashboard tree */}
 				<Route
 					path='/dashboard'
 					element={
@@ -42,17 +42,17 @@ const AppRoutes = () => {
 							</Suspense>
 						</PrivateRoute>
 					}>
-					<Route path='memorial'     element={<Suspense fallback={null}><Memorial /></Suspense>} />
-					<Route path='roster'       element={<Suspense fallback={null}><Roster /></Suspense>} />
-					<Route path='teams'        element={<Suspense fallback={null}><Teams /></Suspense>} />
-					<Route path='infirmary'    element={<Suspense fallback={null}><Infirmary /></Suspense>} />
-					<Route path='garage'       element={<Suspense fallback={null}><Garage /></Suspense>} />
-					<Route path='newOperator'  element={<Suspense fallback={null}><NewOperatorForm /></Suspense>} />
-					<Route path='editOperator' element={<Suspense fallback={null}><EditOperatorForm /></Suspense>} />
-					<Route path='editTeam'     element={<Suspense fallback={null}><EditTeamForm /></Suspense>} />
-					<Route path='newTeam'      element={<Suspense fallback={null}><NewTeamForm /></Suspense>} />
-					<Route path='newVehicle'   element={<Suspense fallback={null}><NewVehicleForm /></Suspense>} />
-					<Route path='editVehicle'  element={<Suspense fallback={null}><EditVehicleForm /></Suspense>} />
+					<Route path='memorial'     element={<Memorial />} />
+					<Route path='roster'       element={<Roster />} />
+					<Route path='teams'        element={<Teams />} />
+					<Route path='infirmary'    element={<Infirmary />} />
+					<Route path='garage'       element={<Garage />} />
+					<Route path='newOperator'  element={<NewOperatorForm />} />
+					<Route path='editOperator' element={<EditOperatorForm />} />
+					<Route path='editTeam'     element={<EditTeamForm />} />
+					<Route path='newTeam'      element={<NewTeamForm />} />
+					<Route path='newVehicle'   element={<NewVehicleForm />} />
+					<Route path='editVehicle'  element={<EditVehicleForm />} />
 				</Route>
 			</Routes>
 		</>
