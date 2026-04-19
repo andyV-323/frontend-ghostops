@@ -28,7 +28,6 @@ export default defineConfig({
 					"vendor-ui": [
 						"@fortawesome/react-fontawesome",
 						"@fortawesome/free-solid-svg-icons",
-						"@fortawesome/free-brands-svg-icons",
 					],
 					// State / data fetching
 					"vendor-state": ["zustand", "axios"],
