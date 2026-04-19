@@ -312,43 +312,7 @@ const GhostID = () => {
 						onChange={handleChange}
 					/>
 				</div>
-				<br />
-				{/** SUPPORT SECTION **/}
-				<div className='flex flex-col w-full'>
-					{/** SUPPORT CHECKBOX **/}
-					<div className='flex items-center gap-3 mb-4'>
-						<input
-							type='checkbox'
-							id='support'
-							name='support'
-							className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
-							checked={selectedOperator?.support || false}
-							onChange={handleChange}
-						/>
-						<label
-							htmlFor='support'
-							className='text-sm font-medium text-gray-300 cursor-pointer'>
-							<h3 className='text-lg font-semibold text-fontz'>Support</h3>
-						</label>
-					</div>
 
-					{/** AVIATOR SECTION **/}
-					<div className='flex items-center gap-3 mb-4'>
-						<input
-							type='checkbox'
-							id='aviator'
-							name='aviator'
-							className='w-4 h-4 accent-btn bg-gray-700 focus:ring-btn focus:ring-2'
-							checked={selectedOperator?.aviator || false}
-							onChange={handleChange}
-						/>
-						<label
-							htmlFor='aviator'
-							className='text-sm font-medium text-gray-300 cursor-pointer'>
-							<h3 className='text-lg font-semibold text-fontz'>Aviator</h3>
-						</label>
-					</div>
-				</div>
 			</div>
 		</div>
 	);

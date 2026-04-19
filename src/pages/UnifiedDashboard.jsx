@@ -1085,7 +1085,6 @@ function OperatorsPage() {
 	const [dataUpdated, setDataUpdated] = useState(false);
 	const [selectedOp, setSelectedOp] = useState(null);
 	const [activeSquad, setActiveSquad] = useState(null);
-	const [activeOpTab, setActiveOpTab] = useState("operators");
 	const refreshData = () => setDataUpdated((p) => !p);
 	const activeSquadName =
 		squads.find((s) => s._id === activeSquad)?.name ?? "Active";
@@ -1100,7 +1099,7 @@ function OperatorsPage() {
 	useEffect(() => {
 		if (!selectedOp && operators.length > 0) {
 			const first = operators.find(
-				(o) => !o.support && !o.aviator && o.status?.toLowerCase() !== "kia",
+				(o) => o.status?.toLowerCase() !== "kia",
 			);
 			if (first) {
 				setSelectedOp(first);
@@ -1117,7 +1116,7 @@ function OperatorsPage() {
 	// Grouping helpers
 	const getSquadId = (op) =>
 		(typeof op.squad === "object" ? op.squad?._id : op.squad) ?? null;
-	const regular = operators.filter((o) => !o.support && !o.aviator);
+	const regular = operators;
 	const filtered =
 		activeSquad ?
 			regular.filter((o) => getSquadId(o) === activeSquad)
@@ -1131,8 +1130,6 @@ function OperatorsPage() {
 		return s === "injured" || s === "wounded";
 	});
 	const kia = filtered.filter((o) => o.status?.toLowerCase() === "kia");
-	const support = operators.filter((o) => o.support);
-	const aviators = operators.filter((o) => o.aviator);
 
 	const statusDot = (op) => {
 		const s = op.status?.toLowerCase();
@@ -1252,23 +1249,9 @@ function OperatorsPage() {
 				<div className='w-80 shrink-0 flex flex-col border-r border-neutral-700/40 bg-neutral-900/60'>
 					{/* Tab row: Operators | Enablers | Aviators | [Squads] [+] */}
 					<div className='flex items-center border-b border-neutral-700/40 bg-neutral-900 shrink-0'>
-						{[
-							{ id: "operators", label: "Operators" },
-							{ id: "enablers", label: "Enablers" },
-							{ id: "aviators", label: "Aviators" },
-						].map((tab) => (
-							<button
-								key={tab.id}
-								onClick={() => setActiveOpTab(tab.id)}
-								className={[
-									"font-mono text-[8px] tracking-widest uppercase px-3 py-2 border-b-2 shrink-0 transition-all",
-									activeOpTab === tab.id ?
-										"border-btn text-btn"
-									:	"border-transparent text-neutral-600 hover:text-neutral-400",
-								].join(" ")}>
-								{tab.label}
-							</button>
-						))}
+						<span className='font-mono text-[8px] tracking-widest uppercase px-3 py-2 border-b-2 border-btn text-btn shrink-0'>
+							Operators
+						</span>
 						<div className='ml-auto flex items-center gap-0.5 pr-2'>
 	<button
 								onClick={() =>
@@ -1309,39 +1292,21 @@ function OperatorsPage() {
 
 					{/* Operator rows */}
 					<div className='flex-1 overflow-y-auto '>
-						{activeOpTab === "operators" && (
-							<>
-								<RowSection
-									label={activeSquadName}
-									color='text-neutral-600'
-									ops={active}
-								/>
-								<RowSection
-									label='WIA'
-									color='text-amber-600/70'
-									ops={wia}
-								/>
-								<RowSection
-									label='KIA'
-									color='text-red-700/60'
-									ops={kia}
-								/>
-							</>
-						)}
-						{activeOpTab === "enablers" && (
-							<RowSection
-								label='Enablers'
-								color='text-neutral-600'
-								ops={support}
-							/>
-						)}
-						{activeOpTab === "aviators" && (
-							<RowSection
-								label='Aviation'
-								color='text-neutral-600'
-								ops={aviators}
-							/>
-						)}
+						<RowSection
+							label={activeSquadName}
+							color='text-neutral-600'
+							ops={active}
+						/>
+						<RowSection
+							label='WIA'
+							color='text-amber-600/70'
+							ops={wia}
+						/>
+						<RowSection
+							label='KIA'
+							color='text-red-700/60'
+							ops={kia}
+						/>
 						{operators.length === 0 && (
 							<div className='flex flex-col items-center justify-center gap-2 py-10'>
 								<div className='w-5 h-5 border border-neutral-700 rotate-45' />
