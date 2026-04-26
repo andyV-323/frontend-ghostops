@@ -5,7 +5,6 @@ import useSheetStore from "./useSheetStore";
 import useTeamsStore from "./useTeamStore";
 import useVehicleStore from "./useVehicleStore";
 import useMissionsStore from "./useMissionsStore";
-import useSquadStore from "./useSquadStore";
 
 export {
 	useInfirmaryStore,
@@ -15,5 +14,4 @@ export {
 	useTeamsStore,
 	useVehicleStore,
 	useMissionsStore,
-	useSquadStore,
 };

@@ -19,7 +19,6 @@ import {
 	faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import { MISSION_TYPES } from "@/api/GhostOpsApi";
-import { useSquadStore } from "@/zustand";
 
 // ─── Screen list ──────────────────────────────────────────────────────────────
 
@@ -1044,59 +1043,12 @@ function OutcomeScreen({ value, onChange, options }) {
 // ─── Screen 2 — Team & Insertion ────────────────────────────────────────────────
 
 function TeamInsertionScreen({
-	squadUsed,
-	onSquadUsed,
 	infilMethodUsed,
 	onInfilMethodUsed,
 	onSkip,
 }) {
-	const { squads } = useSquadStore();
-
 	return (
 		<div className='flex flex-col gap-4 p-4'>
-			{/* Squad Used */}
-			<div className='flex flex-col gap-2'>
-				<div className='flex items-center justify-between'>
-					<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
-						Squad Used
-					</span>
-					<span className='font-mono text-[8px] text-lines/25 italic'>
-						optional
-					</span>
-				</div>
-				{squads.length > 0 ?
-					<div className='grid grid-cols-2 gap-1.5'>
-						{squads.map((squad) => {
-							const active = squadUsed === squad.name;
-							return (
-								<button
-									key={squad._id ?? squad.name}
-									onClick={() => onSquadUsed(active ? "" : squad.name)}
-									className={[
-										"flex flex-col gap-0.5 px-3 py-2 border rounded-sm text-left transition-all",
-										active ?
-											"border-btn/50 bg-btn/10"
-										:	"border-lines/15 hover:border-lines/30 bg-transparent",
-									].join(" ")}>
-									<span
-										className={`font-mono text-[10px] tracking-wider uppercase truncate ${active ? "text-btn" : "text-lines/45"}`}>
-										{squad.name}
-									</span>
-								</button>
-							);
-						})}
-					</div>
-				:	<input
-						type='text'
-						value={squadUsed}
-						onChange={(e) => onSquadUsed(e.target.value)}
-						maxLength={60}
-						placeholder='Squad name...'
-						className='w-full bg-blk/60 border border-lines/15 focus:border-btn/40 rounded-sm px-3 py-2 font-mono text-[10px] text-fontz/70 placeholder:text-lines/20 outline-none transition-colors'
-					/>
-				}
-			</div>
-
 			{/* Insertion Method */}
 			<div className='flex flex-col gap-2'>
 				<span className='font-mono text-[9px] tracking-[0.22em] text-lines/40 uppercase'>
@@ -1132,7 +1084,7 @@ function TeamInsertionScreen({
 			<button
 				onClick={onSkip}
 				className='font-mono text-[9px] tracking-widest uppercase text-lines/25 hover:text-lines/50 transition-colors self-center'>
-				Skip — log without squad / insertion data
+				Skip — log without insertion data
 			</button>
 		</div>
 	);
@@ -1282,7 +1234,6 @@ function CasualtiesScreen({
 export default function PhaseReportSheet({ mission, phaseNumber, onSave }) {
 	const [screen, setScreen] = useState(1);
 	const [outcome, setOutcome] = useState(null);
-	const [squadUsed, setSquadUsed] = useState("");
 	const [infilMethodUsed, setInfilMethodUsed] = useState("");
 	const [complications, setComplications] = useState([]);
 	const [casualties, setCasualties] = useState(null);
@@ -1299,7 +1250,7 @@ export default function PhaseReportSheet({ mission, phaseNumber, onSave }) {
 		1: { title: "Outcome", sub: q.outcomeSub },
 		2: {
 			title: "Team & Insertion",
-			sub: "Optional — squad and insertion method",
+			sub: "Optional — insertion method",
 		},
 		3: { title: "Complications", sub: "Select all that apply" },
 		4: { title: "Casualties", sub: "Personnel status" },
@@ -1313,7 +1264,6 @@ export default function PhaseReportSheet({ mission, phaseNumber, onSave }) {
 	};
 
 	const handleSkipTeamInsertion = () => {
-		setSquadUsed("");
 		setInfilMethodUsed("");
 		setScreen(3);
 	};
@@ -1334,7 +1284,6 @@ export default function PhaseReportSheet({ mission, phaseNumber, onSave }) {
 			casualtyNote: casualtyNote.trim() || null,
 			intelDeveloped: [],
 			notes: fieldNotes.trim() || null,
-			squadUsed: squadUsed || "",
 			infilMethodUsed: infilMethodUsed || "",
 			generatorSnapshot: {
 				infilPoint: mission?.generator?.infilPoint ?? null,
@@ -1374,8 +1323,6 @@ export default function PhaseReportSheet({ mission, phaseNumber, onSave }) {
 				)}
 				{screen === 2 && (
 					<TeamInsertionScreen
-						squadUsed={squadUsed}
-						onSquadUsed={setSquadUsed}
 						infilMethodUsed={infilMethodUsed}
 						onInfilMethodUsed={setInfilMethodUsed}
 						onSkip={handleSkipTeamInsertion}
@@ -1441,8 +1388,6 @@ NavRow.propTypes = {
 };
 
 TeamInsertionScreen.propTypes = {
-	squadUsed: PropTypes.string,
-	onSquadUsed: PropTypes.func,
 	infilMethodUsed: PropTypes.string,
 	onInfilMethodUsed: PropTypes.func,
 	onSkip: PropTypes.func,

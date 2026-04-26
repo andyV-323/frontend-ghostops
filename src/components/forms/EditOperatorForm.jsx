@@ -6,7 +6,7 @@ import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useOperatorsStore, useSheetStore } from "@/zustand";
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { useHandleChange, useFormActions, useConfirmDialog } from "@/hooks";
-import { ConfirmDialog, ImageUpload, SquadSelect } from "@/components";
+import { ConfirmDialog, ImageUpload } from "@/components";
 import { deleteOperatorImage } from "@/api/OperatorsApi";
 
 const EditOperatorForm = ({ operator }) => {
@@ -430,11 +430,7 @@ const EditOperatorForm = ({ operator }) => {
 										</option>
 									))}
 							</select>
-							<br />
-							<SquadSelect
-								value={selectedOperator?.squad || ""}
-								onChange={handleChange}
-							/>
+	
 						</div>
 						<br />
 

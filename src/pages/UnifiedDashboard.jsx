@@ -50,7 +50,6 @@ import { NewOperatorForm, AssignTeamSheet } from "@/components/forms";
 import {
 	useOperatorsStore,
 	useSheetStore,
-	useSquadStore,
 	useTeamsStore,
 } from "@/zustand";
 import { useAuthService } from "@/services/AuthService";
@@ -808,292 +807,19 @@ function BriefingPage({ onNewMission }) {
 // OPERATORS PAGE — unchanged
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function SquadEditSheet({ squad, onClose }) {
-	const { renameSquad, deleteSquad } = useSquadStore();
-	const [name, setName] = useState(squad.name);
-	const [confirmDelete, setConfirmDelete] = useState(false);
-	const handleSave = async () => {
-		const t = name.trim();
-		if (!t || t === squad.name) {
-			onClose();
-			return;
-		}
-		await renameSquad(squad._id, t);
-		onClose();
-	};
-	const handleDelete = async () => {
-		await deleteSquad(squad._id);
-		onClose();
-	};
-	return (
-		<div className='flex flex-col gap-4 p-4'>
-			<div>
-				<label className='font-mono text-[8px] tracking-[0.2em] uppercase text-lines/40 block mb-1'>
-					Squad Name
-				</label>
-				<input
-					autoFocus
-					value={name}
-					onChange={(e) => setName(e.target.value)}
-					onKeyDown={(e) => e.key === "Enter" && handleSave()}
-					className='w-full font-mono text-[11px] bg-blk/60 border border-lines/20 focus:border-btn/60 text-fontz px-3 py-2 rounded outline-none transition-colors'
-				/>
-			</div>
-			<button
-				onClick={handleSave}
-				disabled={!name.trim()}
-				className='w-full flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-widest uppercase bg-btn/80 hover:bg-btn disabled:opacity-30 text-blk py-2 rounded transition-colors'>
-				<FontAwesomeIcon
-					icon={faCheck}
-					className='text-[8px]'
-				/>{" "}
-				Save
-			</button>
-			<div className='border-t border-lines/10 pt-4'>
-				{!confirmDelete ?
-					<button
-						onClick={() => setConfirmDelete(true)}
-						className='w-full flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-widest uppercase border border-red-900/40 text-red-400/60 hover:text-red-400 hover:border-red-500/50 hover:bg-red-900/10 py-2 rounded transition-colors'>
-						<FontAwesomeIcon
-							icon={faTrash}
-							className='text-[8px]'
-						/>{" "}
-						Delete Squad
-					</button>
-				:	<div className='flex flex-col gap-2'>
-						<p className='font-mono text-[9px] text-lines/50 text-center'>
-							Delete <span className='text-red-400'>{squad.name}</span>? Cannot
-							be undone.
-						</p>
-						<div className='flex gap-2'>
-							<button
-								onClick={() => setConfirmDelete(false)}
-								className='flex-1 font-mono text-[9px] tracking-widest uppercase border border-lines/20 hover:border-lines/40 text-lines/40 hover:text-fontz py-1.5 rounded transition-colors'>
-								Cancel
-							</button>
-							<button
-								onClick={handleDelete}
-								className='flex-1 font-mono text-[9px] tracking-widest uppercase bg-red-700/80 hover:bg-red-700 text-white py-1.5 rounded transition-colors'>
-								Confirm
-							</button>
-						</div>
-					</div>
-				}
-			</div>
-		</div>
-	);
-}
-SquadEditSheet.propTypes = {
-	squad: PropTypes.object.isRequired,
-	onClose: PropTypes.func.isRequired,
-};
-
-function SquadsSheet({ activeSquad, onSelectSquad }) {
-	const { squads, fetchSquads, createSquad, renameSquad, deleteSquad } =
-		useSquadStore();
-	const [newName, setNewName] = useState("");
-	const [showAdd, setShowAdd] = useState(false);
-	const [editingId, setEditingId] = useState(null);
-	const [editName, setEditName] = useState("");
-	const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-
-	useEffect(() => {
-		fetchSquads();
-	}, [fetchSquads]);
-
-	const handleCreate = async () => {
-		const t = newName.trim();
-		if (!t) return;
-		await createSquad(t);
-		setNewName("");
-		setShowAdd(false);
-	};
-
-	const handleRename = async (id) => {
-		const t = editName.trim();
-		if (t) await renameSquad(id, t);
-		setEditingId(null);
-		setEditName("");
-	};
-
-	const handleDelete = async (id) => {
-		await deleteSquad(id);
-		if (activeSquad === id) onSelectSquad(null);
-		setConfirmDeleteId(null);
-	};
-
-	return (
-		<div className='flex flex-col gap-0 divide-y divide-lines/10'>
-			{squads.length === 0 && (
-				<p className='font-mono text-[9px] text-lines/30 text-center py-6'>
-					No squads yet.
-				</p>
-			)}
-			{squads.map((sq) =>
-				editingId === sq._id ?
-					<div
-						key={sq._id}
-						className='flex items-center gap-2 px-4 py-2.5'>
-						<input
-							autoFocus
-							value={editName}
-							onChange={(e) => setEditName(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter") handleRename(sq._id);
-								if (e.key === "Escape") setEditingId(null);
-							}}
-							className='flex-1 font-mono text-[10px] bg-blk/60 border border-lines/20 focus:border-btn/60 text-fontz px-2 py-1 rounded outline-none'
-						/>
-						<button
-							onClick={() => handleRename(sq._id)}
-							disabled={!editName.trim()}
-							className='w-6 h-6 flex items-center justify-center bg-btn/70 hover:bg-btn disabled:opacity-30 text-neutral-900 rounded-sm transition-colors'>
-							<FontAwesomeIcon
-								icon={faCheck}
-								className='text-[7px]'
-							/>
-						</button>
-						<button
-							onClick={() => setEditingId(null)}
-							className='w-6 h-6 flex items-center justify-center text-neutral-600 hover:text-neutral-400 transition-colors'>
-							<FontAwesomeIcon
-								icon={faTimes}
-								className='text-[7px]'
-							/>
-						</button>
-					</div>
-				: confirmDeleteId === sq._id ?
-					<div
-						key={sq._id}
-						className='flex flex-col gap-2 px-4 py-2.5 bg-red-950/20'>
-						<p className='font-mono text-[9px] text-lines/50'>
-							Delete <span className='text-red-400'>{sq.name}</span>? Cannot be
-							undone.
-						</p>
-						<div className='flex gap-2'>
-							<button
-								onClick={() => setConfirmDeleteId(null)}
-								className='flex-1 font-mono text-[9px] tracking-widest uppercase border border-lines/20 hover:border-lines/40 text-lines/40 hover:text-fontz py-1 rounded transition-colors'>
-								Cancel
-							</button>
-							<button
-								onClick={() => handleDelete(sq._id)}
-								className='flex-1 font-mono text-[9px] tracking-widest uppercase bg-red-700/80 hover:bg-red-700 text-white py-1 rounded transition-colors'>
-								Confirm
-							</button>
-						</div>
-					</div>
-				:	<div
-						key={sq._id}
-						className={[
-							"flex items-center gap-2 px-4 py-2.5 transition-colors",
-							activeSquad === sq._id ? "bg-btn/10" : "hover:bg-lines/5",
-						].join(" ")}>
-						<button
-							onClick={() =>
-								onSelectSquad(activeSquad === sq._id ? null : sq._id)
-							}
-							className='flex-1 text-left'>
-							<span
-								className={[
-									"font-mono text-[10px] tracking-wide",
-									activeSquad === sq._id ?
-										"text-btn"
-									:	"text-fontz/70 hover:text-fontz",
-								].join(" ")}>
-								{sq.name}
-							</span>
-						</button>
-						<button
-							onClick={() => {
-								setEditingId(sq._id);
-								setEditName(sq.name);
-							}}
-							className='w-5 h-5 flex items-center justify-center text-neutral-700 hover:text-btn transition-colors'>
-							<FontAwesomeIcon
-								icon={faPen}
-								className='text-[7px]'
-							/>
-						</button>
-						<button
-							onClick={() => setConfirmDeleteId(sq._id)}
-							className='w-5 h-5 flex items-center justify-center text-neutral-700 hover:text-red-400 transition-colors'>
-							<FontAwesomeIcon
-								icon={faTrash}
-								className='text-[7px]'
-							/>
-						</button>
-					</div>,
-			)}
-			<div className='px-4 py-3'>
-				{showAdd ?
-					<div className='flex items-center gap-2'>
-						<input
-							autoFocus
-							value={newName}
-							onChange={(e) => setNewName(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter") handleCreate();
-								if (e.key === "Escape") setShowAdd(false);
-							}}
-							placeholder='Squad name'
-							className='flex-1 font-mono text-[10px] bg-blk/60 border border-lines/20 focus:border-btn/60 text-fontz placeholder-lines/30 px-2 py-1 rounded outline-none'
-						/>
-						<button
-							onClick={handleCreate}
-							disabled={!newName.trim()}
-							className='w-6 h-6 flex items-center justify-center bg-btn/70 hover:bg-btn disabled:opacity-30 text-neutral-900 rounded-sm transition-colors'>
-							<FontAwesomeIcon
-								icon={faCheck}
-								className='text-[7px]'
-							/>
-						</button>
-						<button
-							onClick={() => setShowAdd(false)}
-							className='w-6 h-6 flex items-center justify-center text-neutral-600 hover:text-neutral-400 transition-colors'>
-							<FontAwesomeIcon
-								icon={faTimes}
-								className='text-[7px]'
-							/>
-						</button>
-					</div>
-				:	<button
-						onClick={() => setShowAdd(true)}
-						className='w-full flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-widest uppercase border border-lines/20 hover:border-btn/40 text-lines/40 hover:text-btn py-1.5 rounded transition-colors'>
-						<FontAwesomeIcon
-							icon={faPlus}
-							className='text-[7px]'
-						/>
-						New Squad
-					</button>
-				}
-			</div>
-		</div>
-	);
-}
-SquadsSheet.propTypes = {
-	activeSquad: PropTypes.string,
-	onSelectSquad: PropTypes.func.isRequired,
-};
 
 function OperatorsPage() {
 	const { setSelectedOperator, operators, fetchOperators } =
 		useOperatorsStore();
-	const { squads, fetchSquads } = useSquadStore();
 	const { teams, fetchTeams } = useTeamsStore();
 	const { open, SheetEl } = usePageSheet();
 	const [dataUpdated, setDataUpdated] = useState(false);
 	const [selectedOp, setSelectedOp] = useState(null);
-	const [activeSquad, setActiveSquad] = useState(null);
 	const refreshData = () => setDataUpdated((p) => !p);
-	const activeSquadName =
-		squads.find((s) => s._id === activeSquad)?.name ?? "Active";
-
 	useEffect(() => {
 		fetchOperators();
-		fetchSquads();
 		fetchTeams();
-	}, [fetchOperators, fetchSquads, fetchTeams, dataUpdated]);
+	}, [fetchOperators, fetchTeams, dataUpdated]);
 
 	// Auto-select first active operator
 	useEffect(() => {
@@ -1113,23 +839,15 @@ function OperatorsPage() {
 		setSelectedOperator(op._id);
 	};
 
-	// Grouping helpers
-	const getSquadId = (op) =>
-		(typeof op.squad === "object" ? op.squad?._id : op.squad) ?? null;
-	const regular = operators;
-	const filtered =
-		activeSquad ?
-			regular.filter((o) => getSquadId(o) === activeSquad)
-		:	regular;
-	const active = filtered.filter((o) => {
+	const active = operators.filter((o) => {
 		const s = o.status?.toLowerCase();
 		return s !== "kia" && s !== "injured" && s !== "wounded";
 	});
-	const wia = filtered.filter((o) => {
+	const wia = operators.filter((o) => {
 		const s = o.status?.toLowerCase();
 		return s === "injured" || s === "wounded";
 	});
-	const kia = filtered.filter((o) => o.status?.toLowerCase() === "kia");
+	const kia = operators.filter((o) => o.status?.toLowerCase() === "kia");
 
 	const statusDot = (op) => {
 		const s = op.status?.toLowerCase();
@@ -1228,6 +946,7 @@ function OperatorsPage() {
 							<Infirmary
 								dataUpdated={dataUpdated}
 								refreshData={refreshData}
+								openSheet={open}
 							/>
 						</Panel>
 						<Panel
@@ -1237,6 +956,7 @@ function OperatorsPage() {
 							<Memorial
 								dataUpdated={dataUpdated}
 								refreshData={refreshData}
+								openSheet={open}
 							/>
 						</Panel>
 					</div>
@@ -1253,24 +973,6 @@ function OperatorsPage() {
 							Operators
 						</span>
 						<div className='ml-auto flex items-center gap-0.5 pr-2'>
-	<button
-								onClick={() =>
-									open(
-										"left",
-										<SquadsSheet
-											activeSquad={activeSquad}
-											onSelectSquad={(id) => {
-												setActiveSquad(id);
-												useSheetStore.getState().closeSheet();
-											}}
-										/>,
-										"Squads",
-										"Manage fire team squads",
-									)
-								}
-								className='font-mono text-[8px] tracking-widest uppercase px-2 py-1 border border-neutral-700/60 hover:border-btn/50 text-neutral-600 hover:text-btn rounded-sm transition-all'>
-								Squads
-							</button>
 							<button
 								onClick={() =>
 									open(
@@ -1293,7 +995,7 @@ function OperatorsPage() {
 					{/* Operator rows */}
 					<div className='flex-1 overflow-y-auto '>
 						<RowSection
-							label={activeSquadName}
+							label='Active'
 							color='text-neutral-600'
 							ops={active}
 						/>
@@ -1351,12 +1053,14 @@ function OperatorsPage() {
 							<Infirmary
 								dataUpdated={dataUpdated}
 								refreshData={refreshData}
+								openSheet={open}
 							/>
 						</div>
 						<div className='flex-1 overflow-y-auto max-h-32'>
 							<Memorial
 								dataUpdated={dataUpdated}
 								refreshData={refreshData}
+								openSheet={open}
 							/>
 						</div>
 					</div>

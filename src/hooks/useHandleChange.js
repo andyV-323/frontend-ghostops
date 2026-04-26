@@ -9,16 +9,6 @@ const useHandleChange = () => {
 
 		if (!selectedOperator) return;
 
-		if (["support", "aviator"].includes(name)) {
-			setSelectedOperator({
-				...selectedOperator,
-				support: false,
-				aviator: false,
-				[name]: checked,
-			});
-			return;
-		}
-
 		// Gear images
 		if (name === "gear" || name === "secondaryGear") {
 			setSelectedOperator({

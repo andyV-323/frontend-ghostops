@@ -1,13 +1,8 @@
-// Roster.jsx — compact card grid + squad tab filter
-import { useEffect, useRef, useState } from "react";
+// Roster.jsx — compact card grid
+import { useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUserPlus, faChevronRight, faPlus, faCheck, faTimes, faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
-import {
-	useOperatorsStore,
-	useTeamsStore,
-	useSheetStore,
-	useSquadStore,
-} from "@/zustand";
+import { faUserPlus, faChevronRight } from "@fortawesome/free-solid-svg-icons";
+import { useOperatorsStore, useTeamsStore, useSheetStore } from "@/zustand";
 import { PropTypes } from "prop-types";
 import { NewOperatorForm, AssignTeamSheet } from "@/components/forms";
 import { OperatorImageView } from "@/components";
@@ -41,7 +36,7 @@ const STATUS_MAP = {
 };
 const getStatus = (s = "") => STATUS_MAP[s.toLowerCase()] ?? STATUS_MAP.kia;
 
-// ─── Team badge (reads teams from store) ──────────────────────
+// ─── Team badge ───────────────────────────────────────────────
 function TeamBadge({ operator }) {
 	const { teams } = useTeamsStore();
 	const team = teams.find((t) =>
@@ -67,10 +62,7 @@ function OperatorCard({ operator, openSheet, fetchTeams }) {
 				setSelectedOperator(operator._id);
 				openSheet(
 					"left",
-					<OperatorImageView
-						operator={operator}
-						openSheet={openSheet}
-					/>,
+					<OperatorImageView operator={operator} openSheet={openSheet} />,
 				);
 			}}>
 			{/* Avatar */}
@@ -81,20 +73,12 @@ function OperatorCard({ operator, openSheet, fetchTeams }) {
 							"w-full h-full object-cover object-top",
 							operator.status === "KIA" ? "grayscale opacity-50" : "",
 						].join(" ")}
-						onError={(e) => {
-							e.currentTarget.src = "/ghost/Default.png";
-						}}
+						onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
 						src={operator.imageKey || operator.image || "/ghost/Default.png"}
 						alt={operator.callSign || "Operator"}
 					/>
 				</div>
-				<span
-					className={[
-						"absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-blk",
-						status.dot,
-						status.glow,
-					].join(" ")}
-				/>
+				<span className={["absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-blk", status.dot, status.glow].join(" ")} />
 			</div>
 
 			{/* Callsign */}
@@ -112,7 +96,7 @@ function OperatorCard({ operator, openSheet, fetchTeams }) {
 				{activeClasses[operator._id] || operator.class || "—"}
 			</span>
 
-			{/* Team badge — click to reassign */}
+			{/* Team badge */}
 			<div
 				className='w-full mt-0.5'
 				onClick={(e) => {
@@ -132,123 +116,26 @@ function OperatorCard({ operator, openSheet, fetchTeams }) {
 				}}>
 				<span className='flex items-center justify-center gap-1 w-full font-mono text-[8px] tracking-widest uppercase px-1.5 py-0.5 rounded border border-lines/15 hover:border-btn hover:text-btn transition-colors cursor-pointer'>
 					<TeamBadge operator={operator} />
-					<FontAwesomeIcon
-						icon={faChevronRight}
-						className='text-[6px] opacity-40'
-					/>
+					<FontAwesomeIcon icon={faChevronRight} className='text-[6px] opacity-40' />
 				</span>
 			</div>
 		</div>
 	);
 }
 
-// ─── Squad edit sheet ──────────────────────────────────────────
-function SquadEditSheet({ squad, onClose }) {
-	const { renameSquad, deleteSquad } = useSquadStore();
-	const [name, setName] = useState(squad.name);
-	const [confirmDelete, setConfirmDelete] = useState(false);
-
-	const handleSave = async () => {
-		const trimmed = name.trim();
-		if (!trimmed || trimmed === squad.name) { onClose(); return; }
-		await renameSquad(squad._id, trimmed);
-		onClose();
-	};
-
-	const handleDelete = async () => {
-		await deleteSquad(squad._id);
-		onClose();
-	};
-
-	return (
-		<div className='flex flex-col gap-4 p-4'>
-			<div>
-				<label className='font-mono text-[8px] tracking-[0.2em] uppercase text-lines/40 block mb-1'>
-					Squad Name
-				</label>
-				<input
-					autoFocus
-					value={name}
-					onChange={(e) => setName(e.target.value)}
-					onKeyDown={(e) => e.key === "Enter" && handleSave()}
-					className='w-full font-mono text-[11px] bg-blk/60 border border-lines/20 focus:border-btn/60 text-fontz px-3 py-2 rounded outline-none transition-colors'
-				/>
-			</div>
-			<button
-				onClick={handleSave}
-				disabled={!name.trim()}
-				className='w-full flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-widest uppercase bg-btn/80 hover:bg-btn disabled:opacity-30 disabled:cursor-not-allowed text-blk py-2 rounded transition-colors'>
-				<FontAwesomeIcon icon={faCheck} className='text-[8px]' />
-				Save
-			</button>
-			<div className='border-t border-lines/10 pt-4'>
-				{!confirmDelete ? (
-					<button
-						onClick={() => setConfirmDelete(true)}
-						className='w-full flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-widest uppercase border border-red-900/40 text-red-400/60 hover:text-red-400 hover:border-red-500/50 hover:bg-red-900/10 py-2 rounded transition-colors'>
-						<FontAwesomeIcon icon={faTrash} className='text-[8px]' />
-						Delete Squad
-					</button>
-				) : (
-					<div className='flex flex-col gap-2'>
-						<p className='font-mono text-[9px] text-lines/50 text-center'>
-							Delete <span className='text-red-400'>{squad.name}</span>? This cannot be undone.
-						</p>
-						<div className='flex gap-2'>
-							<button
-								onClick={() => setConfirmDelete(false)}
-								className='flex-1 font-mono text-[9px] tracking-widest uppercase border border-lines/20 hover:border-lines/40 text-lines/40 hover:text-fontz py-1.5 rounded transition-colors'>
-								Cancel
-							</button>
-							<button
-								onClick={handleDelete}
-								className='flex-1 font-mono text-[9px] tracking-widest uppercase bg-red-700/80 hover:bg-red-700 text-white py-1.5 rounded transition-colors'>
-								Confirm Delete
-							</button>
-						</div>
-					</div>
-				)}
-			</div>
-		</div>
-	);
-}
-SquadEditSheet.propTypes = { squad: PropTypes.object.isRequired, onClose: PropTypes.func.isRequired };
-
 // ─── Main component ───────────────────────────────────────────
 const TabbedRoster = ({ dataUpdated, openSheet }) => {
-	const [activeSquadId, setActiveSquadId] = useState(null);
-
 	const { operators, fetchOperators } = useOperatorsStore();
-	const { teams, fetchTeams } = useTeamsStore();
-	const { squads, fetchSquads, createSquad } = useSquadStore();
-	const [showSquadInput, setShowSquadInput] = useState(false);
-	const [newSquadName, setNewSquadName] = useState("");
-	const squadInputRef = useRef(null);
+	const { fetchTeams } = useTeamsStore();
 
 	useEffect(() => {
 		fetchOperators();
 		fetchTeams();
-		fetchSquads();
-	}, [fetchOperators, fetchTeams, fetchSquads, dataUpdated]);
-
-	const handleCreateSquad = async () => {
-		const name = newSquadName.trim();
-		if (!name) return;
-		await createSquad(name);
-		setNewSquadName("");
-		setShowSquadInput(false);
-	};
-
-	const currentOperators =
-		activeSquadId ?
-			operators.filter(
-				(op) => op.squad === activeSquadId || op.squad?._id === activeSquadId,
-			)
-		:	operators;
+	}, [fetchOperators, fetchTeams, dataUpdated]);
 
 	return (
 		<div className='flex flex-col h-full'>
-			{/* ── Header bar ─────────────────────────────────────── */}
+			{/* ── Header ──────────────────────────────────────── */}
 			<div className='shrink-0 flex items-center border-b border-lines/20 bg-blk/40 px-3 py-2'>
 				<span className='font-mono text-[10px] tracking-widest uppercase text-btn'>
 					Operators
@@ -261,130 +148,15 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 					}
 					className='w-6 h-6 flex items-center justify-center bg-btn hover:bg-highlight text-blk rounded transition-colors'
 					title='New Operator'>
-					<FontAwesomeIcon
-						icon={faUserPlus}
-						className='text-[9px]'
-					/>
+					<FontAwesomeIcon icon={faUserPlus} className='text-[9px]' />
 				</button>
 			</div>
 
-			{/* ── Squad tabs ──────────────────────────────────────── */}
-			{squads.length > 0 && (
-				<div className='shrink-0 flex items-center border-b border-lines/10 bg-blk/30 px-2 overflow-x-auto scrollbar-none'>
-					<button
-						onClick={() => setActiveSquadId(null)}
-						className={[
-							"font-mono text-[9px] tracking-widest uppercase px-3 py-2 border-b-2 shrink-0 transition-all duration-150",
-							activeSquadId === null ?
-								"border-btn/60 text-btn/80 bg-btn/5"
-							:	"border-transparent text-lines/35 hover:text-fontz hover:border-lines/25",
-						].join(" ")}>
-						All
-					</button>
-					{squads.map((sq) => (
-						<div key={sq._id} className='flex items-center shrink-0'>
-							<button
-								onClick={() => setActiveSquadId(activeSquadId === sq._id ? null : sq._id)}
-								className={[
-									"font-mono text-[9px] tracking-widest uppercase px-3 py-2 border-b-2 transition-all duration-150",
-									activeSquadId === sq._id ?
-										"border-btn text-btn bg-btn/5"
-									:	"border-transparent text-lines/35 hover:text-fontz hover:border-lines/25",
-								].join(" ")}>
-								{sq.name}
-							</button>
-							<button
-								onClick={() => openSheet(
-									"left",
-									<SquadEditSheet
-										squad={sq}
-										onClose={() => {
-											useSheetStore.getState().closeSheet();
-											if (activeSquadId === sq._id) setActiveSquadId(null);
-										}}
-									/>,
-									"Edit Squad",
-									sq.name,
-								)}
-								title='Edit squad'
-								className='w-5 h-5 -ml-1 mr-1 flex items-center justify-center text-lines/20 hover:text-btn/70 transition-colors'>
-								<FontAwesomeIcon icon={faPen} className='text-[7px]' />
-							</button>
-						</div>
-					))}
-					<div className='flex items-center ml-1 shrink-0'>
-						{showSquadInput ? (
-							<form
-								className='flex items-center gap-1 py-1'
-								onSubmit={(e) => { e.preventDefault(); handleCreateSquad(); }}>
-								<input
-									ref={squadInputRef}
-									autoFocus
-									value={newSquadName}
-									onChange={(e) => setNewSquadName(e.target.value)}
-									placeholder='Squad name'
-									className='font-mono text-[9px] bg-blk/60 border border-btn/40 text-fontz placeholder-lines/25 px-2 py-0.5 rounded-sm outline-none w-28 focus:border-btn/70'
-								/>
-								<button type='submit' disabled={!newSquadName.trim()}
-									className='w-5 h-5 flex items-center justify-center bg-btn/80 hover:bg-btn disabled:opacity-30 disabled:cursor-not-allowed text-blk rounded-sm transition-colors'>
-									<FontAwesomeIcon icon={faCheck} className='text-[8px]' />
-								</button>
-								<button type='button' onClick={() => { setShowSquadInput(false); setNewSquadName(""); }}
-									className='w-5 h-5 flex items-center justify-center border border-lines/20 hover:border-lines/30 text-lines/35 hover:text-fontz rounded-sm transition-colors'>
-									<FontAwesomeIcon icon={faTimes} className='text-[8px]' />
-								</button>
-							</form>
-						) : (
-							<button
-								onClick={() => setShowSquadInput(true)}
-								className='w-6 h-6 flex items-center justify-center text-lines/25 hover:text-btn border border-transparent hover:border-lines/20 rounded-sm transition-colors'
-								title='New squad'>
-								<FontAwesomeIcon icon={faPlus} className='text-[8px]' />
-							</button>
-						)}
-					</div>
-				</div>
-			)}
-			{squads.length === 0 && (
-				<div className='shrink-0 flex items-center border-b border-lines/10 bg-blk/30 px-3 py-1.5'>
-					{showSquadInput ? (
-						<form
-							className='flex items-center gap-1'
-							onSubmit={(e) => { e.preventDefault(); handleCreateSquad(); }}>
-							<input
-								ref={squadInputRef}
-								autoFocus
-								value={newSquadName}
-								onChange={(e) => setNewSquadName(e.target.value)}
-								placeholder='Squad name'
-								className='font-mono text-[9px] bg-blk/60 border border-btn/40 text-fontz placeholder-lines/25 px-2 py-0.5 rounded-sm outline-none w-28 focus:border-btn/70'
-							/>
-							<button type='submit' disabled={!newSquadName.trim()}
-								className='w-5 h-5 flex items-center justify-center bg-btn/80 hover:bg-btn disabled:opacity-30 disabled:cursor-not-allowed text-blk rounded-sm transition-colors'>
-								<FontAwesomeIcon icon={faCheck} className='text-[8px]' />
-							</button>
-							<button type='button' onClick={() => { setShowSquadInput(false); setNewSquadName(""); }}
-								className='w-5 h-5 flex items-center justify-center border border-lines/20 hover:border-lines/30 text-lines/35 hover:text-fontz rounded-sm transition-colors'>
-								<FontAwesomeIcon icon={faTimes} className='text-[8px]' />
-							</button>
-						</form>
-					) : (
-						<button
-							onClick={() => setShowSquadInput(true)}
-							className='flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase text-lines/30 hover:text-btn transition-colors'
-							title='New squad'>
-							<FontAwesomeIcon icon={faPlus} className='text-[8px]' />
-							New Squad
-						</button>
-					)}
-				</div>
-			)}
-
-			{/* ── Card grid ─────────────────────────────────────── */}
+			{/* ── Card grid ─────────────────────────────────── */}
 			<div className='flex-1 min-h-0 overflow-y-auto p-3'>
-				{currentOperators.length > 0 ? (
+				{operators.length > 0 ? (
 					<div className='grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2'>
-						{currentOperators.map((operator) => (
+						{operators.map((operator) => (
 							<OperatorCard
 								key={operator._id}
 								operator={operator}
@@ -396,7 +168,7 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 				) : (
 					<div className='flex items-center justify-center h-32'>
 						<p className='font-mono text-[10px] tracking-widest text-lines/25 uppercase text-center'>
-							{activeSquadId ? "No operators assigned to this squad." : "Click + to add your first operator."}
+							Click + to add your first operator.
 						</p>
 					</div>
 				)}
@@ -406,9 +178,7 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 };
 
 // ─── PropTypes ────────────────────────────────────────────────
-TeamBadge.propTypes = {
-	operator: PropTypes.object.isRequired,
-};
+TeamBadge.propTypes = { operator: PropTypes.object.isRequired };
 OperatorCard.propTypes = {
 	operator: PropTypes.object.isRequired,
 	openSheet: PropTypes.func.isRequired,
