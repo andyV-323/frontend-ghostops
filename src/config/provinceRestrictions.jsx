@@ -8,19 +8,19 @@
 //   - source: 'terrain' | 'threat' | 'weather' | 'threat/weather' | 'terrain/weather'
 //   - status tiers: 'nominal' | 'degraded' | 'denied'
 //   - unlockable: true means threat-sourced, removable via campaign progression
-//   - Child resolution (syncShot, intelGrenades inherit from crossCom) is
+//   - Child resolution (sonarVision, intelGrenades inherit from crossCom) is
 //     handled in restrictionUtils.js — not here
 //
 // Restriction keys:
 //   isrDrone        — ISR drone / minimap + strike designator + Armaros
 //   crossCom        — Cross-Com system (parent)
-//     syncShot      — child of crossCom
+//     sonarVision      — child of crossCom
 //     intelGrenades — child of crossCom
 //   aviation        — helicopters and fixed-wing
 //   vehicle         — ground vehicles
-//   personalDrone   — handheld quadcopter recon drone
+//   reconDrone   — handheld quadcopter recon drone
 //   nvgThermal      — NVG and thermal optics
-//   satcom          — SATCOM / fire support comms
+//   uplinkProtocol          — SATCOM / fire support comms
 //   lrOptics        — long-range optics / binoculars
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -71,22 +71,34 @@ export const PROVINCE_RESTRICTIONS = {
 			"Dense jungle canopy limits drone line-of-sight. Ash fall coats optical sensors.",
 		),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: nom(),
 		vehicle: deg(
 			SOURCE.TERRAIN,
 			"Unstable volcanic terrain and lava channels block off-road routes.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.TERRAIN_WEATHER,
 			"Canopy blocks low-altitude flight paths. Ash degrades sensors.",
+		),
+		syncDrone: deg(
+			SOURCE.TERRAIN_WEATHER,
+			"Canopy and ash interference degrade sync shot coordination range.",
+		),
+		combatDrone: deg(
+			SOURCE.WEATHER,
+			"Ash coats sensors and degrades rotor performance.",
+		),
+		supplyDrone: deg(
+			SOURCE.WEATHER,
+			"Ash and volcanic heat shimmer corrupt supply drone navigation accuracy.",
 		),
 		nvgThermal: deg(
 			SOURCE.WEATHER,
 			"Ash coats lenses. Heat shimmer from volcanic vents degrades thermal.",
 		),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: deg(SOURCE.WEATHER, "Ash fall and extreme humidity fog lenses."),
 	},
 
@@ -97,22 +109,34 @@ export const PROVINCE_RESTRICTIONS = {
 			"Dense canopy and ash fall degrade ISR optical feed.",
 		),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: nom(),
 		vehicle: deg(
 			SOURCE.TERRAIN,
 			"Lava channels create impassable barriers across major routes.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.TERRAIN_WEATHER,
 			"Canopy blocks flight paths. Ash degrades sensors.",
+		),
+		syncDrone: deg(
+			SOURCE.TERRAIN_WEATHER,
+			"Canopy cover and ash fall reduce sync shot drone range.",
+		),
+		combatDrone: deg(
+			SOURCE.WEATHER,
+			"Ash and heat shimmer degrade combat drone optics and rotor efficiency.",
+		),
+		supplyDrone: deg(
+			SOURCE.WEATHER,
+			"Lava heat zones and ash corrupt supply drone navigation.",
 		),
 		nvgThermal: deg(
 			SOURCE.WEATHER,
 			"Heat shimmer from lava flows corrupts thermal baseline.",
 		),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: deg(SOURCE.WEATHER, "Ash and humidity degrade lens clarity."),
 	},
 
@@ -123,22 +147,34 @@ export const PROVINCE_RESTRICTIONS = {
 			"Severe heat shimmer over lava terrain corrupts long-range optical feed.",
 		),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: nom(),
 		vehicle: den(
 			SOURCE.TERRAIN,
 			"Active lava flows and zero road network. Ground vehicle movement impossible.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.WEATHER,
 			"Extreme ambient heat degrades sensors. Ash particulates damage rotors.",
+		),
+		syncDrone: den(
+			SOURCE.WEATHER,
+			"Extreme heat and dense ash destroy drone electronics. Sync shot drone non-functional.",
+		),
+		combatDrone: den(
+			SOURCE.WEATHER,
+			"Ambient volcanic heat renders combat drone electronics non-functional.",
+		),
+		supplyDrone: den(
+			SOURCE.WEATHER,
+			"Extreme heat and ash — supply drone cannot operate in active lava zone.",
 		),
 		nvgThermal: den(
 			SOURCE.WEATHER,
 			"Ambient volcanic heat saturates thermal imaging. Ash and heat shimmer destroy NVG clarity. Both systems non-functional.",
 		),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: den(
 			SOURCE.WEATHER,
 			"Heat shimmer over lava terrain renders long-range ranging completely unreliable.",
@@ -152,19 +188,31 @@ export const PROVINCE_RESTRICTIONS = {
 			"Dense jungle canopy limits drone line-of-sight. Optical feed unreliable below canopy level.",
 		),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: nom(),
 		vehicle: deg(
 			SOURCE.TERRAIN,
 			"Road network limited to primary routes. Dense jungle prevents cross-country movement.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.TERRAIN,
 			"Canopy blocks low-altitude flight paths. Effective range severely reduced.",
 		),
+		syncDrone: deg(
+			SOURCE.TERRAIN,
+			"Dense canopy blocks sync shot drone LOS and reduces effective coordination range.",
+		),
+		combatDrone: deg(
+			SOURCE.TERRAIN,
+			"Canopy limits combat drone targeting angles and loiter altitude.",
+		),
+		supplyDrone: deg(
+			SOURCE.TERRAIN,
+			"Canopy obstructs precise supply drop delivery zones.",
+		),
 		nvgThermal: nom(),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: deg(SOURCE.WEATHER, "Extreme humidity fogs lens coatings."),
 	},
 
@@ -172,19 +220,28 @@ export const PROVINCE_RESTRICTIONS = {
 	DriftwoodIslets: {
 		isrDrone: deg(SOURCE.TERRAIN, "Dense jungle canopy degrades drone LOS."),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: nom(),
 		vehicle: den(
 			SOURCE.TERRAIN,
 			"Island terrain — no vehicle access. All movement on foot after insertion.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.TERRAIN,
 			"Canopy limits effective drone range and flight paths.",
 		),
+		syncDrone: deg(
+			SOURCE.TERRAIN,
+			"Dense island canopy limits sync shot drone range.",
+		),
+		combatDrone: deg(
+			SOURCE.TERRAIN,
+			"Canopy restricts combat drone loiter altitude and targeting.",
+		),
+		supplyDrone: nom(),
 		nvgThermal: nom(),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: deg(
 			SOURCE.WEATHER,
 			"Humidity degrades optics in rain forest environment.",
@@ -195,19 +252,31 @@ export const PROVINCE_RESTRICTIONS = {
 	WildCoast: {
 		isrDrone: nom(),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: nom(),
 		vehicle: deg(
 			SOURCE.TERRAIN,
 			"Cliff and coastal terrain limits off-road ground movement.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.WEATHER,
 			"High coastal wind shear destabilizes small drone flight. Sea fog degrades optical feed.",
 		),
+		syncDrone: deg(
+			SOURCE.WEATHER,
+			"Coastal wind shear destabilizes sync shot drone flight.",
+		),
+		combatDrone: deg(
+			SOURCE.WEATHER,
+			"Wind affects combat drone stability during targeting approach.",
+		),
+		supplyDrone: deg(
+			SOURCE.WEATHER,
+			"Coastal wind reduces supply drop delivery accuracy.",
+		),
 		nvgThermal: nom(),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: deg(
 			SOURCE.WEATHER,
 			"Sea fog events reduce effective range. Salt spray fogs lenses.",
@@ -218,19 +287,31 @@ export const PROVINCE_RESTRICTIONS = {
 	SmugglersCoves: {
 		isrDrone: nom(),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: nom(),
 		vehicle: deg(
 			SOURCE.TERRAIN,
 			"Cliff and coastal terrain constrains ground vehicle routes.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.WEATHER,
 			"Coastal wind and sea fog degrade small drone operations.",
 		),
+		syncDrone: deg(
+			SOURCE.WEATHER,
+			"Coastal wind and sea fog affect sync shot drone operations.",
+		),
+		combatDrone: deg(
+			SOURCE.WEATHER,
+			"Wind conditions reduce combat drone stability and targeting.",
+		),
+		supplyDrone: deg(
+			SOURCE.WEATHER,
+			"Sea fog and wind reduce supply drone accuracy.",
+		),
 		nvgThermal: nom(),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: deg(SOURCE.WEATHER, "Sea fog reduces effective optic range."),
 	},
 
@@ -241,7 +322,7 @@ export const PROVINCE_RESTRICTIONS = {
 			"Persistent marsh fog ceiling limits drone altitude and optical clarity.",
 		),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: den(
 			SOURCE.THREAT,
@@ -252,12 +333,18 @@ export const PROVINCE_RESTRICTIONS = {
 			SOURCE.TERRAIN,
 			"Waterlogged marsh terrain. Off-road movement restricted to established tracks.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.WEATHER,
 			"Low fog ceiling limits altitude. Moisture degrades sensor performance.",
 		),
+		syncDrone: nom(),
+		combatDrone: nom(),
+		supplyDrone: deg(
+			SOURCE.WEATHER,
+			"Marsh fog reduces supply drone navigation accuracy.",
+		),
 		nvgThermal: nom(),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: deg(
 			SOURCE.WEATHER,
 			"Marsh fog significantly reduces effective optic range.",
@@ -268,19 +355,22 @@ export const PROVINCE_RESTRICTIONS = {
 	WhalersBay: {
 		isrDrone: nom(),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: nom(),
 		vehicle: deg(
 			SOURCE.TERRAIN,
 			"Mountain and cliff terrain constrains vehicle movement to established roads.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.WEATHER,
 			"Coastal and mountain wind affects small drone stability.",
 		),
+		syncDrone: nom(),
+		combatDrone: nom(),
+		supplyDrone: nom(),
 		nvgThermal: nom(),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: nom(),
 	},
 
@@ -294,7 +384,7 @@ export const PROVINCE_RESTRICTIONS = {
 			SOURCE.TERRAIN,
 			"Mountain terrain creates line-of-sight gaps between operators on opposite sides of ridgelines.",
 		),
-		syncShot: deg(
+		sonarVision: deg(
 			SOURCE.TERRAIN,
 			"LOS breaks in mountain passes prevent reliable sync shot coordination.",
 		),
@@ -310,15 +400,27 @@ export const PROVINCE_RESTRICTIONS = {
 			SOURCE.TERRAIN_WEATHER,
 			"Snow and ice limit wheeled vehicle movement. Mountain passes may be impassable in storm.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.WEATHER,
 			"Blizzard grounds small drones. Cold degrades battery life significantly.",
+		),
+		syncDrone: deg(
+			SOURCE.WEATHER,
+			"Blizzard and cold degrade sync shot drone battery life and flight stability.",
+		),
+		combatDrone: deg(
+			SOURCE.WEATHER,
+			"Blizzard conditions impair combat drone weapon release and sensors.",
+		),
+		supplyDrone: deg(
+			SOURCE.WEATHER,
+			"Blizzard reduces supply drop accuracy. Cold may damage cargo integrity.",
 		),
 		nvgThermal: deg(
 			SOURCE.WEATHER,
 			"Electronics fail faster in extreme cold. Battery life critically reduced.",
 		),
-		satcom: deg(
+		uplinkProtocol: deg(
 			SOURCE.TERRAIN,
 			"Mountain terrain creates SATCOM dead zones. Fire support comms intermittent.",
 		),
@@ -340,7 +442,7 @@ export const PROVINCE_RESTRICTIONS = {
 			"Active enemy EW — Control Stations Tiger 02/03 and Drone Stations W051/052 provide full-spectrum jamming coverage.",
 			true,
 		),
-		syncShot: den(
+		sonarVision: den(
 			SOURCE.THREAT,
 			"Inherited — Cross-Com denied by active jamming. Sync shot coordination impossible.",
 			true,
@@ -355,13 +457,28 @@ export const PROVINCE_RESTRICTIONS = {
 			SOURCE.TERRAIN,
 			"Waterlogged marsh terrain. Ground vehicles restricted to established causeways.",
 		),
-		personalDrone: den(
+		reconDrone: den(
 			SOURCE.THREAT_WEATHER,
 			"Active jamming disrupts drone control link. Marsh fog ceiling compounds restriction.",
 			true,
 		),
+		syncDrone: den(
+			SOURCE.THREAT,
+			"Active EW jamming severs sync shot drone control link. Asset denied.",
+			true,
+		),
+		combatDrone: den(
+			SOURCE.THREAT,
+			"Active jamming disrupts combat drone command and weapon link. Asset denied.",
+			true,
+		),
+		supplyDrone: den(
+			SOURCE.THREAT,
+			"EW jamming disrupts supply drone navigation and control link.",
+			true,
+		),
 		nvgThermal: nom(),
-		satcom: deg(
+		uplinkProtocol: deg(
 			SOURCE.THREAT,
 			"Enemy EW presence degrades SATCOM uplink quality. Fire support coordination unreliable.",
 			true,
@@ -379,7 +496,7 @@ export const PROVINCE_RESTRICTIONS = {
 			SOURCE.TERRAIN,
 			"Mountain ridgelines create LOS gaps between split elements.",
 		),
-		syncShot: deg(
+		sonarVision: deg(
 			SOURCE.TERRAIN,
 			"LOS breaks in mountain terrain prevent reliable sync coordination.",
 		),
@@ -395,15 +512,27 @@ export const PROVINCE_RESTRICTIONS = {
 			SOURCE.TERRAIN_WEATHER,
 			"Snow and mountain passes restrict ground movement.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.WEATHER,
 			"Wind and blizzard conditions ground small drones. Cold drains batteries rapidly.",
+		),
+		syncDrone: deg(
+			SOURCE.WEATHER,
+			"Blizzard conditions degrade sync shot drone flight and battery performance.",
+		),
+		combatDrone: deg(
+			SOURCE.WEATHER,
+			"Wind and cold impair combat drone flight and weapons systems.",
+		),
+		supplyDrone: deg(
+			SOURCE.WEATHER,
+			"Mountain blizzard reduces supply drop precision and delivery reliability.",
 		),
 		nvgThermal: deg(
 			SOURCE.WEATHER,
 			"Cold degrades electronics. Battery life critically reduced in extreme temps.",
 		),
-		satcom: deg(
+		uplinkProtocol: deg(
 			SOURCE.TERRAIN,
 			"Mountain terrain creates SATCOM dead zones across the AO.",
 		),
@@ -423,7 +552,7 @@ export const PROVINCE_RESTRICTIONS = {
 			SOURCE.TERRAIN,
 			"Mountain terrain creates LOS gaps between operators.",
 		),
-		syncShot: deg(
+		sonarVision: deg(
 			SOURCE.TERRAIN,
 			"LOS breaks prevent reliable sync shot coordination.",
 		),
@@ -439,15 +568,30 @@ export const PROVINCE_RESTRICTIONS = {
 			SOURCE.TERRAIN_WEATHER,
 			"Snow, ice, and mountain passes restrict movement.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.WEATHER,
 			"Wind and cold ground small drone operations.",
+		),
+		syncDrone: deg(
+			SOURCE.WEATHER,
+			"Wind and cold degrade sync shot drone flight performance.",
+		),
+		combatDrone: deg(
+			SOURCE.WEATHER,
+			"Blizzard and cold impair combat drone stability and targeting.",
+		),
+		supplyDrone: deg(
+			SOURCE.WEATHER,
+			"Mountain winds reduce supply drone delivery accuracy.",
 		),
 		nvgThermal: deg(
 			SOURCE.WEATHER,
 			"Extreme cold degrades electronics and battery performance.",
 		),
-		satcom: deg(SOURCE.TERRAIN, "Mountain terrain creates SATCOM dead zones."),
+		uplinkProtocol: deg(
+			SOURCE.TERRAIN,
+			"Mountain terrain creates SATCOM dead zones.",
+		),
 		lrOptics: deg(SOURCE.WEATHER, "Whiteout and condensation on cold optics."),
 	},
 
@@ -455,16 +599,19 @@ export const PROVINCE_RESTRICTIONS = {
 	NewArgyll: {
 		isrDrone: nom(),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: nom(),
 		vehicle: nom(),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.WEATHER,
 			"Mountain wind gusts from adjacent ranges create unpredictable flight conditions.",
 		),
+		syncDrone: nom(),
+		combatDrone: nom(),
+		supplyDrone: nom(),
 		nvgThermal: nom(),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: nom(),
 	},
 
@@ -472,16 +619,25 @@ export const PROVINCE_RESTRICTIONS = {
 	Infinity: {
 		isrDrone: nom(),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: nom(),
 		vehicle: nom(),
-		personalDrone: nom(),
+		reconDrone: nom(),
+		syncDrone: deg(
+			SOURCE.THREAT,
+			"Dense urban RF environment degrades sync shot coordination signal.",
+		),
+		combatDrone: deg(
+			SOURCE.THREAT,
+			"Urban RF interference and ROE constraints degrade combat drone effectiveness.",
+		),
+		supplyDrone: nom(),
 		nvgThermal: deg(
 			SOURCE.THREAT,
 			"Dense city light pollution negates NVG night advantage. Thermal functional but element loses darkness concealment.",
 		),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: nom(),
 	},
 
@@ -492,7 +648,7 @@ export const PROVINCE_RESTRICTIONS = {
 			"Storm fronts and sea fog degrade drone altitude ceiling and optical feed.",
 		),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: den(
 			SOURCE.THREAT,
@@ -503,12 +659,18 @@ export const PROVINCE_RESTRICTIONS = {
 			SOURCE.TERRAIN,
 			"Island archipelago — limited road connections. Cross-island vehicle movement not viable.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.WEATHER,
 			"Tidal wind and storm fronts destabilize small drone flight.",
 		),
+		syncDrone: nom(),
+		combatDrone: nom(),
+		supplyDrone: deg(
+			SOURCE.WEATHER,
+			"Storm fronts and tidal winds reduce supply drone delivery precision.",
+		),
 		nvgThermal: nom(),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: deg(
 			SOURCE.WEATHER,
 			"Sea fog reduces effective optic range across the archipelago.",
@@ -528,7 +690,7 @@ export const PROVINCE_RESTRICTIONS = {
 			"Full-spectrum EW active — Sentinel hardened facility. Cross-Com link denied across entire AO.",
 			true,
 		),
-		syncShot: den(
+		sonarVision: den(
 			SOURCE.THREAT,
 			"Inherited — Cross-Com denied by full-spectrum jamming. No sync shot capability.",
 			true,
@@ -547,16 +709,31 @@ export const PROVINCE_RESTRICTIONS = {
 			SOURCE.TERRAIN_WEATHER,
 			"Snow and blizzard restrict movement. Mountain passes checkpoint-controlled — limited gated entry points.",
 		),
-		personalDrone: den(
+		reconDrone: den(
 			SOURCE.THREAT,
 			"Active jamming disrupts control link. Personal drone operations impossible.",
+			true,
+		),
+		syncDrone: den(
+			SOURCE.THREAT,
+			"Full-spectrum EW severs sync shot drone control link entirely. Asset denied.",
+			true,
+		),
+		combatDrone: den(
+			SOURCE.THREAT,
+			"Sentinel jamming destroys combat drone command and weapon link. Asset denied.",
+			true,
+		),
+		supplyDrone: den(
+			SOURCE.THREAT,
+			"Full-spectrum jamming disrupts supply drone navigation. Asset denied.",
 			true,
 		),
 		nvgThermal: deg(
 			SOURCE.WEATHER,
 			"Extreme cold and blizzard degrade electronics and battery performance.",
 		),
-		satcom: den(
+		uplinkProtocol: den(
 			SOURCE.THREAT,
 			"Full-spectrum jamming blocks SATCOM uplink. External comms and fire support denied.",
 			true,
@@ -571,16 +748,19 @@ export const PROVINCE_RESTRICTIONS = {
 	LakeCountry: {
 		isrDrone: nom(),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: nom(),
 		vehicle: nom(),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.WEATHER,
 			"Mountain wind gusts from adjacent ranges create unpredictable conditions for small drones.",
 		),
+		syncDrone: nom(),
+		combatDrone: nom(),
+		supplyDrone: nom(),
 		nvgThermal: nom(),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: nom(),
 	},
 
@@ -588,13 +768,16 @@ export const PROVINCE_RESTRICTIONS = {
 	NewStirling: {
 		isrDrone: nom(),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: nom(),
 		vehicle: nom(),
-		personalDrone: nom(),
+		reconDrone: nom(),
+		syncDrone: nom(),
+		combatDrone: nom(),
+		supplyDrone: nom(),
 		nvgThermal: nom(),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: nom(),
 	},
 
@@ -605,7 +788,7 @@ export const PROVINCE_RESTRICTIONS = {
 			"Sea fog and storm fronts degrade drone ceiling and optical clarity.",
 		),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: den(
 			SOURCE.THREAT,
@@ -616,12 +799,15 @@ export const PROVINCE_RESTRICTIONS = {
 			SOURCE.TERRAIN,
 			"Island terrain — limited road network. Cross-island vehicle movement restricted.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.WEATHER,
 			"Tidal wind and storm fronts destabilize small drone flight.",
 		),
+		syncDrone: nom(),
+		combatDrone: nom(),
+		supplyDrone: nom(),
 		nvgThermal: nom(),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: deg(SOURCE.WEATHER, "Sea fog reduces effective optic range."),
 	},
 
@@ -629,22 +815,31 @@ export const PROVINCE_RESTRICTIONS = {
 	Liberty: {
 		isrDrone: nom(),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: nom(),
 		vehicle: deg(
 			SOURCE.TERRAIN,
 			"Urban density makes vehicle movement conspicuous. Limited routes through dense districts.",
 		),
-		personalDrone: deg(
+		reconDrone: deg(
 			SOURCE.TERRAIN,
 			"Urban canyon multipath interference degrades control signal. Building density limits effective range.",
 		),
+		syncDrone: deg(
+			SOURCE.THREAT,
+			"Urban RF environment degrades sync shot drone coordination.",
+		),
+		combatDrone: deg(
+			SOURCE.THREAT,
+			"Urban RF interference and civilian ROE constraints limit combat drone employment.",
+		),
+		supplyDrone: nom(),
 		nvgThermal: deg(
 			SOURCE.THREAT,
 			"City light pollution negates NVG night advantage across urban core.",
 		),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: deg(
 			SOURCE.TERRAIN,
 			"Urban canyon geometry limits effective long-range optic angles and range.",
@@ -658,7 +853,7 @@ export const PROVINCE_RESTRICTIONS = {
 			"Persistent high wind degrades drone stability and ISR feed accuracy.",
 		),
 		crossCom: nom(),
-		syncShot: nom(),
+		sonarVision: nom(),
 		intelGrenades: nom(),
 		aviation: deg(
 			SOURCE.WEATHER,
@@ -668,12 +863,24 @@ export const PROVINCE_RESTRICTIONS = {
 			SOURCE.TERRAIN,
 			"Island — no roads, no vehicle access. All movement on foot after insertion.",
 		),
-		personalDrone: den(
+		reconDrone: den(
 			SOURCE.WEATHER,
 			"Persistent high wind grounds small drone operations entirely.",
 		),
+		syncDrone: den(
+			SOURCE.WEATHER,
+			"Persistent high wind grounds sync shot drone entirely.",
+		),
+		combatDrone: den(
+			SOURCE.WEATHER,
+			"Persistent high wind makes combat drone operations impossible.",
+		),
+		supplyDrone: den(
+			SOURCE.WEATHER,
+			"High wind grounds supply drone — delivery impossible.",
+		),
 		nvgThermal: nom(),
-		satcom: nom(),
+		uplinkProtocol: nom(),
 		lrOptics: nom(),
 	},
 };

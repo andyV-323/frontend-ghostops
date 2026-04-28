@@ -35,15 +35,18 @@ const RANK = {
 // ─── Display labels ───────────────────────────────────────────────────────────
 
 export const RESTRICTION_LABELS = {
-	isrDrone: "ISR DRONE",
+	isrDrone: "ISR DRONE / MINIMAP",
 	crossCom: "CROSS-COM",
-	syncShot: "SYNC SHOT",
+	sonarVision: "SONAR VISION",
 	intelGrenades: "INTEL GRENADES",
 	aviation: "AVIATION",
 	vehicle: "GROUND VEHICLES",
-	personalDrone: "PERSONAL DRONE",
+	reconDrone: "RECON DRONE",
+	syncDrone: "SYNC-SHOT DRONE",
+	combatDrone: "WASP COMBAT DRONE",
 	nvgThermal: "NVG / THERMAL",
-	satcom: "SATCOM / FIRE SUPPORT",
+	supplyDrone: "SUPPLY DRONE",
+	uplinkProtocol: "ARMAROS DRONE",
 	lrOptics: "LONG-RANGE OPTICS",
 };
 
@@ -74,7 +77,7 @@ export function resolveWeatherRestrictions(weatherEvent) {
 				"Blizzard — drone operations impossible. Zero visibility.",
 			);
 			overrides.aviation = den("Blizzard — flight window closed entirely.");
-			overrides.personalDrone = den(
+			overrides.reconDrone = den(
 				"Blizzard grounds all small drone operations.",
 			);
 			overrides.nvgThermal = deg(
@@ -85,7 +88,7 @@ export function resolveWeatherRestrictions(weatherEvent) {
 
 		case "Heavy Rain":
 			overrides.isrDrone = deg("Heavy rain degrades optical sensor clarity.");
-			overrides.personalDrone = deg(
+			overrides.reconDrone = deg(
 				"Rain degrades small drone sensors and destabilizes flight.",
 			);
 			overrides.lrOptics = deg("Rain reduces effective optic range.");
@@ -96,7 +99,7 @@ export function resolveWeatherRestrictions(weatherEvent) {
 			overrides.isrDrone = deg(
 				"Fog ceiling severely limits drone altitude and optical range.",
 			);
-			overrides.personalDrone = deg(
+			overrides.reconDrone = deg(
 				"Fog reduces drone visual range to near zero.",
 			);
 			overrides.lrOptics = deg(
@@ -106,7 +109,7 @@ export function resolveWeatherRestrictions(weatherEvent) {
 
 		case "Ash Fall":
 			overrides.isrDrone = deg("Ash coats optical sensors.");
-			overrides.personalDrone = deg("Ash damages rotors and degrades sensors.");
+			overrides.reconDrone = deg("Ash damages rotors and degrades sensors.");
 			overrides.nvgThermal = deg(
 				"Ash coats lenses. Particulate heat signature affects thermal baseline.",
 			);
@@ -117,7 +120,7 @@ export function resolveWeatherRestrictions(weatherEvent) {
 			overrides.aviation = deg(
 				"High wind makes helicopter insertion and extraction unreliable.",
 			);
-			overrides.personalDrone = den(
+			overrides.reconDrone = den(
 				"High wind grounds all small drone operations.",
 			);
 			break;
@@ -136,7 +139,7 @@ export function resolveWeatherRestrictions(weatherEvent) {
 			overrides.isrDrone = deg(
 				"Sea fog ceiling limits drone altitude and optical clarity.",
 			);
-			overrides.personalDrone = deg("Sea fog degrades drone visual feed.");
+			overrides.reconDrone = deg("Sea fog degrades drone visual feed.");
 			overrides.lrOptics = deg("Sea fog reduces effective optic range.");
 			break;
 
@@ -147,9 +150,7 @@ export function resolveWeatherRestrictions(weatherEvent) {
 			overrides.aviation = deg(
 				"Storm front — flight conditions hazardous. Aviation unreliable.",
 			);
-			overrides.personalDrone = den(
-				"Storm grounds all small drone operations.",
-			);
+			overrides.reconDrone = den("Storm grounds all small drone operations.");
 			overrides.lrOptics = deg("Storm reduces effective optic range.");
 			break;
 
@@ -161,7 +162,7 @@ export function resolveWeatherRestrictions(weatherEvent) {
 }
 
 // ─── Child inheritance resolver ───────────────────────────────────────────────
-// syncShot and intelGrenades cannot be better than their parent crossCom.
+// sonarVision and intelGrenades cannot be better than their parent crossCom.
 // If crossCom is denied, children are denied.
 // If crossCom is degraded and child is nominal, child is escalated to degraded.
 
@@ -169,7 +170,7 @@ function resolveChildInheritance(resolved) {
 	const ccStatus = resolved.crossCom.status;
 	const ccRank = RANK[ccStatus];
 
-	["syncShot", "intelGrenades"].forEach((child) => {
+	["sonarVision", "intelGrenades"].forEach((child) => {
 		if (RANK[resolved[child].status] < ccRank) {
 			resolved[child] = {
 				...resolved.crossCom,
@@ -183,7 +184,7 @@ function resolveChildInheritance(resolved) {
 // ─── Main resolver ────────────────────────────────────────────────────────────
 // 1. Deep clone the static province data
 // 2. Apply weather overrides — weather wins only if it is more restrictive
-// 3. Resolve child inheritance for syncShot and intelGrenades
+// 3. Resolve child inheritance for sonarVision and intelGrenades
 // Returns a complete restriction object.
 
 export function resolveRestrictions(provinceKey, weatherEvent = null) {

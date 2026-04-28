@@ -4,6 +4,7 @@ import Loadout from "./Loadout";
 import Header from "./Header";
 import Footer from "./Footer";
 import NoneGeographicalMap from "./NoneGeographicalMap";
+import AOIntelMap from "./AOIntelMap";
 import MapWrapper from "./MapWrapper";
 import Alert from "./Alert";
 import About from "./About";
@@ -39,6 +40,7 @@ export {
 	SheetSide,
 	ConfirmDialog,
 	NoneGeographicalMap,
+	AOIntelMap,
 	MapWrapper,
 	AuroaMap,
 	ImageUpload,

@@ -234,10 +234,6 @@ const addExfilMarker = (map, exfilPoint, fallbackExfil) => {
 	}).addTo(map);
 };
 
-/* ── Scale bar ── */
-const buildScale = () =>
-	L.control.scale({ position: "bottomright", imperial: false, maxWidth: 80 });
-
 /* ── Legend ── */
 const buildLegend = () => {
 	const control = L.control({ position: "bottomleft" });
@@ -355,6 +351,7 @@ const NoneGeographicalMap = ({
 			center: [bounds[1][0] / 2, bounds[1][1] / 2],
 			zoom: 2, crs: L.CRS.Simple,
 			dragging: true, zoomControl: true, scrollWheelZoom: true, zoomAnimation: false,
+			attributionControl: false,
 		});
 		map.setMinZoom(-3);
 		map.setMaxZoom(2);
@@ -405,7 +402,6 @@ const NoneGeographicalMap = ({
 		});
 
 		/* ── Controls ── */
-		buildScale().addTo(map);
 		buildLegend().addTo(map);
 		/* ── Auto-fit to objectives + infil ── */
 		const fitCoords = [...objCoords, ...(infilPoint ? [infilPoint] : [])];
