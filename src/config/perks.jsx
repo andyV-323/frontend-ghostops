@@ -1,3 +1,6 @@
+// Maps perk names to restriction keys. Populate as needed.
+export const PERK_RESTRICTION_KEYS = {};
+
 export const PERKS = {
 	"Pack Mule": "/icons/packMule.svg",
 	Pistolero: "/icons/pistolero.svg",

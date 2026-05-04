@@ -6,15 +6,18 @@ import { INJURIES } from "./injuries";
 import { TEAMS } from "./teams";
 import { KITS } from "./kits";
 import { CLASS } from "./classNames";
-import { WEAPONS } from "./weapons";
+import { WEAPON_TYPES, WEAPONS_BY_TYPE, ATTACHMENTS, MISSION_PROFILES, WEAPON_COMPATIBILITY } from "./weapons";
 import { GARAGE } from "./garage";
 import { CONDITION } from "./vehicleCondition";
-import { ITEMS } from "./items";
-import { PERKS } from "./perks";
+import { ITEMS, ITEM_RESTRICTION_KEYS } from "./items";
+import { PERKS, PERK_RESTRICTION_KEYS } from "./perks";
 import { BIOME_WEATHER } from "./biome";
 import { PROVINCE_BIOMES } from "./provinceBiomes";
 import { PROVINCE_TERRAIN } from "./provinceTerrain";
 import { PROVINCE_RESTRICTIONS, SOURCE, STATUS } from "./provinceRestrictions";
+
+// WEAPONS is kept as an alias for WEAPON_TYPES so existing imports don't break
+const WEAPONS = WEAPON_TYPES;
 
 export {
 	about,
@@ -26,10 +29,17 @@ export {
 	KITS,
 	CLASS,
 	WEAPONS,
+	WEAPON_TYPES,
+	WEAPONS_BY_TYPE,
+	ATTACHMENTS,
+	MISSION_PROFILES,
+	WEAPON_COMPATIBILITY,
 	GARAGE,
 	CONDITION,
 	ITEMS,
+	ITEM_RESTRICTION_KEYS,
 	PERKS,
+	PERK_RESTRICTION_KEYS,
 	BIOME_WEATHER,
 	PROVINCE_BIOMES,
 	PROVINCE_TERRAIN,

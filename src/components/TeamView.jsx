@@ -2,7 +2,8 @@
 
 import { useTeamsStore, useOperatorsStore } from "@/zustand";
 import { useEffect, useMemo, useState } from "react";
-import { WEAPONS, ITEMS, PERKS, GARAGE } from "@/config";
+import { WEAPONS, ITEMS, PERKS, GARAGE, MISSION_PROFILES, PROVINCES, ITEM_RESTRICTION_KEYS, PERK_RESTRICTION_KEYS } from "@/config";
+import { resolveRestrictions } from "@/utils/Restrictions";
 import { PropTypes } from "prop-types";
 import ConfirmDialog from "./ConfirmDialog";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -12,7 +13,15 @@ import {
 	faStar,
 	faGasPump,
 	faWrench,
+	faChevronDown,
+	faChevronUp,
+	faXmark,
+	faLocationDot,
 } from "@fortawesome/free-solid-svg-icons";
+import { TeamsApi } from "@/api";
+import { toast } from "react-toastify";
+import OperatorImageView from "./OperatorImageView";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 /* ─── Status config ─────────────────────────────────────────── */
 const STATUS_MAP = {
@@ -46,6 +55,20 @@ const CONDITION_BADGE = {
 	Critical:    "text-red-400 border-red-900/50 bg-red-950/30",
 };
 
+const PROFILE_STYLE = {
+	DA:    "text-red-400 border-red-900/50 bg-red-950/20",
+	RECON: "text-emerald-400 border-emerald-900/50 bg-emerald-950/20",
+	SAB:   "text-amber-400 border-amber-900/50 bg-amber-950/20",
+	SUS:   "text-sky-400 border-sky-900/50 bg-sky-950/20",
+	COV:   "text-violet-400 border-violet-900/50 bg-violet-950/20",
+};
+
+const RESTRICTION_STATUS_STYLE = {
+	nominal:  { badge: "text-green-400 border-green-900/40 bg-green-950/20",  dot: "bg-green-500",  label: "AVAIL" },
+	degraded: { badge: "text-amber-400 border-amber-900/40 bg-amber-950/20", dot: "bg-amber-400", label: "DEG"   },
+	denied:   { badge: "text-red-400 border-red-900/40 bg-red-950/20",       dot: "bg-red-500",   label: "DENIED" },
+};
+
 /* ─── Section header ────────────────────────────────────────── */
 function SectionHeader({ label, count }) {
 	return (
@@ -74,21 +97,37 @@ function FuelBar({ pct }) {
 	);
 }
 
-/* ─── Operator portrait card ────────────────────────────────── */
-function OperatorCard({ operator, onInjuryClick }) {
+/* ─── Operator portrait card (compact grid tile) ────────────── */
+function OperatorCard({ operator, onInjuryClick, missionProfile, onDetailClick }) {
 	const img = operator.imageKey || operator.image || "/ghost/Default.png";
 	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
 	const isKIA = operator.status === "KIA";
 	const primaryWeapon = operator.weaponType ? WEAPONS[operator.weaponType] : null;
 	const weaponName = operator.weapon || primaryWeapon?.name || null;
 
+	const loadouts = operator.loadouts || [];
+	const activeLoadout = loadouts.length > 0
+		? (missionProfile
+			? (loadouts.find((l) => l.missionProfile === missionProfile) || loadouts[0])
+			: loadouts[0])
+		: null;
+
+	const [expandedSlot, setExpandedSlot] = useState(null);
+	useEffect(() => { setExpandedSlot(null); }, [missionProfile, activeLoadout]);
+
 	return (
 		<div className={[
 			"relative flex flex-col overflow-hidden border-r border-neutral-800/50 last:border-r-0 select-none",
 			isKIA ? "opacity-60" : "",
 		].join(" ")}>
-			{/* Portrait image — fills the card */}
-			<div className='relative overflow-hidden bg-neutral-950 flex-1' style={{ minHeight: 280 }}>
+			{/* Portrait — clickable for detail view */}
+			<div
+				role='button'
+				tabIndex={0}
+				onClick={() => onDetailClick(operator)}
+				onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onDetailClick(operator); }}
+				className='relative overflow-hidden bg-neutral-950 flex-1 cursor-pointer'
+				style={{ minHeight: 280 }}>
 				<img
 					src={img}
 					alt={operator.callSign}
@@ -116,6 +155,11 @@ function OperatorCard({ operator, onInjuryClick }) {
 					</div>
 				</div>
 
+				{/* Tap hint */}
+				<div className='absolute bottom-1 right-1.5 font-mono text-[5px] tracking-widest text-neutral-600 uppercase pointer-events-none'>
+					tap
+				</div>
+
 				{/* Bottom gradient + identity */}
 				<div
 					className='absolute bottom-0 left-0 right-0 flex flex-col gap-1 px-2 pb-2 pt-14'
@@ -130,7 +174,35 @@ function OperatorCard({ operator, onInjuryClick }) {
 						</p>
 					</div>
 
-					{weaponName && (
+					{activeLoadout ? (
+						<div className='flex flex-col gap-0.5'>
+							{[
+								{ key: "primary",   label: "PRI" },
+								{ key: "secondary", label: "SEC" },
+								{ key: "handgun",   label: "HDG" },
+							].map(({ key, label }) => {
+								const slot = activeLoadout[key];
+								if (!slot?.weapon) return null;
+								return (
+									<button
+										key={key}
+										type='button'
+										onClick={(e) => { e.stopPropagation(); setExpandedSlot(expandedSlot === key ? null : key); }}
+										className='flex items-center gap-1 min-w-0 text-left hover:opacity-80 transition-opacity'>
+										<span className='font-mono text-[6px] text-neutral-600 uppercase tracking-widest shrink-0 w-5'>{label}</span>
+										{WEAPONS[slot.weaponType]?.imgUrl && (
+											<img src={WEAPONS[slot.weaponType].imgUrl} alt=''
+												className='w-6 h-3 object-contain shrink-0'
+												style={{ filter: "invert(1) opacity(0.4)" }} />
+										)}
+										<span className={`font-mono text-[7px] truncate ${expandedSlot === key ? "text-fontz/90" : "text-neutral-400"}`}>
+											{slot.weapon}
+										</span>
+									</button>
+								);
+							})}
+						</div>
+					) : weaponName ? (
 						<div className='flex items-center gap-1 min-w-0'>
 							{primaryWeapon?.imgUrl && (
 								<img src={primaryWeapon.imgUrl} alt=''
@@ -139,22 +211,44 @@ function OperatorCard({ operator, onInjuryClick }) {
 							)}
 							<span className='font-mono text-[7px] text-neutral-600 truncate'>{weaponName}</span>
 						</div>
-					)}
-
-					<button
-						onClick={(e) => { e.stopPropagation(); onInjuryClick(operator); }}
-						disabled={isKIA}
-						className={[
-							"w-full flex items-center justify-center gap-1 font-mono text-[6px] tracking-widest uppercase py-1 border transition-all",
-							isKIA
-								? "text-neutral-800 border-neutral-900/40 cursor-not-allowed"
-								: "text-red-400/40 border-red-900/30 hover:text-red-400 hover:border-red-500/50 hover:bg-red-950/20",
-						].join(" ")}>
-						<FontAwesomeIcon icon={faSkull} className='text-[6px]' />
-						Injury
-					</button>
+					) : null}
 				</div>
 			</div>
+
+			{/* Attachment detail panel */}
+			{expandedSlot && activeLoadout?.[expandedSlot] && (
+				<div className='px-2 py-2 bg-neutral-950/90 border-t border-neutral-800/50'>
+					<p className='font-mono text-[7px] font-semibold text-neutral-300 mb-1.5 uppercase tracking-wide'>
+						{expandedSlot === "primary" ? "PRI" : expandedSlot === "secondary" ? "SEC" : "HDG"}
+						{" · "}{activeLoadout[expandedSlot].weapon}
+					</p>
+					{Object.entries(activeLoadout[expandedSlot].attachments || {})
+						.filter(([, v]) => v)
+						.map(([k, v]) => (
+							<div key={k} className='flex items-baseline gap-1.5 min-w-0'>
+								<span className='font-mono text-[5px] uppercase tracking-widest text-neutral-700 shrink-0 w-12'>{k}</span>
+								<span className='font-mono text-[6px] text-neutral-500 truncate'>{v}</span>
+							</div>
+						))}
+					{!Object.values(activeLoadout[expandedSlot].attachments || {}).some(Boolean) && (
+						<p className='font-mono text-[6px] text-neutral-700 italic'>No attachments</p>
+					)}
+				</div>
+			)}
+
+			{/* Injury button */}
+			<button
+				onClick={(e) => { e.stopPropagation(); onInjuryClick(operator); }}
+				disabled={isKIA}
+				className={[
+					"w-full flex items-center justify-center gap-1 font-mono text-[6px] tracking-widest uppercase py-1 border transition-all",
+					isKIA
+						? "text-neutral-800 border-neutral-900/40 cursor-not-allowed"
+						: "text-red-400/40 border-red-900/30 hover:text-red-400 hover:border-red-500/50 hover:bg-red-950/20",
+				].join(" ")}>
+				<FontAwesomeIcon icon={faSkull} className='text-[6px]' />
+				Injury
+			</button>
 		</div>
 	);
 }
@@ -169,7 +263,6 @@ function AssetCard({ asset }) {
 
 	return (
 		<div className='bg-neutral-900/40 border border-neutral-800/60 overflow-hidden hover:border-neutral-700/60 transition-colors'>
-			{/* Large vehicle image */}
 			<div className='relative h-44 overflow-hidden bg-neutral-900/40'>
 				{assetImg ? (
 					<img
@@ -187,7 +280,6 @@ function AssetCard({ asset }) {
 					</div>
 				)}
 				<div className='absolute inset-0' style={{ background: "linear-gradient(to top, rgba(5,10,8,0.95) 0%, transparent 55%)" }} />
-				{/* Condition badge */}
 				{a?.condition && (
 					<span className={`absolute top-2 left-2 font-mono text-[7px] tracking-widest uppercase px-1.5 py-0.5 border ${condBadge}`}>
 						{a.condition}
@@ -198,7 +290,6 @@ function AssetCard({ asset }) {
 						<FontAwesomeIcon icon={faWrench} className='text-[6px]' /> REPAIR
 					</span>
 				)}
-				{/* Name overlay */}
 				<div className='absolute bottom-0 left-0 right-0 px-3 pb-2.5'>
 					<p className='font-mono text-xs font-bold text-neutral-100 truncate'>{nickname}</p>
 					{a?.vehicle && a.nickName && a.nickName !== "None" && (
@@ -206,7 +297,6 @@ function AssetCard({ asset }) {
 					)}
 				</div>
 			</div>
-			{/* Fuel strip */}
 			{typeof a?.remainingFuel === "number" && (
 				<div className='px-3 py-2 border-t border-neutral-800/60'>
 					<div className='flex items-center gap-1.5 mb-1.5'>
@@ -220,30 +310,38 @@ function AssetCard({ asset }) {
 	);
 }
 
-/* ─── Gear icon ─────────────────────────────────────────────── */
-function GearIcon({ imgSrc, name, invert }) {
+/* ─── Gear icon with optional restriction badge ─────────────── */
+function GearIcon({ imgSrc, name, invert, restrictionStatus }) {
+	const rs = restrictionStatus ? RESTRICTION_STATUS_STYLE[restrictionStatus] : null;
 	return (
-		<div title={name} className='flex flex-col items-center gap-1.5 bg-neutral-950/60 border border-neutral-800/60 p-2.5 hover:border-neutral-700/60 transition-colors group'>
+		<div title={name} className='relative flex flex-col items-center gap-1.5 bg-neutral-950/60 border border-neutral-800/60 p-2.5 hover:border-neutral-700/60 transition-colors group'>
+			{rs && (
+				<span className={`absolute top-1 right-1 font-mono text-[5px] tracking-widest uppercase px-1 py-0.5 border ${rs.badge}`}>
+					{rs.label}
+				</span>
+			)}
 			{imgSrc ? (
 				<img src={imgSrc} alt={name}
-					className='w-9 h-9 object-contain'
+					className={["w-9 h-9 object-contain", rs?.label === "DENIED" ? "opacity-25 grayscale" : rs?.label === "DEG" ? "opacity-60" : ""].join(" ")}
 					style={invert ? { filter: "invert(1) opacity(0.7)" } : { opacity: 0.75 }} />
 			) : (
 				<div className='w-9 h-9 border border-neutral-800/40 bg-neutral-900/40 flex items-center justify-center'>
 					<span className='font-mono text-[7px] text-neutral-700'>?</span>
 				</div>
 			)}
-			<span className='font-mono text-[6px] text-neutral-600 text-center leading-tight group-hover:text-neutral-400 transition-colors w-full truncate'>
+			<span className={`font-mono text-[6px] text-center leading-tight w-full truncate transition-colors ${rs?.label === "DENIED" ? "text-red-900/60" : rs?.label === "DEG" ? "text-amber-700/60" : "text-neutral-600 group-hover:text-neutral-400"}`}>
 				{name}
 			</span>
 		</div>
 	);
 }
 
+const CONDITION_SCORE = { Optimal: 1.0, Operational: 0.75, Compromised: 0.4, Critical: 0.1 };
+
 /* ═══════════════════════════════════════════════════════════════
    TEAMVIEW
 ═══════════════════════════════════════════════════════════════ */
-const TeamView = ({ teamId }) => {
+const TeamView = ({ teamId, openSheet }) => {
 	const { teams, fetchTeams, assignRandomInjury, assignRandomKIAInjury, assignUnknownFate } = useTeamsStore();
 	const { operators, fetchOperators } = useOperatorsStore();
 	const userId = localStorage.getItem("userId");
@@ -251,6 +349,12 @@ const TeamView = ({ teamId }) => {
 	const [isInjuryDialogOpen, setIsInjuryDialogOpen] = useState(false);
 	const [selectedOperator, setSelectedOperator] = useState(null);
 	const [injuryType] = useState("choice");
+	const [missionProfile, setMissionProfile] = useState(null);
+	const [detailOp, setDetailOp] = useState(null);
+	const [equipFilter, setEquipFilter] = useState("all");
+	const [showAOSelector, setShowAOSelector] = useState(false);
+	const [savingAO, setSavingAO] = useState(false);
+	const [localAO, setLocalAO] = useState("");
 
 	useEffect(() => {
 		fetchOperators();
@@ -278,6 +382,10 @@ const TeamView = ({ teamId }) => {
 
 	const selectedTeam = useMemo(() => teams.find((t) => t._id === teamId), [teams, teamId]);
 
+	useEffect(() => {
+		setLocalAO(selectedTeam?.AO || "");
+	}, [selectedTeam?.AO]);
+
 	const teamOps = useMemo(() => {
 		if (!selectedTeam?.operators || operators.length === 0) return [];
 		return selectedTeam.operators
@@ -304,13 +412,10 @@ const TeamView = ({ teamId }) => {
 		kia:    teamOps.filter((o) => o.status === "KIA").length,
 	}), [teamOps]);
 
-	const FULL_TEAM_SIZE = 4;
-	const CONDITION_SCORE = { Optimal: 1.0, Operational: 0.75, Compromised: 0.4, Critical: 0.1 };
-
 	const readiness = useMemo(() => {
-		if (teamOps.length === 0) return { score: 0, loadout: 0, strength: 0 };
-		const loadout = teamOps.filter((o) => o.weaponType).length / teamOps.length;
-		const strength = Math.min(teamOps.length / FULL_TEAM_SIZE, 1);
+		const total = teamOps.length;
+		if (total === 0) return { score: 0, active: 0, total: 0, assets: null };
+		const active = teamOps.filter((o) => o.status === "Active").length;
 		const assets = selectedTeam?.assets?.length > 0
 			? selectedTeam.assets.reduce((sum, a) => {
 					const obj = typeof a === "object" ? a : null;
@@ -321,15 +426,62 @@ const TeamView = ({ teamId }) => {
 					return sum + s;
 				}, 0) / selectedTeam.assets.length
 			: null;
+		const opsScore = active / total;
 		const score = assets !== null
-			? loadout * 0.4 + assets * 0.35 + strength * 0.25
-			: loadout * 0.6 + strength * 0.4;
-		return {
-			score: Math.round(score * 100),
-			loadout: Math.round(loadout * 100),
-			strength: Math.round(strength * 100),
-		};
+			? Math.round((opsScore * 0.7 + assets * 0.3) * 100)
+			: Math.round(opsScore * 100);
+		return { score, active, total, assets: assets !== null ? Math.round(assets * 100) : null };
 	}, [teamOps, selectedTeam?.assets]);
+
+	// AO restrictions
+	const aoRestrictions = useMemo(
+		() => selectedTeam?.AO ? resolveRestrictions(selectedTeam.AO) : null,
+		[selectedTeam?.AO],
+	);
+
+	const getItemRestriction = (itemName) => {
+		if (!aoRestrictions) return null;
+		const key = ITEM_RESTRICTION_KEYS[itemName];
+		return key ? aoRestrictions[key]?.status : null;
+	};
+
+	const getPerkRestriction = (perkName) => {
+		if (!aoRestrictions) return null;
+		const key = PERK_RESTRICTION_KEYS[perkName];
+		return key ? aoRestrictions[key]?.status : null;
+	};
+
+	const filterByRestriction = (name, getRestriction) => {
+		if (equipFilter === "all") return true;
+		const status = getRestriction(name) || "nominal";
+		return status === equipFilter;
+	};
+
+	const handleAOSave = async (newAO) => {
+		if (!selectedTeam) return;
+		setSavingAO(true);
+		try {
+			await TeamsApi.updateTeam(selectedTeam._id, {
+				createdBy: selectedTeam.createdBy,
+				name: selectedTeam.name,
+				AO: newAO || null,
+				operators: (selectedTeam.operators || []).map((op) =>
+					typeof op === "object" ? op._id : op,
+				),
+				assets: (selectedTeam.assets || []).map((a) =>
+					typeof a === "object" ? a._id : a,
+				),
+			});
+			await fetchTeams();
+			toast.success(newAO ? `AO set to ${newAO}` : "AO cleared");
+			setShowAOSelector(false);
+		} catch (err) {
+			toast.error("Failed to save AO");
+			console.error("AO save error:", err);
+		} finally {
+			setSavingAO(false);
+		}
+	};
 
 	if (!selectedTeam) {
 		return (
@@ -343,7 +495,6 @@ const TeamView = ({ teamId }) => {
 	const scoreColor = readiness.score >= 75 ? "text-green-400" : readiness.score >= 40 ? "text-amber-400" : "text-red-400";
 	const barColor   = readiness.score >= 75 ? "bg-green-500"   : readiness.score >= 40 ? "bg-amber-400"   : "bg-red-500";
 
-	// Operator grid columns: fill row based on count
 	const opCols =
 		teamOps.length === 1 ? "grid-cols-1" :
 		teamOps.length === 2 ? "grid-cols-2" :
@@ -356,8 +507,11 @@ const TeamView = ({ teamId }) => {
 	const assetCount = selectedTeam?.assets?.length ?? 0;
 	const hasLoadout = combinedPerks.length > 0 || combinedEquipment.length > 0;
 
+	const filteredEquipment = combinedEquipment.filter((item) => filterByRestriction(item, getItemRestriction));
+	const filteredPerks     = combinedPerks.filter((perk) => filterByRestriction(perk, getPerkRestriction));
+
 	return (
-		<div className='w-full min-w-0 text-fontz flex flex-col'>
+		<div className='relative w-full min-w-0 text-fontz flex flex-col'>
 
 			{/* ── Team header ─────────────────────────────── */}
 			<div className='px-5 py-4 bg-neutral-950/60 border-b border-neutral-800/60 relative shrink-0'>
@@ -375,12 +529,53 @@ const TeamView = ({ teamId }) => {
 						<h2 className='font-mono text-sm font-bold text-neutral-100 tracking-wide truncate'>
 							{selectedTeam.name}
 						</h2>
-						{selectedTeam.AO && (
-							<p className='font-mono text-[8px] tracking-[0.25em] text-neutral-600 uppercase mt-0.5'>
-								AO: {selectedTeam.AO}
-							</p>
+
+						{/* AO row */}
+						<div className='flex items-center gap-2 mt-0.5'>
+							{selectedTeam.AO ? (
+								<button
+									onClick={() => setShowAOSelector((v) => !v)}
+									className='flex items-center gap-1 font-mono text-[8px] tracking-[0.25em] text-neutral-500 uppercase hover:text-btn transition-colors'>
+									<FontAwesomeIcon icon={faLocationDot} className='text-[7px]' />
+									AO: {selectedTeam.AO}
+									<FontAwesomeIcon icon={showAOSelector ? faChevronUp : faChevronDown} className='text-[6px]' />
+								</button>
+							) : (
+								<button
+									onClick={() => setShowAOSelector((v) => !v)}
+									className='flex items-center gap-1 font-mono text-[8px] tracking-[0.25em] text-neutral-700 uppercase hover:text-btn transition-colors'>
+									<FontAwesomeIcon icon={faLocationDot} className='text-[7px]' />
+									Set AO
+									<FontAwesomeIcon icon={showAOSelector ? faChevronUp : faChevronDown} className='text-[6px]' />
+								</button>
+							)}
+						</div>
+
+						{/* AO dropdown */}
+						{showAOSelector && (
+							<div className='mt-2 flex items-center gap-2'>
+								<select
+									className='flex-1 bg-neutral-950 border border-neutral-700/60 px-2 py-1 font-mono text-[9px] text-neutral-300 outline-none focus:border-btn/50'
+									value={localAO}
+									onChange={(e) => { setLocalAO(e.target.value); handleAOSave(e.target.value); }}
+									disabled={savingAO}>
+									<option value=''>— No AO —</option>
+									{Object.keys(PROVINCES).map((key) => (
+										<option key={key} value={key}>{key}</option>
+									))}
+								</select>
+								{savingAO && (
+									<span className='font-mono text-[8px] text-neutral-600 animate-pulse'>Saving…</span>
+								)}
+								<button
+									onClick={() => setShowAOSelector(false)}
+									className='text-neutral-600 hover:text-neutral-400 transition-colors'>
+									<FontAwesomeIcon icon={faXmark} className='text-[10px]' />
+								</button>
+							</div>
 						)}
 					</div>
+
 					<div className='flex flex-wrap items-center gap-1.5 shrink-0 justify-end'>
 						<span className='font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border text-green-400 border-green-900/40 bg-green-950/20'>
 							{statusCounts.active} Active
@@ -407,16 +602,58 @@ const TeamView = ({ teamId }) => {
 						<div className='h-1.5 overflow-hidden bg-neutral-950/60 border border-neutral-800/40'>
 							<div className={`${barColor} h-full transition-all duration-500`} style={{ width: `${readiness.score}%` }} />
 						</div>
+						<div className='flex items-center gap-4 mt-1.5'>
+							<span className='font-mono text-[7px] text-neutral-700 uppercase tracking-wide'>
+								ACTIVE <span className='text-neutral-500'>{readiness.active}/{readiness.total}</span>
+							</span>
+							{readiness.assets !== null && (
+								<span className='font-mono text-[7px] text-neutral-700 uppercase tracking-wide'>
+									ASSETS <span className='text-neutral-500'>{readiness.assets}%</span>
+								</span>
+							)}
+						</div>
+					</div>
+				)}
+
+				{/* Mission profile selector */}
+				{teamOps.length > 0 && (
+					<div className='mt-3 pt-3 border-t border-neutral-800/60 flex items-center justify-between'>
+						<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-600 uppercase'>Mission Profile</span>
+						<button
+							type='button'
+							onClick={() => {
+								const keys = Object.keys(MISSION_PROFILES);
+								if (!missionProfile) {
+									setMissionProfile(keys[0]);
+								} else {
+									const idx = keys.indexOf(missionProfile);
+									setMissionProfile(idx < keys.length - 1 ? keys[idx + 1] : null);
+								}
+							}}
+							className={[
+								"flex items-center gap-1.5 font-mono text-[7px] tracking-widest uppercase px-2 py-0.5 border transition-colors",
+								missionProfile
+									? (PROFILE_STYLE[missionProfile] || "text-btn border-btn/30")
+									: "text-neutral-600 border-neutral-700/40 hover:text-neutral-400 hover:border-neutral-600",
+							].join(" ")}>
+							‹ {missionProfile ? MISSION_PROFILES[missionProfile]?.name : "All Profiles"} ›
+						</button>
 					</div>
 				)}
 			</div>
 
-			{/* ── Operator lineup (team photo) ─────────────── */}
+			{/* ── Operator lineup ──────────────────────────── */}
 			<SectionHeader label='Operators' count={teamOps.length} />
 			{teamOps.length > 0 ? (
 				<div className={`grid border-b border-neutral-800/60 ${opCols}`}>
 					{teamOps.map((op, i) => (
-						<OperatorCard key={op._id || i} operator={op} onInjuryClick={handleOpenInjuryDialog} />
+						<OperatorCard
+							key={op._id || i}
+							operator={op}
+							onInjuryClick={handleOpenInjuryDialog}
+							missionProfile={missionProfile}
+							onDetailClick={setDetailOp}
+						/>
 					))}
 				</div>
 			) : (
@@ -438,27 +675,83 @@ const TeamView = ({ teamId }) => {
 				</>
 			)}
 
-			{/* ── Perks ───────────────────────────────────── */}
-			{combinedPerks.length > 0 && (
+			{/* ── Equipment filter tabs (shown when AO is set and there's gear) ── */}
+			{(combinedPerks.length > 0 || combinedEquipment.length > 0) && (
 				<>
-					<SectionHeader label='Team Perks' count={combinedPerks.length} />
-					<div className='grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 p-4 border-b border-neutral-800/60'>
-						{combinedPerks.map((perk) => (
-							<GearIcon key={perk} imgSrc={PERKS[perk]} name={perk} />
-						))}
+					<div className='flex items-center gap-0 border-b border-neutral-800/60 bg-neutral-950/40 shrink-0 overflow-x-auto'>
+						<div className='flex items-center gap-3 px-4 py-2 shrink-0'>
+							<div className='w-0.5 h-3.5 bg-btn/60 shrink-0' />
+							<span className='font-mono text-[7px] tracking-[0.35em] text-neutral-500 uppercase'>
+								Team Equipment
+							</span>
+						</div>
+						{aoRestrictions && (
+							<div className='flex items-center gap-1 px-3 ml-auto shrink-0'>
+								{[
+									{ key: "all",      label: "All" },
+									{ key: "nominal",  label: "Avail" },
+									{ key: "degraded", label: "Deg" },
+									{ key: "denied",   label: "Denied" },
+								].map(({ key, label }) => (
+									<button
+										key={key}
+										onClick={() => setEquipFilter(key)}
+										className={[
+											"font-mono text-[7px] tracking-widest uppercase px-2 py-0.5 border transition-colors",
+											equipFilter === key
+												? key === "nominal"  ? "text-green-400 border-green-900/50 bg-green-950/20"
+												: key === "degraded" ? "text-amber-400 border-amber-900/50 bg-amber-950/20"
+												: key === "denied"   ? "text-red-400 border-red-900/50 bg-red-950/20"
+												:                      "text-btn border-btn/30 bg-btn/5"
+												: "text-neutral-600 border-neutral-800/40 hover:text-neutral-400",
+										].join(" ")}>
+										{label}
+									</button>
+								))}
+							</div>
+						)}
 					</div>
-				</>
-			)}
 
-			{/* ── Equipment ───────────────────────────────── */}
-			{combinedEquipment.length > 0 && (
-				<>
-					<SectionHeader label='Team Equipment' count={combinedEquipment.length} />
-					<div className='grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 p-4 border-b border-neutral-800/60'>
-						{combinedEquipment.map((item) => (
-							<GearIcon key={item} imgSrc={ITEMS[item]} name={item} invert />
-						))}
-					</div>
+					{/* Perks */}
+					{filteredPerks.length > 0 && (
+						<div className='px-4 pt-3 pb-1'>
+							<p className='font-mono text-[6px] tracking-[0.35em] text-neutral-700 uppercase mb-2'>Perks</p>
+							<div className='grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2'>
+								{filteredPerks.map((perk) => (
+									<GearIcon
+										key={perk}
+										imgSrc={PERKS[perk]}
+										name={perk}
+										restrictionStatus={getPerkRestriction(perk)}
+									/>
+								))}
+							</div>
+						</div>
+					)}
+
+					{/* Items */}
+					{filteredEquipment.length > 0 && (
+						<div className='px-4 pt-3 pb-4'>
+							<p className='font-mono text-[6px] tracking-[0.35em] text-neutral-700 uppercase mb-2'>Items</p>
+							<div className='grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 border-b border-neutral-800/60 pb-4'>
+								{filteredEquipment.map((item) => (
+									<GearIcon
+										key={item}
+										imgSrc={ITEMS[item]}
+										name={item}
+										invert
+										restrictionStatus={getItemRestriction(item)}
+									/>
+								))}
+							</div>
+						</div>
+					)}
+
+					{aoRestrictions && filteredEquipment.length === 0 && filteredPerks.length === 0 && (
+						<p className='font-mono text-[8px] text-neutral-700 text-center py-6 border-b border-neutral-800/60'>
+							No {equipFilter} equipment for this AO
+						</p>
+					)}
 				</>
 			)}
 
@@ -481,14 +774,23 @@ const TeamView = ({ teamId }) => {
 					injuryType={injuryType}
 				/>
 			)}
+
+			{/* Operator detail — standalone sheet, closing returns here */}
+			<Sheet open={!!detailOp} onOpenChange={(open) => { if (!open) setDetailOp(null); }}>
+				<SheetContent side='right' className='p-0 sm:max-w-md overflow-y-auto bg-blk border-l border-neutral-800/60' aria-describedby={undefined}>
+					<SheetTitle className='sr-only'>{detailOp?.callSign || "Operator"}</SheetTitle>
+	{detailOp && <OperatorImageView operator={detailOp} openSheet={openSheet} />}
+				</SheetContent>
+			</Sheet>
+
 		</div>
 	);
 };
 
 SectionHeader.propTypes = { label: PropTypes.string, count: PropTypes.number };
 FuelBar.propTypes = { pct: PropTypes.number };
-GearIcon.propTypes = { imgSrc: PropTypes.string, name: PropTypes.string, invert: PropTypes.bool };
-OperatorCard.propTypes = { operator: PropTypes.object, onInjuryClick: PropTypes.func };
+GearIcon.propTypes = { imgSrc: PropTypes.string, name: PropTypes.string, invert: PropTypes.bool, restrictionStatus: PropTypes.string };
+OperatorCard.propTypes = { operator: PropTypes.object, onInjuryClick: PropTypes.func, missionProfile: PropTypes.string, onDetailClick: PropTypes.func };
 AssetCard.propTypes = { asset: PropTypes.object };
 TeamView.propTypes = { openSheet: PropTypes.func, teamId: PropTypes.string.isRequired };
 

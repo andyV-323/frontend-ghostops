@@ -6,8 +6,12 @@ import {
 	faUsersGear,
 	faXmark,
 	faPlus,
+	faLocationDot,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTeamsStore } from "@/zustand";
+import { TeamsApi } from "@/api";
+import { toast } from "react-toastify";
+import { PROVINCES } from "@/config";
 import { PropTypes } from "prop-types";
 import { useConfirmDialog } from "@/hooks";
 import { ConfirmDialog, TeamView } from "@/components";
@@ -82,8 +86,10 @@ function TeamCard({
 	fullVehicleList,
 	addVehicleToTeam,
 	removeVehicleFromTeam,
+	onAOChange,
 }) {
 	const [showAddAsset, setShowAddAsset] = useState(false);
+	const [showAOPicker, setShowAOPicker] = useState(false);
 	const isOver = dragOverTeam === team._id;
 
 	return (
@@ -113,11 +119,16 @@ function TeamCard({
 				<span className='font-mono text-[10px] tracking-[0.18em] text-neutral-200 uppercase flex-1 truncate'>
 					{team.name}
 				</span>
+				{team.AO && (
+					<span className='font-mono text-[6px] tracking-widest uppercase text-btn/70 border border-btn/30 bg-btn/5 px-1.5 py-0.5 shrink-0'>
+						{team.AO}
+					</span>
+				)}
 				<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-500 tabular-nums shrink-0 uppercase'>
 					{team.operators.length} op{team.operators.length !== 1 ? "s" : ""}
 				</span>
 				<button
-					onClick={() => openSheet("bottom", <TeamView teamId={team._id} />)}
+					onClick={() => openSheet("bottom", <TeamView teamId={team._id} openSheet={openSheet} />)}
 					title='Team View'
 					className='font-mono text-[7px] tracking-widest uppercase text-neutral-600 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
 					View
@@ -167,6 +178,36 @@ function TeamCard({
 						{isOver ? "Drop operator here" : "No operators assigned"}
 					</p>
 				}
+			</div>
+
+			{/* ── AO ──────────────────────────────────────── */}
+			<div className='px-3 pt-2 pb-1 flex flex-col gap-1 border-t border-neutral-800/60'>
+				<p className='font-mono text-[7px] tracking-[0.25em] text-neutral-700 uppercase'>AO</p>
+				<div className='flex flex-wrap gap-1.5 items-center'>
+					{team.AO && (
+						<span className='inline-flex items-center gap-1 font-mono text-[7px] tracking-widest text-btn/70 bg-btn/5 border border-btn/30 px-1.5 py-0.5 uppercase'>
+							<FontAwesomeIcon icon={faLocationDot} className='text-[6px]' />
+							{team.AO}
+						</span>
+					)}
+					<button
+						onClick={() => setShowAOPicker((v) => !v)}
+						className='inline-flex items-center gap-1 font-mono text-[7px] tracking-widest uppercase text-neutral-700 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
+						<FontAwesomeIcon icon={faPlus} className='text-[7px]' />
+						{team.AO ? "Change" : "AO"}
+					</button>
+				</div>
+				{showAOPicker && (
+					<select
+						className='w-full bg-neutral-950 border border-neutral-800/60 rounded-sm px-2 py-1 font-mono text-[9px] text-neutral-300 outline-none focus:border-btn/50 transition-colors'
+						defaultValue={team.AO || ""}
+						onChange={(e) => { onAOChange(team, e.target.value); setShowAOPicker(false); }}>
+						<option value=''>— No AO —</option>
+						{Object.keys(PROVINCES).map((key) => (
+							<option key={key} value={key}>{key}</option>
+						))}
+					</select>
+				)}
 			</div>
 
 			{/* ── Assets ──────────────────────────────────── */}
@@ -263,6 +304,23 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	const [selectedOperator, setSelectedOperator] = useState(null);
 	const [draggedOperator, setDraggedOperator] = useState(null);
 	const [dragOverTeam, setDragOverTeam] = useState(null);
+
+	const handleAOChange = async (team, ao) => {
+		try {
+			await TeamsApi.updateTeam(team._id, {
+				createdBy: team.createdBy,
+				name: team.name,
+				AO: ao || null,
+				operators: (team.operators || []).map((op) => typeof op === "object" ? op._id : op),
+				assets: (team.assets || []).map((a) => typeof a === "object" ? a._id : a),
+			});
+			await fetchTeams();
+			toast.success(ao ? `AO set to ${ao}` : "AO cleared");
+		} catch (err) {
+			toast.error("Failed to update AO");
+			console.error(err);
+		}
+	};
 
 	const allVehicles = useTeamsStore((s) => s.allVehicles);
 	const fullVehicleList = useTeamsStore((s) => s.fullVehicleList);
@@ -397,6 +455,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 								fullVehicleList={fullVehicleList}
 								addVehicleToTeam={addVehicleToTeam}
 								removeVehicleFromTeam={removeVehicleFromTeam}
+								onAOChange={handleAOChange}
 							/>
 						))}
 					</div>
@@ -479,6 +538,7 @@ TeamCard.propTypes = {
 	fullVehicleList: PropTypes.array,
 	addVehicleToTeam: PropTypes.func.isRequired,
 	removeVehicleFromTeam: PropTypes.func.isRequired,
+	onAOChange: PropTypes.func.isRequired,
 };
 Teams.propTypes = {
 	dataUpdated: PropTypes.bool,

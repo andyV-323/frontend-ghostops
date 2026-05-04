@@ -11,12 +11,14 @@ import { toast } from "react-toastify";
 import useSquadStore from "@/zustand/useSquadStore";
 import OperatorPicker from "./OperatorPicker";
 import AssetPicker from "./AssetPicker";
+import { PROVINCES } from "@/config";
 
 const EditTeamForm = ({ teamId }) => {
 	const auth = useAuth();
 	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
 
 	const teamName     = useTeamsStore((state) => state.teamName);
+	const teamAO       = useTeamsStore((state) => state.teamAO);
 	const operators    = useTeamsStore((state) => state.operators);
 	const allOperators = useTeamsStore((state) => state.allOperators);
 	const assets       = useTeamsStore((state) => state.assets);
@@ -30,6 +32,7 @@ const EditTeamForm = ({ teamId }) => {
 		fetchOperators,
 		fetchTeamById,
 		setTeamName,
+		setTeamAO,
 		updateTeam,
 		deleteTeam,
 		resetStore,
@@ -65,6 +68,7 @@ const EditTeamForm = ({ teamId }) => {
 			_id: teamId,
 			createdBy: storeState.createdBy,
 			name: teamName.trim(),
+			AO: storeState.teamAO || null,
 			operators: operators.length > 0 ? operators : [],
 			assets: storeState.assets.length ? storeState.assets : [],
 		};
@@ -113,6 +117,22 @@ const EditTeamForm = ({ teamId }) => {
 							onChange={(e) => setTeamName(e.target.value)}
 							required
 						/>
+					</div>
+
+					{/* AO */}
+					<div>
+						<label className="block mb-1.5 font-mono text-[9px] tracking-[0.25em] text-lines/50 uppercase">
+							Area of Operations (AO)
+						</label>
+						<select
+							className="bg-blk/50 border border-lines/40 text-fontz font-mono text-sm rounded-sm outline-none focus:border-lines/70 block w-full px-3 py-2"
+							value={teamAO || ""}
+							onChange={(e) => setTeamAO(e.target.value)}>
+							<option value="">— No AO —</option>
+							{Object.keys(PROVINCES).map((key) => (
+								<option key={key} value={key}>{key}</option>
+							))}
+						</select>
 					</div>
 
 					{/* Operators */}

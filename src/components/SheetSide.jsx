@@ -23,7 +23,6 @@ const SheetSide = ({
 	const { closeSheet } = useSheetStore();
 
 	const handleClose = () => {
-		// Close whichever controller is active
 		if (onClose) onClose();
 		if (setOpenSheet) setOpenSheet(null);
 		closeSheet();

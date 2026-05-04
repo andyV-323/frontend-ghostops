@@ -1,4 +1,5 @@
 import NewOperatorForm from "./NewOperatorForm";
+import NewLoadoutForm from "./NewLoadoutForm";
 import NewTeamForm from "./NewTeamForm";
 import EditLoadout from "./EditLoadout";
 import EditOperatorForm from "./EditOperatorForm";
@@ -14,6 +15,7 @@ import EditMissionForm from "./EditMissionForm";
 
 export {
 	NewOperatorForm,
+	NewLoadoutForm,
 	NewTeamForm,
 	EditLoadout,
 	EditOperatorForm,

@@ -20,6 +20,7 @@ const useTeamsStore = create((set, get) => ({
 	loading: false,
 	allOperators: [],
 	teamName: "",
+	teamAO: "",
 	fullOperatorList: [],
 	assets: [],
 	allVehicles: [],
@@ -30,13 +31,7 @@ const useTeamsStore = create((set, get) => ({
 		set({ loading: true });
 		try {
 			const teamsData = await TeamsApi.getTeams();
-			const filteredTeams = teamsData.map((team) => ({
-				...team,
-				operators: team.operators.filter(
-					(op) => op.status !== "Injured" && op.status !== "KIA",
-				),
-			}));
-			set({ teams: filteredTeams });
+			set({ teams: teamsData });
 			await get().fetchVehiclesForTeams();
 		} catch (error) {
 			console.error("ERROR fetching teams:", error);
@@ -107,10 +102,12 @@ const useTeamsStore = create((set, get) => ({
 					_id: teamData._id,
 					createdBy: teamData.createdBy || "",
 					name: teamData.name || "",
+					AO: teamData.AO || null,
 					operators: operatorIds,
 					assets: assetIds,
 				},
 				teamName: teamData.name || "",
+				teamAO: teamData.AO || "",
 				operators: operatorIds,
 				assets: assetIds,
 			};
@@ -134,6 +131,9 @@ const useTeamsStore = create((set, get) => ({
 	// Set team name
 	setTeamName: (name) => set({ teamName: name }),
 
+	// Set team AO
+	setTeamAO: (ao) => set({ teamAO: ao }),
+
 	updateTeam: async (teamData) => {
 		try {
 			if (!teamData._id) {
@@ -145,6 +145,7 @@ const useTeamsStore = create((set, get) => ({
 			await TeamsApi.updateTeam(teamData._id, {
 				createdBy: teamData.createdBy,
 				name: teamData.name,
+				AO: teamData.AO ?? null,
 				operators: teamData.operators,
 				assets: teamData.assets,
 			});
@@ -334,7 +335,6 @@ const useTeamsStore = create((set, get) => ({
 
 		try {
 			await OperatorsApi.updateOperatorStatus(operatorId, status);
-			await TeamsApi.removeOperatorFromTeams(operatorId);
 
 			if (status === "Injured") {
 				await InfirmaryApi.addInfirmaryEntry(infirmaryEntry);
@@ -393,7 +393,6 @@ const useTeamsStore = create((set, get) => ({
 
 		try {
 			await OperatorsApi.updateOperatorStatus(operatorId, status);
-			await TeamsApi.removeOperatorFromTeams(operatorId);
 
 			await MemorialApi.addMemorialEntry(memorialEntry);
 			toast.info("Operator was killed in action");
@@ -436,7 +435,6 @@ const useTeamsStore = create((set, get) => ({
 
 		try {
 			await OperatorsApi.updateOperatorStatus(operatorId, status);
-			await TeamsApi.removeOperatorFromTeams(operatorId);
 
 			if (status === "Injured") {
 				await InfirmaryApi.addInfirmaryEntry(infirmaryEntry);
@@ -719,6 +717,7 @@ const useTeamsStore = create((set, get) => ({
 	resetStore: () => {
 		set({
 			teamName: "",
+			teamAO: "",
 			operators: [],
 			assets: [],
 			team: null,

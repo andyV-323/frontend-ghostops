@@ -27,3 +27,18 @@ export const ITEMS = {
 	"Battle Drone": "/icons/BattleDrone.svg",
 	"Shot Gun": "/icons/STG.svg",
 };
+
+// Maps item names to their restriction key in PROVINCE_RESTRICTIONS.
+// Add entries here when adding new items. Leave unmapped items unrestricted.
+export const ITEM_RESTRICTION_KEYS = {
+	"Recon Drone":          "reconDrone",
+	"Sync Shot Drone":      "syncDrone",
+	"Armaros Drone":        "uplinkProtocol",
+	"Battle Drone":         "combatDrone",
+	"Attack Helicopter":    "aviation",
+	"Transport Helicopter": "aviation",
+	"Strike Designator":    "isrDrone",
+	"Intel Grenade":        "intelGrenades",
+	"Sonar Goggles":        "sonarVision",
+	Binoculars:             "lrOptics",
+};

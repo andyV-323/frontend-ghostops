@@ -1,6 +1,6 @@
 import { useHandleChange } from "@/hooks";
 import { useOperatorsStore } from "@/zustand";
-import { ghostID, CLASS, WEAPONS, ITEMS, PERKS } from "@/config";
+import { ghostID, CLASS, ITEMS, PERKS } from "@/config";
 import { ImageUpload } from "@/components";
 
 const GhostID = () => {
@@ -123,60 +123,6 @@ const GhostID = () => {
 					<p className='mt-1 text-xs text-gray-400'>
 						Define this operator&apos;s unique role and advanced training. Be
 						creative!
-					</p>
-				</div>
-				<br />
-				{/** WEAPON **/}
-				<div>
-					<label className='block mb-2 font-medium'>Weapon Type</label>
-					<select
-						className='form'
-						value={selectedOperator?.weaponType || ""}
-						onChange={handleChange}
-						name='weaponType'
-						required>
-						<option value=''>Select Weapon</option>
-						{Object.entries(WEAPONS).map(([key, weapon]) => (
-							<option
-								key={key}
-								value={key}>
-								{weapon.name}
-							</option>
-						))}
-					</select>
-				</div>
-				<br />
-				{/*Weapon Name*/}
-				<div className='w-full'>
-					<label className='block mb-2 font-medium text-fontz'>
-						Weapon Name
-					</label>
-					<input
-						type='text'
-						name='weapon'
-						className='form'
-						placeholder='Enter Primary Weapon'
-						value={selectedOperator?.weapon || ""}
-						onChange={handleChange}
-					/>
-					<p className='mt-1 text-xs text-gray-400'>
-						Define this operator&apos;s primary weapon.
-					</p>
-				</div>
-				<br />
-				{/*SideArm*/}
-				<div className='w-full'>
-					<label className='block mb-2 font-medium text-fontz'>Side Arm</label>
-					<input
-						type='text'
-						name='sideArm'
-						className='form'
-						placeholder='Enter side arm name'
-						value={selectedOperator?.sideArm || ""}
-						onChange={handleChange}
-					/>
-					<p className='mt-1 text-xs text-gray-400'>
-						Define this operator&apos;s side arm.
 					</p>
 				</div>
 				<br />
