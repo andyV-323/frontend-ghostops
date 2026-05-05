@@ -26,6 +26,14 @@ export const updateTeam = async (id, teamData) =>
 // Delete a team
 export const deleteTeam = async (id) => api.delete(`/teams/${id}`);
 
+// Attach a team to a main team
+export const attachTeam = async (mainTeamId, teamId) =>
+	api.post(`/teams/${mainTeamId}/attach`, { teamId });
+
+// Detach a team from a main team
+export const detachTeam = async (mainTeamId, attachedTeamId) =>
+	api.delete(`/teams/${mainTeamId}/attach/${attachedTeamId}`);
+
 //Remove injured or KIA Operator
 export const removeOperatorFromTeams = async (operatorId) => {
 	try {

@@ -699,6 +699,39 @@ const useTeamsStore = create((set, get) => ({
 		}));
 	},
 
+	// Attach a team to a main team
+	attachTeamTo: async (mainTeamId, teamId) => {
+		try {
+			const { teams } = get();
+			const mainTeam = teams.find((t) => t._id === mainTeamId);
+			const alreadyAttached = (mainTeam?.attachedTeams || []).some(
+				(t) => (typeof t === "object" ? t._id : t) === teamId,
+			);
+			if (alreadyAttached) {
+				toast.warning("Team is already attached");
+				return;
+			}
+			await TeamsApi.attachTeam(mainTeamId, teamId);
+			toast.success("Team attached!");
+			await get().fetchTeams();
+		} catch (error) {
+			console.error("ERROR attaching team:", error);
+			toast.error("Failed to attach team");
+		}
+	},
+
+	// Detach a team from a main team
+	detachTeamFrom: async (mainTeamId, attachedTeamId) => {
+		try {
+			await TeamsApi.detachTeam(mainTeamId, attachedTeamId);
+			toast.success("Team detached");
+			await get().fetchTeams();
+		} catch (error) {
+			console.error("ERROR detaching team:", error);
+			toast.error("Failed to detach team");
+		}
+	},
+
 	// Delete a team
 	deleteTeam: async (teamId) => {
 		if (!teamId) {

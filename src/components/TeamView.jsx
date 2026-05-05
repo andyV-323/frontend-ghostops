@@ -17,6 +17,7 @@ import {
 	faChevronUp,
 	faXmark,
 	faLocationDot,
+	faLink,
 } from "@fortawesome/free-solid-svg-icons";
 import { TeamsApi } from "@/api";
 import { toast } from "react-toastify";
@@ -363,7 +364,7 @@ const CONDITION_SCORE = { Optimal: 1.0, Operational: 0.75, Compromised: 0.4, Cri
    TEAMVIEW
 ═══════════════════════════════════════════════════════════════ */
 const TeamView = ({ teamId, openSheet }) => {
-	const { teams, fetchTeams, assignRandomInjury, assignRandomKIAInjury, assignUnknownFate } = useTeamsStore();
+	const { teams, fetchTeams, assignRandomInjury, assignRandomKIAInjury, assignUnknownFate, attachTeamTo, detachTeamFrom } = useTeamsStore();
 	const { operators, fetchOperators } = useOperatorsStore();
 	const userId = localStorage.getItem("userId");
 
@@ -375,6 +376,7 @@ const TeamView = ({ teamId, openSheet }) => {
 	const [showAOSelector, setShowAOSelector] = useState(false);
 	const [savingAO, setSavingAO] = useState(false);
 	const [localAO, setLocalAO] = useState("");
+	const [showAttachPicker, setShowAttachPicker] = useState(false);
 
 	useEffect(() => {
 		fetchOperators();
@@ -504,6 +506,17 @@ const TeamView = ({ teamId, openSheet }) => {
 			setSavingAO(false);
 		}
 	};
+
+	const attachedTeams = useMemo(() => selectedTeam?.attachedTeams || [], [selectedTeam]);
+	const attachableTeams = useMemo(() =>
+		teams.filter((t) => {
+			if (t._id === teamId) return false;
+			const alreadyAttached = attachedTeams.some(
+				(a) => (typeof a === "object" ? a._id : a) === t._id,
+			);
+			return !alreadyAttached;
+		}),
+	[teams, teamId, attachedTeams]);
 
 	if (!selectedTeam) {
 		return (
@@ -659,6 +672,38 @@ const TeamView = ({ teamId, openSheet }) => {
 						</button>
 					</div>
 				)}
+
+				{/* Attach team row */}
+				<div className='mt-3 pt-3 border-t border-neutral-800/60 flex items-center gap-2 flex-wrap'>
+					<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-600 uppercase flex-1'>
+						{attachedTeams.length > 0 ? `${attachedTeams.length} attached` : "Attached Teams"}
+					</span>
+					<button
+						type='button'
+						onClick={() => setShowAttachPicker((v) => !v)}
+						className='flex items-center gap-1 font-mono text-[7px] tracking-widest uppercase px-2 py-0.5 border text-neutral-600 border-neutral-700/40 hover:text-violet-400 hover:border-violet-900/50 transition-colors'>
+						<FontAwesomeIcon icon={faLink} className='text-[6px]' />
+						Attach
+					</button>
+				</div>
+				{showAttachPicker && (
+					<div className='mt-2'>
+						<select
+							className='w-full bg-neutral-950 border border-neutral-700/60 px-2 py-1 font-mono text-[9px] text-neutral-300 outline-none focus:border-violet-900/50'
+							defaultValue=''
+							onChange={(e) => {
+								if (e.target.value) {
+									attachTeamTo(teamId, e.target.value);
+									setShowAttachPicker(false);
+								}
+							}}>
+							<option value=''>— Select Team to Attach —</option>
+							{attachableTeams.map((t) => (
+								<option key={t._id} value={t._id}>{t.name}</option>
+							))}
+						</select>
+					</div>
+				)}
 			</div>
 
 			{/* ── Operator lineup ──────────────────────────── */}
@@ -690,6 +735,66 @@ const TeamView = ({ teamId, openSheet }) => {
 						{selectedTeam.assets.map((asset, i) => (
 							<AssetCard key={typeof asset === "object" ? asset._id || i : i} asset={asset} />
 						))}
+					</div>
+				</>
+			)}
+
+			{/* ── Attached Teams ───────────────────────────── */}
+			{attachedTeams.length > 0 && (
+				<>
+					<SectionHeader label='Attached Teams' count={attachedTeams.length} />
+					<div className='flex flex-col divide-y divide-neutral-800/60 border-b border-neutral-800/60'>
+						{attachedTeams.map((attached) => {
+							const id = typeof attached === "object" ? attached._id : attached;
+							const name = typeof attached === "object" ? attached.name : id;
+							const ops = typeof attached === "object" ? (attached.operators || []) : [];
+							const assets = typeof attached === "object" ? (attached.assets || []) : [];
+							const activeCount = ops.filter((o) => o.status === "Active").length;
+							const wiaCount = ops.filter((o) => o.status === "Injured").length;
+							const kiaCount = ops.filter((o) => o.status === "KIA").length;
+
+							return (
+								<div key={id} className='px-4 py-3 bg-neutral-950/20'>
+									{/* Row: name + detach */}
+									<div className='flex items-center gap-2 mb-2'>
+										<FontAwesomeIcon icon={faLink} className='text-violet-500/50 text-[8px] shrink-0' />
+										<span className='font-mono text-[9px] font-semibold text-neutral-300 flex-1 truncate tracking-wide uppercase'>
+											{name}
+										</span>
+										<button
+											onClick={() => detachTeamFrom(teamId, id)}
+											className='flex items-center gap-1 font-mono text-[6px] tracking-widest uppercase text-neutral-700 hover:text-red-400 border border-neutral-800/40 hover:border-red-900/40 px-1.5 py-0.5 transition-colors'>
+											<FontAwesomeIcon icon={faXmark} className='text-[6px]' />
+											Detach
+										</button>
+									</div>
+
+									{/* Operator status summary */}
+									<div className='flex items-center gap-2 mb-2'>
+										{ops.length === 0 ? (
+											<span className='font-mono text-[7px] text-neutral-700 italic'>No operators</span>
+										) : (
+											<>
+												<span className='font-mono text-[7px] text-green-400/70'>{activeCount} Active</span>
+												{wiaCount > 0 && <span className='font-mono text-[7px] text-amber-400/70'>{wiaCount} WIA</span>}
+												{kiaCount > 0 && <span className='font-mono text-[7px] text-red-400/70'>{kiaCount} KIA</span>}
+											</>
+										)}
+									</div>
+
+									{/* Assets */}
+									{assets.length > 0 ? (
+										<div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+											{assets.map((asset, i) => (
+												<AssetCard key={typeof asset === "object" ? asset._id || i : i} asset={asset} />
+											))}
+										</div>
+									) : (
+										<span className='font-mono text-[7px] text-neutral-700 italic'>No assets</span>
+									)}
+								</div>
+							);
+						})}
 					</div>
 				</>
 			)}

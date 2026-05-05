@@ -7,6 +7,7 @@ import {
 	faXmark,
 	faPlus,
 	faLocationDot,
+	faLink,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTeamsStore } from "@/zustand";
 import { TeamsApi } from "@/api";
@@ -72,6 +73,7 @@ function TeamOperator({
 // ─── Team card ────────────────────────────────────────────────
 function TeamCard({
 	team,
+	allTeams,
 	isMobile,
 	dragOverTeam,
 	onDragOver,
@@ -87,10 +89,20 @@ function TeamCard({
 	addVehicleToTeam,
 	removeVehicleFromTeam,
 	onAOChange,
+	onAttachTeam,
+	onDetachTeam,
 }) {
 	const [showAddAsset, setShowAddAsset] = useState(false);
 	const [showAOPicker, setShowAOPicker] = useState(false);
+	const [showAttachPicker, setShowAttachPicker] = useState(false);
 	const isOver = dragOverTeam === team._id;
+
+	const attachedIds = new Set(
+		(team.attachedTeams || []).map((t) => (typeof t === "object" ? t._id : t)),
+	);
+	const attachableTeams = allTeams.filter(
+		(t) => t._id !== team._id && !attachedIds.has(t._id),
+	);
 
 	return (
 		<div
@@ -281,6 +293,57 @@ function TeamCard({
 					</select>
 				)}
 			</div>
+
+			{/* ── Attached Teams ──────────────────────────── */}
+			<div className='px-3 pb-3 flex flex-col gap-1.5 border-t border-neutral-800/60'>
+				<div className='pt-2 flex items-center gap-1.5 flex-wrap min-h-[18px]'>
+					{(team.attachedTeams || []).length === 0 ? (
+						<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-700 uppercase italic'>
+							No attached teams
+						</span>
+					) : (
+						(team.attachedTeams || []).map((attached) => {
+							const id = typeof attached === "object" ? attached._id : attached;
+							const name = typeof attached === "object" ? attached.name : id;
+							return (
+								<span
+									key={id}
+									className='inline-flex items-center gap-1 font-mono text-[7px] tracking-widest text-violet-400/70 bg-violet-950/20 border border-violet-900/40 px-1.5 py-0.5 uppercase'>
+									<FontAwesomeIcon icon={faLink} className='text-[6px]' />
+									{name}
+									<button
+										onClick={(e) => { e.stopPropagation(); onDetachTeam(team._id, id); }}
+										className='text-neutral-600 hover:text-red-400 transition-colors ml-0.5'>
+										<FontAwesomeIcon icon={faXmark} className='text-[7px]' />
+									</button>
+								</span>
+							);
+						})
+					)}
+					<button
+						onClick={() => setShowAttachPicker((v) => !v)}
+						className='inline-flex items-center gap-1 font-mono text-[7px] tracking-widest uppercase text-neutral-700 hover:text-violet-400 border border-neutral-800/60 hover:border-violet-900/40 px-1.5 py-0.5 rounded-sm transition-all'>
+						<FontAwesomeIcon icon={faLink} className='text-[7px]' />
+						Attach
+					</button>
+				</div>
+				{showAttachPicker && (
+					<select
+						className='w-full bg-neutral-950 border border-neutral-800/60 rounded-sm px-2 py-1 font-mono text-[9px] text-neutral-300 outline-none focus:border-violet-900/50 transition-colors'
+						defaultValue=''
+						onChange={(e) => {
+							if (e.target.value) {
+								onAttachTeam(team._id, e.target.value);
+								setShowAttachPicker(false);
+							}
+						}}>
+						<option value=''>— Select Team —</option>
+						{attachableTeams.map((t) => (
+							<option key={t._id} value={t._id}>{t.name}</option>
+						))}
+					</select>
+				)}
+			</div>
 		</div>
 	);
 }
@@ -299,6 +362,8 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		removeAllOperatorsFromTeams,
 		addVehicleToTeam,
 		removeVehicleFromTeam,
+		attachTeamTo,
+		detachTeamFrom,
 	} = useTeamsStore();
 
 	const [selectedOperator, setSelectedOperator] = useState(null);
@@ -441,6 +506,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 							<TeamCard
 								key={team._id}
 								team={team}
+								allTeams={teams}
 								isMobile={isMobile}
 								dragOverTeam={dragOverTeam}
 								onDragOver={handleDragOver}
@@ -456,6 +522,8 @@ const Teams = ({ dataUpdated, openSheet }) => {
 								addVehicleToTeam={addVehicleToTeam}
 								removeVehicleFromTeam={removeVehicleFromTeam}
 								onAOChange={handleAOChange}
+								onAttachTeam={attachTeamTo}
+								onDetachTeam={detachTeamFrom}
 							/>
 						))}
 					</div>
@@ -524,6 +592,7 @@ TeamOperator.propTypes = {
 };
 TeamCard.propTypes = {
 	team: PropTypes.object.isRequired,
+	allTeams: PropTypes.array,
 	isMobile: PropTypes.bool,
 	dragOverTeam: PropTypes.string,
 	onDragOver: PropTypes.func.isRequired,
@@ -539,6 +608,8 @@ TeamCard.propTypes = {
 	addVehicleToTeam: PropTypes.func.isRequired,
 	removeVehicleFromTeam: PropTypes.func.isRequired,
 	onAOChange: PropTypes.func.isRequired,
+	onAttachTeam: PropTypes.func.isRequired,
+	onDetachTeam: PropTypes.func.isRequired,
 };
 Teams.propTypes = {
 	dataUpdated: PropTypes.bool,
