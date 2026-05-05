@@ -38,7 +38,13 @@ const STATUS = {
 /* ═══════════════════════════════════════════════════════════════ */
 const OperatorImageView = ({ operator, openSheet }) => {
 	const { selectedOperator, fetchOperatorById } = useOperatorsStore();
-	const { teams, fetchTeams, assignRandomInjury, assignRandomKIAInjury, assignUnknownFate } = useTeamsStore();
+	const {
+		teams,
+		fetchTeams,
+		assignRandomInjury,
+		assignRandomKIAInjury,
+		assignUnknownFate,
+	} = useTeamsStore();
 	const [injuryDialogOpen, setInjuryDialogOpen] = useState(false);
 	const [loadoutIndex, setLoadoutIndex] = useState(0);
 	const [expandedSlot, setExpandedSlot] = useState(null);
@@ -81,11 +87,13 @@ const OperatorImageView = ({ operator, openSheet }) => {
 		Array.isArray(selectedOperator.items) && selectedOperator.items.length > 0;
 	const hasPerks =
 		Array.isArray(selectedOperator.perks) && selectedOperator.perks.length > 0;
-	const primaryWeapon = selectedOperator.weaponType ? WEAPONS[selectedOperator.weaponType] : null;
+	const primaryWeapon =
+		selectedOperator.weaponType ? WEAPONS[selectedOperator.weaponType] : null;
 	const loadouts = selectedOperator.loadouts || [];
 	const safeIdx = Math.min(loadoutIndex, Math.max(0, loadouts.length - 1));
 	const currentLoadout = loadouts[safeIdx] || null;
-	const currentProfile = currentLoadout ? MISSION_PROFILES[currentLoadout.missionProfile] : null;
+	const currentProfile =
+		currentLoadout ? MISSION_PROFILES[currentLoadout.missionProfile] : null;
 
 	return (
 		<div
@@ -103,13 +111,6 @@ const OperatorImageView = ({ operator, openSheet }) => {
 					className={`absolute w-5 h-5 border-lines/25 z-20 pointer-events-none ${cls}`}
 				/>
 			))}
-
-			{/* Classification stamp */}
-			<div className='absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none'>
-				<span className='font-mono text-[7px] tracking-[0.35em] text-red-500/20 uppercase'>
-					{"// TOP SECRET //"}
-				</span>
-			</div>
 
 			{/* Operator image */}
 			<img
@@ -179,17 +180,22 @@ const OperatorImageView = ({ operator, openSheet }) => {
 						</div>
 					</div>
 					{/* LOADOUT ROW */}
-					{loadouts.length > 0 ? (
+					{loadouts.length > 0 ?
 						<div className='flex flex-col gap-2 pb-2.5 border-b border-lines/10'>
 							{/* Profile name + nav */}
 							<div className='flex items-center justify-between gap-2'>
 								<span className='font-mono text-[8px] text-fontz/60 tracking-wide truncate'>
-									{currentProfile?.name || currentLoadout?.missionProfile || "—"}
+									{currentProfile?.name ||
+										currentLoadout?.missionProfile ||
+										"—"}
 								</span>
 								{loadouts.length > 1 && (
 									<div className='flex items-center gap-1 shrink-0'>
 										<button
-											onClick={() => { setLoadoutIndex((i) => Math.max(0, i - 1)); setExpandedSlot(null); }}
+											onClick={() => {
+												setLoadoutIndex((i) => Math.max(0, i - 1));
+												setExpandedSlot(null);
+											}}
 											disabled={safeIdx === 0}
 											className='w-6 h-6 flex items-center justify-center font-mono text-xs text-fontz/60 hover:text-fontz border border-lines/20 hover:border-lines/40 disabled:opacity-20 bg-neutral-950/60 transition-colors'>
 											‹
@@ -198,7 +204,12 @@ const OperatorImageView = ({ operator, openSheet }) => {
 											{safeIdx + 1} / {loadouts.length}
 										</span>
 										<button
-											onClick={() => { setLoadoutIndex((i) => Math.min(loadouts.length - 1, i + 1)); setExpandedSlot(null); }}
+											onClick={() => {
+												setLoadoutIndex((i) =>
+													Math.min(loadouts.length - 1, i + 1),
+												);
+												setExpandedSlot(null);
+											}}
 											disabled={safeIdx === loadouts.length - 1}
 											className='w-6 h-6 flex items-center justify-center font-mono text-xs text-fontz/60 hover:text-fontz border border-lines/20 hover:border-lines/40 disabled:opacity-20 bg-neutral-950/60 transition-colors'>
 											›
@@ -209,9 +220,17 @@ const OperatorImageView = ({ operator, openSheet }) => {
 							{/* Weapon slots — clickable to expand attachments */}
 							<div className='grid grid-cols-3 gap-2'>
 								{[
-									{ label: "Primary",   slotKey: "primary",   typeKey: currentLoadout?.primary?.weaponType },
-									{ label: "Secondary", slotKey: "secondary", typeKey: currentLoadout?.secondary?.weaponType },
-									{ label: "Handgun",   slotKey: "handgun",   typeKey: "HDG" },
+									{
+										label: "Primary",
+										slotKey: "primary",
+										typeKey: currentLoadout?.primary?.weaponType,
+									},
+									{
+										label: "Secondary",
+										slotKey: "secondary",
+										typeKey: currentLoadout?.secondary?.weaponType,
+									},
+									{ label: "Handgun", slotKey: "handgun", typeKey: "HDG" },
 								].map(({ label, slotKey, typeKey }) => {
 									const data = currentLoadout?.[slotKey];
 									const isActive = expandedSlot === slotKey;
@@ -221,7 +240,9 @@ const OperatorImageView = ({ operator, openSheet }) => {
 											type='button'
 											onClick={() => setExpandedSlot(isActive ? null : slotKey)}
 											className='flex flex-col gap-0.5 min-w-0 text-left hover:opacity-80 transition-opacity group'>
-											<span className='font-mono text-[7px] tracking-widest text-lines/30 uppercase'>{label}</span>
+											<span className='font-mono text-[7px] tracking-widest text-lines/30 uppercase'>
+												{label}
+											</span>
 											{WEAPONS[typeKey]?.imgUrl && (
 												<img
 													src={WEAPONS[typeKey].imgUrl}
@@ -230,8 +251,11 @@ const OperatorImageView = ({ operator, openSheet }) => {
 													style={{ filter: "invert(1) opacity(0.55)" }}
 												/>
 											)}
-											<span className={`font-mono text-[9px] truncate transition-colors ${isActive ? "text-fontz/95" : "text-fontz/75 group-hover:text-fontz/90"}`}>
-												{data?.weapon || <span className='text-lines/20'>—</span>}
+											<span
+												className={`font-mono text-[9px] truncate transition-colors ${isActive ? "text-fontz/95" : "text-fontz/75 group-hover:text-fontz/90"}`}>
+												{data?.weapon || (
+													<span className='text-lines/20'>—</span>
+												)}
 											</span>
 										</button>
 									);
@@ -240,21 +264,33 @@ const OperatorImageView = ({ operator, openSheet }) => {
 							{/* Attachment detail for the expanded slot */}
 							{expandedSlot && currentLoadout?.[expandedSlot] && (
 								<div className='mt-1 pt-2 border-t border-lines/10 flex flex-col gap-1'>
-									{Object.entries(currentLoadout[expandedSlot].attachments || {})
+									{Object.entries(
+										currentLoadout[expandedSlot].attachments || {},
+									)
 										.filter(([, v]) => v)
 										.map(([k, v]) => (
-											<div key={k} className='flex items-baseline gap-2 min-w-0'>
-												<span className='font-mono text-[6px] uppercase tracking-widest text-lines/25 shrink-0 w-16'>{k}</span>
-												<span className='font-mono text-[8px] text-fontz/60 truncate'>{v}</span>
+											<div
+												key={k}
+												className='flex items-baseline gap-2 min-w-0'>
+												<span className='font-mono text-[6px] uppercase tracking-widest text-lines/25 shrink-0 w-16'>
+													{k}
+												</span>
+												<span className='font-mono text-[8px] text-fontz/60 truncate'>
+													{v}
+												</span>
 											</div>
 										))}
-									{!Object.values(currentLoadout[expandedSlot].attachments || {}).some(Boolean) && (
-										<p className='font-mono text-[7px] text-lines/20 italic'>No attachments configured</p>
+									{!Object.values(
+										currentLoadout[expandedSlot].attachments || {},
+									).some(Boolean) && (
+										<p className='font-mono text-[7px] text-lines/20 italic'>
+											No attachments configured
+										</p>
 									)}
 								</div>
 							)}
 						</div>
-					) : (primaryWeapon || selectedOperator.sideArm) ? (
+					: primaryWeapon || selectedOperator.sideArm ?
 						<div className='flex items-center gap-3 pb-2.5 border-b border-lines/10'>
 							{primaryWeapon?.imgUrl && (
 								<img
@@ -265,21 +301,25 @@ const OperatorImageView = ({ operator, openSheet }) => {
 								/>
 							)}
 							<div className='flex flex-col gap-0.5 min-w-0 flex-1'>
-								<span className='font-mono text-[7px] tracking-widest text-lines/30 uppercase'>Primary</span>
+								<span className='font-mono text-[7px] tracking-widest text-lines/30 uppercase'>
+									Primary
+								</span>
 								<span className='font-mono text-[10px] text-fontz/85 truncate'>
 									{selectedOperator.weapon || primaryWeapon?.name || "Unknown"}
 								</span>
 							</div>
 							{selectedOperator.sideArm && (
 								<div className='flex flex-col gap-0.5 items-end shrink-0'>
-									<span className='font-mono text-[7px] tracking-widest text-lines/30 uppercase'>Sidearm</span>
+									<span className='font-mono text-[7px] tracking-widest text-lines/30 uppercase'>
+										Sidearm
+									</span>
 									<span className='font-mono text-[9px] text-fontz/70 truncate max-w-[100px]'>
 										{selectedOperator.sideArm}
 									</span>
 								</div>
 							)}
 						</div>
-					) : null}
+					:	null}
 
 					{/* ITEMS + PERKS ROW */}
 					{(hasItems || hasPerks) && (
@@ -360,7 +400,10 @@ const OperatorImageView = ({ operator, openSheet }) => {
 					openSheet("right", <EditOperatorForm operator={operator} />);
 				}}
 				className='absolute top-3 right-10 z-30 flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-btn border border-btn/30 hover:border-btn/60 bg-blk/70 hover:bg-btn/15 px-2.5 py-1.5 rounded-sm transition-all'>
-				<FontAwesomeIcon icon={faUserPen} className='text-[9px]' />
+				<FontAwesomeIcon
+					icon={faUserPen}
+					className='text-[9px]'
+				/>
 				Edit
 			</button>
 
@@ -379,7 +422,10 @@ const OperatorImageView = ({ operator, openSheet }) => {
 				<button
 					onClick={() => setInjuryDialogOpen(true)}
 					className='absolute top-3 left-10 z-30 flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-red-400/50 border border-red-900/30 hover:border-red-500/50 hover:text-red-400 bg-blk/70 hover:bg-red-950/30 px-2.5 py-1.5 rounded-sm transition-all'>
-					<FontAwesomeIcon icon={faSkull} className='text-[9px]' />
+					<FontAwesomeIcon
+						icon={faSkull}
+						className='text-[9px]'
+					/>
 					Casualty
 				</button>
 			)}

@@ -311,8 +311,29 @@ function AssetCard({ asset }) {
 }
 
 /* ─── Gear icon with optional restriction badge ─────────────── */
-function GearIcon({ imgSrc, name, invert, restrictionStatus }) {
+function GearIcon({ imgSrc, name, invert, restrictionStatus, kiaBlackout }) {
 	const rs = restrictionStatus ? RESTRICTION_STATUS_STYLE[restrictionStatus] : null;
+	if (kiaBlackout) {
+		return (
+			<div title={`${name} — KIA (unavailable)`} className='relative flex flex-col items-center gap-1.5 bg-neutral-950/60 border border-neutral-900/40 p-2.5 opacity-30'>
+				<span className='absolute top-1 right-1 font-mono text-[5px] tracking-widest uppercase px-1 py-0.5 border text-red-900/60 border-red-900/30 bg-red-950/10'>
+					KIA
+				</span>
+				{imgSrc ? (
+					<img src={imgSrc} alt={name}
+						className='w-9 h-9 object-contain grayscale'
+						style={invert ? { filter: "invert(1) opacity(0.3)" } : { opacity: 0.3 }} />
+				) : (
+					<div className='w-9 h-9 border border-neutral-900/40 bg-neutral-950/40 flex items-center justify-center'>
+						<span className='font-mono text-[7px] text-neutral-800'>?</span>
+					</div>
+				)}
+				<span className='font-mono text-[6px] text-center leading-tight w-full truncate text-neutral-800'>
+					{name}
+				</span>
+			</div>
+		);
+	}
 	return (
 		<div title={name} className='relative flex flex-col items-center gap-1.5 bg-neutral-950/60 border border-neutral-800/60 p-2.5 hover:border-neutral-700/60 transition-colors group'>
 			{rs && (
@@ -351,7 +372,6 @@ const TeamView = ({ teamId, openSheet }) => {
 	const [injuryType] = useState("choice");
 	const [missionProfile, setMissionProfile] = useState(null);
 	const [detailOp, setDetailOp] = useState(null);
-	const [equipFilter, setEquipFilter] = useState("all");
 	const [showAOSelector, setShowAOSelector] = useState(false);
 	const [savingAO, setSavingAO] = useState(false);
 	const [localAO, setLocalAO] = useState("");
@@ -398,12 +418,20 @@ const TeamView = ({ teamId, openSheet }) => {
 
 	const combinedPerks = useMemo(() => {
 		const all = teamOps.flatMap((op) => op.perks || []);
-		return [...new Set(all)].filter((p) => Object.prototype.hasOwnProperty.call(PERKS, p));
+		const unique = [...new Set(all)].filter((p) => Object.prototype.hasOwnProperty.call(PERKS, p));
+		return unique.map((perk) => ({
+			name: perk,
+			kiaBlackout: !teamOps.some((op) => op.status !== "KIA" && (op.perks || []).includes(perk)),
+		}));
 	}, [teamOps]);
 
 	const combinedEquipment = useMemo(() => {
 		const all = teamOps.flatMap((op) => op.items || []);
-		return [...new Set(all)].filter((e) => Object.prototype.hasOwnProperty.call(ITEMS, e));
+		const unique = [...new Set(all)].filter((e) => Object.prototype.hasOwnProperty.call(ITEMS, e));
+		return unique.map((item) => ({
+			name: item,
+			kiaBlackout: !teamOps.some((op) => op.status !== "KIA" && (op.items || []).includes(item)),
+		}));
 	}, [teamOps]);
 
 	const statusCounts = useMemo(() => ({
@@ -449,12 +477,6 @@ const TeamView = ({ teamId, openSheet }) => {
 		if (!aoRestrictions) return null;
 		const key = PERK_RESTRICTION_KEYS[perkName];
 		return key ? aoRestrictions[key]?.status : null;
-	};
-
-	const filterByRestriction = (name, getRestriction) => {
-		if (equipFilter === "all") return true;
-		const status = getRestriction(name) || "nominal";
-		return status === equipFilter;
 	};
 
 	const handleAOSave = async (newAO) => {
@@ -506,9 +528,6 @@ const TeamView = ({ teamId, openSheet }) => {
 
 	const assetCount = selectedTeam?.assets?.length ?? 0;
 	const hasLoadout = combinedPerks.length > 0 || combinedEquipment.length > 0;
-
-	const filteredEquipment = combinedEquipment.filter((item) => filterByRestriction(item, getItemRestriction));
-	const filteredPerks     = combinedPerks.filter((perk) => filterByRestriction(perk, getPerkRestriction));
 
 	return (
 		<div className='relative w-full min-w-0 text-fontz flex flex-col'>
@@ -675,83 +694,44 @@ const TeamView = ({ teamId, openSheet }) => {
 				</>
 			)}
 
-			{/* ── Equipment filter tabs (shown when AO is set and there's gear) ── */}
-			{(combinedPerks.length > 0 || combinedEquipment.length > 0) && (
+			{/* ── Team Perks ──────────────────────────────── */}
+			{combinedPerks.length > 0 && (
 				<>
-					<div className='flex items-center gap-0 border-b border-neutral-800/60 bg-neutral-950/40 shrink-0 overflow-x-auto'>
-						<div className='flex items-center gap-3 px-4 py-2 shrink-0'>
-							<div className='w-0.5 h-3.5 bg-btn/60 shrink-0' />
-							<span className='font-mono text-[7px] tracking-[0.35em] text-neutral-500 uppercase'>
-								Team Equipment
-							</span>
+					<SectionHeader label='Team Perks' count={combinedPerks.length} />
+					<div className='px-4 pt-3 pb-4 border-b border-neutral-800/60'>
+						<div className='grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2'>
+							{combinedPerks.map(({ name, kiaBlackout }) => (
+								<GearIcon
+									key={name}
+									imgSrc={PERKS[name]}
+									name={name}
+									restrictionStatus={getPerkRestriction(name)}
+									kiaBlackout={kiaBlackout}
+								/>
+							))}
 						</div>
-						{aoRestrictions && (
-							<div className='flex items-center gap-1 px-3 ml-auto shrink-0'>
-								{[
-									{ key: "all",      label: "All" },
-									{ key: "nominal",  label: "Avail" },
-									{ key: "degraded", label: "Deg" },
-									{ key: "denied",   label: "Denied" },
-								].map(({ key, label }) => (
-									<button
-										key={key}
-										onClick={() => setEquipFilter(key)}
-										className={[
-											"font-mono text-[7px] tracking-widest uppercase px-2 py-0.5 border transition-colors",
-											equipFilter === key
-												? key === "nominal"  ? "text-green-400 border-green-900/50 bg-green-950/20"
-												: key === "degraded" ? "text-amber-400 border-amber-900/50 bg-amber-950/20"
-												: key === "denied"   ? "text-red-400 border-red-900/50 bg-red-950/20"
-												:                      "text-btn border-btn/30 bg-btn/5"
-												: "text-neutral-600 border-neutral-800/40 hover:text-neutral-400",
-										].join(" ")}>
-										{label}
-									</button>
-								))}
-							</div>
-						)}
 					</div>
+				</>
+			)}
 
-					{/* Perks */}
-					{filteredPerks.length > 0 && (
-						<div className='px-4 pt-3 pb-1'>
-							<p className='font-mono text-[6px] tracking-[0.35em] text-neutral-700 uppercase mb-2'>Perks</p>
-							<div className='grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2'>
-								{filteredPerks.map((perk) => (
-									<GearIcon
-										key={perk}
-										imgSrc={PERKS[perk]}
-										name={perk}
-										restrictionStatus={getPerkRestriction(perk)}
-									/>
-								))}
-							</div>
+			{/* ── Team Equipment ───────────────────────────── */}
+			{combinedEquipment.length > 0 && (
+				<>
+					<SectionHeader label='Team Equipment' count={combinedEquipment.length} />
+					<div className='px-4 pt-3 pb-4 border-b border-neutral-800/60'>
+						<div className='grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2'>
+							{combinedEquipment.map(({ name, kiaBlackout }) => (
+								<GearIcon
+									key={name}
+									imgSrc={ITEMS[name]}
+									name={name}
+									invert
+									restrictionStatus={getItemRestriction(name)}
+									kiaBlackout={kiaBlackout}
+								/>
+							))}
 						</div>
-					)}
-
-					{/* Items */}
-					{filteredEquipment.length > 0 && (
-						<div className='px-4 pt-3 pb-4'>
-							<p className='font-mono text-[6px] tracking-[0.35em] text-neutral-700 uppercase mb-2'>Items</p>
-							<div className='grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 border-b border-neutral-800/60 pb-4'>
-								{filteredEquipment.map((item) => (
-									<GearIcon
-										key={item}
-										imgSrc={ITEMS[item]}
-										name={item}
-										invert
-										restrictionStatus={getItemRestriction(item)}
-									/>
-								))}
-							</div>
-						</div>
-					)}
-
-					{aoRestrictions && filteredEquipment.length === 0 && filteredPerks.length === 0 && (
-						<p className='font-mono text-[8px] text-neutral-700 text-center py-6 border-b border-neutral-800/60'>
-							No {equipFilter} equipment for this AO
-						</p>
-					)}
+					</div>
 				</>
 			)}
 
@@ -789,7 +769,7 @@ const TeamView = ({ teamId, openSheet }) => {
 
 SectionHeader.propTypes = { label: PropTypes.string, count: PropTypes.number };
 FuelBar.propTypes = { pct: PropTypes.number };
-GearIcon.propTypes = { imgSrc: PropTypes.string, name: PropTypes.string, invert: PropTypes.bool, restrictionStatus: PropTypes.string };
+GearIcon.propTypes = { imgSrc: PropTypes.string, name: PropTypes.string, invert: PropTypes.bool, restrictionStatus: PropTypes.string, kiaBlackout: PropTypes.bool };
 OperatorCard.propTypes = { operator: PropTypes.object, onInjuryClick: PropTypes.func, missionProfile: PropTypes.string, onDetailClick: PropTypes.func };
 AssetCard.propTypes = { asset: PropTypes.object };
 TeamView.propTypes = { openSheet: PropTypes.func, teamId: PropTypes.string.isRequired };

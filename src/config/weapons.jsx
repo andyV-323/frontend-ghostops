@@ -156,6 +156,7 @@ export const WEAPONS_BY_TYPE = {
 // Stat effects come from the spreadsheet's Locations & Stats sheet — surface
 // these in tooltips on the form for player reference.
 export const ATTACHMENTS = {
+	barrel: ["Standard Barrel", "Short Barrel"],
 	muzzle: [
 		"Standard Muzzle",
 		"Compensator",
@@ -176,7 +177,7 @@ export const ATTACHMENTS = {
 		"Small Magazine",
 		"ASR 100 Rounds Magazine",
 	],
-	sight: [
+	scope: [
 		"Ironsight",
 		"ACSS Sight",
 		"COMPM4 Sight",
@@ -270,6 +271,7 @@ export const MISSION_PROFILES = {
 // Use getCompatibleAttachments(weaponName, slot) to query.
 export const WEAPON_COMPATIBILITY = {
 	"4-AC": {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -286,7 +288,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Standard Magazine",
 			"ASR 100 Rounds Magazine",
 		],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -312,8 +314,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Vented Angled Foregrip",
 		],
 		stock: [
-			"Trigger Select",
-			"Short Barrel",
 			"A2-M",
 			"ARM",
 			"CTR",
@@ -335,6 +335,7 @@ export const WEAPON_COMPATIBILITY = {
 		],
 	},
 	416: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -351,7 +352,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Standard Magazine",
 			"ASR 100 Rounds Magazine",
 		],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -379,8 +380,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Vented Angled Foregrip",
 		],
 		stock: [
-			"Trigger Select",
-			"Short Barrel",
 			"A2-M",
 			"ARM",
 			"CTR",
@@ -410,7 +409,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Suppressor",
 		],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Ironsight",
 			"Dual Range Sight",
@@ -470,6 +469,7 @@ export const WEAPON_COMPATIBILITY = {
 		rail: ["ATPIALx3", "Rail Cover", "ATPIAL HDG Laser"],
 	},
 	516: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -481,7 +481,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -509,8 +509,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Vented Angled Foregrip",
 		],
 		stock: [
-			"Trigger Select",
-			"Short Barrel",
 			"A2-M",
 			"ARM",
 			"CTR",
@@ -532,6 +530,7 @@ export const WEAPON_COMPATIBILITY = {
 		],
 	},
 	553: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -548,7 +547,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Standard Magazine",
 			"ASR 100 Rounds Magazine",
 		],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -576,8 +575,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Vented Angled Foregrip",
 		],
 		stock: [
-			"Trigger Select",
-			"Short Barrel",
 			"553-STK",
 			"A2-M",
 			"ARM",
@@ -605,7 +602,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Suppressor",
 		],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Dual Range Sight",
 			"SLX5 Sight",
@@ -653,7 +650,7 @@ export const WEAPON_COMPATIBILITY = {
 	"6P41": {
 		muzzle: ["Compensator", "Flash Hider", "Muzzle Brake", "Standard Muzzle"],
 		magazine: ["Extended Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"EXPS3",
@@ -665,6 +662,7 @@ export const WEAPON_COMPATIBILITY = {
 		underbarrel: ["Grip Pod", "Tactical Vertical Foregrip"],
 	},
 	"805 Bren": {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -676,7 +674,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Ironsight",
 			"COMPM4 Sight",
@@ -706,9 +704,9 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Shotgun",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Trigger Select", "Short Barrel"],
 	},
 	A2: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -720,7 +718,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -747,9 +745,10 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Shotgun",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Trigger Select", "Short Barrel", "STK-P", "STK-PC"],
+		stock: ["STK-P", "STK-PC"],
 	},
 	"AC-AR": {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -761,7 +760,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -785,6 +784,7 @@ export const WEAPON_COMPATIBILITY = {
 		stock: ["Trigger Select", "Short Barrel"],
 	},
 	ACR: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -796,7 +796,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -823,12 +823,13 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Shotgun",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Trigger Select", "Short Barrel", "STK", "STK-Enhanced"],
+		stock: ["STK", "STK-Enhanced"],
 	},
 	ACS12: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: ["Muzzle Brake", "Standard Muzzle"],
 		magazine: ["Extended Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"EXPS3",
@@ -847,9 +848,9 @@ export const WEAPON_COMPATIBILITY = {
 			"Tactical Vertical Foregrip",
 			"Underbarrel Rail (None)",
 		],
-		stock: ["Short Barrel"],
 	},
 	AK12: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -861,7 +862,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"RU Collimator Sight",
@@ -887,9 +888,9 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Shotgun",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Trigger Select", "Short Barrel"],
 	},
 	AK47: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -901,7 +902,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -923,6 +924,7 @@ export const WEAPON_COMPATIBILITY = {
 		],
 	},
 	AK74: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -934,7 +936,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -965,7 +967,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Suppressor",
 		],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Ironsight",
 			"Dual Range Sight",
@@ -1005,7 +1007,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -1015,6 +1017,7 @@ export const WEAPON_COMPATIBILITY = {
 		],
 	},
 	ARX200: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -1026,7 +1029,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Ironsight",
 			"COMPM4 Sight",
@@ -1054,9 +1057,10 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Rail (None)",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Adjustable Stock", "Short Barrel"],
+		stock: ["Adjustable Stock"],
 	},
 	AUG: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -1068,7 +1072,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -1093,7 +1097,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Rail (None)",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Short Barrel"],
 	},
 	"Aug Scout": {
 		muzzle: [
@@ -1104,7 +1107,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Suppressor",
 		],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"RU Long-Range Sight",
 			"SLX5 Sight",
@@ -1137,7 +1140,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"Digital Sight",
 			"EXPS3",
@@ -1148,7 +1151,6 @@ export const WEAPON_COMPATIBILITY = {
 			"SLX5 Sight",
 		],
 		rail: ["ATPIALx3", "PEQ-15", "Rail Cover"],
-		stock: ["Trigger Select"],
 	},
 	"C-SFP": {
 		muzzle: [
@@ -1165,7 +1167,7 @@ export const WEAPON_COMPATIBILITY = {
 	CTMMG: {
 		muzzle: ["Compensator", "Flash Hider", "Muzzle Brake", "Standard Muzzle"],
 		magazine: ["Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"EXPS3",
 			"MICROT1 Sight",
@@ -1182,6 +1184,7 @@ export const WEAPON_COMPATIBILITY = {
 		rail: ["ATPIALx3", "Rail Cover", "ATPIAL HDG Laser"],
 	},
 	"Echelon SMG": {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -1191,7 +1194,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Kilim Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"EXPS3",
 			"LEUPOLD Holo Sight",
@@ -1215,7 +1218,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Rail (None)",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Adjustable Stock", "Trigger Select", "Short Barrel"],
+		stock: ["Adjustable Stock"],
 	},
 	F40: {
 		muzzle: [
@@ -1230,6 +1233,7 @@ export const WEAPON_COMPATIBILITY = {
 		rail: ["ATPIALx3", "Rail Cover", "ATPIAL HDG Laser"],
 	},
 	FAL: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -1241,7 +1245,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -1267,7 +1271,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Shotgun",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Short Barrel"],
 	},
 	FRF2: {
 		muzzle: [
@@ -1278,7 +1281,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Suppressor",
 		],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Dual Range Sight",
 			"RU Long-Range FOV Sight",
@@ -1290,6 +1293,7 @@ export const WEAPON_COMPATIBILITY = {
 		],
 	},
 	G2: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -1301,7 +1305,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -1327,9 +1331,9 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Rail (None)",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Trigger Select", "Short Barrel"],
 	},
 	G28: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -1338,7 +1342,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Suppressor",
 		],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Digital Sight",
 			"Dual Range Sight",
@@ -1365,7 +1369,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Rail (None)",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Adjustable Stock", "Short Barrel"],
+		stock: ["Adjustable Stock"],
 	},
 	G36C: {
 		muzzle: [
@@ -1379,7 +1383,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -1405,7 +1409,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Shotgun",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Trigger Select", "STK-KV", "STK-P", "Convex Stock"],
+		stock: ["STK-KV", "STK-P", "Convex Stock"],
 	},
 	"G36C Scout": {
 		muzzle: [
@@ -1416,7 +1420,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Suppressor",
 		],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Ironsight",
 			"Digital Sight",
@@ -1454,7 +1458,7 @@ export const WEAPON_COMPATIBILITY = {
 			"338 Control Shield",
 		],
 		magazine: ["Standard Magazine"],
-		sight: [
+		scope: [
 			"Digital Sight",
 			"Dual Range Sight",
 			"T5XI Sight",
@@ -1473,7 +1477,7 @@ export const WEAPON_COMPATIBILITY = {
 			"556 Control Shield",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"Digital Sight",
 			"EXPS3",
@@ -1496,6 +1500,7 @@ export const WEAPON_COMPATIBILITY = {
 		stock: ["Adjustable Stock"],
 	},
 	K1A: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -1507,7 +1512,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -1536,11 +1541,10 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Shotgun",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Trigger Select", "Short Barrel"],
 	},
 	KSG12: {
 		muzzle: ["Muzzle Brake", "Standard Muzzle"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"EXPS3",
@@ -1563,9 +1567,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Vented Angled Foregrip",
 		],
 	},
-	Koblin: {
-		magazine: ["Standard Magazine"],
-	},
+
 	L115A3: {
 		muzzle: [
 			"Muzzle Brake",
@@ -1574,7 +1576,7 @@ export const WEAPON_COMPATIBILITY = {
 			"338 Control Shield",
 		],
 		magazine: ["Extended Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Digital Sight",
 			"Dual Range Sight",
 			"RU Long-Range FOV Sight",
@@ -1596,7 +1598,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -1617,12 +1619,11 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Grenade Launcher",
 			"Underbarrel Rail (None)",
 		],
-		stock: ["Short Barrel"],
 	},
 	L86A1: {
 		muzzle: ["Compensator", "Flash Hider", "Muzzle Brake", "Standard Muzzle"],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"EXPS3",
 			"MICROT1 Sight",
@@ -1635,6 +1636,7 @@ export const WEAPON_COMPATIBILITY = {
 		underbarrel: ["Bipod", "Grip Pod", "Rounded Angled Foregrip"],
 	},
 	M110: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -1643,7 +1645,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Suppressor",
 		],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Ironsight",
 			"Digital Sight",
@@ -1672,7 +1674,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Vented Angled Foregrip",
 		],
 		stock: [
-			"Short Barrel",
 			"A2-M",
 			"ARM",
 			"CTR",
@@ -1701,7 +1702,7 @@ export const WEAPON_COMPATIBILITY = {
 	},
 	M4: {
 		muzzle: ["Muzzle Brake", "Standard Muzzle", "Suppressor"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"EXPS3",
@@ -1713,6 +1714,7 @@ export const WEAPON_COMPATIBILITY = {
 		stock: ["Breacher", "STK-H20", "UBO"],
 	},
 	M4A1: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -1729,7 +1731,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Standard Magazine",
 			"ASR 100 Rounds Magazine",
 		],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -1757,8 +1759,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Vented Angled Foregrip",
 		],
 		stock: [
-			"Trigger Select",
-			"Short Barrel",
 			"A2-M",
 			"ARM",
 			"CTR",
@@ -1779,6 +1779,7 @@ export const WEAPON_COMPATIBILITY = {
 		],
 	},
 	"M4A1 Scout": {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -1787,7 +1788,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Suppressor",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Dual Range Sight",
 			"SLX5 Sight",
@@ -1835,7 +1836,7 @@ export const WEAPON_COMPATIBILITY = {
 	},
 	M590A1: {
 		muzzle: ["Muzzle Brake", "Standard Muzzle", "Suppressor"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"EXPS3",
@@ -1867,7 +1868,7 @@ export const WEAPON_COMPATIBILITY = {
 			"338 Control Shield",
 		],
 		magazine: ["Standard Magazine"],
-		sight: [
+		scope: [
 			"Digital Sight",
 			"Dual Range Sight",
 			"RU Long-Range Sight",
@@ -1901,7 +1902,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -1926,12 +1927,11 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Rail (None)",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Trigger Select", "Short Barrel"],
 	},
 	MG121: {
 		muzzle: ["Compensator", "Flash Hider", "Muzzle Brake", "Standard Muzzle"],
 		magazine: ["Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"RU Collimator Sight",
 			"RU Red Dot G33 Sight",
@@ -1944,6 +1944,7 @@ export const WEAPON_COMPATIBILITY = {
 	},
 	MGL: {},
 	MK14: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -1952,7 +1953,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Suppressor",
 		],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"Digital Sight",
 			"Dual Range Sight",
@@ -1979,9 +1980,10 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Rail (None)",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Adjustable Stock", "Short Barrel"],
+		stock: ["Adjustable Stock"],
 	},
 	MK17: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -1993,7 +1995,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -2022,7 +2024,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Shotgun",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Trigger Select", "Short Barrel", "Mini-SC", "STK", "STK-Enhanced"],
+		stock: ["Short Barrel", "Mini-SC", "STK", "STK-Enhanced"],
 	},
 	"MK17 Scout": {
 		muzzle: [
@@ -2035,7 +2037,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Ironsight",
 			"Dual Range Sight",
@@ -2075,7 +2077,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -2103,7 +2105,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Vented Angled Foregrip",
 		],
 		stock: [
-			"Trigger Select",
 			"A2-M",
 			"ARM",
 			"CTR",
@@ -2131,7 +2132,7 @@ export const WEAPON_COMPATIBILITY = {
 	MK48: {
 		muzzle: ["Compensator", "Flash Hider", "Muzzle Brake", "Standard Muzzle"],
 		magazine: ["Extended Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"EXPS3",
@@ -2145,6 +2146,7 @@ export const WEAPON_COMPATIBILITY = {
 		underbarrel: ["Bipod", "Grip Pod", "Tactical Vertical Foregrip"],
 	},
 	MP5: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -2154,7 +2156,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Kilim Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -2177,7 +2179,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Rail (None)",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Adjustable Stock", "Trigger Select", "Short Barrel"],
+		stock: ["Adjustable Stock"],
 	},
 	MP7: {
 		muzzle: [
@@ -2189,7 +2191,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Kilim Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -2199,7 +2201,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Panoramic Sight",
 		],
 		rail: ["ATPIALx3", "MAWL-DA", "PEQ-15", "Rail Cover"],
-		stock: ["Adjustable Stock", "Trigger Select"],
+		stock: ["Adjustable Stock"],
 	},
 	MPX: {
 		muzzle: [
@@ -2211,7 +2213,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Kilim Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -2232,9 +2234,10 @@ export const WEAPON_COMPATIBILITY = {
 			"Tactical Vertical Foregrip",
 			"Underbarrel Rail (None)",
 		],
-		stock: ["Adjustable Stock", "Trigger Select"],
+		stock: ["Adjustable Stock"],
 	},
 	MSR: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Muzzle Brake",
 			"Standard Muzzle",
@@ -2242,7 +2245,7 @@ export const WEAPON_COMPATIBILITY = {
 			"338 Control Shield",
 		],
 		magazine: ["Standard Magazine"],
-		sight: [
+		scope: [
 			"Digital Sight",
 			"Dual Range Sight",
 			"RU Long-Range FOV Sight",
@@ -2253,7 +2256,6 @@ export const WEAPON_COMPATIBILITY = {
 		],
 		rail: ["ATPIALx3", "PEQ-15", "Rail Cover", "Range Finder"],
 		underbarrel: ["Bipod", "Underbarrel Rail (None)"],
-		stock: ["Short Barrel"],
 	},
 	"Maxim 9": {
 		muzzle: ["Suppressor"],
@@ -2262,7 +2264,7 @@ export const WEAPON_COMPATIBILITY = {
 	"OTS-03": {
 		muzzle: ["Suppressor"],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Digital Sight",
 			"Dual Range Sight",
@@ -2328,7 +2330,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Kilim Silencer",
 		],
 		magazine: ["Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"EXPS3",
@@ -2338,7 +2340,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Panoramic Sight",
 		],
 		rail: ["ATPIALx3", "PEQ-15", "Rail Cover"],
-		stock: ["Trigger Select"],
 	},
 	PX4: {
 		muzzle: [
@@ -2355,7 +2356,7 @@ export const WEAPON_COMPATIBILITY = {
 	"Paladin 9 SNR": {
 		muzzle: ["Suppressor"],
 		magazine: ["Standard Magazine"],
-		sight: [
+		scope: [
 			"Dual Range Sight",
 			"Paladin Optic",
 			"RU Long-Range FOV Sight",
@@ -2366,12 +2367,12 @@ export const WEAPON_COMPATIBILITY = {
 		],
 		rail: ["PEQ-15", "Rail Cover", "Range Finder"],
 		underbarrel: ["Bipod", "RVG Vertical Foregrip", "Underbarrel Rail (None)"],
-		stock: ["Short Barrel"],
 	},
 	RU12SG: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: ["Muzzle Brake", "Standard Muzzle", "Suppressor"],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"EXPS3",
@@ -2394,15 +2395,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Rail (None)",
 			"Vented Angled Foregrip",
 		],
-		stock: [
-			"Short Barrel",
-			"OCTOB-STK",
-			"PT1",
-			"STK-P",
-			"STK-W",
-			"Zhukov Stock",
-			"Core CP",
-		],
+		stock: ["OCTOB-STK", "PT1", "STK-P", "STK-W", "Zhukov Stock", "Core CP"],
 	},
 	"Recon-A1": {
 		muzzle: [
@@ -2412,7 +2405,7 @@ export const WEAPON_COMPATIBILITY = {
 			"338 Control Shield",
 		],
 		magazine: ["Extended Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Digital Sight",
 			"Dual Range Sight",
@@ -2427,9 +2420,10 @@ export const WEAPON_COMPATIBILITY = {
 		magazine: ["Small Magazine", "Standard Magazine"],
 	},
 	SASG12: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: ["Muzzle Brake", "Standard Muzzle", "Suppressor"],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"EXPS3",
@@ -2453,15 +2447,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Rail (None)",
 			"Vented Angled Foregrip",
 		],
-		stock: [
-			"Short Barrel",
-			"OCTOB-STK",
-			"PT1",
-			"STK-P",
-			"STK-W",
-			"Zhukov Stock",
-			"Core CP",
-		],
+		stock: ["OCTOB-STK", "PT1", "STK-P", "STK-W", "Zhukov Stock", "Core CP"],
 	},
 	"SC IS HDG": {
 		muzzle: ["Suppressor"],
@@ -2480,7 +2466,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -2504,7 +2490,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -2538,7 +2524,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Kilim Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -2568,7 +2554,7 @@ export const WEAPON_COMPATIBILITY = {
 	"SPAS-12": {
 		muzzle: ["Muzzle Brake", "Standard Muzzle"],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"EXPS3",
@@ -2586,7 +2572,7 @@ export const WEAPON_COMPATIBILITY = {
 			"338 Control Shield",
 		],
 		magazine: ["Extended Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Digital Sight",
 			"Dual Range Sight",
@@ -2607,7 +2593,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"Digital Sight",
 			"Panoramic Sight",
@@ -2624,7 +2610,7 @@ export const WEAPON_COMPATIBILITY = {
 	"SR-3M Scout": {
 		muzzle: ["Suppressor"],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"Digital Sight",
 			"RU Collimator Sight",
@@ -2651,7 +2637,7 @@ export const WEAPON_COMPATIBILITY = {
 	"SVD-63": {
 		muzzle: ["Muzzle Brake", "Standard Muzzle", "Suppressor"],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Digital Sight",
 			"Dual Range Sight",
@@ -2671,7 +2657,7 @@ export const WEAPON_COMPATIBILITY = {
 			"338 Control Shield",
 		],
 		magazine: ["Standard Magazine"],
-		sight: [
+		scope: [
 			"Digital Sight",
 			"Dual Range Sight",
 			"RU Long-Range FOV Sight",
@@ -2685,7 +2671,7 @@ export const WEAPON_COMPATIBILITY = {
 	"Scorpio Scout": {
 		muzzle: ["Muzzle Brake", "Standard Muzzle", "Suppressor"],
 		magazine: ["Extended Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Digital Sight",
 			"Dual Range Sight",
 			"RU Long-Range FOV Sight",
@@ -2705,7 +2691,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Suppressor",
 		],
 		magazine: ["Extended Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -2730,7 +2716,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Rail (None)",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Trigger Select"],
 	},
 	"Sharp Thunder": {},
 	"Silver Stake": {
@@ -2742,7 +2727,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Suppressor",
 		],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"COMPM4 Sight",
 			"Digital Sight",
 			"Dual Range Sight",
@@ -2768,7 +2753,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Rail (None)",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Trigger Select"],
 	},
 	"Stainless Extended .45": {
 		muzzle: ["Standard Muzzle", "Suppressor", "Ripples Silencer"],
@@ -2777,7 +2761,7 @@ export const WEAPON_COMPATIBILITY = {
 	Stoner: {
 		muzzle: ["Compensator", "Flash Hider", "Muzzle Brake", "Standard Muzzle"],
 		magazine: ["Extended Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"EXPS3",
@@ -2792,7 +2776,7 @@ export const WEAPON_COMPATIBILITY = {
 	T95: {
 		muzzle: ["Compensator", "Flash Hider", "Muzzle Brake", "Standard Muzzle"],
 		magazine: ["Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"EXPS3",
 			"MICROT1 Sight",
@@ -2811,7 +2795,7 @@ export const WEAPON_COMPATIBILITY = {
 			"338 Control Shield",
 		],
 		magazine: ["Extended Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Digital Sight",
 			"Dual Range Sight",
 			"RU Long-Range Sight",
@@ -2823,6 +2807,7 @@ export const WEAPON_COMPATIBILITY = {
 		underbarrel: ["Bipod", "Underbarrel Rail (None)"],
 	},
 	Tavor: {
+		barrel: ["Standard Barrel", "Short Barrel"],
 		muzzle: [
 			"Compensator",
 			"Flash Hider",
@@ -2834,7 +2819,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -2855,7 +2840,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Grenade Launcher",
 			"Underbarrel Rail (None)",
 		],
-		stock: ["Trigger Select", "Short Barrel"],
 	},
 	"Tavor Scout": {
 		muzzle: [
@@ -2866,7 +2850,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Suppressor",
 		],
 		magazine: ["Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Ironsight",
 			"Dual Range Sight",
@@ -2903,7 +2887,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Kilim Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"EXPS3",
 			"LEUPOLD Holo Sight",
@@ -2923,7 +2907,6 @@ export const WEAPON_COMPATIBILITY = {
 			"Tactical Vertical Foregrip",
 			"Underbarrel Rail (None)",
 		],
-		stock: ["Trigger Select"],
 	},
 	"USP Tactical": {
 		muzzle: [
@@ -2962,7 +2945,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Prism Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -2987,12 +2970,11 @@ export const WEAPON_COMPATIBILITY = {
 			"Underbarrel Rail (None)",
 			"Vented Angled Foregrip",
 		],
-		stock: ["Trigger Select", "Short Barrel"],
 	},
 	"VSK-50": {
 		muzzle: ["Muzzle Brake", "Suppressor"],
 		magazine: ["Standard Magazine"],
-		sight: [
+		scope: [
 			"ACSS Sight",
 			"Ironsight",
 			"Digital Sight",
@@ -3030,7 +3012,7 @@ export const WEAPON_COMPATIBILITY = {
 			"Kilim Silencer",
 		],
 		magazine: ["Extended Magazine", "Small Magazine", "Standard Magazine"],
-		sight: [
+		scope: [
 			"Ironsight",
 			"COMPM4 Sight",
 			"Digital Sight",
@@ -3050,11 +3032,10 @@ export const WEAPON_COMPATIBILITY = {
 			"Tactical Vertical Foregrip",
 			"Underbarrel Rail (None)",
 		],
-		stock: ["Trigger Select"],
 	},
 	"Zastava M93": {
 		magazine: ["Standard Magazine"],
-		sight: [
+		scope: [
 			"RU Long-Range FOV Sight",
 			"RU Long-Range Sight",
 			"T5XI Sight",

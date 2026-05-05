@@ -2,26 +2,65 @@ import { useState, useEffect } from "react";
 import { Button } from "@material-tailwind/react";
 import { useFormActions } from "@/hooks";
 import { useOperatorsStore } from "@/zustand";
-import { WEAPON_TYPES, WEAPONS_BY_TYPE, ATTACHMENTS, MISSION_PROFILES, WEAPON_COMPATIBILITY } from "@/config";
+import {
+	WEAPON_TYPES,
+	WEAPONS_BY_TYPE,
+	ATTACHMENTS,
+	MISSION_PROFILES,
+	WEAPON_COMPATIBILITY,
+} from "@/config";
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faTrash, faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import {
+	faPlus,
+	faTrash,
+	faChevronDown,
+	faChevronUp,
+} from "@fortawesome/free-solid-svg-icons";
 import PropTypes from "prop-types";
 
 /* ─── Constants ──────────────────────────────────────────────── */
-const ATT_SLOTS = ["muzzle", "magazine", "sight", "rail", "underbarrel", "stock"];
+const ATT_SLOTS = [
+	"barrel",
+	"muzzle",
+	"magazine",
+	"scope",
+	"rail",
+	"underbarrel",
+	"stock",
+];
 
 const EMPTY_SLOT = {
-	weaponType:  "",
-	weapon:      "",
-	attachments: { muzzle: null, magazine: null, sight: null, rail: null, underbarrel: null, stock: null },
+	weaponType: "",
+	weapon: "",
+	attachments: {
+		barrel: null,
+		muzzle: null,
+		magazine: null,
+		scope: null,
+		rail: null,
+		underbarrel: null,
+		stock: null,
+	},
 };
 
 const EMPTY_LOADOUT = {
 	missionProfile: "",
-	primary:   { ...EMPTY_SLOT },
+	primary: { ...EMPTY_SLOT },
 	secondary: { ...EMPTY_SLOT },
-	handgun:   { weaponType: "HDG", weapon: "", attachments: { muzzle: null, magazine: null, sight: null, rail: null, underbarrel: null, stock: null } },
+	handgun: {
+		weaponType: "HDG",
+		weapon: "",
+		attachments: {
+			barrel: null,
+			muzzle: null,
+			magazine: null,
+			scope: null,
+			rail: null,
+			underbarrel: null,
+			stock: null,
+		},
+	},
 };
 
 /* ─── Returns compatible attachment options for a weapon + slot ─ */
@@ -35,28 +74,49 @@ function getAttOpts(weaponName, slot) {
 /* ─── Single weapon slot builder ────────────────────────────── */
 function WeaponBuilder({ label, value, onChange, isHandgun = false }) {
 	const weaponTypes = Object.entries(WEAPON_TYPES).filter(([k]) => k !== "HDG");
-	const weaponList  = isHandgun
-		? (WEAPONS_BY_TYPE.HDG || [])
-		: (value.weaponType ? WEAPONS_BY_TYPE[value.weaponType] || [] : []);
-
-	const handleTypeChange   = (e) => onChange({ ...EMPTY_SLOT, weaponType: e.target.value });
-	const handleWeaponChange = (e) => onChange({ ...value, weapon: e.target.value, attachments: { ...EMPTY_SLOT.attachments } });
-	const handleAtt          = (slot, val) => onChange({ ...value, attachments: { ...value.attachments, [slot]: val || null } });
-
-	const activeSlots = value.weapon
-		? ATT_SLOTS.filter((s) => getAttOpts(value.weapon, s).length > 0)
+	const weaponList =
+		isHandgun ? WEAPONS_BY_TYPE.HDG || []
+		: value.weaponType ? WEAPONS_BY_TYPE[value.weaponType] || []
 		: [];
+
+	const handleTypeChange = (e) =>
+		onChange({ ...EMPTY_SLOT, weaponType: e.target.value });
+	const handleWeaponChange = (e) =>
+		onChange({
+			...value,
+			weapon: e.target.value,
+			attachments: { ...EMPTY_SLOT.attachments },
+		});
+	const handleAtt = (slot, val) =>
+		onChange({
+			...value,
+			attachments: { ...value.attachments, [slot]: val || null },
+		});
+
+	const activeSlots =
+		value.weapon ?
+			ATT_SLOTS.filter((s) => getAttOpts(value.weapon, s).length > 0)
+		:	[];
 
 	return (
 		<div className='flex flex-col gap-2 p-3 border border-neutral-800/50 bg-neutral-950/20'>
-			<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-500'>{label}</p>
+			<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-500'>
+				{label}
+			</p>
 
 			<div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
 				{!isHandgun && (
-					<select className='form text-xs' value={value.weaponType || ""} onChange={handleTypeChange}>
+					<select
+						className='form text-xs'
+						value={value.weaponType || ""}
+						onChange={handleTypeChange}>
 						<option value=''>— Type —</option>
 						{weaponTypes.map(([k, t]) => (
-							<option key={k} value={k}>{t.name}</option>
+							<option
+								key={k}
+								value={k}>
+								{t.name}
+							</option>
 						))}
 					</select>
 				)}
@@ -66,22 +126,36 @@ function WeaponBuilder({ label, value, onChange, isHandgun = false }) {
 					disabled={!isHandgun && !value.weaponType}
 					onChange={handleWeaponChange}>
 					<option value=''>— Weapon —</option>
-					{weaponList.map((w) => <option key={w} value={w}>{w}</option>)}
+					{weaponList.map((w) => (
+						<option
+							key={w}
+							value={w}>
+							{w}
+						</option>
+					))}
 				</select>
 			</div>
 
 			{activeSlots.length > 0 && (
 				<div className='grid grid-cols-2 gap-2 pt-1 border-t border-neutral-800/40'>
 					{activeSlots.map((slot) => (
-						<div key={slot} className='flex flex-col gap-1'>
-							<p className='font-mono text-[6px] tracking-widest uppercase text-neutral-700'>{slot}</p>
+						<div
+							key={slot}
+							className='flex flex-col gap-1'>
+							<p className='font-mono text-[6px] tracking-widest uppercase text-neutral-700'>
+								{slot}
+							</p>
 							<select
 								className='form text-[10px]'
 								value={value.attachments[slot] || ""}
 								onChange={(e) => handleAtt(slot, e.target.value)}>
 								<option value=''>— None —</option>
 								{getAttOpts(value.weapon, slot).map((opt) => (
-									<option key={opt} value={opt}>{opt}</option>
+									<option
+										key={opt}
+										value={opt}>
+										{opt}
+									</option>
 								))}
 							</select>
 						</div>
@@ -97,7 +171,8 @@ function WeaponBuilder({ label, value, onChange, isHandgun = false }) {
 ═══════════════════════════════════════════════════════════════ */
 const EditLoadout = ({ operator }) => {
 	const { handleUpdateOperator } = useFormActions();
-	const { selectedOperator, fetchOperatorById, setSelectedOperator, loading } = useOperatorsStore();
+	const { selectedOperator, fetchOperatorById, setSelectedOperator, loading } =
+		useOperatorsStore();
 	const operatorId = operator._id;
 
 	const [expandedIndex, setExpandedIndex] = useState(null);
@@ -107,10 +182,14 @@ const EditLoadout = ({ operator }) => {
 	}, [operatorId, operator, fetchOperatorById]);
 
 	if (loading || !selectedOperator) {
-		return <div className='text-center text-gray-400 p-4'>Loading operator data...</div>;
+		return (
+			<div className='text-center text-gray-400 p-4'>
+				Loading operator data...
+			</div>
+		);
 	}
 
-	const loadouts     = selectedOperator.loadouts || [];
+	const loadouts = selectedOperator.loadouts || [];
 	const usedProfiles = loadouts.map((l) => l.missionProfile);
 
 	const updateLoadouts = (next) =>
@@ -128,12 +207,16 @@ const EditLoadout = ({ operator }) => {
 	};
 
 	const handleWeaponSlotChange = (index, slot, value) => {
-		const next = loadouts.map((l, i) => i === index ? { ...l, [slot]: value } : l);
+		const next = loadouts.map((l, i) =>
+			i === index ? { ...l, [slot]: value } : l,
+		);
 		updateLoadouts(next);
 	};
 
 	const handleProfileChange = (index, profile) => {
-		const next = loadouts.map((l, i) => i === index ? { ...l, missionProfile: profile } : l);
+		const next = loadouts.map((l, i) =>
+			i === index ? { ...l, missionProfile: profile } : l,
+		);
 		updateLoadouts(next);
 	};
 
@@ -141,7 +224,7 @@ const EditLoadout = ({ operator }) => {
 		<section className='bg-transparent text-fontz'>
 			<h2 className='text-xl font-bold mb-1'>Mission Loadouts</h2>
 			<p className='text-xs text-gray-400 mb-5'>
-				Build weapon presets per mission profile. Attachments are filtered to each weapon&apos;s compatibility.
+				Build weapon presets per mission profile.
 			</p>
 
 			{/* Loadout list */}
@@ -153,16 +236,22 @@ const EditLoadout = ({ operator }) => {
 				)}
 
 				{loadouts.map((loadout, i) => {
-					const profile   = MISSION_PROFILES[loadout.missionProfile];
-					const isOpen    = expandedIndex === i;
-					const weapons   = [loadout.primary?.weapon, loadout.secondary?.weapon, loadout.handgun?.weapon].filter(Boolean);
+					const profile = MISSION_PROFILES[loadout.missionProfile];
+					const isOpen = expandedIndex === i;
+					const weapons = [
+						loadout.primary?.weapon,
+						loadout.secondary?.weapon,
+						loadout.handgun?.weapon,
+					].filter(Boolean);
 
 					const availableProfiles = Object.entries(MISSION_PROFILES).filter(
 						([k]) => k === loadout.missionProfile || !usedProfiles.includes(k),
 					);
 
 					return (
-						<div key={i} className='border border-neutral-800/50 bg-neutral-900/20'>
+						<div
+							key={i}
+							className='border border-neutral-800/50 bg-neutral-900/20'>
 							{/* Row header — click to expand */}
 							<button
 								type='button'
@@ -179,9 +268,15 @@ const EditLoadout = ({ operator }) => {
 								<div className='flex items-center gap-2 shrink-0 mt-0.5'>
 									<button
 										type='button'
-										onClick={(e) => { e.stopPropagation(); handleDelete(i); }}
+										onClick={(e) => {
+											e.stopPropagation();
+											handleDelete(i);
+										}}
 										className='text-neutral-600 hover:text-red-400 transition-colors px-1'>
-										<FontAwesomeIcon icon={faTrash} className='text-[10px]' />
+										<FontAwesomeIcon
+											icon={faTrash}
+											className='text-[10px]'
+										/>
 									</button>
 									<FontAwesomeIcon
 										icon={isOpen ? faChevronUp : faChevronDown}
@@ -195,21 +290,28 @@ const EditLoadout = ({ operator }) => {
 								<div className='flex flex-col gap-4 px-3 pb-4 pt-1 border-t border-neutral-800/40'>
 									{/* Profile selector */}
 									<div className='flex flex-col gap-1.5'>
-										<p className='font-mono text-[7px] tracking-widest uppercase text-neutral-500'>Mission Profile</p>
+										<p className='font-mono text-[7px] tracking-widest uppercase text-neutral-500'>
+											Mission Profile
+										</p>
 										<select
 											className='form'
 											value={loadout.missionProfile}
 											onChange={(e) => handleProfileChange(i, e.target.value)}>
 											<option value=''>— Select Profile —</option>
 											{availableProfiles.map(([k, p]) => (
-												<option key={k} value={k}>{p.name}</option>
+												<option
+													key={k}
+													value={k}>
+													{p.name}
+												</option>
 											))}
 										</select>
-										{loadout.missionProfile && MISSION_PROFILES[loadout.missionProfile] && (
-											<p className='font-mono text-[7px] text-neutral-600 italic'>
-												{MISSION_PROFILES[loadout.missionProfile].description}
-											</p>
-										)}
+										{loadout.missionProfile &&
+											MISSION_PROFILES[loadout.missionProfile] && (
+												<p className='font-mono text-[7px] text-neutral-600 italic'>
+													{MISSION_PROFILES[loadout.missionProfile].description}
+												</p>
+											)}
 									</div>
 
 									<WeaponBuilder
@@ -224,7 +326,9 @@ const EditLoadout = ({ operator }) => {
 									/>
 									<WeaponBuilder
 										label='Handgun'
-										value={loadout.handgun || { ...EMPTY_SLOT, weaponType: "HDG" }}
+										value={
+											loadout.handgun || { ...EMPTY_SLOT, weaponType: "HDG" }
+										}
 										onChange={(v) => handleWeaponSlotChange(i, "handgun", v)}
 										isHandgun
 									/>
@@ -241,13 +345,19 @@ const EditLoadout = ({ operator }) => {
 					type='button'
 					onClick={handleAddNew}
 					className='w-full flex items-center justify-center gap-2 font-mono text-[9px] tracking-widest uppercase py-2 border border-dashed border-neutral-700/50 text-neutral-500 hover:text-neutral-300 hover:border-neutral-600 transition-colors mt-2'>
-					<FontAwesomeIcon icon={faPlus} className='text-[8px]' />
+					<FontAwesomeIcon
+						icon={faPlus}
+						className='text-[8px]'
+					/>
 					Add Loadout
 				</button>
 			)}
 
 			<div className='flex justify-center mt-6'>
-				<Button type='button' className='btn' onClick={(e) => handleUpdateOperator(e, operatorId)}>
+				<Button
+					type='button'
+					className='btn'
+					onClick={(e) => handleUpdateOperator(e, operatorId)}>
 					Save Changes
 				</Button>
 			</div>
@@ -257,9 +367,9 @@ const EditLoadout = ({ operator }) => {
 
 /* ─── PropTypes ──────────────────────────────────────────────── */
 WeaponBuilder.propTypes = {
-	label:     PropTypes.string.isRequired,
-	value:     PropTypes.object.isRequired,
-	onChange:  PropTypes.func.isRequired,
+	label: PropTypes.string.isRequired,
+	value: PropTypes.object.isRequired,
+	onChange: PropTypes.func.isRequired,
 	isHandgun: PropTypes.bool,
 };
 EditLoadout.propTypes = { operator: OperatorPropTypes.isRequired };

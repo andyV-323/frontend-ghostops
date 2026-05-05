@@ -2,17 +2,39 @@ import { useState, useEffect } from "react";
 import { Button } from "@material-tailwind/react";
 import { useOperatorsStore, useSheetStore } from "@/zustand";
 import { updateOperator } from "@/api/OperatorsApi";
-import { WEAPON_TYPES, WEAPONS_BY_TYPE, ATTACHMENTS, MISSION_PROFILES, WEAPON_COMPATIBILITY } from "@/config";
+import {
+	WEAPON_TYPES,
+	WEAPONS_BY_TYPE,
+	ATTACHMENTS,
+	MISSION_PROFILES,
+	WEAPON_COMPATIBILITY,
+} from "@/config";
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import PropTypes from "prop-types";
 
 /* ─── Constants ──────────────────────────────────────────────── */
-const ATT_SLOTS = ["muzzle", "magazine", "sight", "rail", "underbarrel", "stock"];
+const ATT_SLOTS = [
+	"barrel",
+	"muzzle",
+	"scope",
+	"rail",
+	"underbarrel",
+	"stock",
+	"magazine",
+];
 
 const EMPTY_SLOT = {
-	weaponType:  "",
-	weapon:      "",
-	attachments: { muzzle: null, magazine: null, sight: null, rail: null, underbarrel: null, stock: null },
+	weaponType: "",
+	weapon: "",
+	attachments: {
+		barrel: null,
+		muzzle: null,
+		magazine: null,
+		scope: null,
+		rail: null,
+		underbarrel: null,
+		stock: null,
+	},
 };
 
 /* ─── Returns compatible attachment options for a weapon + slot ─ */
@@ -26,28 +48,49 @@ function getAttOpts(weaponName, slot) {
 /* ─── Single weapon slot builder ────────────────────────────── */
 function WeaponBuilder({ label, value, onChange, isHandgun = false }) {
 	const weaponTypes = Object.entries(WEAPON_TYPES).filter(([k]) => k !== "HDG");
-	const weaponList  = isHandgun
-		? (WEAPONS_BY_TYPE.HDG || [])
-		: (value.weaponType ? WEAPONS_BY_TYPE[value.weaponType] || [] : []);
-
-	const handleTypeChange   = (e) => onChange({ ...EMPTY_SLOT, weaponType: e.target.value });
-	const handleWeaponChange = (e) => onChange({ ...value, weapon: e.target.value, attachments: { ...EMPTY_SLOT.attachments } });
-	const handleAtt          = (slot, val) => onChange({ ...value, attachments: { ...value.attachments, [slot]: val || null } });
-
-	const activeSlots = value.weapon
-		? ATT_SLOTS.filter((s) => getAttOpts(value.weapon, s).length > 0)
+	const weaponList =
+		isHandgun ? WEAPONS_BY_TYPE.HDG || []
+		: value.weaponType ? WEAPONS_BY_TYPE[value.weaponType] || []
 		: [];
+
+	const handleTypeChange = (e) =>
+		onChange({ ...EMPTY_SLOT, weaponType: e.target.value });
+	const handleWeaponChange = (e) =>
+		onChange({
+			...value,
+			weapon: e.target.value,
+			attachments: { ...EMPTY_SLOT.attachments },
+		});
+	const handleAtt = (slot, val) =>
+		onChange({
+			...value,
+			attachments: { ...value.attachments, [slot]: val || null },
+		});
+
+	const activeSlots =
+		value.weapon ?
+			ATT_SLOTS.filter((s) => getAttOpts(value.weapon, s).length > 0)
+		:	[];
 
 	return (
 		<div className='flex flex-col gap-2 p-3 border border-neutral-800/50 bg-neutral-950/20'>
-			<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-500'>{label}</p>
+			<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-500'>
+				{label}
+			</p>
 
 			<div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
 				{!isHandgun && (
-					<select className='form text-xs' value={value.weaponType || ""} onChange={handleTypeChange}>
+					<select
+						className='form text-xs'
+						value={value.weaponType || ""}
+						onChange={handleTypeChange}>
 						<option value=''>— Type —</option>
 						{weaponTypes.map(([k, t]) => (
-							<option key={k} value={k}>{t.name}</option>
+							<option
+								key={k}
+								value={k}>
+								{t.name}
+							</option>
 						))}
 					</select>
 				)}
@@ -57,22 +100,36 @@ function WeaponBuilder({ label, value, onChange, isHandgun = false }) {
 					disabled={!isHandgun && !value.weaponType}
 					onChange={handleWeaponChange}>
 					<option value=''>— Weapon —</option>
-					{weaponList.map((w) => <option key={w} value={w}>{w}</option>)}
+					{weaponList.map((w) => (
+						<option
+							key={w}
+							value={w}>
+							{w}
+						</option>
+					))}
 				</select>
 			</div>
 
 			{activeSlots.length > 0 && (
 				<div className='grid grid-cols-2 gap-2 pt-1 border-t border-neutral-800/40'>
 					{activeSlots.map((slot) => (
-						<div key={slot} className='flex flex-col gap-1'>
-							<p className='font-mono text-[6px] tracking-widest uppercase text-neutral-700'>{slot}</p>
+						<div
+							key={slot}
+							className='flex flex-col gap-1'>
+							<p className='font-mono text-[6px] tracking-widest uppercase text-neutral-700'>
+								{slot}
+							</p>
 							<select
 								className='form text-[10px]'
 								value={value.attachments[slot] || ""}
 								onChange={(e) => handleAtt(slot, e.target.value)}>
 								<option value=''>— None —</option>
 								{getAttOpts(value.weapon, slot).map((opt) => (
-									<option key={opt} value={opt}>{opt}</option>
+									<option
+										key={opt}
+										value={opt}>
+										{opt}
+									</option>
 								))}
 							</select>
 						</div>
@@ -87,15 +144,33 @@ function WeaponBuilder({ label, value, onChange, isHandgun = false }) {
    NEWLOADOUTFORM
 ═══════════════════════════════════════════════════════════════ */
 const NewLoadoutForm = ({ operator }) => {
-	const { selectedOperator, setSelectedOperator, fetchOperatorById, fetchOperators, loading } = useOperatorsStore();
+	const {
+		selectedOperator,
+		setSelectedOperator,
+		fetchOperatorById,
+		fetchOperators,
+		loading,
+	} = useOperatorsStore();
 	const { closeSheet } = useSheetStore();
 	const operatorId = operator._id;
 
 	const [draft, setDraft] = useState({
 		missionProfile: "",
-		primary:   { ...EMPTY_SLOT },
+		primary: { ...EMPTY_SLOT },
 		secondary: { ...EMPTY_SLOT },
-		handgun:   { weaponType: "HDG", weapon: "", attachments: { muzzle: null, magazine: null, sight: null, rail: null, underbarrel: null, stock: null } },
+		handgun: {
+			weaponType: "HDG",
+			weapon: "",
+			attachments: {
+				barrel: null,
+				muzzle: null,
+				magazine: null,
+				scope: null,
+				rail: null,
+				underbarrel: null,
+				stock: null,
+			},
+		},
 	});
 	const [saving, setSaving] = useState(false);
 
@@ -104,12 +179,24 @@ const NewLoadoutForm = ({ operator }) => {
 	}, [operatorId, operator, fetchOperatorById]);
 
 	if (loading || !selectedOperator) {
-		return <div className='text-center text-gray-400 p-4'>Loading operator data...</div>;
+		return (
+			<div className='text-center text-gray-400 p-4'>
+				Loading operator data...
+			</div>
+		);
 	}
 
-	const usedProfiles    = (selectedOperator.loadouts || []).map((l) => l.missionProfile);
-	const availableProfiles = Object.entries(MISSION_PROFILES).filter(([k]) => !usedProfiles.includes(k));
-	const isValid = !!draft.missionProfile && (!!draft.primary.weapon || !!draft.secondary.weapon || !!draft.handgun.weapon);
+	const usedProfiles = (selectedOperator.loadouts || []).map(
+		(l) => l.missionProfile,
+	);
+	const availableProfiles = Object.entries(MISSION_PROFILES).filter(
+		([k]) => !usedProfiles.includes(k),
+	);
+	const isValid =
+		!!draft.missionProfile &&
+		(!!draft.primary.weapon ||
+			!!draft.secondary.weapon ||
+			!!draft.handgun.weapon);
 
 	const handleSave = async (e) => {
 		e.preventDefault();
@@ -142,20 +229,28 @@ const NewLoadoutForm = ({ operator }) => {
 		<section className='bg-transparent text-fontz'>
 			<h2 className='text-xl font-bold mb-1'>New Loadout</h2>
 			<p className='text-xs text-gray-400 mb-5'>
-				Configure a weapon preset for a mission profile. Attachments are filtered to each weapon&apos;s compatibility.
+				Configure a weapon preset for a mission profile.
 			</p>
 
 			<div className='flex flex-col gap-4'>
 				{/* Mission profile */}
 				<div className='flex flex-col gap-1.5'>
-					<p className='font-mono text-[7px] tracking-widest uppercase text-neutral-500'>Mission Profile</p>
+					<p className='font-mono text-[7px] tracking-widest uppercase text-neutral-500'>
+						Mission Profile
+					</p>
 					<select
 						className='form'
 						value={draft.missionProfile}
-						onChange={(e) => setDraft({ ...draft, missionProfile: e.target.value })}>
+						onChange={(e) =>
+							setDraft({ ...draft, missionProfile: e.target.value })
+						}>
 						<option value=''>— Select Profile —</option>
 						{availableProfiles.map(([k, p]) => (
-							<option key={k} value={k}>{p.name}</option>
+							<option
+								key={k}
+								value={k}>
+								{p.name}
+							</option>
 						))}
 					</select>
 					{draft.missionProfile && MISSION_PROFILES[draft.missionProfile] && (
@@ -166,9 +261,22 @@ const NewLoadoutForm = ({ operator }) => {
 				</div>
 
 				{/* Weapon builders */}
-				<WeaponBuilder label='Primary'   value={draft.primary}   onChange={(v) => setDraft({ ...draft, primary: v })} />
-				<WeaponBuilder label='Secondary' value={draft.secondary} onChange={(v) => setDraft({ ...draft, secondary: v })} />
-				<WeaponBuilder label='Handgun'   value={draft.handgun}   onChange={(v) => setDraft({ ...draft, handgun: v })} isHandgun />
+				<WeaponBuilder
+					label='Primary'
+					value={draft.primary}
+					onChange={(v) => setDraft({ ...draft, primary: v })}
+				/>
+				<WeaponBuilder
+					label='Secondary'
+					value={draft.secondary}
+					onChange={(v) => setDraft({ ...draft, secondary: v })}
+				/>
+				<WeaponBuilder
+					label='Handgun'
+					value={draft.handgun}
+					onChange={(v) => setDraft({ ...draft, handgun: v })}
+					isHandgun
+				/>
 
 				<div className='flex justify-center pt-2'>
 					<Button
@@ -186,9 +294,9 @@ const NewLoadoutForm = ({ operator }) => {
 
 /* ─── PropTypes ──────────────────────────────────────────────── */
 WeaponBuilder.propTypes = {
-	label:     PropTypes.string.isRequired,
-	value:     PropTypes.object.isRequired,
-	onChange:  PropTypes.func.isRequired,
+	label: PropTypes.string.isRequired,
+	value: PropTypes.object.isRequired,
+	onChange: PropTypes.func.isRequired,
 	isHandgun: PropTypes.bool,
 };
 NewLoadoutForm.propTypes = { operator: OperatorPropTypes.isRequired };
