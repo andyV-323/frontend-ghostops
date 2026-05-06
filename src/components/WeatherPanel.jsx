@@ -79,6 +79,65 @@ const GearIcon = () => (
 	</svg>
 );
 
+const AtmosphereIcon = ({ condition }) => {
+	switch (condition) {
+		case "cloudless":
+			return (
+				<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round' className='w-4 h-4 shrink-0'>
+					<circle cx='12' cy='12' r='5' />
+					<line x1='12' y1='1' x2='12' y2='3' /><line x1='12' y1='21' x2='12' y2='23' />
+					<line x1='4.22' y1='4.22' x2='5.64' y2='5.64' /><line x1='18.36' y1='18.36' x2='19.78' y2='19.78' />
+					<line x1='1' y1='12' x2='3' y2='12' /><line x1='21' y1='12' x2='23' y2='12' />
+					<line x1='4.22' y1='19.78' x2='5.64' y2='18.36' /><line x1='18.36' y1='5.64' x2='19.78' y2='4.22' />
+				</svg>
+			);
+		case "sunshine":
+			return (
+				<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round' className='w-4 h-4 shrink-0'>
+					<circle cx='12' cy='12' r='4' />
+					<line x1='12' y1='2' x2='12' y2='6' /><line x1='12' y1='18' x2='12' y2='22' />
+					<line x1='4.93' y1='4.93' x2='7.76' y2='7.76' /><line x1='16.24' y1='16.24' x2='19.07' y2='19.07' />
+					<line x1='2' y1='12' x2='6' y2='12' /><line x1='18' y1='12' x2='22' y2='12' />
+					<line x1='4.93' y1='19.07' x2='7.76' y2='16.24' /><line x1='16.24' y1='7.76' x2='19.07' y2='4.93' />
+				</svg>
+			);
+		case "overcast":
+			return (
+				<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round' className='w-4 h-4 shrink-0'>
+					<path d='M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z' />
+				</svg>
+			);
+		case "precipitation":
+			return (
+				<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round' className='w-4 h-4 shrink-0'>
+					<line x1='16' y1='13' x2='16' y2='21' /><line x1='8' y1='13' x2='8' y2='21' /><line x1='12' y1='15' x2='12' y2='23' />
+					<path d='M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25' />
+				</svg>
+			);
+		case "storm":
+			return (
+				<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round' className='w-4 h-4 shrink-0'>
+					<path d='M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9' />
+					<polyline points='13 11 9 17 15 17 11 23' />
+				</svg>
+			);
+		default:
+			return null;
+	}
+};
+
+AtmosphereIcon.propTypes = { condition: PropTypes.string };
+
+// ─── Atmosphere config ────────────────────────────────────────────────────────
+
+const ATMOSPHERE_CONFIG = {
+	cloudless:    { label: "Cloudless",     color: "text-sky-300",    badge: "border-sky-500/30 bg-sky-500/10 text-sky-300"     },
+	sunshine:     { label: "Sunshine",      color: "text-yellow-400", badge: "border-yellow-500/30 bg-yellow-500/10 text-yellow-400" },
+	overcast:     { label: "Overcast",      color: "text-slate-400",  badge: "border-slate-500/30 bg-slate-500/10 text-slate-300"  },
+	precipitation:{ label: "Precipitation", color: "text-blue-400",   badge: "border-blue-500/30 bg-blue-500/10 text-blue-400"   },
+	storm:        { label: "Storm",         color: "text-red-400",    badge: "border-red-500/30 bg-red-500/10 text-red-400"      },
+};
+
 // ─── Humidity color coding ────────────────────────────────────────────────────
 
 const HUMIDITY_COLOR = {
@@ -318,6 +377,22 @@ export default function WeatherPanel({ province, provinceKey: provinceKeyProp, u
 					</div>
 				</div>
 			</div>
+
+			{/* ── Atmosphere ── */}
+			{weather.atmosphere && (() => {
+				const atm = ATMOSPHERE_CONFIG[weather.atmosphere] ?? { label: weather.atmosphere, color: "text-zinc-400", badge: "border-zinc-700 bg-zinc-800/30 text-zinc-400" };
+				return (
+					<div className='flex items-center justify-between px-3 py-2.5'>
+						<div className={`flex items-center gap-2 ${atm.color}`}>
+							<AtmosphereIcon condition={weather.atmosphere} />
+							<span className='text-[9px] uppercase tracking-widest text-zinc-600'>Atmosphere</span>
+						</div>
+						<span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 border font-semibold ${atm.badge}`}>
+							{atm.label}
+						</span>
+					</div>
+				);
+			})()}
 
 			{/* ── Operational Notes ── */}
 			<div className='px-3 py-2.5 space-y-1.5'>

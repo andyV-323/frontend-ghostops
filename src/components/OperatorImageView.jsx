@@ -7,7 +7,6 @@ import {
 	faUserPen,
 	faShieldHalved,
 	faStar,
-	faSkull,
 } from "@fortawesome/free-solid-svg-icons";
 import { PropTypes } from "prop-types";
 import { EditOperatorForm, EditLoadout } from "./forms";
@@ -422,10 +421,6 @@ const OperatorImageView = ({ operator, openSheet }) => {
 				<button
 					onClick={() => setInjuryDialogOpen(true)}
 					className='absolute top-3 left-10 z-30 flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-red-400/50 border border-red-900/30 hover:border-red-500/50 hover:text-red-400 bg-blk/70 hover:bg-red-950/30 px-2.5 py-1.5 rounded-sm transition-all'>
-					<FontAwesomeIcon
-						icon={faSkull}
-						className='text-[9px]'
-					/>
 					Casualty
 				</button>
 			)}

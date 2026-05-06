@@ -6,7 +6,6 @@ import {
 	faUsersGear,
 	faXmark,
 	faPlus,
-	faLocationDot,
 	faLink,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTeamsStore } from "@/zustand";
@@ -48,7 +47,7 @@ function TeamOperator({
 			onClick={(e) => onOperatorClick(op, e)}>
 			<div className='relative'>
 				<img
-					className='w-10 h-10 rounded-full border border-neutral-700/40 group-hover:border-btn/50 bg-neutral-900 object-cover object-top transition-all'
+					className='w-12 h-12 rounded-full border border-neutral-700/40 group-hover:border-btn/50 bg-neutral-900 object-cover object-top transition-all'
 					src={op.imageKey || op.image || "/ghost/Default.png"}
 					onError={(e) => {
 						e.currentTarget.src = "/ghost/Default.png";
@@ -63,7 +62,7 @@ function TeamOperator({
 					].join(" ")}
 				/>
 			</div>
-			<span className='font-mono text-[7px] tracking-wide text-neutral-600 group-hover:text-neutral-300 transition-colors text-center max-w-[40px] truncate leading-none'>
+			<span className='font-mono text-[10px] tracking-wide text-neutral-600 group-hover:text-neutral-300 transition-colors text-center max-w-[48px] truncate leading-none'>
 				{op.callSign}
 			</span>
 		</div>
@@ -128,21 +127,29 @@ function TeamCard({
 						isOver ? "bg-btn animate-pulse" : "bg-neutral-700/60",
 					].join(" ")}
 				/>
-				<span className='font-mono text-[10px] tracking-[0.18em] text-neutral-200 uppercase flex-1 truncate'>
+				<span className='font-mono text-sm tracking-[0.15em] text-neutral-200 uppercase flex-1 truncate'>
 					{team.name}
 				</span>
 				{team.AO && (
-					<span className='font-mono text-[6px] tracking-widest uppercase text-btn/70 border border-btn/30 bg-btn/5 px-1.5 py-0.5 shrink-0'>
+					<span className='font-mono text-[9px] tracking-widest uppercase text-btn/70 border border-btn/30 bg-btn/5 px-1.5 py-0.5 shrink-0'>
 						{team.AO}
 					</span>
 				)}
-				<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-500 tabular-nums shrink-0 uppercase'>
+				<span className='font-mono text-[10px] tracking-[0.3em] text-neutral-500 tabular-nums shrink-0 uppercase'>
 					{team.operators.length} op{team.operators.length !== 1 ? "s" : ""}
 				</span>
 				<button
-					onClick={() => openSheet("bottom", <TeamView teamId={team._id} openSheet={openSheet} />)}
+					onClick={() =>
+						openSheet(
+							"bottom",
+							<TeamView
+								teamId={team._id}
+								openSheet={openSheet}
+							/>,
+						)
+					}
 					title='Team View'
-					className='font-mono text-[7px] tracking-widest uppercase text-neutral-600 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
+					className='font-mono text-[10px] tracking-widest uppercase text-neutral-600 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
 					View
 				</button>
 				<button
@@ -165,7 +172,7 @@ function TeamCard({
 
 			{/* ── Operators ───────────────────────────────── */}
 			<div className='px-3 py-2.5 flex-1'>
-				<p className='font-mono text-[7px] tracking-[0.25em] text-neutral-700 uppercase mb-2'>
+				<p className='font-mono text-[10px] tracking-[0.25em] text-neutral-700 uppercase mb-2'>
 					Operators
 				</p>
 				{team.operators.length > 0 ?
@@ -184,7 +191,7 @@ function TeamCard({
 					</div>
 				:	<p
 						className={[
-							"font-mono text-[8px] text-neutral-700",
+							"font-mono text-[10px] text-neutral-700",
 							isOver ? "text-btn/60" : "",
 						].join(" ")}>
 						{isOver ? "Drop operator here" : "No operators assigned"}
@@ -194,18 +201,22 @@ function TeamCard({
 
 			{/* ── AO ──────────────────────────────────────── */}
 			<div className='px-3 pt-2 pb-1 flex flex-col gap-1 border-t border-neutral-800/60'>
-				<p className='font-mono text-[7px] tracking-[0.25em] text-neutral-700 uppercase'>AO</p>
+				<p className='font-mono text-[10px] tracking-[0.25em] text-neutral-700 uppercase'>
+					AO
+				</p>
 				<div className='flex flex-wrap gap-1.5 items-center'>
 					{team.AO && (
-						<span className='inline-flex items-center gap-1 font-mono text-[7px] tracking-widest text-btn/70 bg-btn/5 border border-btn/30 px-1.5 py-0.5 uppercase'>
-							<FontAwesomeIcon icon={faLocationDot} className='text-[6px]' />
+						<span className='inline-flex items-center gap-1 font-mono text-[10px] tracking-widest text-btn/70 bg-btn/5 border border-btn/30 px-1.5 py-0.5 uppercase'>
 							{team.AO}
 						</span>
 					)}
 					<button
 						onClick={() => setShowAOPicker((v) => !v)}
-						className='inline-flex items-center gap-1 font-mono text-[7px] tracking-widest uppercase text-neutral-700 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
-						<FontAwesomeIcon icon={faPlus} className='text-[7px]' />
+						className='inline-flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase text-neutral-700 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
+						<FontAwesomeIcon
+							icon={faPlus}
+							className='text-[10px]'
+						/>
 						{team.AO ? "Change" : "AO"}
 					</button>
 				</div>
@@ -213,10 +224,17 @@ function TeamCard({
 					<select
 						className='w-full bg-neutral-950 border border-neutral-800/60 rounded-sm px-2 py-1 font-mono text-[9px] text-neutral-300 outline-none focus:border-btn/50 transition-colors'
 						defaultValue={team.AO || ""}
-						onChange={(e) => { onAOChange(team, e.target.value); setShowAOPicker(false); }}>
+						onChange={(e) => {
+							onAOChange(team, e.target.value);
+							setShowAOPicker(false);
+						}}>
 						<option value=''>— No AO —</option>
 						{Object.keys(PROVINCES).map((key) => (
-							<option key={key} value={key}>{key}</option>
+							<option
+								key={key}
+								value={key}>
+								{key}
+							</option>
 						))}
 					</select>
 				)}
@@ -226,7 +244,7 @@ function TeamCard({
 			<div className='px-3 pb-3 flex flex-col gap-1.5 border-t border-neutral-800/60'>
 				<div className='pt-2 flex flex-wrap gap-1.5 min-h-[18px]'>
 					{(team.assets || []).length === 0 ?
-						<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-700 uppercase italic'>
+						<span className='font-mono text-[10px] tracking-[0.3em] text-neutral-700 uppercase italic'>
 							No assets
 						</span>
 					:	(team.assets || []).map((asset) => {
@@ -242,7 +260,7 @@ function TeamCard({
 							return (
 								<span
 									key={assetId}
-									className='inline-flex items-center gap-1 font-mono text-[7px] tracking-widest text-neutral-500 bg-neutral-900/60 border border-neutral-800/60 px-1.5 py-0.5 rounded-sm uppercase'>
+									className='inline-flex items-center gap-1 font-mono text-[10px] tracking-widest text-btn/70 bg-btn/5 border border-btn/30 px-1.5 py-0.5 uppercase'>
 									{label}
 									<button
 										onClick={(e) => {
@@ -252,7 +270,7 @@ function TeamCard({
 										className='text-neutral-600 hover:text-red-400 transition-colors ml-0.5'>
 										<FontAwesomeIcon
 											icon={faXmark}
-											className='text-[7px]'
+											className='text-[10px]'
 										/>
 									</button>
 								</span>
@@ -261,10 +279,10 @@ function TeamCard({
 					}
 					<button
 						onClick={() => setShowAddAsset((v) => !v)}
-						className='inline-flex items-center gap-1 font-mono text-[7px] tracking-widest uppercase text-neutral-700 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
+						className='inline-flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase text-neutral-700 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
 						<FontAwesomeIcon
 							icon={faPlus}
-							className='text-[7px]'
+							className='text-[10px]'
 						/>
 						Asset
 					</button>
@@ -297,33 +315,40 @@ function TeamCard({
 			{/* ── Attached Teams ──────────────────────────── */}
 			<div className='px-3 pb-3 flex flex-col gap-1.5 border-t border-neutral-800/60'>
 				<div className='pt-2 flex items-center gap-1.5 flex-wrap min-h-[18px]'>
-					{(team.attachedTeams || []).length === 0 ? (
-						<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-700 uppercase italic'>
+					{(team.attachedTeams || []).length === 0 ?
+						<span className='font-mono text-[10px] tracking-[0.3em] text-neutral-700 uppercase italic'>
 							No attached teams
 						</span>
-					) : (
-						(team.attachedTeams || []).map((attached) => {
+					:	(team.attachedTeams || []).map((attached) => {
 							const id = typeof attached === "object" ? attached._id : attached;
 							const name = typeof attached === "object" ? attached.name : id;
 							return (
 								<span
 									key={id}
-									className='inline-flex items-center gap-1 font-mono text-[7px] tracking-widest text-violet-400/70 bg-violet-950/20 border border-violet-900/40 px-1.5 py-0.5 uppercase'>
-									<FontAwesomeIcon icon={faLink} className='text-[6px]' />
+									className='inline-flex items-center gap-1 font-mono text-[10px] tracking-widest text-btn/70 bg-btn/5 border border-btn/30 px-1.5 py-0.5 uppercase'>
 									{name}
 									<button
-										onClick={(e) => { e.stopPropagation(); onDetachTeam(team._id, id); }}
+										onClick={(e) => {
+											e.stopPropagation();
+											onDetachTeam(team._id, id);
+										}}
 										className='text-neutral-600 hover:text-red-400 transition-colors ml-0.5'>
-										<FontAwesomeIcon icon={faXmark} className='text-[7px]' />
+										<FontAwesomeIcon
+											icon={faXmark}
+											className='text-[10px]'
+										/>
 									</button>
 								</span>
 							);
 						})
-					)}
+					}
 					<button
 						onClick={() => setShowAttachPicker((v) => !v)}
-						className='inline-flex items-center gap-1 font-mono text-[7px] tracking-widest uppercase text-neutral-700 hover:text-violet-400 border border-neutral-800/60 hover:border-violet-900/40 px-1.5 py-0.5 rounded-sm transition-all'>
-						<FontAwesomeIcon icon={faLink} className='text-[7px]' />
+						className='inline-flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase text-neutral-700 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
+						<FontAwesomeIcon
+							icon={faLink}
+							className='text-[10px]'
+						/>
 						Attach
 					</button>
 				</div>
@@ -339,7 +364,11 @@ function TeamCard({
 						}}>
 						<option value=''>— Select Team —</option>
 						{attachableTeams.map((t) => (
-							<option key={t._id} value={t._id}>{t.name}</option>
+							<option
+								key={t._id}
+								value={t._id}>
+								{t.name}
+							</option>
 						))}
 					</select>
 				)}
@@ -376,8 +405,12 @@ const Teams = ({ dataUpdated, openSheet }) => {
 				createdBy: team.createdBy,
 				name: team.name,
 				AO: ao || null,
-				operators: (team.operators || []).map((op) => typeof op === "object" ? op._id : op),
-				assets: (team.assets || []).map((a) => typeof a === "object" ? a._id : a),
+				operators: (team.operators || []).map((op) =>
+					typeof op === "object" ? op._id : op,
+				),
+				assets: (team.assets || []).map((a) =>
+					typeof a === "object" ? a._id : a,
+				),
 			});
 			await fetchTeams();
 			toast.success(ao ? `AO set to ${ao}` : "AO cleared");
@@ -478,7 +511,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 								"Create a team or let A.I generate one.",
 							)
 						}
-						className='flex items-center gap-1.5 font-mono text-[7px] tracking-widest uppercase text-neutral-600 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-2 py-0.5 rounded-sm transition-all'
+						className='flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase text-neutral-600 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-2 py-0.5 rounded-sm transition-all'
 						title='New Team'>
 						<FontAwesomeIcon
 							icon={faPeopleGroup}
@@ -486,11 +519,11 @@ const Teams = ({ dataUpdated, openSheet }) => {
 						/>
 						New Team
 					</button>
-					<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-700 uppercase flex-1'>
+					<span className='font-mono text-[10px] tracking-[0.3em] text-neutral-700 uppercase flex-1'>
 						{teams.length} team{teams.length !== 1 ? "s" : ""}
 					</span>
 					<button
-						className='font-mono text-[7px] tracking-widest uppercase text-red-500/40 hover:text-red-400 border border-red-900/20 hover:border-red-500/40 px-2 py-0.5 rounded-sm transition-all'
+						className='font-mono text-[10px] tracking-widest uppercase text-red-500/40 hover:text-red-400 border border-red-900/20 hover:border-red-500/40 px-2 py-0.5 rounded-sm transition-all'
 						onClick={() =>
 							openRemoveAllDialog(async () => {
 								await removeAllOperatorsFromTeams();
@@ -501,7 +534,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 				</div>
 
 				{teams.length > 0 ?
-					<div className='grid grid-cols-1 xl:grid-cols-2 gap-3'>
+					<div className='grid grid-cols-1 gap-3'>
 						{teams.map((team) => (
 							<TeamCard
 								key={team._id}
