@@ -1,7 +1,6 @@
 import { BIOME_WEATHER } from "@/config";
 
 // Returns a random temperature within the biome range.
-// userUnit: 'C' or 'F'
 export function selectTemperature(biome, userUnit = "C") {
 	const config = BIOME_WEATHER[biome];
 	if (!config) return null;
@@ -20,7 +19,6 @@ export function selectTemperature(biome, userUnit = "C") {
 }
 
 // Picks a weighted-random atmosphere condition from the biome's pool.
-// Higher weight = more likely. Returns condition string or null.
 export function selectAtmosphere(biome) {
 	const config = BIOME_WEATHER[biome];
 	if (!config?.atmosphere?.length) return null;
@@ -35,7 +33,8 @@ export function selectAtmosphere(biome) {
 }
 
 // Returns a pre-op conditions brief for a province.
-// Temperature and atmosphere are randomized within the biome profile on each call.
+// Base notes and gear are always included; atmosphere-specific entries are
+// appended so the brief reflects the exact conditions at insertion time.
 export function getProvinceWeather(province, userUnit = "C") {
 	const biome = typeof province === "string" ? province : province?.biome;
 	if (!biome) return null;
@@ -46,12 +45,15 @@ export function getProvinceWeather(province, userUnit = "C") {
 	const temperature = selectTemperature(biome, userUnit);
 	const atmosphere = selectAtmosphere(biome);
 
+	const atmosphereNotes = atmosphere ? (config.atmosphereNotes?.[atmosphere] ?? []) : [];
+	const atmosphereGear  = atmosphere ? (config.atmosphereGear?.[atmosphere]  ?? []) : [];
+
 	return {
 		biome,
 		temperature,
 		atmosphere,
 		humidity: config.humidity,
-		operationalNotes: config.operationalNotes,
-		gearHints: config.gearHints,
+		operationalNotes: [...config.operationalNotes, ...atmosphereNotes],
+		gearHints:        [...config.gearHints,        ...atmosphereGear],
 	};
 }
