@@ -28,7 +28,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { TeamsApi } from "@/api";
 import { toast } from "react-toastify";
-import OperatorImageView from "./OperatorImageView";
+import { EditLoadout } from "./forms";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 /* ─── Status config ─────────────────────────────────────────── */
@@ -499,10 +499,173 @@ const CONDITION_SCORE = {
 	Critical: 0.1,
 };
 
+/* ─── Operator loadout detail sheet ─────────────────────────── */
+function OperatorLoadoutDetail({ operator, onEditLoadout }) {
+	const [loadoutIndex, setLoadoutIndex] = useState(0);
+	const [expandedSlot, setExpandedSlot] = useState(null);
+
+	useEffect(() => {
+		setLoadoutIndex(0);
+		setExpandedSlot(null);
+	}, [operator._id]);
+
+	const img    = operator.imageKey || operator.image || "/ghost/Default.png";
+	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
+	const isKIA  = operator.status === "KIA";
+
+	const loadouts       = operator.loadouts || [];
+	const safeIdx        = Math.min(loadoutIndex, Math.max(0, loadouts.length - 1));
+	const currentLoadout = loadouts[safeIdx] || null;
+	const currentProfile = currentLoadout ? MISSION_PROFILES[currentLoadout.missionProfile] : null;
+
+	return (
+		<div className='flex flex-col h-full'>
+			{/* Operator header */}
+			<div className='relative overflow-hidden shrink-0' style={{ height: 180 }}>
+				<img
+					src={img}
+					alt={operator.callSign}
+					className={["w-full h-full object-cover object-top", isKIA ? "grayscale opacity-50" : ""].join(" ")}
+					onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
+				/>
+				<div
+					className='absolute inset-0'
+					style={{ background: "linear-gradient(to top, rgba(5,10,8,1) 0%, rgba(5,10,8,0.3) 60%, transparent 100%)" }}
+				/>
+				<div className='absolute bottom-0 left-0 right-0 px-4 pb-3 flex items-end justify-between gap-2'>
+					<div className='min-w-0'>
+						<h3 className='font-mono text-lg font-bold text-white tracking-wide leading-tight truncate'>
+							{operator.callSign || "Unknown"}
+						</h3>
+						<p className='font-mono text-[8px] text-neutral-500 uppercase tracking-widest'>
+							{operator.class || operator.role || "—"}
+						</p>
+					</div>
+					<span className={`inline-flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border shrink-0 ${status.border} ${status.bg} ${status.text}`}>
+						<span className={`w-1.5 h-1.5 rounded-full shrink-0 ${status.dot}`} />
+						{status.label}
+					</span>
+				</div>
+			</div>
+
+			{/* Loadout body */}
+			<div className='flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4'>
+				{loadouts.length === 0 ? (
+					<div className='flex flex-col items-center justify-center gap-3 py-10'>
+						<div className='w-6 h-6 border border-neutral-700 rotate-45' />
+						<p className='font-mono text-[9px] text-neutral-600 uppercase tracking-widest'>No loadouts configured</p>
+						<button
+							onClick={onEditLoadout}
+							className='font-mono text-[9px] tracking-widest uppercase px-3 py-1.5 border border-btn/30 text-btn hover:border-btn/60 hover:bg-btn/10 rounded-sm transition-all'>
+							+ Add Loadout
+						</button>
+					</div>
+				) : (
+					<>
+						{/* Profile nav + Edit button */}
+						<div className='flex items-center justify-between gap-2'>
+							<div className='flex flex-col gap-0.5 min-w-0'>
+								<span className='font-mono text-[8px] text-neutral-600 uppercase tracking-widest'>Profile</span>
+								<span className='font-mono text-[11px] text-neutral-300 truncate'>
+									{currentProfile?.name || currentLoadout?.missionProfile || "—"}
+								</span>
+							</div>
+							<div className='flex items-center gap-2 shrink-0'>
+								{loadouts.length > 1 && (
+									<div className='flex items-center gap-1'>
+										<button
+											onClick={() => { setLoadoutIndex((i) => Math.max(0, i - 1)); setExpandedSlot(null); }}
+											disabled={safeIdx === 0}
+											className='w-6 h-6 flex items-center justify-center font-mono text-xs text-neutral-500 hover:text-neutral-200 border border-neutral-800 disabled:opacity-20 transition-colors'>
+											‹
+										</button>
+										<span className='font-mono text-[7px] text-neutral-600 w-8 text-center tabular-nums'>
+											{safeIdx + 1}/{loadouts.length}
+										</span>
+										<button
+											onClick={() => { setLoadoutIndex((i) => Math.min(loadouts.length - 1, i + 1)); setExpandedSlot(null); }}
+											disabled={safeIdx === loadouts.length - 1}
+											className='w-6 h-6 flex items-center justify-center font-mono text-xs text-neutral-500 hover:text-neutral-200 border border-neutral-800 disabled:opacity-20 transition-colors'>
+											›
+										</button>
+									</div>
+								)}
+								<button
+									onClick={onEditLoadout}
+									className='font-mono text-[8px] tracking-widest uppercase px-2.5 py-1 border border-neutral-700/50 text-neutral-500 hover:border-neutral-500 hover:text-neutral-200 bg-neutral-900/60 rounded-sm transition-all'>
+									Edit
+								</button>
+							</div>
+						</div>
+
+						{/* Weapon slots */}
+						<div className='flex flex-col gap-1.5'>
+							{[
+								{ label: "Primary",   slotKey: "primary",   typeKey: currentLoadout?.primary?.weaponType },
+								{ label: "Secondary", slotKey: "secondary", typeKey: currentLoadout?.secondary?.weaponType },
+								{ label: "Handgun",   slotKey: "handgun",   typeKey: "HDG" },
+							].map(({ label, slotKey, typeKey }) => {
+								const data     = currentLoadout?.[slotKey];
+								const isActive = expandedSlot === slotKey;
+								return (
+									<div key={slotKey}>
+										<button
+											type='button'
+											onClick={() => setExpandedSlot(isActive ? null : slotKey)}
+											className='w-full flex items-center gap-3 px-3 py-2 bg-neutral-900/50 border border-neutral-800/60 hover:border-neutral-700/60 transition-colors group'>
+											<span className='font-mono text-[7px] tracking-widest text-neutral-600 uppercase shrink-0 w-8'>{label}</span>
+											{WEAPONS[typeKey]?.imgUrl && (
+												<img
+													src={WEAPONS[typeKey].imgUrl}
+													alt={label}
+													className='w-12 h-6 object-contain shrink-0'
+													style={{ filter: "invert(1) opacity(0.45)" }}
+												/>
+											)}
+											<span className={`font-mono text-[10px] flex-1 text-left truncate transition-colors ${isActive ? "text-neutral-200" : "text-neutral-500 group-hover:text-neutral-300"}`}>
+												{data?.weapon || <span className='text-neutral-700'>—</span>}
+											</span>
+											{data?.weapon && (
+												<FontAwesomeIcon
+													icon={isActive ? faChevronUp : faChevronDown}
+													className='text-[7px] text-neutral-600 shrink-0'
+												/>
+											)}
+										</button>
+										{isActive && data && (
+											<div className='px-3 py-2 bg-neutral-950/80 border border-t-0 border-neutral-800/60 flex flex-col gap-1'>
+												{Object.entries(data.attachments || {})
+													.filter(([, v]) => v)
+													.map(([k, v]) => (
+														<div key={k} className='flex items-baseline gap-2 min-w-0'>
+															<span className='font-mono text-[7px] uppercase tracking-widest text-neutral-700 shrink-0 w-16'>{k}</span>
+															<span className='font-mono text-[9px] text-neutral-400 truncate'>{v}</span>
+														</div>
+													))}
+												{!Object.values(data.attachments || {}).some(Boolean) && (
+													<p className='font-mono text-[8px] text-neutral-700 italic'>No attachments</p>
+												)}
+											</div>
+										)}
+									</div>
+								);
+							})}
+						</div>
+					</>
+				)}
+			</div>
+		</div>
+	);
+}
+OperatorLoadoutDetail.propTypes = {
+	operator:      PropTypes.object.isRequired,
+	onEditLoadout: PropTypes.func.isRequired,
+};
+
 /* ═══════════════════════════════════════════════════════════════
    TEAMVIEW
 ═══════════════════════════════════════════════════════════════ */
-const TeamView = ({ teamId, openSheet }) => {
+const TeamView = ({ teamId }) => {
 	const {
 		teams,
 		fetchTeams,
@@ -520,6 +683,7 @@ const TeamView = ({ teamId, openSheet }) => {
 	const [injuryType] = useState("choice");
 	const [missionProfile, setMissionProfile] = useState(null);
 	const [detailOp, setDetailOp] = useState(null);
+	const [isEditingLoadout, setIsEditingLoadout] = useState(false);
 	const [showAOSelector, setShowAOSelector] = useState(false);
 	const [savingAO, setSavingAO] = useState(false);
 	const [localAO, setLocalAO] = useState("");
@@ -1153,24 +1317,36 @@ const TeamView = ({ teamId, openSheet }) => {
 				/>
 			)}
 
-			{/* Operator detail — standalone sheet, closing returns here */}
+			{/* Operator loadout detail sheet */}
 			<Sheet
 				open={!!detailOp}
 				onOpenChange={(open) => {
-					if (!open) setDetailOp(null);
+					if (!open) { setDetailOp(null); setIsEditingLoadout(false); }
 				}}>
 				<SheetContent
 					side='right'
-					className='p-0 sm:max-w-md overflow-y-auto bg-blk border-l border-neutral-800/60'
+					className='p-0 sm:max-w-md overflow-hidden flex flex-col bg-blk border-l border-neutral-800/60'
 					aria-describedby={undefined}>
 					<SheetTitle className='sr-only'>
 						{detailOp?.callSign || "Operator"}
 					</SheetTitle>
-					{detailOp && (
-						<OperatorImageView
+					{detailOp && !isEditingLoadout && (
+						<OperatorLoadoutDetail
 							operator={detailOp}
-							openSheet={openSheet}
+							onEditLoadout={() => setIsEditingLoadout(true)}
 						/>
+					)}
+					{detailOp && isEditingLoadout && (
+						<div className='flex flex-col h-full'>
+							<button
+								onClick={() => setIsEditingLoadout(false)}
+								className='flex items-center gap-2 px-4 py-3 border-b border-neutral-800/60 font-mono text-[9px] tracking-widest uppercase text-neutral-500 hover:text-neutral-200 transition-colors shrink-0'>
+								‹ Back to Loadout
+							</button>
+							<div className='flex-1 overflow-y-auto'>
+								<EditLoadout operator={detailOp} />
+							</div>
+						</div>
 					)}
 				</SheetContent>
 			</Sheet>
@@ -1195,7 +1371,6 @@ OperatorCard.propTypes = {
 };
 AssetCard.propTypes = { asset: PropTypes.object };
 TeamView.propTypes = {
-	openSheet: PropTypes.func,
 	teamId: PropTypes.string.isRequired,
 };
 

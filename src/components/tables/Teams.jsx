@@ -144,7 +144,6 @@ function TeamCard({
 							"bottom",
 							<TeamView
 								teamId={team._id}
-								openSheet={openSheet}
 							/>,
 						)
 					}

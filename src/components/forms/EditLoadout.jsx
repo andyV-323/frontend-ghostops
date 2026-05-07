@@ -253,10 +253,12 @@ const EditLoadout = ({ operator }) => {
 							key={i}
 							className='border border-neutral-800/50 bg-neutral-900/20'>
 							{/* Row header — click to expand */}
-							<button
-								type='button'
+							<div
+								role='button'
+								tabIndex={0}
 								onClick={() => setExpandedIndex(isOpen ? null : i)}
-								className='w-full flex items-start gap-3 px-3 py-2.5 text-left hover:bg-neutral-800/20 transition-colors'>
+								onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setExpandedIndex(isOpen ? null : i); }}
+								className='w-full flex items-start gap-3 px-3 py-2.5 text-left hover:bg-neutral-800/20 transition-colors cursor-pointer select-none'>
 								<div className='flex-1 min-w-0'>
 									<p className='font-mono text-[10px] font-semibold text-neutral-200 truncate'>
 										{profile?.name || loadout.missionProfile || "Unconfigured"}
@@ -283,7 +285,7 @@ const EditLoadout = ({ operator }) => {
 										className='text-[9px] text-neutral-500'
 									/>
 								</div>
-							</button>
+							</div>
 
 							{/* Expanded inline editor */}
 							{isOpen && (

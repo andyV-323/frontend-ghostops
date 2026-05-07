@@ -246,21 +246,13 @@ export const MISSION_PROFILES = {
 		name: "Direct Action",
 		description: "Door-kicking, HVT capture, hostage rescue",
 	},
-	RECON: {
-		name: "Recon / Surveillance",
-		description: "Long-range observation, pathfinding, intel",
-	},
-	SAB: {
-		name: "Sabotage",
-		description: "Covert infrastructure strikes, denial ops",
-	},
-	SUS: {
-		name: "Sustained Combat",
-		description: "Extended firefights, defensive ops, support",
-	},
-	COV: {
-		name: "Specialist / Covert",
+	LOWVIS: {
+		name: "Low-vis",
 		description: "Infiltration, assassination, deep cover",
+	},
+	RECON: {
+		name: "Recon",
+		description: "Long-range observation, pathfinding, intel",
 	},
 };
 
