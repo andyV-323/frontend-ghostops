@@ -9,10 +9,7 @@ import {
 	GARAGE,
 	MISSION_PROFILES,
 	PROVINCES,
-	ITEM_RESTRICTION_KEYS,
-	PERK_RESTRICTION_KEYS,
 } from "@/config";
-import { resolveRestrictions } from "@/utils/Restrictions";
 import { PropTypes } from "prop-types";
 import ConfirmDialog from "./ConfirmDialog";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -69,24 +66,6 @@ const PROFILE_STYLE = {
 	SAB: "text-amber-400 border-amber-900/50 bg-amber-950/20",
 	SUS: "text-sky-400 border-sky-900/50 bg-sky-950/20",
 	COV: "text-violet-400 border-violet-900/50 bg-violet-950/20",
-};
-
-const RESTRICTION_STATUS_STYLE = {
-	nominal: {
-		badge: "text-green-400 border-green-900/40 bg-green-950/20",
-		dot: "bg-green-500",
-		label: "AVAIL",
-	},
-	degraded: {
-		badge: "text-amber-400 border-amber-900/40 bg-amber-950/20",
-		dot: "bg-amber-400",
-		label: "DEG",
-	},
-	denied: {
-		badge: "text-red-400 border-red-900/40 bg-red-950/20",
-		dot: "bg-red-500",
-		label: "DENIED",
-	},
 };
 
 /* ─── Section header ────────────────────────────────────────── */
@@ -421,26 +400,22 @@ function AssetCard({ asset }) {
 	);
 }
 
-/* ─── Gear icon with optional restriction badge ─────────────── */
-function GearIcon({ imgSrc, name, invert, restrictionStatus, kiaBlackout }) {
-	const rs =
-		restrictionStatus ? RESTRICTION_STATUS_STYLE[restrictionStatus] : null;
+/* ─── Gear icon ─────────────────────────────────────────────── */
+function GearIcon({ imgSrc, name, invert, kiaBlackout }) {
 	if (kiaBlackout) {
 		return (
 			<div
-				title={`${name} — KIA (unavailable)`}
+				title={`${name} — unavailable`}
 				className='relative flex flex-col items-center gap-1.5 bg-neutral-950/60 border border-neutral-900/40 p-2.5 opacity-30'>
 				<span className='absolute top-1 right-1 font-mono text-[5px] tracking-widest uppercase px-1 py-0.5 border text-red-900/60 border-red-900/30 bg-red-950/10'>
-					KIA
+					OUT
 				</span>
 				{imgSrc ?
 					<img
 						src={imgSrc}
 						alt={name}
 						className='w-9 h-9 object-contain grayscale'
-						style={
-							invert ? { filter: "invert(1) opacity(0.3)" } : { opacity: 0.3 }
-						}
+						style={invert ? { filter: "invert(1) opacity(0.3)" } : { opacity: 0.3 }}
 					/>
 				:	<div className='w-9 h-9 border border-neutral-900/40 bg-neutral-950/40 flex items-center justify-center'>
 						<span className='font-mono text-[7px] text-neutral-800'>?</span>
@@ -456,36 +431,18 @@ function GearIcon({ imgSrc, name, invert, restrictionStatus, kiaBlackout }) {
 		<div
 			title={name}
 			className='relative flex flex-col items-center gap-1.5 bg-neutral-950/60 border border-neutral-800/60 p-2.5 hover:border-neutral-700/60 transition-colors group'>
-			{rs && (
-				<span
-					className={`absolute top-1 right-1 font-mono text-[5px] tracking-widest uppercase px-1 py-0.5 border ${rs.badge}`}>
-					{rs.label}
-				</span>
-			)}
 			{imgSrc ?
 				<img
 					src={imgSrc}
 					alt={name}
-					className={[
-						"w-9 h-9 object-contain",
-						rs?.label === "DENIED" ? "opacity-25 grayscale"
-						: rs?.label === "DEG" ? "opacity-60"
-						: "",
-					].join(" ")}
-					style={
-						invert ? { filter: "invert(1) opacity(0.7)" } : { opacity: 0.75 }
-					}
+					className='w-9 h-9 object-contain'
+					style={invert ? { filter: "invert(1) opacity(0.7)" } : { opacity: 0.75 }}
 				/>
 			:	<div className='w-9 h-9 border border-neutral-800/40 bg-neutral-900/40 flex items-center justify-center'>
 					<span className='font-mono text-[7px] text-neutral-700'>?</span>
 				</div>
 			}
-			<span
-				className={`font-mono text-[6px] text-center leading-tight w-full truncate transition-colors ${
-					rs?.label === "DENIED" ? "text-red-900/60"
-					: rs?.label === "DEG" ? "text-amber-700/60"
-					: "text-neutral-600 group-hover:text-neutral-400"
-				}`}>
+			<span className='font-mono text-[6px] text-center leading-tight w-full truncate text-neutral-600 group-hover:text-neutral-400 transition-colors'>
 				{name}
 			</span>
 		</div>
@@ -741,31 +698,7 @@ const TeamView = ({ teamId }) => {
 			.filter(Boolean);
 	}, [selectedTeam, operators]);
 
-	const combinedPerks = useMemo(() => {
-		const all = teamOps.flatMap((op) => op.perks || []);
-		const unique = [...new Set(all)].filter((p) =>
-			Object.prototype.hasOwnProperty.call(PERKS, p),
-		);
-		return unique.map((perk) => ({
-			name: perk,
-			kiaBlackout: !teamOps.some(
-				(op) => op.status !== "KIA" && (op.perks || []).includes(perk),
-			),
-		}));
-	}, [teamOps]);
-
-	const combinedEquipment = useMemo(() => {
-		const all = teamOps.flatMap((op) => op.items || []);
-		const unique = [...new Set(all)].filter((e) =>
-			Object.prototype.hasOwnProperty.call(ITEMS, e),
-		);
-		return unique.map((item) => ({
-			name: item,
-			kiaBlackout: !teamOps.some(
-				(op) => op.status !== "KIA" && (op.items || []).includes(item),
-			),
-		}));
-	}, [teamOps]);
+	const isAvailable = (op) => op.status !== "KIA" && op.status !== "Injured";
 
 	const statusCounts = useMemo(
 		() => ({
@@ -808,24 +741,6 @@ const TeamView = ({ teamId }) => {
 		};
 	}, [teamOps, selectedTeam?.assets, selectedTeam?.attachedTeams]);
 
-	// AO restrictions
-	const aoRestrictions = useMemo(
-		() => (selectedTeam?.AO ? resolveRestrictions(selectedTeam.AO) : null),
-		[selectedTeam?.AO],
-	);
-
-	const getItemRestriction = (itemName) => {
-		if (!aoRestrictions) return null;
-		const key = ITEM_RESTRICTION_KEYS[itemName];
-		return key ? aoRestrictions[key]?.status : null;
-	};
-
-	const getPerkRestriction = (perkName) => {
-		if (!aoRestrictions) return null;
-		const key = PERK_RESTRICTION_KEYS[perkName];
-		return key ? aoRestrictions[key]?.status : null;
-	};
-
 	const handleAOSave = async (newAO) => {
 		if (!selectedTeam) return;
 		setSavingAO(true);
@@ -856,6 +771,47 @@ const TeamView = ({ teamId }) => {
 		() => selectedTeam?.attachedTeams || [],
 		[selectedTeam],
 	);
+
+	const attachedAllOps = useMemo(() => {
+		return attachedTeams.flatMap((attached) => {
+			if (typeof attached !== "object") return [];
+			return (attached.operators || []).map((op) => {
+				const id = typeof op === "object" ? op._id : op;
+				return operators.find((o) => o._id === id) || op;
+			}).filter(Boolean);
+		});
+	}, [attachedTeams, operators]);
+
+	const allOps = useMemo(() => [...teamOps, ...attachedAllOps], [teamOps, attachedAllOps]);
+
+	const combinedPerks = useMemo(() => {
+		const all = allOps.flatMap((op) => op.perks || []);
+		const unique = [...new Set(all)].filter((p) =>
+			Object.prototype.hasOwnProperty.call(PERKS, p),
+		);
+		return unique.map((perk) => ({
+			name: perk,
+			kiaBlackout: !allOps.some(
+				(op) => isAvailable(op) && (op.perks || []).includes(perk),
+			),
+		}));
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [allOps]);
+
+	const combinedEquipment = useMemo(() => {
+		const all = allOps.flatMap((op) => op.items || []);
+		const unique = [...new Set(all)].filter((e) =>
+			Object.prototype.hasOwnProperty.call(ITEMS, e),
+		);
+		return unique.map((item) => ({
+			name: item,
+			kiaBlackout: !allOps.some(
+				(op) => isAvailable(op) && (op.items || []).includes(item),
+			),
+		}));
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [allOps]);
+
 	const attachableTeams = useMemo(
 		() =>
 			teams.filter((t) => {
@@ -1177,11 +1133,6 @@ const TeamView = ({ teamId }) => {
 								typeof attached === "object" ? attached.operators || [] : [];
 							const assets =
 								typeof attached === "object" ? attached.assets || [] : [];
-							const activeCount = ops.filter(
-								(o) => o.status === "Active",
-							).length;
-							const wiaCount = ops.filter((o) => o.status === "Injured").length;
-							const kiaCount = ops.filter((o) => o.status === "KIA").length;
 
 							return (
 								<div
@@ -1203,32 +1154,32 @@ const TeamView = ({ teamId }) => {
 										</button>
 									</div>
 
-									{/* Operator status summary */}
-									<div className='flex items-center gap-2 mb-2'>
-										{ops.length === 0 ?
-											<span className='font-mono text-[7px] text-neutral-700 italic'>
-												No operators
-											</span>
-										:	<>
-												<span className='font-mono text-[7px] text-green-400/70'>
-													{activeCount} Active
-												</span>
-												{wiaCount > 0 && (
-													<span className='font-mono text-[7px] text-amber-400/70'>
-														{wiaCount} WIA
-													</span>
-												)}
-												{kiaCount > 0 && (
-													<span className='font-mono text-[7px] text-red-400/70'>
-														{kiaCount} KIA
-													</span>
-												)}
-											</>
-										}
-									</div>
+									{/* Operator portrait cards */}
+									{ops.length > 0 ? (
+										<div className={`grid mb-2 ${ops.length <= 2 ? "grid-cols-2" : ops.length <= 4 ? "grid-cols-4" : "grid-cols-4 sm:grid-cols-6"}`}>
+											{ops.map((op, i) => {
+												const resolved = typeof op === "object" && op._id
+													? (operators.find((o) => o._id === op._id) || op)
+													: op;
+												return (
+													<OperatorCard
+														key={resolved._id || i}
+														operator={resolved}
+														onInjuryClick={() => {}}
+														missionProfile={missionProfile}
+														onDetailClick={setDetailOp}
+													/>
+												);
+											})}
+										</div>
+									) : (
+										<span className='font-mono text-[7px] text-neutral-700 italic mb-2 block'>
+											No operators
+										</span>
+									)}
 
 									{/* Assets */}
-									{assets.length > 0 ?
+									{assets.length > 0 && (
 										<div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
 											{assets.map((asset, i) => (
 												<AssetCard
@@ -1237,10 +1188,7 @@ const TeamView = ({ teamId }) => {
 												/>
 											))}
 										</div>
-									:	<span className='font-mono text-[7px] text-neutral-700 italic'>
-											No assets
-										</span>
-									}
+									)}
 								</div>
 							);
 						})}
@@ -1262,7 +1210,6 @@ const TeamView = ({ teamId }) => {
 									key={name}
 									imgSrc={PERKS[name]}
 									name={name}
-									restrictionStatus={getPerkRestriction(name)}
 									kiaBlackout={kiaBlackout}
 								/>
 							))}
@@ -1286,7 +1233,6 @@ const TeamView = ({ teamId }) => {
 									imgSrc={ITEMS[name]}
 									name={name}
 									invert
-									restrictionStatus={getItemRestriction(name)}
 									kiaBlackout={kiaBlackout}
 								/>
 							))}
@@ -1357,11 +1303,10 @@ const TeamView = ({ teamId }) => {
 SectionHeader.propTypes = { label: PropTypes.string, count: PropTypes.number };
 FuelBar.propTypes = { pct: PropTypes.number };
 GearIcon.propTypes = {
-	imgSrc: PropTypes.string,
-	name: PropTypes.string,
-	invert: PropTypes.bool,
-	restrictionStatus: PropTypes.string,
-	kiaBlackout: PropTypes.bool,
+	imgSrc:     PropTypes.string,
+	name:       PropTypes.string,
+	invert:     PropTypes.bool,
+	kiaBlackout:PropTypes.bool,
 };
 OperatorCard.propTypes = {
 	operator: PropTypes.object,

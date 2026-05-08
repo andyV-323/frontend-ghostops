@@ -4,883 +4,1075 @@
 //
 // Design intent:
 //   - Pure data — no logic, no functions
-//   - Each entry describes what Ghost equipment is restricted and why
-//   - source: 'terrain' | 'threat' | 'weather' | 'threat/weather' | 'terrain/weather'
-//   - status tiers: 'nominal' | 'degraded' | 'denied'
-//   - unlockable: true means threat-sourced, removable via campaign progression
-//   - Child resolution (sonarVision, intelGrenades inherit from crossCom) is
-//     handled in restrictionUtils.js — not here
-//
-// Restriction keys:
-//   isrDrone        — ISR drone / minimap + strike designator + Armaros
-//   crossCom        — Cross-Com system (parent)
-//     sonarVision      — child of crossCom
-//     intelGrenades — child of crossCom
-//   aviation        — helicopters and fixed-wing
-//   vehicle         — ground vehicles
-//   reconDrone   — handheld quadcopter recon drone
-//   nvgThermal      — NVG and thermal optics
-//   uplinkProtocol          — SATCOM / fire support comms
-//   lrOptics        — long-range optics / binoculars
+//   - Each entry is split into terrain / threats / weather blocks
+//   - terrain.degraded accepts category names ("drone", "crossCom", "airSupport")
+//     or individual restriction keys
+//   - threats[].denies — same shape as terrain.degraded
+//   - weather[atmosphere].mobilityConditional — flags only available if the
+//     threats denying their underlying restriction are neutralized
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const STATUS = {
-	NOMINAL: "nominal",
-	DEGRADED: "degraded",
-	DENIED: "denied",
+export const NOTES = {
+	MOBILITY: "movement",
+	VISIBILITY: "visibility",
+	SOUND: "sound",
 };
 
-export const SOURCE = {
-	TERRAIN: "terrain",
-	THREAT: "threat",
-	WEATHER: "weather",
-	THREAT_WEATHER: "threat/weather",
-	TERRAIN_WEATHER: "terrain/weather",
+export const MOB = {
+	AIR: "aircraft",
+	GROUND: "ground vehicle",
+	FOOT: "foot",
+	BOAT: "boat",
 };
 
-// ─── Entry helpers ────────────────────────────────────────────────────────────
+export const VIS = {
+	NVG: "night vision",
+	THERMAL: "thermal vision",
+	EYEPRO: "eye protection",
+};
 
-const nom = () => ({
-	status: STATUS.NOMINAL,
-	source: null,
-	reason: null,
-	unlockable: false,
-});
+export const WEATHER = {
+	CLOUDLESS: "cloudless",
+	SUNSHINE: "sunshine",
+	OVERCAST: "overcast",
+	PRECIPITATION: "precipitation",
+	STORM: "storm",
+};
 
-const deg = (source, reason, unlockable = false) => ({
-	status: STATUS.DEGRADED,
-	source,
-	reason,
-	unlockable,
-});
-
-const den = (source, reason, unlockable = false) => ({
-	status: STATUS.DENIED,
-	source,
-	reason,
-	unlockable,
-});
+export const SOU = {
+	LOUD: "go loud",
+	SUPPRESSOR: "suppressors",
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const PROVINCE_RESTRICTIONS = {
 	// ── Golem Island Sector 1 ─────────────────────────────────────────────────
 	Golem1: {
-		isrDrone: deg(
-			SOURCE.TERRAIN,
-			"Dense jungle canopy limits drone line-of-sight. Ash fall coats optical sensors.",
-		),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: nom(),
-		vehicle: deg(
-			SOURCE.TERRAIN,
-			"Unstable volcanic terrain and lava channels block off-road routes.",
-		),
-		reconDrone: deg(
-			SOURCE.TERRAIN_WEATHER,
-			"Canopy blocks low-altitude flight paths. Ash degrades sensors.",
-		),
-		syncDrone: deg(
-			SOURCE.TERRAIN_WEATHER,
-			"Canopy and ash interference degrade sync shot coordination range.",
-		),
-		combatDrone: deg(
-			SOURCE.WEATHER,
-			"Ash coats sensors and degrades rotor performance.",
-		),
-		supplyDrone: deg(
-			SOURCE.WEATHER,
-			"Ash and volcanic heat shimmer corrupt supply drone navigation accuracy.",
-		),
-		nvgThermal: deg(
-			SOURCE.WEATHER,
-			"Ash coats lenses. Heat shimmer from volcanic vents degrades thermal.",
-		),
-		uplinkProtocol: nom(),
-		lrOptics: deg(SOURCE.WEATHER, "Ash fall and extreme humidity fog lenses."),
+		terrain: {
+			description:
+				"Dense jungle canopy and active volcanic ash fall. Lava channels and unstable ground block vehicle routes.",
+			degraded: ["crossCom", "drone", "airSupport", "vehicle", "aviation"],
+		},
+		threats: [],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Golem Island Sector 2 ─────────────────────────────────────────────────
 	Golem2: {
-		isrDrone: deg(
-			SOURCE.TERRAIN,
-			"Dense canopy and ash fall degrade ISR optical feed.",
-		),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: nom(),
-		vehicle: deg(
-			SOURCE.TERRAIN,
-			"Lava channels create impassable barriers across major routes.",
-		),
-		reconDrone: deg(
-			SOURCE.TERRAIN_WEATHER,
-			"Canopy blocks flight paths. Ash degrades sensors.",
-		),
-		syncDrone: deg(
-			SOURCE.TERRAIN_WEATHER,
-			"Canopy cover and ash fall reduce sync shot drone range.",
-		),
-		combatDrone: deg(
-			SOURCE.WEATHER,
-			"Ash and heat shimmer degrade combat drone optics and rotor efficiency.",
-		),
-		supplyDrone: deg(
-			SOURCE.WEATHER,
-			"Lava heat zones and ash corrupt supply drone navigation.",
-		),
-		nvgThermal: deg(
-			SOURCE.WEATHER,
-			"Heat shimmer from lava flows corrupts thermal baseline.",
-		),
-		uplinkProtocol: nom(),
-		lrOptics: deg(SOURCE.WEATHER, "Ash and humidity degrade lens clarity."),
+		terrain: {
+			description:
+				"Dense jungle canopy and active volcanic ash fall. Lava channels and unstable ground block vehicle routes.",
+			degraded: ["crossCom", "drone", "airSupport", "vehicle", "aviation"],
+		},
+		threats: [],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Golem Island Sector 3 ─────────────────────────────────────────────────
 	Golem3: {
-		isrDrone: deg(
-			SOURCE.WEATHER,
-			"Severe heat shimmer over lava terrain corrupts long-range optical feed.",
-		),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: nom(),
-		vehicle: den(
-			SOURCE.TERRAIN,
-			"Active lava flows and zero road network. Ground vehicle movement impossible.",
-		),
-		reconDrone: deg(
-			SOURCE.WEATHER,
-			"Extreme ambient heat degrades sensors. Ash particulates damage rotors.",
-		),
-		syncDrone: den(
-			SOURCE.WEATHER,
-			"Extreme heat and dense ash destroy drone electronics. Sync shot drone non-functional.",
-		),
-		combatDrone: den(
-			SOURCE.WEATHER,
-			"Ambient volcanic heat renders combat drone electronics non-functional.",
-		),
-		supplyDrone: den(
-			SOURCE.WEATHER,
-			"Extreme heat and ash — supply drone cannot operate in active lava zone.",
-		),
-		nvgThermal: den(
-			SOURCE.WEATHER,
-			"Ambient volcanic heat saturates thermal imaging. Ash and heat shimmer destroy NVG clarity. Both systems non-functional.",
-		),
-		uplinkProtocol: nom(),
-		lrOptics: den(
-			SOURCE.WEATHER,
-			"Heat shimmer over lava terrain renders long-range ranging completely unreliable.",
-		),
+		terrain: {
+			description:
+				"Extreme hot desert and active volcanic ash fall. Active lava flows and zero road network. Ground vehicle movement impossible.",
+			degraded: ["crossCom", "drone", "airSupport", "vehicle", "aviation"],
+		},
+		threats: [],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.EYEPRO],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Cape North ────────────────────────────────────────────────────────────
 	CapeNorth: {
-		isrDrone: deg(
-			SOURCE.TERRAIN,
-			"Dense jungle canopy limits drone line-of-sight. Optical feed unreliable below canopy level.",
-		),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: nom(),
-		vehicle: deg(
-			SOURCE.TERRAIN,
-			"Road network limited to primary routes. Dense jungle prevents cross-country movement.",
-		),
-		reconDrone: deg(
-			SOURCE.TERRAIN,
-			"Canopy blocks low-altitude flight paths. Effective range severely reduced.",
-		),
-		syncDrone: deg(
-			SOURCE.TERRAIN,
-			"Dense canopy blocks sync shot drone LOS and reduces effective coordination range.",
-		),
-		combatDrone: deg(
-			SOURCE.TERRAIN,
-			"Canopy limits combat drone targeting angles and loiter altitude.",
-		),
-		supplyDrone: deg(
-			SOURCE.TERRAIN,
-			"Canopy obstructs precise supply drop delivery zones.",
-		),
-		nvgThermal: nom(),
-		uplinkProtocol: nom(),
-		lrOptics: deg(SOURCE.WEATHER, "Extreme humidity fogs lens coatings."),
+		terrain: {
+			description:
+				"Dense jungle rain forest. Canopy fogs optics and limits drone line-of-sight.",
+			degraded: ["drone", "vehicle"],
+		},
+		threats: [
+			{
+				name: "Bat SAM Site",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+			{
+				name: "Skell Foundation Campus",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				visibility: [VIS.THERMAL],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				visibility: [VIS.THERMAL],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Driftwood Islets ─────────────────────────────────────────────────────
 	DriftwoodIslets: {
-		isrDrone: deg(SOURCE.TERRAIN, "Dense jungle canopy degrades drone LOS."),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: nom(),
-		vehicle: den(
-			SOURCE.TERRAIN,
-			"Island terrain — no vehicle access. All movement on foot after insertion.",
-		),
-		reconDrone: deg(
-			SOURCE.TERRAIN,
-			"Canopy limits effective drone range and flight paths.",
-		),
-		syncDrone: deg(
-			SOURCE.TERRAIN,
-			"Dense island canopy limits sync shot drone range.",
-		),
-		combatDrone: deg(
-			SOURCE.TERRAIN,
-			"Canopy restricts combat drone loiter altitude and targeting.",
-		),
-		supplyDrone: nom(),
-		nvgThermal: nom(),
-		uplinkProtocol: nom(),
-		lrOptics: deg(
-			SOURCE.WEATHER,
-			"Humidity degrades optics in rain forest environment.",
-		),
+		terrain: {
+			description:
+				"Dense jungle rain forest. Island archipelago — no road network.",
+			degraded: ["drone", "vehicle"],
+		},
+		threats: [],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				visibility: [VIS.THERMAL],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				visibility: [VIS.THERMAL],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Wild Coast ───────────────────────────────────────────────────────────
 	WildCoast: {
-		isrDrone: nom(),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: nom(),
-		vehicle: deg(
-			SOURCE.TERRAIN,
-			"Cliff and coastal terrain limits off-road ground movement.",
-		),
-		reconDrone: deg(
-			SOURCE.WEATHER,
-			"High coastal wind shear destabilizes small drone flight. Sea fog degrades optical feed.",
-		),
-		syncDrone: deg(
-			SOURCE.WEATHER,
-			"Coastal wind shear destabilizes sync shot drone flight.",
-		),
-		combatDrone: deg(
-			SOURCE.WEATHER,
-			"Wind affects combat drone stability during targeting approach.",
-		),
-		supplyDrone: deg(
-			SOURCE.WEATHER,
-			"Coastal wind reduces supply drop delivery accuracy.",
-		),
-		nvgThermal: nom(),
-		uplinkProtocol: nom(),
-		lrOptics: deg(
-			SOURCE.WEATHER,
-			"Sea fog events reduce effective range. Salt spray fogs lenses.",
-		),
+		terrain: {
+			description: "High cliffs and windy coast. Sea fog reduces optic range.",
+			degraded: ["drone", "vehicle"],
+		},
+		threats: [
+			{
+				name: "Drone Station W031",
+				denies: ["armarosDrone"],
+				unlockable: true,
+			},
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Smugglers Coves ───────────────────────────────────────────────────────
 	SmugglersCoves: {
-		isrDrone: nom(),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: nom(),
-		vehicle: deg(
-			SOURCE.TERRAIN,
-			"Cliff and coastal terrain constrains ground vehicle routes.",
-		),
-		reconDrone: deg(
-			SOURCE.WEATHER,
-			"Coastal wind and sea fog degrade small drone operations.",
-		),
-		syncDrone: deg(
-			SOURCE.WEATHER,
-			"Coastal wind and sea fog affect sync shot drone operations.",
-		),
-		combatDrone: deg(
-			SOURCE.WEATHER,
-			"Wind conditions reduce combat drone stability and targeting.",
-		),
-		supplyDrone: deg(
-			SOURCE.WEATHER,
-			"Sea fog and wind reduce supply drone accuracy.",
-		),
-		nvgThermal: nom(),
-		uplinkProtocol: nom(),
-		lrOptics: deg(SOURCE.WEATHER, "Sea fog reduces effective optic range."),
+		terrain: {
+			description: "High cliffs and windy coast. Sea fog reduces optic range.",
+			degraded: ["drone", "vehicle"],
+		},
+		threats: [
+			{ name: "Foxglove Station", denies: ["crossCom"], unlockable: true },
+			{ name: "Oleander Station", denies: ["crossCom"], unlockable: true },
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Sinking Country ───────────────────────────────────────────────────────
 	SinkingCountry: {
-		isrDrone: deg(
-			SOURCE.WEATHER,
-			"Persistent marsh fog ceiling limits drone altitude and optical clarity.",
-		),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: den(
-			SOURCE.THREAT,
-			"Active SAM network — Harrier, Osprey, and Sparrowhawk sites provide overlapping coverage. All rotary and fixed-wing assets denied.",
-			true,
-		),
-		vehicle: deg(
-			SOURCE.TERRAIN,
-			"Waterlogged marsh terrain. Off-road movement restricted to established tracks.",
-		),
-		reconDrone: deg(
-			SOURCE.WEATHER,
-			"Low fog ceiling limits altitude. Moisture degrades sensor performance.",
-		),
-		syncDrone: nom(),
-		combatDrone: nom(),
-		supplyDrone: deg(
-			SOURCE.WEATHER,
-			"Marsh fog reduces supply drone navigation accuracy.",
-		),
-		nvgThermal: nom(),
-		uplinkProtocol: nom(),
-		lrOptics: deg(
-			SOURCE.WEATHER,
-			"Marsh fog significantly reduces effective optic range.",
-		),
+		terrain: {
+			description:
+				"Salt marsh and wetlands. Persistent fog reduces optic and drone range.",
+			degraded: ["drone"],
+		},
+		threats: [
+			{
+				name: "Howard Airfield",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+			{
+				name: "Harrier SAM Site",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+			{
+				name: "Osprey SAM Site",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+			{
+				name: "Sparrowhawk SAM Site",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+			{
+				name: "Camp Tiger",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+			{ name: "Radar Station North", denies: ["crossCom"], unlockable: true },
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Whalers Bay ───────────────────────────────────────────────────────────
 	WhalersBay: {
-		isrDrone: nom(),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: nom(),
-		vehicle: deg(
-			SOURCE.TERRAIN,
-			"Mountain and cliff terrain constrains vehicle movement to established roads.",
-		),
-		reconDrone: deg(
-			SOURCE.WEATHER,
-			"Coastal and mountain wind affects small drone stability.",
-		),
-		syncDrone: nom(),
-		combatDrone: nom(),
-		supplyDrone: nom(),
-		nvgThermal: nom(),
-		uplinkProtocol: nom(),
-		lrOptics: nom(),
+		terrain: {
+			description:
+				"High cliffs and windy coast. Mountain and cliff terrain limit vehicle routes.",
+			degraded: ["vehicle"],
+		},
+		threats: [
+			{ name: "Aconite Station", denies: ["crossCom"], unlockable: true },
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Mount Hodgson ─────────────────────────────────────────────────────────
 	MountHodgson: {
-		isrDrone: deg(
-			SOURCE.WEATHER,
-			"Blizzard and whiteout conditions ground drone operations. Snow accumulation on sensors.",
-		),
-		crossCom: deg(
-			SOURCE.TERRAIN,
-			"Mountain terrain creates line-of-sight gaps between operators on opposite sides of ridgelines.",
-		),
-		sonarVision: deg(
-			SOURCE.TERRAIN,
-			"LOS breaks in mountain passes prevent reliable sync shot coordination.",
-		),
-		intelGrenades: deg(
-			SOURCE.WEATHER,
-			"Extreme cold degrades grenade electronics and sensor package reliability.",
-		),
-		aviation: deg(
-			SOURCE.WEATHER,
-			"Blizzard events close the flight window. Mountain updrafts create unpredictable conditions.",
-		),
-		vehicle: deg(
-			SOURCE.TERRAIN_WEATHER,
-			"Snow and ice limit wheeled vehicle movement. Mountain passes may be impassable in storm.",
-		),
-		reconDrone: deg(
-			SOURCE.WEATHER,
-			"Blizzard grounds small drones. Cold degrades battery life significantly.",
-		),
-		syncDrone: deg(
-			SOURCE.WEATHER,
-			"Blizzard and cold degrade sync shot drone battery life and flight stability.",
-		),
-		combatDrone: deg(
-			SOURCE.WEATHER,
-			"Blizzard conditions impair combat drone weapon release and sensors.",
-		),
-		supplyDrone: deg(
-			SOURCE.WEATHER,
-			"Blizzard reduces supply drop accuracy. Cold may damage cargo integrity.",
-		),
-		nvgThermal: deg(
-			SOURCE.WEATHER,
-			"Electronics fail faster in extreme cold. Battery life critically reduced.",
-		),
-		uplinkProtocol: deg(
-			SOURCE.TERRAIN,
-			"Mountain terrain creates SATCOM dead zones. Fire support comms intermittent.",
-		),
-		lrOptics: deg(
-			SOURCE.WEATHER,
-			"Whiteout conditions and condensation on cold optics reduce effective range.",
-		),
+		terrain: {
+			description:
+				"High tundra. Whiteout conditions and extreme cold. Mountain LOS gaps degrade Cross-Com.",
+			degraded: ["vehicle", "drone", "crossCom", "aviation"],
+		},
+		threats: [
+			{
+				name: "Drone Station W041",
+				denies: ["armarosDrone"],
+				unlockable: true,
+			},
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Fen Bog ───────────────────────────────────────────────────────────────
 	// Most electronically restricted non-classified province
 	FenBog: {
-		isrDrone: deg(
-			SOURCE.WEATHER,
-			"Persistent marsh fog ceiling limits drone altitude and optical feed.",
-		),
-		crossCom: den(
-			SOURCE.THREAT,
-			"Active enemy EW — Control Stations Tiger 02/03 and Drone Stations W051/052 provide full-spectrum jamming coverage.",
-			true,
-		),
-		sonarVision: den(
-			SOURCE.THREAT,
-			"Inherited — Cross-Com denied by active jamming. Sync shot coordination impossible.",
-			true,
-		),
-		intelGrenades: den(
-			SOURCE.THREAT,
-			"Inherited — Cross-Com denied. Intel grenade feed cannot transmit through jamming envelope.",
-			true,
-		),
-		aviation: nom(),
-		vehicle: deg(
-			SOURCE.TERRAIN,
-			"Waterlogged marsh terrain. Ground vehicles restricted to established causeways.",
-		),
-		reconDrone: den(
-			SOURCE.THREAT_WEATHER,
-			"Active jamming disrupts drone control link. Marsh fog ceiling compounds restriction.",
-			true,
-		),
-		syncDrone: den(
-			SOURCE.THREAT,
-			"Active EW jamming severs sync shot drone control link. Asset denied.",
-			true,
-		),
-		combatDrone: den(
-			SOURCE.THREAT,
-			"Active jamming disrupts combat drone command and weapon link. Asset denied.",
-			true,
-		),
-		supplyDrone: den(
-			SOURCE.THREAT,
-			"EW jamming disrupts supply drone navigation and control link.",
-			true,
-		),
-		nvgThermal: nom(),
-		uplinkProtocol: deg(
-			SOURCE.THREAT,
-			"Enemy EW presence degrades SATCOM uplink quality. Fire support coordination unreliable.",
-			true,
-		),
-		lrOptics: deg(SOURCE.WEATHER, "Marsh fog reduces effective optic range."),
+		terrain: {
+			description:
+				"Salt marsh and wetlands. Persistent fog ceiling limits drones and optics.",
+			degraded: ["drone", "vehicle"],
+		},
+		threats: [
+			{
+				name: "Drone Station W052",
+				denies: ["armarosDrone", "crossCom"],
+				unlockable: true,
+			},
+			{
+				name: "Control Station Tiger 02",
+				denies: ["crossCom"],
+				unlockable: true,
+			},
+			{ name: "Hogweed Station", denies: ["crossCom"], unlockable: true },
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.AIR, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Good Hope Mountain ────────────────────────────────────────────────────
 	GoodHopeMountain: {
-		isrDrone: deg(
-			SOURCE.WEATHER,
-			"Blizzard and mountain cloud ceiling ground drone operations.",
-		),
-		crossCom: deg(
-			SOURCE.TERRAIN,
-			"Mountain ridgelines create LOS gaps between split elements.",
-		),
-		sonarVision: deg(
-			SOURCE.TERRAIN,
-			"LOS breaks in mountain terrain prevent reliable sync coordination.",
-		),
-		intelGrenades: deg(
-			SOURCE.WEATHER,
-			"Cold degrades grenade electronics and sensor package.",
-		),
-		aviation: deg(
-			SOURCE.WEATHER,
-			"Blizzard events close the flight window. Mountain turbulence unpredictable.",
-		),
-		vehicle: deg(
-			SOURCE.TERRAIN_WEATHER,
-			"Snow and mountain passes restrict ground movement.",
-		),
-		reconDrone: deg(
-			SOURCE.WEATHER,
-			"Wind and blizzard conditions ground small drones. Cold drains batteries rapidly.",
-		),
-		syncDrone: deg(
-			SOURCE.WEATHER,
-			"Blizzard conditions degrade sync shot drone flight and battery performance.",
-		),
-		combatDrone: deg(
-			SOURCE.WEATHER,
-			"Wind and cold impair combat drone flight and weapons systems.",
-		),
-		supplyDrone: deg(
-			SOURCE.WEATHER,
-			"Mountain blizzard reduces supply drop precision and delivery reliability.",
-		),
-		nvgThermal: deg(
-			SOURCE.WEATHER,
-			"Cold degrades electronics. Battery life critically reduced in extreme temps.",
-		),
-		uplinkProtocol: deg(
-			SOURCE.TERRAIN,
-			"Mountain terrain creates SATCOM dead zones across the AO.",
-		),
-		lrOptics: deg(
-			SOURCE.WEATHER,
-			"Whiteout conditions degrade effective range.",
-		),
+		terrain: {
+			description:
+				"High tundra. Whiteout conditions and extreme cold. Mountain LOS gaps degrade Cross-Com.",
+			degraded: ["vehicle", "drone", "crossCom", "aviation"],
+		},
+		threats: [
+			{
+				name: "Drone Station W111",
+				denies: ["armarosDrone"],
+				unlockable: true,
+			},
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Silent Mountain ───────────────────────────────────────────────────────
 	SilentMountain: {
-		isrDrone: deg(
-			SOURCE.WEATHER,
-			"Blizzard and mountain ceiling ground drone operations.",
-		),
-		crossCom: deg(
-			SOURCE.TERRAIN,
-			"Mountain terrain creates LOS gaps between operators.",
-		),
-		sonarVision: deg(
-			SOURCE.TERRAIN,
-			"LOS breaks prevent reliable sync shot coordination.",
-		),
-		intelGrenades: deg(
-			SOURCE.WEATHER,
-			"Extreme cold degrades grenade electronics.",
-		),
-		aviation: deg(
-			SOURCE.WEATHER,
-			"Blizzard closes flight window. Mountain updrafts create hazardous conditions.",
-		),
-		vehicle: deg(
-			SOURCE.TERRAIN_WEATHER,
-			"Snow, ice, and mountain passes restrict movement.",
-		),
-		reconDrone: deg(
-			SOURCE.WEATHER,
-			"Wind and cold ground small drone operations.",
-		),
-		syncDrone: deg(
-			SOURCE.WEATHER,
-			"Wind and cold degrade sync shot drone flight performance.",
-		),
-		combatDrone: deg(
-			SOURCE.WEATHER,
-			"Blizzard and cold impair combat drone stability and targeting.",
-		),
-		supplyDrone: deg(
-			SOURCE.WEATHER,
-			"Mountain winds reduce supply drone delivery accuracy.",
-		),
-		nvgThermal: deg(
-			SOURCE.WEATHER,
-			"Extreme cold degrades electronics and battery performance.",
-		),
-		uplinkProtocol: deg(
-			SOURCE.TERRAIN,
-			"Mountain terrain creates SATCOM dead zones.",
-		),
-		lrOptics: deg(SOURCE.WEATHER, "Whiteout and condensation on cold optics."),
+		terrain: {
+			description:
+				"High tundra. Whiteout conditions and extreme cold. Mountain LOS gaps degrade Cross-Com.",
+			degraded: ["vehicle", "drone", "crossCom"],
+		},
+		threats: [
+			{ name: "Hemlock Station", denies: ["crossCom"], unlockable: true },
+			{
+				name: "Camp Black Widow",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── New Argyll ────────────────────────────────────────────────────────────
 	NewArgyll: {
-		isrDrone: nom(),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: nom(),
-		vehicle: nom(),
-		reconDrone: deg(
-			SOURCE.WEATHER,
-			"Mountain wind gusts from adjacent ranges create unpredictable flight conditions.",
-		),
-		syncDrone: nom(),
-		combatDrone: nom(),
-		supplyDrone: nom(),
-		nvgThermal: nom(),
-		uplinkProtocol: nom(),
-		lrOptics: nom(),
+		terrain: {
+			description: "Rain shadows and mountain gusts.",
+			degraded: [],
+		},
+		threats: [
+			{
+				name: "Control Station Tiger 04",
+				denies: ["crossCom"],
+				unlockable: true,
+			},
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.GROUND, MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.GROUND, MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.GROUND, MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.GROUND, MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Infinity ─────────────────────────────────────────────────────────────
 	Infinity: {
-		isrDrone: nom(),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: nom(),
-		vehicle: nom(),
-		reconDrone: nom(),
-		syncDrone: deg(
-			SOURCE.THREAT,
-			"Dense urban RF environment degrades sync shot coordination signal.",
-		),
-		combatDrone: deg(
-			SOURCE.THREAT,
-			"Urban RF interference and ROE constraints degrade combat drone effectiveness.",
-		),
-		supplyDrone: nom(),
-		nvgThermal: deg(
-			SOURCE.THREAT,
-			"Dense city light pollution negates NVG night advantage. Thermal functional but element loses darkness concealment.",
-		),
-		uplinkProtocol: nom(),
-		lrOptics: nom(),
+		terrain: {
+			description:
+				"Dense urban core. Light pollution negates NVG advantage. Civilian density limits ROE.",
+			degraded: ["drone"],
+		},
+		threats: [
+			{
+				name: "Control Station Viper 04",
+				denies: ["crossCom"],
+				unlockable: true,
+			},
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.GROUND, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Channels ─────────────────────────────────────────────────────────────
 	Channels: {
-		isrDrone: deg(
-			SOURCE.WEATHER,
-			"Storm fronts and sea fog degrade drone altitude ceiling and optical feed.",
-		),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: den(
-			SOURCE.THREAT,
-			"Vulture and Eagle SAM sites provide overlapping air defense coverage. All aviation assets denied.",
-			true,
-		),
-		vehicle: deg(
-			SOURCE.TERRAIN,
-			"Island archipelago — limited road connections. Cross-island vehicle movement not viable.",
-		),
-		reconDrone: deg(
-			SOURCE.WEATHER,
-			"Tidal wind and storm fronts destabilize small drone flight.",
-		),
-		syncDrone: nom(),
-		combatDrone: nom(),
-		supplyDrone: deg(
-			SOURCE.WEATHER,
-			"Storm fronts and tidal winds reduce supply drone delivery precision.",
-		),
-		nvgThermal: nom(),
-		uplinkProtocol: nom(),
-		lrOptics: deg(
-			SOURCE.WEATHER,
-			"Sea fog reduces effective optic range across the archipelago.",
-		),
+		terrain: {
+			description: "Fjord-locked archipelago. Limited road network.",
+			degraded: ["vehicle"],
+		},
+		threats: [
+			{
+				name: "Vulture SAM Site",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Restricted Area 01 ────────────────────────────────────────────────────
 	// Most restricted province on Auroa — hardened Sentinel facility
 	RestrictedArea01: {
-		isrDrone: deg(
-			SOURCE.THREAT_WEATHER,
-			"Active Sentinel jamming degrades ISR feed. Blizzard compounds restriction.",
-			true,
-		),
-		crossCom: den(
-			SOURCE.THREAT,
-			"Full-spectrum EW active — Sentinel hardened facility. Cross-Com link denied across entire AO.",
-			true,
-		),
-		sonarVision: den(
-			SOURCE.THREAT,
-			"Inherited — Cross-Com denied by full-spectrum jamming. No sync shot capability.",
-			true,
-		),
-		intelGrenades: den(
-			SOURCE.THREAT,
-			"Inherited — Cross-Com denied. Intel grenade feed cannot transmit.",
-			true,
-		),
-		aviation: den(
-			SOURCE.THREAT,
-			"Restricted airspace — Sentinel AAA emplacements enforce no-fly zone. All aviation denied.",
-			true,
-		),
-		vehicle: deg(
-			SOURCE.TERRAIN_WEATHER,
-			"Snow and blizzard restrict movement. Mountain passes checkpoint-controlled — limited gated entry points.",
-		),
-		reconDrone: den(
-			SOURCE.THREAT,
-			"Active jamming disrupts control link. Personal drone operations impossible.",
-			true,
-		),
-		syncDrone: den(
-			SOURCE.THREAT,
-			"Full-spectrum EW severs sync shot drone control link entirely. Asset denied.",
-			true,
-		),
-		combatDrone: den(
-			SOURCE.THREAT,
-			"Sentinel jamming destroys combat drone command and weapon link. Asset denied.",
-			true,
-		),
-		supplyDrone: den(
-			SOURCE.THREAT,
-			"Full-spectrum jamming disrupts supply drone navigation. Asset denied.",
-			true,
-		),
-		nvgThermal: deg(
-			SOURCE.WEATHER,
-			"Extreme cold and blizzard degrade electronics and battery performance.",
-		),
-		uplinkProtocol: den(
-			SOURCE.THREAT,
-			"Full-spectrum jamming blocks SATCOM uplink. External comms and fire support denied.",
-			true,
-		),
-		lrOptics: deg(
-			SOURCE.WEATHER,
-			"Blizzard and whiteout reduce effective optic range.",
-		),
+		terrain: {
+			description: "High tundra and rain shadows. Hardened Sentinel facility.",
+			degraded: ["drone", "vehicle"],
+		},
+		threats: [
+			{ name: "Manchineel Station", denies: ["crossCom"], unlockable: true },
+			{
+				name: "Camp Ferret",
+				denies: ["airSupport", "aviation", "crossCom"],
+				unlockable: true,
+			},
+			{
+				name: "Camp Fox",
+				denies: ["airSupport", "aviation", "crossCom"],
+				unlockable: true,
+			},
+			{
+				name: "Control Station Fox 02",
+				denies: ["crossCom"],
+				unlockable: true,
+			},
+			{
+				name: "Control Station Fox 01",
+				denies: ["crossCom"],
+				unlockable: true,
+			},
+			{
+				name: "Drone Station W161",
+				denies: ["armarosDrone"],
+				unlockable: true,
+			},
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Lake Country ─────────────────────────────────────────────────────────
 	LakeCountry: {
-		isrDrone: nom(),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: nom(),
-		vehicle: nom(),
-		reconDrone: deg(
-			SOURCE.WEATHER,
-			"Mountain wind gusts from adjacent ranges create unpredictable conditions for small drones.",
-		),
-		syncDrone: nom(),
-		combatDrone: nom(),
-		supplyDrone: nom(),
-		nvgThermal: nom(),
-		uplinkProtocol: nom(),
-		lrOptics: nom(),
+		terrain: {
+			description: "Rain shadows. High mountain winds.",
+			degraded: [],
+		},
+		threats: [
+			{
+				name: "Drone Station W121",
+				denies: ["armarosDrone"],
+				unlockable: true,
+			},
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.GROUND, MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.GROUND, MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.GROUND, MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.GROUND, MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── New Stirling ─────────────────────────────────────────────────────────
 	NewStirling: {
-		isrDrone: nom(),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: nom(),
-		vehicle: nom(),
-		reconDrone: nom(),
-		syncDrone: nom(),
-		combatDrone: nom(),
-		supplyDrone: nom(),
-		nvgThermal: nom(),
-		uplinkProtocol: nom(),
-		lrOptics: nom(),
+		terrain: {
+			description: "Mead lands. Open meadow terrain with limited concealment.",
+			degraded: [],
+		},
+		threats: [
+			{
+				name: "Control Station Viper 03",
+				denies: ["crossCom"],
+				unlockable: true,
+			},
+			{
+				name: "Drone Station W131",
+				denies: ["armarosDrone"],
+				unlockable: true,
+			},
+			{
+				name: "Drone Station W132",
+				denies: ["armarosDrone"],
+				unlockable: true,
+			},
+			{
+				name: "Control Station Viper 02",
+				denies: ["crossCom"],
+				unlockable: true,
+			},
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Seal Islands ─────────────────────────────────────────────────────────
 	SealIslands: {
-		isrDrone: deg(
-			SOURCE.WEATHER,
-			"Sea fog and storm fronts degrade drone ceiling and optical clarity.",
-		),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: den(
-			SOURCE.THREAT,
-			"Buzzard, Owl, Falcon, and Condor SAM sites plus Anti-Aircraft Battery — most heavily defended airspace on Auroa.",
-			true,
-		),
-		vehicle: deg(
-			SOURCE.TERRAIN,
-			"Island terrain — limited road network. Cross-island vehicle movement restricted.",
-		),
-		reconDrone: deg(
-			SOURCE.WEATHER,
-			"Tidal wind and storm fronts destabilize small drone flight.",
-		),
-		syncDrone: nom(),
-		combatDrone: nom(),
-		supplyDrone: nom(),
-		nvgThermal: nom(),
-		uplinkProtocol: nom(),
-		lrOptics: deg(SOURCE.WEATHER, "Sea fog reduces effective optic range."),
+		terrain: {
+			description:
+				"Heavily defended naval base. Fjord-locked island. Multiple SAM batteries.",
+			degraded: ["vehicle", "drone"],
+		},
+		threats: [
+			{
+				name: "Buzzard SAM Site",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+			{
+				name: "Anti Aircraft Battery",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+			{
+				name: "Owl SAM Site",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+			{
+				name: "Control Station Shark 01",
+				denies: ["crossCom"],
+				unlockable: true,
+			},
+			{
+				name: "Falcon SAM Site",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+			{
+				name: "Condor SAM Site",
+				denies: ["airSupport", "aviation"],
+				unlockable: true,
+			},
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				mobilityConditional: [MOB.AIR],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Liberty ───────────────────────────────────────────────────────────────
 	Liberty: {
-		isrDrone: nom(),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: nom(),
-		vehicle: deg(
-			SOURCE.TERRAIN,
-			"Urban density makes vehicle movement conspicuous. Limited routes through dense districts.",
-		),
-		reconDrone: deg(
-			SOURCE.TERRAIN,
-			"Urban canyon multipath interference degrades control signal. Building density limits effective range.",
-		),
-		syncDrone: deg(
-			SOURCE.THREAT,
-			"Urban RF environment degrades sync shot drone coordination.",
-		),
-		combatDrone: deg(
-			SOURCE.THREAT,
-			"Urban RF interference and civilian ROE constraints limit combat drone employment.",
-		),
-		supplyDrone: nom(),
-		nvgThermal: deg(
-			SOURCE.THREAT,
-			"City light pollution negates NVG night advantage across urban core.",
-		),
-		uplinkProtocol: nom(),
-		lrOptics: deg(
-			SOURCE.TERRAIN,
-			"Urban canyon geometry limits effective long-range optic angles and range.",
-		),
+		terrain: {
+			description:
+				"Meadow lands and urban city. Light pollution negates NVG advantage. Civilian density limits ROE.",
+			degraded: ["drone"],
+		},
+		threats: [
+			{
+				name: "Control Station Viper 01",
+				denies: ["crossCom"],
+				unlockable: true,
+			},
+			{
+				name: "Drone Station W192",
+				denies: ["armarosDrone"],
+				unlockable: true,
+			},
+			{
+				name: "Control Station Viper 05",
+				denies: ["crossCom"],
+				unlockable: true,
+			},
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 
 	// ── Windy Islands ─────────────────────────────────────────────────────────
 	WindyIslands: {
-		isrDrone: deg(
-			SOURCE.WEATHER,
-			"Persistent high wind degrades drone stability and ISR feed accuracy.",
-		),
-		crossCom: nom(),
-		sonarVision: nom(),
-		intelGrenades: nom(),
-		aviation: deg(
-			SOURCE.WEATHER,
-			"Persistent wind makes helicopter landing and extraction unreliable.",
-		),
-		vehicle: den(
-			SOURCE.TERRAIN,
-			"Island — no roads, no vehicle access. All movement on foot after insertion.",
-		),
-		reconDrone: den(
-			SOURCE.WEATHER,
-			"Persistent high wind grounds small drone operations entirely.",
-		),
-		syncDrone: den(
-			SOURCE.WEATHER,
-			"Persistent high wind grounds sync shot drone entirely.",
-		),
-		combatDrone: den(
-			SOURCE.WEATHER,
-			"Persistent high wind makes combat drone operations impossible.",
-		),
-		supplyDrone: den(
-			SOURCE.WEATHER,
-			"High wind grounds supply drone — delivery impossible.",
-		),
-		nvgThermal: nom(),
-		uplinkProtocol: nom(),
-		lrOptics: nom(),
+		terrain: {
+			description:
+				"Exposed island terrain. Persistent high winds. No road network.",
+			degraded: ["drone"],
+		},
+		threats: [
+			{ name: "Drone Station S01", denies: ["armarosDrone"], unlockable: true },
+		],
+		weather: {
+			[WEATHER.CLOUDLESS]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.SUNSHINE]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.OVERCAST]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.SUPPRESSOR],
+			},
+			[WEATHER.PRECIPITATION]: {
+				mobility: [MOB.FOOT, MOB.BOAT, MOB.AIR, MOB.GROUND],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+			[WEATHER.STORM]: {
+				mobility: [MOB.FOOT, MOB.GROUND, MOB.BOAT],
+				visibility: [VIS.THERMAL, VIS.NVG],
+				sound: [SOU.LOUD],
+			},
+		},
 	},
 };

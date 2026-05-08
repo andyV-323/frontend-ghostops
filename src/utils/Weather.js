@@ -33,8 +33,6 @@ export function selectAtmosphere(biome) {
 }
 
 // Returns a pre-op conditions brief for a province.
-// Base notes and gear are always included; atmosphere-specific entries are
-// appended so the brief reflects the exact conditions at insertion time.
 export function getProvinceWeather(province, userUnit = "C") {
 	const biome = typeof province === "string" ? province : province?.biome;
 	if (!biome) return null;
@@ -43,17 +41,12 @@ export function getProvinceWeather(province, userUnit = "C") {
 	if (!config) return null;
 
 	const temperature = selectTemperature(biome, userUnit);
-	const atmosphere = selectAtmosphere(biome);
-
-	const atmosphereNotes = atmosphere ? (config.atmosphereNotes?.[atmosphere] ?? []) : [];
-	const atmosphereGear  = atmosphere ? (config.atmosphereGear?.[atmosphere]  ?? []) : [];
+	const atmosphere  = selectAtmosphere(biome);
 
 	return {
 		biome,
 		temperature,
 		atmosphere,
 		humidity: config.humidity,
-		operationalNotes: [...config.operationalNotes, ...atmosphereNotes],
-		gearHints:        [...config.gearHints,        ...atmosphereGear],
 	};
 }

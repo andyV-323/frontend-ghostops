@@ -14,7 +14,8 @@ import { PERKS, PERK_RESTRICTION_KEYS } from "./perks";
 import { BIOME_WEATHER } from "./biome";
 import { PROVINCE_BIOMES } from "./provinceBiomes";
 import { PROVINCE_TERRAIN } from "./provinceTerrain";
-import { PROVINCE_RESTRICTIONS, SOURCE, STATUS } from "./provinceRestrictions";
+import { PROVINCE_RESTRICTIONS } from "./provinceRestrictions";
+import { STATUS, SOURCE } from "../utils/Restrictions";
 
 // WEAPONS is kept as an alias for WEAPON_TYPES so existing imports don't break
 const WEAPONS = WEAPON_TYPES;
