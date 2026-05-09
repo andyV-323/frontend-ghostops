@@ -147,15 +147,16 @@ function OperatorCard({
 				onKeyDown={(e) => {
 					if (e.key === "Enter" || e.key === " ") onDetailClick(operator);
 				}}
-				className='relative overflow-hidden bg-neutral-950 flex-1 cursor-pointer'
-				style={{ minHeight: 280 }}>
+				className='relative overflow-hidden bg-neutral-950 shrink-0 cursor-pointer'
+				style={{ height: 200 }}>
 				<img
 					src={img}
 					alt={operator.callSign}
 					className={[
-						"w-full h-full object-cover object-top absolute inset-0",
+						"w-full h-full object-contain absolute inset-0",
 						isKIA ? "grayscale" : "",
 					].join(" ")}
+					style={{ objectPosition: "center bottom" }}
 					onError={(e) => {
 						e.currentTarget.src = "/ghost/Default.png";
 					}}
@@ -478,27 +479,28 @@ function OperatorLoadoutDetail({ operator, onEditLoadout }) {
 	return (
 		<div className='flex flex-col h-full'>
 			{/* Operator header */}
-			<div className='relative overflow-hidden shrink-0' style={{ height: 180 }}>
-				<img
-					src={img}
-					alt={operator.callSign}
-					className={["w-full h-full object-cover object-top", isKIA ? "grayscale opacity-50" : ""].join(" ")}
-					onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
-				/>
-				<div
-					className='absolute inset-0'
-					style={{ background: "linear-gradient(to top, rgba(5,10,8,1) 0%, rgba(5,10,8,0.3) 60%, transparent 100%)" }}
-				/>
-				<div className='absolute bottom-0 left-0 right-0 px-4 pb-3 flex items-end justify-between gap-2'>
+			<div className='relative shrink-0 flex items-stretch border-b border-neutral-800/60' style={{ height: 140 }}>
+				{/* Full-body portrait */}
+				<div className='relative w-28 shrink-0 overflow-hidden bg-neutral-950'>
+					<img
+						src={img}
+						alt={operator.callSign}
+						className={["w-full h-full object-contain object-bottom", isKIA ? "grayscale opacity-50" : ""].join(" ")}
+						style={{ objectPosition: "center bottom" }}
+						onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
+					/>
+				</div>
+				{/* Identity panel */}
+				<div className='flex-1 flex flex-col justify-between px-4 py-3 bg-neutral-950/60 min-w-0'>
 					<div className='min-w-0'>
-						<h3 className='font-mono text-lg font-bold text-white tracking-wide leading-tight truncate'>
+						<h3 className='font-mono text-base font-bold text-white tracking-wide leading-tight truncate'>
 							{operator.callSign || "Unknown"}
 						</h3>
-						<p className='font-mono text-[8px] text-neutral-500 uppercase tracking-widest'>
+						<p className='font-mono text-[9px] text-neutral-500 uppercase tracking-widest mt-0.5'>
 							{operator.class || operator.role || "—"}
 						</p>
 					</div>
-					<span className={`inline-flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border shrink-0 ${status.border} ${status.bg} ${status.text}`}>
+					<span className={`inline-flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border self-start ${status.border} ${status.bg} ${status.text}`}>
 						<span className={`w-1.5 h-1.5 rounded-full shrink-0 ${status.dot}`} />
 						{status.label}
 					</span>
