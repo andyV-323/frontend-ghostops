@@ -1,4 +1,4 @@
-import { KITS, WEAPONS } from "@/config";
+import { WEAPONS } from "@/config";
 import { useOperatorsStore } from "@/zustand";
 
 const useHandleChange = () => {
@@ -8,15 +8,6 @@ const useHandleChange = () => {
 		const { name, value, type, checked } = e.target;
 
 		if (!selectedOperator) return;
-
-		// Gear images
-		if (name === "gear" || name === "secondaryGear") {
-			setSelectedOperator({
-				...selectedOperator,
-				[name]: KITS[value]?.img || "/gear/default.png",
-			});
-			return;
-		}
 
 		// Weapon images
 		if (

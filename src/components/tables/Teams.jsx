@@ -16,6 +16,7 @@ import { PropTypes } from "prop-types";
 import { useConfirmDialog } from "@/hooks";
 import { ConfirmDialog, TeamView } from "@/components";
 import { EditTeamForm, NewTeamForm } from "@/components/forms";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 // ─── Status dot ───────────────────────────────────────────────
 const STATUS_DOT = {
@@ -83,6 +84,7 @@ function TeamCard({
 	onDragEnd,
 	onOperatorClick,
 	openSheet,
+	onViewTeam,
 	allVehicles,
 	fullVehicleList,
 	addVehicleToTeam,
@@ -139,14 +141,7 @@ function TeamCard({
 					{team.operators.length} op{team.operators.length !== 1 ? "s" : ""}
 				</span>
 				<button
-					onClick={() =>
-						openSheet(
-							"bottom",
-							<TeamView
-								teamId={team._id}
-							/>,
-						)
-					}
+					onClick={() => onViewTeam(team._id)}
 					title='Team View'
 					className='font-mono text-[10px] tracking-widest uppercase text-neutral-600 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
 					View
@@ -397,6 +392,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	const [selectedOperator, setSelectedOperator] = useState(null);
 	const [draggedOperator, setDraggedOperator] = useState(null);
 	const [dragOverTeam, setDragOverTeam] = useState(null);
+	const [teamViewId, setTeamViewId] = useState(null);
 
 	const handleAOChange = async (team, ao) => {
 		try {
@@ -549,6 +545,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 								onDragEnd={handleDragEnd}
 								onOperatorClick={handleOperatorClick}
 								openSheet={openSheet}
+								onViewTeam={(id) => setTeamViewId(id)}
 								allVehicles={allVehicles}
 								fullVehicleList={fullVehicleList}
 								addVehicleToTeam={addVehicleToTeam}
@@ -609,6 +606,24 @@ const Teams = ({ dataUpdated, openSheet }) => {
 				description='This will remove all operators from every team.'
 				message="All team assignments will be cleared. Operators won't be deleted, just unassigned."
 			/>
+
+			<Sheet
+				open={!!teamViewId}
+				onOpenChange={(open) => {
+					if (!open) setTeamViewId(null);
+				}}>
+				<SheetContent
+					side='right'
+					className='p-0 bg-neutral-900 border-l border-neutral-700/40 overflow-hidden flex flex-col sm:max-w-3xl'
+					aria-describedby={undefined}>
+					<SheetTitle className='sr-only'>Team View</SheetTitle>
+					{teamViewId && (
+						<div className='flex-1 h-full overflow-y-auto'>
+							<TeamView teamId={teamViewId} />
+						</div>
+					)}
+				</SheetContent>
+			</Sheet>
 		</div>
 	);
 };
@@ -635,6 +650,7 @@ TeamCard.propTypes = {
 	onDragEnd: PropTypes.func.isRequired,
 	onOperatorClick: PropTypes.func.isRequired,
 	openSheet: PropTypes.func.isRequired,
+	onViewTeam: PropTypes.func.isRequired,
 	allVehicles: PropTypes.array,
 	fullVehicleList: PropTypes.array,
 	addVehicleToTeam: PropTypes.func.isRequired,

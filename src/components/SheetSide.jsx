@@ -45,7 +45,7 @@ const SheetSide = ({
 
 					<SheetDescription>{description || ""}</SheetDescription>
 
-					<div className='py-4'>
+					<div className='py-4 w-full'>
 						{typeof content === "function" ? content() : content}
 					</div>
 

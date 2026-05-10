@@ -7,7 +7,7 @@ export const ITEMS = {
 	"Strike Designator": "/icons/StrikeDesignator.svg",
 	"Intel Grenade": "/icons/SensorGrenade.svg",
 	"EMP Grenade": "/icons/EMPGrenade.svg",
-	"Sonar Goggles": "/icons/SensorGoggles.svg",
+	"Sonar Vision": "/icons/SensorGoggles.svg",
 	"Shock Pistol": "/icons/ShockPistol.svg",
 	"Sync Shot Drone": "/icons/SyncShotDrone.svg",
 	"Frag Grenade": "/icons/FragGrenade.svg",

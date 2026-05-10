@@ -4,9 +4,14 @@ import { PROVINCES } from "./provinces";
 import { ghostID } from "./ghostID";
 import { INJURIES } from "./injuries";
 import { TEAMS } from "./teams";
-import { KITS } from "./kits";
 import { CLASS } from "./classNames";
-import { WEAPON_TYPES, WEAPONS_BY_TYPE, ATTACHMENTS, MISSION_PROFILES, WEAPON_COMPATIBILITY } from "./weapons";
+import {
+	WEAPON_TYPES,
+	WEAPONS_BY_TYPE,
+	ATTACHMENTS,
+	MISSION_PROFILES,
+	WEAPON_COMPATIBILITY,
+} from "./weapons";
 import { GARAGE } from "./garage";
 import { CONDITION } from "./vehicleCondition";
 import { ITEMS, ITEM_RESTRICTION_KEYS } from "./items";
@@ -27,7 +32,6 @@ export {
 	ghostID,
 	INJURIES,
 	TEAMS,
-	KITS,
 	CLASS,
 	WEAPONS,
 	WEAPON_TYPES,

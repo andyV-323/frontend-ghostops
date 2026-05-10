@@ -12,6 +12,7 @@ import {
 	faPlus,
 	faFolderOpen,
 	faLayerGroup,
+	faGun,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { SheetSide } from "@/components";
@@ -29,19 +30,16 @@ import BriefingPage from "./BriefingPage";
 import OperatorsPage from "./OperatorsPage";
 import VehiclesPage from "./VehiclesPage";
 import AOBriefingPage from "./AOBriefingPage";
+import Armory from "./Armory";
 
 // ─── Nav ─────────────────────────────────────────────────────────────────────
 
 const NAV = [
-	{ id: "operators", label: "Personnel", sub: "FOB", icon: faUsers },
-	{ id: "briefing", label: "Ops Room", sub: "SCIF", icon: faCrosshairs },
-	{
-		id: "vehicles",
-		label: "Asset Registry",
-		sub: "Organic Assets",
-		icon: faTruck,
-	},
-	{ id: "ao-briefing", label: "AO Briefing", sub: "Intel", icon: faLayerGroup },
+	{ id: "operators",  label: "Personnel",     sub: "FOB",             icon: faUsers },
+	{ id: "briefing",   label: "Ops Room",       sub: "SCIF",            icon: faCrosshairs },
+	{ id: "vehicles",   label: "Asset Registry", sub: "Organic Assets",  icon: faTruck },
+	{ id: "ao-briefing",label: "AO Briefing",    sub: "Intel",           icon: faLayerGroup },
+	{ id: "armory",     label: "Armory",          sub: "Kit Repository",  icon: faGun },
 ];
 
 // ─── Clock ────────────────────────────────────────────────────────────────────
@@ -118,6 +116,8 @@ export default function UnifiedDashboard() {
 				return <VehiclesPage />;
 			case "ao-briefing":
 				return <AOBriefingPage />;
+			case "armory":
+				return <Armory />;
 			default:
 				return null;
 		}

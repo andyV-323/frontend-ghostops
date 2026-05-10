@@ -4,23 +4,112 @@ import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { Roster, Infirmary, Memorial, Teams } from "@/components/tables";
 import { OperatorImageView } from "@/components";
 import { NewOperatorForm, AssignTeamSheet } from "@/components/forms";
-import { useOperatorsStore, useSheetStore, useTeamsStore } from "@/zustand";
+import {
+	useOperatorsStore,
+	useSheetStore,
+	useTeamsStore,
+	useKitsStore,
+} from "@/zustand";
 import { Panel, usePageSheet } from "./dashboardHelpers";
-import { WEAPONS, MISSION_PROFILES, ITEMS, PERKS } from "@/config";
+import { ITEMS, PERKS } from "@/config";
+import { OperatorsApi } from "@/api";
+import { toast } from "react-toastify";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
-// ─── Loadout panel (desktop right column) ────────────────────────────────────
+// ─── Kit assignment sheet content ─────────────────────────────────────────────
 
-const LoadoutPanel = () => {
-	const { selectedOperator } = useOperatorsStore();
-	const [loadoutIndex, setLoadoutIndex] = useState(0);
-	const [expandedSlot, setExpandedSlot] = useState(null);
+function KitAssignContent({ operator, kits, onToggle }) {
+	if (!operator) return null;
+	const assigned = new Set(operator.assignedKitIds || []);
+	return (
+		<div className='flex flex-col h-full'>
+			<div className='shrink-0 px-4 py-3 border-b border-neutral-800/60 bg-neutral-950/40'>
+				<h3 className='font-mono text-sm font-bold text-white tracking-wide truncate'>
+					{operator.callSign}
+				</h3>
+				<div className='flex items-center justify-between mt-1'>
+					<p className='font-mono text-[8px] text-neutral-500 uppercase tracking-widest'>
+						Kit Assignment
+					</p>
+					{assigned.size > 0 && (
+						<span className='font-mono text-[7px] text-btn border border-btn/25 bg-btn/5 px-1.5 py-0.5'>
+							{assigned.size} kit{assigned.size !== 1 ? "s" : ""}
+						</span>
+					)}
+				</div>
+			</div>
+			<div className='shrink-0 px-4 py-2 border-b border-neutral-800/60 bg-neutral-950/20'>
+				<p className='font-mono text-[7px] tracking-[0.35em] text-neutral-500 uppercase'>
+					Tap to add / remove
+				</p>
+			</div>
+			<div className='flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2'>
+				{kits.length === 0 ?
+					<p className='font-mono text-[8px] text-neutral-700 italic py-4 text-center'>
+						No kits in armory. Create kits in the Armory section.
+					</p>
+				:	kits.map((kit) => {
+						const isAssigned = assigned.has(kit._id);
+						const weapons = [
+							kit.primary?.weapon,
+							kit.secondary?.weapon,
+							kit.handgun?.weapon,
+						].filter(Boolean);
+						return (
+							<button
+								key={kit._id}
+								type='button'
+								onClick={() => onToggle(kit._id)}
+								className={[
+									"flex flex-col gap-1.5 px-3 py-2.5 border transition-colors text-left",
+									isAssigned ?
+										"border-btn/50 bg-btn/5"
+									:	"border-neutral-800/60 hover:border-neutral-700/60",
+								].join(" ")}>
+								<div className='flex items-center gap-2'>
+									<div
+										className={[
+											"w-3.5 h-3.5 border shrink-0 flex items-center justify-center transition-colors",
+											isAssigned ?
+												"border-btn bg-btn/20"
+											:	"border-neutral-700",
+										].join(" ")}>
+										{isAssigned && <div className='w-1.5 h-1.5 bg-btn' />}
+									</div>
+									<span
+										className={`font-mono text-[10px] font-semibold tracking-wide uppercase flex-1 truncate ${isAssigned ? "text-btn" : "text-neutral-300"}`}>
+										{kit.name}
+									</span>
+									{isAssigned && (
+										<span className='font-mono text-[7px] text-btn shrink-0'>
+											ASSIGNED
+										</span>
+									)}
+								</div>
+								{weapons.length > 0 && (
+									<p className='font-mono text-[7px] text-neutral-600 truncate pl-5'>
+										{weapons.join(" · ")}
+									</p>
+								)}
+							</button>
+						);
+					})
+				}
+			</div>
+		</div>
+	);
+}
+
+// ─── Kit panel (desktop right column) ─────────────────────────────────────────
+
+function KitPanel({ operator, kits, onManageKits }) {
+	const [expandedKitId, setExpandedKitId] = useState(null);
 
 	useEffect(() => {
-		setLoadoutIndex(0);
-		setExpandedSlot(null);
-	}, [selectedOperator?._id]);
+		setExpandedKitId(null);
+	}, [operator?._id]);
 
-	if (!selectedOperator) {
+	if (!operator) {
 		return (
 			<div className='flex items-center justify-center h-16'>
 				<span className='font-mono text-[9px] tracking-widest text-neutral-700 uppercase'>
@@ -30,200 +119,143 @@ const LoadoutPanel = () => {
 		);
 	}
 
-	const loadouts = selectedOperator.loadouts || [];
-	const perks = (selectedOperator.perks || []).filter((p) => PERKS[p]);
-	const items = (selectedOperator.items || []).filter((i) => ITEMS[i]);
-
-	if (loadouts.length === 0 && perks.length === 0 && items.length === 0) {
-		return (
-			<div className='flex items-center justify-center h-16'>
-				<span className='font-mono text-[9px] tracking-widest text-neutral-700 uppercase'>
-					No loadouts configured
-				</span>
-			</div>
-		);
-	}
-
-	const safeIdx =
-		loadouts.length > 0 ? Math.min(loadoutIndex, loadouts.length - 1) : 0;
-	const currentLoadout = loadouts[safeIdx] || null;
-	const currentProfile =
-		currentLoadout ? MISSION_PROFILES[currentLoadout.missionProfile] : null;
+	const assignedKits = (operator.assignedKitIds || [])
+		.map((id) => kits.find((k) => k._id === id))
+		.filter(Boolean);
+	const perks = (operator.perks || []).filter((p) => PERKS[p]);
+	const items = (operator.items || []).filter((i) => ITEMS[i]);
 
 	return (
 		<div className='p-4 flex flex-col gap-4'>
-			{/* Loadout section */}
-			{loadouts.length > 0 && (
-				<>
-					{/* Header: profile name + nav */}
-					<div className='flex items-center justify-between gap-2'>
-						<div className='flex flex-col gap-0.5 min-w-0'>
-							<span className='font-mono text-xs tracking-[0.18em] text-neutral-300 uppercase truncate'>
-								{selectedOperator.callSign}
-							</span>
-							<span className='font-mono text-[10px] text-neutral-500 truncate'>
-								{currentProfile?.name || currentLoadout?.missionProfile || "—"}
-							</span>
-						</div>
-						{loadouts.length > 1 && (
-							<div className='flex items-center gap-1 shrink-0'>
-								<button
-									onClick={() => {
-										setLoadoutIndex((i) => Math.max(0, i - 1));
-										setExpandedSlot(null);
-									}}
-									disabled={safeIdx === 0}
-									className='w-6 h-6 flex items-center justify-center font-mono text-sm text-neutral-500 hover:text-neutral-200 border border-neutral-800 hover:border-neutral-600 disabled:opacity-20 transition-colors'>
-									‹
-								</button>
-								<span className='font-mono text-[9px] text-neutral-600 w-8 text-center tabular-nums'>
-									{safeIdx + 1}/{loadouts.length}
-								</span>
-								<button
-									onClick={() => {
-										setLoadoutIndex((i) =>
-											Math.min(loadouts.length - 1, i + 1),
-										);
-										setExpandedSlot(null);
-									}}
-									disabled={safeIdx === loadouts.length - 1}
-									className='w-6 h-6 flex items-center justify-center font-mono text-sm text-neutral-500 hover:text-neutral-200 border border-neutral-800 hover:border-neutral-600 disabled:opacity-20 transition-colors'>
-									›
-								</button>
-							</div>
-						)}
-					</div>
+			{/* Kits */}
+			<div className='flex flex-col gap-2'>
+				<div className='flex items-center justify-between'>
+					<span className='font-mono text-[9px] tracking-[0.25em] text-neutral-600 uppercase'>
+						Assigned Kits
+					</span>
+					<button
+						onClick={onManageKits}
+						className='font-mono text-[8px] tracking-widest uppercase text-neutral-700 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all flex items-center gap-1'>
+						<FontAwesomeIcon
+							icon={faPlus}
+							className='text-[7px]'
+						/>
+						Manage
+					</button>
+				</div>
 
-					{/* Weapon slots */}
-					<div className='grid grid-cols-3 gap-3'>
-						{[
-							{
-								label: "Primary",
-								slotKey: "primary",
-								typeKey: currentLoadout?.primary?.weaponType,
+				{assignedKits.length === 0 ?
+					<button
+						onClick={onManageKits}
+						className='flex items-center justify-center py-4 border border-dashed border-neutral-800/40 hover:border-btn/30 transition-colors w-full'>
+						<span className='font-mono text-[8px] text-neutral-700 italic'>
+							No kits — click to assign
+						</span>
+					</button>
+				:	assignedKits.map((kit) => {
+						const isExpanded = expandedKitId === kit._id;
+						const weapons = [
+							kit.primary?.weapon && {
+								label: "PRI",
+								weapon: kit.primary.weapon,
+								att: kit.primary.attachments,
 							},
-							{
-								label: "Secondary",
-								slotKey: "secondary",
-								typeKey: currentLoadout?.secondary?.weaponType,
+							kit.secondary?.weapon && {
+								label: "SEC",
+								weapon: kit.secondary.weapon,
+								att: kit.secondary.attachments,
 							},
-							{ label: "Handgun", slotKey: "handgun", typeKey: "HDG" },
-						].map(({ label, slotKey, typeKey }) => {
-							const data = currentLoadout?.[slotKey];
-							const isActive = expandedSlot === slotKey;
-							return (
-								<button
-									key={slotKey}
-									type='button'
-									onClick={() => setExpandedSlot(isActive ? null : slotKey)}
-									className='flex flex-col gap-1 min-w-0 text-left hover:opacity-80 transition-opacity group'>
-									<span className='font-mono text-[9px] tracking-widest text-neutral-600 uppercase'>
-										{label}
+							kit.handgun?.weapon && {
+								label: "HDG",
+								weapon: kit.handgun.weapon,
+								att: kit.handgun.attachments,
+							},
+						].filter(Boolean);
+
+						return (
+							<button
+								key={kit._id}
+								type='button'
+								onClick={() => setExpandedKitId(isExpanded ? null : kit._id)}
+								className='flex flex-col gap-1.5 px-3 py-2.5 border border-neutral-800/60 hover:border-neutral-700/60 bg-neutral-950/40 text-left transition-colors w-full'>
+								<div className='flex items-center gap-2'>
+									<div className='w-1.5 h-1.5 bg-btn/50 shrink-0' />
+									<span className='font-mono text-[10px] font-semibold text-neutral-200 truncate tracking-wide uppercase flex-1'>
+										{kit.name}
 									</span>
-									{WEAPONS[typeKey]?.imgUrl && (
-										<img
-											src={WEAPONS[typeKey].imgUrl}
-											alt={label}
-											className='w-16 h-8 object-contain'
-											style={{ filter: "invert(1) opacity(0.45)" }}
-										/>
-									)}
-									<span
-										className={`font-mono text-[11px] truncate transition-colors ${isActive ? "text-neutral-100" : "text-neutral-400 group-hover:text-neutral-200"}`}>
-										{data?.weapon || (
-											<span className='text-neutral-700'>—</span>
+									<span className='font-mono text-[7px] text-neutral-600 shrink-0'>
+										{isExpanded ? "▲" : "▼"}
+									</span>
+								</div>
+								<div className='flex flex-col gap-0.5 pl-3.5'>
+									{weapons.map(({ label, weapon }) => (
+										<div
+											key={label}
+											className='flex items-center gap-1.5'>
+											<span className='font-mono text-[7px] text-neutral-600 w-5 uppercase tracking-widest'>
+												{label}
+											</span>
+											<span className='font-mono text-[9px] text-neutral-400 truncate'>
+												{weapon}
+											</span>
+										</div>
+									))}
+								</div>
+
+								{isExpanded && (
+									<div className='pl-3.5 pt-2 border-t border-neutral-800/40 flex flex-col gap-2 mt-1 w-full'>
+										{weapons.map(({ label, weapon, att }) => (
+											<div key={label}>
+												<p className='font-mono text-[7px] text-neutral-500 uppercase tracking-wide mb-1'>
+													{label} — {weapon}
+												</p>
+												{Object.entries(att || {})
+													.filter(([, v]) => v)
+													.map(([k, v]) => (
+														<div
+															key={k}
+															className='flex items-baseline gap-2'>
+															<span className='font-mono text-[7px] text-neutral-700 uppercase tracking-widest w-14 shrink-0'>
+																{k}
+															</span>
+															<span className='font-mono text-[8px] text-neutral-500'>
+																{v}
+															</span>
+														</div>
+													))}
+												{!Object.values(att || {}).some(Boolean) && (
+													<p className='font-mono text-[7px] text-neutral-700 italic'>
+														No attachments
+													</p>
+												)}
+											</div>
+										))}
+										{kit.items?.length > 0 && (
+											<div className='flex flex-wrap gap-1 pt-1 border-t border-neutral-800/40'>
+												{kit.items.slice(0, 8).map((item) =>
+													ITEMS[item] ?
+														<img
+															key={item}
+															src={ITEMS[item]}
+															alt={item}
+															title={item}
+															className='w-5 h-5 object-contain'
+															style={{ filter: "invert(1) opacity(0.4)" }}
+														/>
+													:	null,
+												)}
+											</div>
 										)}
-									</span>
-								</button>
-							);
-						})}
-					</div>
-
-					{/* Attachment detail */}
-					{expandedSlot && currentLoadout?.[expandedSlot] && (
-						<div className='pt-3 border-t border-neutral-800/60 flex flex-col gap-1.5'>
-							{Object.entries(currentLoadout[expandedSlot].attachments || {})
-								.filter(([, v]) => v)
-								.map(([k, v]) => (
-									<div
-										key={k}
-										className='flex items-baseline gap-2 min-w-0'>
-										<span className='font-mono text-[9px] uppercase tracking-widest text-neutral-600 shrink-0 w-16'>
-											{k}
-										</span>
-										<span className='font-mono text-[10px] text-neutral-400 truncate'>
-											{v}
-										</span>
 									</div>
-								))}
-							{!Object.values(
-								currentLoadout[expandedSlot].attachments || {},
-							).some(Boolean) && (
-								<p className='font-mono text-[9px] text-neutral-700 italic'>
-									No attachments
-								</p>
-							)}
-						</div>
-					)}
-				</>
-			)}
-
-			{/* Perks */}
-			{perks.length > 0 && (
-				<div className='flex flex-col gap-2 pt-3 border-t border-neutral-800/60'>
-					<span className='font-mono text-[9px] tracking-[0.25em] text-neutral-600 uppercase'>
-						Perks
-					</span>
-					<div className='grid grid-cols-4 gap-2'>
-						{perks.map((name) => (
-							<div
-								key={name}
-								title={name}
-								className='flex flex-col items-center gap-1 bg-neutral-950/60 border border-neutral-800/60 p-2 hover:border-neutral-700/60 transition-colors'>
-								<img
-									src={PERKS[name]}
-									alt={name}
-									className='w-8 h-8 object-contain'
-									style={{ opacity: 0.75 }}
-								/>
-								<span className='font-mono text-[8px] text-center leading-tight text-neutral-500 truncate w-full'>
-									{name}
-								</span>
-							</div>
-						))}
-					</div>
-				</div>
-			)}
-
-			{/* Equipment */}
-			{items.length > 0 && (
-				<div className='flex flex-col gap-2 pt-3 border-t border-neutral-800/60'>
-					<span className='font-mono text-[9px] tracking-[0.25em] text-neutral-600 uppercase'>
-						Equipment
-					</span>
-					<div className='grid grid-cols-4 gap-2'>
-						{items.map((name) => (
-							<div
-								key={name}
-								title={name}
-								className='flex flex-col items-center gap-1 bg-neutral-950/60 border border-neutral-800/60 p-2 hover:border-neutral-700/60 transition-colors'>
-								<img
-									src={ITEMS[name]}
-									alt={name}
-									className='w-8 h-8 object-contain'
-									style={{ filter: "invert(1) opacity(0.7)" }}
-								/>
-								<span className='font-mono text-[8px] text-center leading-tight text-neutral-500 truncate w-full'>
-									{name}
-								</span>
-							</div>
-						))}
-					</div>
-				</div>
-			)}
+								)}
+							</button>
+						);
+					})
+				}
+			</div>
 		</div>
 	);
-};
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // OPERATORS PAGE
@@ -233,15 +265,18 @@ export default function OperatorsPage() {
 	const { setSelectedOperator, operators, fetchOperators } =
 		useOperatorsStore();
 	const { teams, fetchTeams } = useTeamsStore();
+	const { kits, fetchKits } = useKitsStore();
 	const { open, SheetEl } = usePageSheet();
 	const [dataUpdated, setDataUpdated] = useState(false);
 	const [selectedOp, setSelectedOp] = useState(null);
+	const [kitSelectorOpen, setKitSelectorOpen] = useState(false);
 	const refreshData = () => setDataUpdated((p) => !p);
 
 	useEffect(() => {
 		fetchOperators();
 		fetchTeams();
-	}, [fetchOperators, fetchTeams, dataUpdated]);
+		fetchKits();
+	}, [fetchOperators, fetchTeams, fetchKits, dataUpdated]);
 
 	// Auto-select first active operator
 	useEffect(() => {
@@ -257,6 +292,23 @@ export default function OperatorsPage() {
 	const selectOp = (op) => {
 		setSelectedOp(op);
 		setSelectedOperator(op._id);
+	};
+
+	const handleToggleKit = async (kitId) => {
+		if (!selectedOp) return;
+		const current = new Set(selectedOp.assignedKitIds || []);
+		if (current.has(kitId)) current.delete(kitId);
+		else current.add(kitId);
+		const newIds = [...current];
+		const updated = { ...selectedOp, assignedKitIds: newIds };
+		try {
+			await OperatorsApi.updateOperator(selectedOp._id, updated);
+			setSelectedOp(updated);
+			await fetchOperators();
+			setSelectedOperator(selectedOp._id);
+		} catch {
+			toast.error("Failed to update kit");
+		}
 	};
 
 	const active = operators.filter((o) => {
@@ -452,7 +504,7 @@ export default function OperatorsPage() {
 					}
 				</div>
 
-				{/* RIGHT — Teams + WIA/KIA */}
+				{/* RIGHT — Teams + Kits & Perks */}
 				<div className='flex-1 min-h-0 flex flex-col border-l border-neutral-800/40'>
 					<div className='flex-1 min-h-0 flex flex-col bg-neutral-900/40'>
 						<div className='flex-1 min-h-0 overflow-y-auto'>
@@ -464,19 +516,37 @@ export default function OperatorsPage() {
 						</div>
 					</div>
 					<div className='shrink-0 border-t border-neutral-800/40 bg-neutral-900/40'>
-						<div className='px-3 py-1.5 border-b border-neutral-800/40'>
-							<span className='font-mono text-[8px] tracking-widest uppercase text-neutral-600'>
-								Loadout
-							</span>
-						</div>
 						<div className='overflow-y-auto max-h-96'>
-							<LoadoutPanel />
+							<KitPanel
+								operator={selectedOp}
+								kits={kits}
+								onManageKits={() => setKitSelectorOpen(true)}
+							/>
 						</div>
 					</div>
 				</div>
 			</div>
 
 			{SheetEl}
+
+			{/* Kit selector sheet */}
+			<Sheet
+				open={kitSelectorOpen}
+				onOpenChange={(open) => {
+					if (!open) setKitSelectorOpen(false);
+				}}>
+				<SheetContent
+					side='right'
+					className='p-0 sm:max-w-md overflow-hidden flex flex-col bg-blk border-l border-neutral-800/60'
+					aria-describedby={undefined}>
+					<SheetTitle className='sr-only'>Kit Assignment</SheetTitle>
+					<KitAssignContent
+						operator={selectedOp}
+						kits={kits}
+						onToggle={handleToggleKit}
+					/>
+				</SheetContent>
+			</Sheet>
 		</>
 	);
 }

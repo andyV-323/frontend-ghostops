@@ -5,6 +5,7 @@ import * as MemorialApi from "./MemorialApi";
 import * as VehicleAPI from "./VehicleApi";
 import * as MissionsApi from "./MissionsApi";
 import * as GhostOpsAPI from "./GhostOpsApi";
+import * as KitsApi from "./KitsApi";
 
 export {
 	OperatorsApi,
@@ -14,4 +15,5 @@ export {
 	VehicleAPI,
 	MissionsApi,
 	GhostOpsAPI,
+	KitsApi,
 };

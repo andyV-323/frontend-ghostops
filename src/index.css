@@ -273,7 +273,7 @@
 	@apply bg-background/50 border border-lines p-4 flex items-center justify-center;
 }
 .form {
-	@apply bg-blk/50 border border-lines  rounded-lg  outline-lines block w-full p-2.5;
+	@apply bg-blk/50 border border-lines rounded-lg outline-lines block w-full p-2.5 text-fontz;
 }
 
 /* Drag cursor styles */

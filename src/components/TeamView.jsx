@@ -1,15 +1,8 @@
 // TeamView.jsx — Military Team Dossier
 
-import { useTeamsStore, useOperatorsStore } from "@/zustand";
+import { useTeamsStore, useOperatorsStore, useKitsStore } from "@/zustand";
 import { useEffect, useMemo, useState } from "react";
-import {
-	WEAPONS,
-	ITEMS,
-	PERKS,
-	GARAGE,
-	MISSION_PROFILES,
-	PROVINCES,
-} from "@/config";
+import { WEAPONS, ITEMS, GARAGE, PROVINCES } from "@/config";
 import { PropTypes } from "prop-types";
 import ConfirmDialog from "./ConfirmDialog";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -23,9 +16,8 @@ import {
 	faXmark,
 	faLocationDot,
 } from "@fortawesome/free-solid-svg-icons";
-import { TeamsApi } from "@/api";
+import { TeamsApi, OperatorsApi } from "@/api";
 import { toast } from "react-toastify";
-import { EditLoadout } from "./forms";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 /* ─── Status config ─────────────────────────────────────────── */
@@ -60,13 +52,16 @@ const CONDITION_BADGE = {
 	Critical: "text-red-400 border-red-900/50 bg-red-950/30",
 };
 
-const PROFILE_STYLE = {
-	DA: "text-red-400 border-red-900/50 bg-red-950/20",
-	RECON: "text-emerald-400 border-emerald-900/50 bg-emerald-950/20",
-	SAB: "text-amber-400 border-amber-900/50 bg-amber-950/20",
-	SUS: "text-sky-400 border-sky-900/50 bg-sky-950/20",
-	COV: "text-violet-400 border-violet-900/50 bg-violet-950/20",
-};
+/* ─── Op grid columns ───────────────────────────────────────── */
+function getOpCols(count) {
+	if (count === 1) return "grid-cols-1";
+	if (count === 2) return "grid-cols-2";
+	if (count === 3) return "grid-cols-2 sm:grid-cols-3";
+	if (count === 5) return "grid-cols-2 sm:grid-cols-5";
+	if (count === 6) return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6";
+	if (count === 7) return "grid-cols-2 sm:grid-cols-4 lg:grid-cols-7";
+	return "grid-cols-2 sm:grid-cols-4";
+}
 
 /* ─── Section header ────────────────────────────────────────── */
 function SectionHeader({ label, count }) {
@@ -110,28 +105,53 @@ function FuelBar({ pct }) {
 function OperatorCard({
 	operator,
 	onInjuryClick,
-	missionProfile,
-	onDetailClick,
+	onKitSelectClick,
+	assignedKits,
 }) {
 	const img = operator.imageKey || operator.image || "/ghost/Default.png";
 	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
 	const isKIA = operator.status === "KIA";
-	const primaryWeapon =
-		operator.weaponType ? WEAPONS[operator.weaponType] : null;
-	const weaponName = operator.weapon || primaryWeapon?.name || null;
 
-	const loadouts = operator.loadouts || [];
-	const activeLoadout =
-		loadouts.length > 0 ?
-			missionProfile ?
-				loadouts.find((l) => l.missionProfile === missionProfile) || loadouts[0]
-			:	loadouts[0]
-		:	null;
-
+	const [kitIdx, setKitIdx] = useState(0);
 	const [expandedSlot, setExpandedSlot] = useState(null);
+
+	const safeIdx =
+		assignedKits.length > 0 ? Math.min(kitIdx, assignedKits.length - 1) : 0;
+	const activeKit = assignedKits[safeIdx] || null;
+
 	useEffect(() => {
+		setKitIdx(0);
 		setExpandedSlot(null);
-	}, [missionProfile, activeLoadout]);
+	}, [operator._id]);
+
+	const kitWeapons =
+		activeKit ?
+			[
+				activeKit.primary?.weapon && {
+					key: "primary",
+					label: "PRI",
+					weapon: activeKit.primary.weapon,
+					weaponType: activeKit.primary.weaponType,
+					attachments: activeKit.primary.attachments,
+				},
+				activeKit.secondary?.weapon && {
+					key: "secondary",
+					label: "SEC",
+					weapon: activeKit.secondary.weapon,
+					weaponType: activeKit.secondary.weaponType,
+					attachments: activeKit.secondary.attachments,
+				},
+				activeKit.handgun?.weapon && {
+					key: "handgun",
+					label: "HDG",
+					weapon: activeKit.handgun.weapon,
+					weaponType: "HDG",
+					attachments: activeKit.handgun.attachments,
+				},
+			].filter(Boolean)
+		:	[];
+
+	const expandedWeapon = kitWeapons.find((w) => w.key === expandedSlot);
 
 	return (
 		<div
@@ -139,16 +159,15 @@ function OperatorCard({
 				"relative flex flex-col overflow-hidden border-r border-neutral-800/50 last:border-r-0 select-none",
 				isKIA ? "opacity-60" : "",
 			].join(" ")}>
-			{/* Portrait — clickable for detail view */}
+			{/* Portrait — clickable for kit selection */}
 			<div
 				role='button'
 				tabIndex={0}
-				onClick={() => onDetailClick(operator)}
+				onClick={() => onKitSelectClick(operator)}
 				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") onDetailClick(operator);
+					if (e.key === "Enter" || e.key === " ") onKitSelectClick(operator);
 				}}
-				className='relative overflow-hidden bg-neutral-950 shrink-0 cursor-pointer'
-				style={{ height: 200 }}>
+				className='relative overflow-hidden bg-neutral-950 shrink-0 cursor-pointer h-56 sm:h-60'>
 				<img
 					src={img}
 					alt={operator.callSign}
@@ -188,111 +207,126 @@ function OperatorCard({
 				</div>
 
 				{/* Tap hint */}
-				<div className='absolute bottom-1 right-1.5 font-mono text-[5px] tracking-widest text-neutral-600 uppercase pointer-events-none'>
-					tap
+				<div className='absolute bottom-1 right-1.5 font-mono text-[10px] tracking-widest text-neutral-600 uppercase pointer-events-none'>
+					kit
 				</div>
 
 				{/* Bottom gradient + identity */}
 				<div
-					className='absolute bottom-0 left-0 right-0 flex flex-col gap-1 px-2 pb-2 pt-14'
+					className='absolute bottom-0 left-0 right-0 flex flex-col gap-1 px-2 pb-2 pt-20'
 					style={{
 						background:
 							"linear-gradient(to top, rgba(5,10,8,1) 0%, rgba(5,10,8,0.9) 40%, transparent 100%)",
 					}}>
 					<div>
-						<p className='font-mono text-[10px] font-bold text-neutral-100 leading-tight truncate'>
+						<p className='font-mono text-xs font-bold text-neutral-100 leading-tight truncate'>
 							{operator.callSign || "Unknown"}
 						</p>
-						<p className='font-mono text-[7px] text-neutral-500 truncate uppercase tracking-wider'>
-							{operator.class || operator.role || "—"}
+						<p className='font-mono text-[9px] text-neutral-500 truncate uppercase tracking-wider'>
+							{operator.class || "—"}
+						</p>
+						<p className='font-mono text-[9px] text-neutral-500 truncate uppercase tracking-wider'>
+							{operator.role || "—"}
 						</p>
 					</div>
 
-					{activeLoadout ?
+					{activeKit ?
 						<div className='flex flex-col gap-0.5'>
-							{[
-								{ key: "primary", label: "PRI" },
-								{ key: "secondary", label: "SEC" },
-								{ key: "handgun", label: "HDG" },
-							].map(({ key, label }) => {
-								const slot = activeLoadout[key];
-								if (!slot?.weapon) return null;
-								return (
+							{/* Kit name + cycle controls */}
+							<div className='flex items-center gap-1 min-w-0'>
+								{assignedKits.length > 1 && (
 									<button
-										key={key}
 										type='button'
 										onClick={(e) => {
 											e.stopPropagation();
-											setExpandedSlot(expandedSlot === key ? null : key);
+											setKitIdx((i) =>
+												i > 0 ? i - 1 : assignedKits.length - 1,
+											);
+											setExpandedSlot(null);
 										}}
-										className='flex items-center gap-1 min-w-0 text-left hover:opacity-80 transition-opacity'>
-										<span className='font-mono text-[6px] text-neutral-600 uppercase tracking-widest shrink-0 w-5'>
-											{label}
-										</span>
-										{WEAPONS[slot.weaponType]?.imgUrl && (
-											<img
-												src={WEAPONS[slot.weaponType].imgUrl}
-												alt=''
-												className='w-6 h-3 object-contain shrink-0'
-												style={{ filter: "invert(1) opacity(0.4)" }}
-											/>
-										)}
-										<span
-											className={`font-mono text-[7px] truncate ${expandedSlot === key ? "text-fontz/90" : "text-neutral-400"}`}>
-											{slot.weapon}
-										</span>
+										className='font-mono text-[11px] text-neutral-600 hover:text-neutral-300 shrink-0 leading-none'>
+										‹
 									</button>
-								);
-							})}
+								)}
+								<p className='font-mono text-[9px] text-btn/60 truncate tracking-widest uppercase flex-1'>
+									{activeKit.name}
+								</p>
+								{assignedKits.length > 1 && (
+									<>
+										<button
+											type='button'
+											onClick={(e) => {
+												e.stopPropagation();
+												setKitIdx((i) =>
+													i < assignedKits.length - 1 ? i + 1 : 0,
+												);
+												setExpandedSlot(null);
+											}}
+											className='font-mono text-[11px] text-neutral-600 hover:text-neutral-300 shrink-0 leading-none'>
+											›
+										</button>
+										<span className='font-mono text-[7px] text-neutral-700 shrink-0 tabular-nums'>
+											{safeIdx + 1}/{assignedKits.length}
+										</span>
+									</>
+								)}
+							</div>
+							{kitWeapons.map(({ key, label, weapon, weaponType }) => (
+								<button
+									key={key}
+									type='button'
+									onClick={(e) => {
+										e.stopPropagation();
+										setExpandedSlot(expandedSlot === key ? null : key);
+									}}
+									className='flex items-center gap-1 min-w-0 text-left hover:opacity-80 transition-opacity'>
+									<span className='font-mono text-[8px] text-neutral-600 uppercase tracking-widest shrink-0 w-6'>
+										{label}
+									</span>
+									{WEAPONS[weaponType]?.imgUrl && (
+										<img
+											src={WEAPONS[weaponType].imgUrl}
+											alt=''
+											className='w-7 h-3.5 object-contain shrink-0'
+											style={{ filter: "invert(1) opacity(0.4)" }}
+										/>
+									)}
+									<span
+										className={`font-mono text-[9px] truncate ${expandedSlot === key ? "text-fontz/90" : "text-neutral-400"}`}>
+										{weapon}
+									</span>
+								</button>
+							))}
 						</div>
-					: weaponName ?
-						<div className='flex items-center gap-1 min-w-0'>
-							{primaryWeapon?.imgUrl && (
-								<img
-									src={primaryWeapon.imgUrl}
-									alt=''
-									className='w-7 h-3.5 object-contain shrink-0'
-									style={{ filter: "invert(1) opacity(0.45)" }}
-								/>
-							)}
-							<span className='font-mono text-[7px] text-neutral-600 truncate'>
-								{weaponName}
-							</span>
-						</div>
-					:	null}
+					:	<p className='font-mono text-[8px] text-neutral-700 italic tracking-widest'>
+							No kit assigned
+						</p>
+					}
 				</div>
 			</div>
 
 			{/* Attachment detail panel */}
-			{expandedSlot && activeLoadout?.[expandedSlot] && (
+			{expandedSlot && expandedWeapon && (
 				<div className='px-2 py-2 bg-neutral-950/90 border-t border-neutral-800/50'>
-					<p className='font-mono text-[7px] font-semibold text-neutral-300 mb-1.5 uppercase tracking-wide'>
-						{expandedSlot === "primary" ?
-							"PRI"
-						: expandedSlot === "secondary" ?
-							"SEC"
-						:	"HDG"}
-						{" · "}
-						{activeLoadout[expandedSlot].weapon}
+					<p className='font-mono text-[9px] font-semibold text-neutral-300 mb-1.5 uppercase tracking-wide'>
+						{expandedWeapon.label} · {expandedWeapon.weapon}
 					</p>
-					{Object.entries(activeLoadout[expandedSlot].attachments || {})
+					{Object.entries(expandedWeapon.attachments || {})
 						.filter(([, v]) => v)
 						.map(([k, v]) => (
 							<div
 								key={k}
 								className='flex items-baseline gap-1.5 min-w-0'>
-								<span className='font-mono text-[5px] uppercase tracking-widest text-neutral-700 shrink-0 w-12'>
+								<span className='font-mono text-[8px] uppercase tracking-widest text-neutral-600 shrink-0 w-14'>
 									{k}
 								</span>
-								<span className='font-mono text-[6px] text-neutral-500 truncate'>
+								<span className='font-mono text-[8px] text-neutral-500 truncate'>
 									{v}
 								</span>
 							</div>
 						))}
-					{!Object.values(activeLoadout[expandedSlot].attachments || {}).some(
-						Boolean,
-					) && (
-						<p className='font-mono text-[6px] text-neutral-700 italic'>
+					{!Object.values(expandedWeapon.attachments || {}).some(Boolean) && (
+						<p className='font-mono text-[8px] text-neutral-700 italic'>
 							No attachments
 						</p>
 					)}
@@ -307,7 +341,7 @@ function OperatorCard({
 				}}
 				disabled={isKIA}
 				className={[
-					"w-full flex items-center justify-center gap-1 font-mono text-[6px] tracking-widest uppercase py-1 border transition-all",
+					"w-full flex items-center justify-center gap-1 font-mono text-[8px] tracking-widest uppercase py-1.5 border transition-all",
 					isKIA ?
 						"text-neutral-800 border-neutral-900/40 cursor-not-allowed"
 					:	"text-red-400/40 border-red-900/30 hover:text-red-400 hover:border-red-500/50 hover:bg-red-950/20",
@@ -401,55 +435,6 @@ function AssetCard({ asset }) {
 	);
 }
 
-/* ─── Gear icon ─────────────────────────────────────────────── */
-function GearIcon({ imgSrc, name, invert, kiaBlackout }) {
-	if (kiaBlackout) {
-		return (
-			<div
-				title={`${name} — unavailable`}
-				className='relative flex flex-col items-center gap-1.5 bg-neutral-950/60 border border-neutral-900/40 p-2.5 opacity-30'>
-				<span className='absolute top-1 right-1 font-mono text-[5px] tracking-widest uppercase px-1 py-0.5 border text-red-900/60 border-red-900/30 bg-red-950/10'>
-					OUT
-				</span>
-				{imgSrc ?
-					<img
-						src={imgSrc}
-						alt={name}
-						className='w-9 h-9 object-contain grayscale'
-						style={invert ? { filter: "invert(1) opacity(0.3)" } : { opacity: 0.3 }}
-					/>
-				:	<div className='w-9 h-9 border border-neutral-900/40 bg-neutral-950/40 flex items-center justify-center'>
-						<span className='font-mono text-[7px] text-neutral-800'>?</span>
-					</div>
-				}
-				<span className='font-mono text-[6px] text-center leading-tight w-full truncate text-neutral-800'>
-					{name}
-				</span>
-			</div>
-		);
-	}
-	return (
-		<div
-			title={name}
-			className='relative flex flex-col items-center gap-1.5 bg-neutral-950/60 border border-neutral-800/60 p-2.5 hover:border-neutral-700/60 transition-colors group'>
-			{imgSrc ?
-				<img
-					src={imgSrc}
-					alt={name}
-					className='w-9 h-9 object-contain'
-					style={invert ? { filter: "invert(1) opacity(0.7)" } : { opacity: 0.75 }}
-				/>
-			:	<div className='w-9 h-9 border border-neutral-800/40 bg-neutral-900/40 flex items-center justify-center'>
-					<span className='font-mono text-[7px] text-neutral-700'>?</span>
-				</div>
-			}
-			<span className='font-mono text-[6px] text-center leading-tight w-full truncate text-neutral-600 group-hover:text-neutral-400 transition-colors'>
-				{name}
-			</span>
-		</div>
-	);
-}
-
 const CONDITION_SCORE = {
 	Optimal: 1.0,
 	Operational: 0.75,
@@ -457,40 +442,33 @@ const CONDITION_SCORE = {
 	Critical: 0.1,
 };
 
-/* ─── Operator loadout detail sheet ─────────────────────────── */
-function OperatorLoadoutDetail({ operator, onEditLoadout }) {
-	const [loadoutIndex, setLoadoutIndex] = useState(0);
-	const [expandedSlot, setExpandedSlot] = useState(null);
-
-	useEffect(() => {
-		setLoadoutIndex(0);
-		setExpandedSlot(null);
-	}, [operator._id]);
-
-	const img    = operator.imageKey || operator.image || "/ghost/Default.png";
+/* ─── Kit selector sheet (multi-select) ─────────────────────── */
+function KitSelectorSheet({ operator, kits, onToggleKit }) {
+	const img = operator.imageKey || operator.image || "/ghost/Default.png";
 	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
-	const isKIA  = operator.status === "KIA";
-
-	const loadouts       = operator.loadouts || [];
-	const safeIdx        = Math.min(loadoutIndex, Math.max(0, loadouts.length - 1));
-	const currentLoadout = loadouts[safeIdx] || null;
-	const currentProfile = currentLoadout ? MISSION_PROFILES[currentLoadout.missionProfile] : null;
+	const isKIA = operator.status === "KIA";
+	const assigned = new Set(operator.assignedKitIds || []);
 
 	return (
 		<div className='flex flex-col h-full'>
 			{/* Operator header */}
-			<div className='relative shrink-0 flex items-stretch border-b border-neutral-800/60' style={{ height: 140 }}>
-				{/* Full-body portrait */}
+			<div
+				className='relative shrink-0 flex items-stretch border-b border-neutral-800/60'
+				style={{ height: 140 }}>
 				<div className='relative w-28 shrink-0 overflow-hidden bg-neutral-950'>
 					<img
 						src={img}
 						alt={operator.callSign}
-						className={["w-full h-full object-contain object-bottom", isKIA ? "grayscale opacity-50" : ""].join(" ")}
+						className={[
+							"w-full h-full object-contain object-bottom",
+							isKIA ? "grayscale opacity-50" : "",
+						].join(" ")}
 						style={{ objectPosition: "center bottom" }}
-						onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
+						onError={(e) => {
+							e.currentTarget.src = "/ghost/Default.png";
+						}}
 					/>
 				</div>
-				{/* Identity panel */}
 				<div className='flex-1 flex flex-col justify-between px-4 py-3 bg-neutral-950/60 min-w-0'>
 					<div className='min-w-0'>
 						<h3 className='font-mono text-base font-bold text-white tracking-wide leading-tight truncate'>
@@ -500,125 +478,111 @@ function OperatorLoadoutDetail({ operator, onEditLoadout }) {
 							{operator.class || operator.role || "—"}
 						</p>
 					</div>
-					<span className={`inline-flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border self-start ${status.border} ${status.bg} ${status.text}`}>
-						<span className={`w-1.5 h-1.5 rounded-full shrink-0 ${status.dot}`} />
-						{status.label}
-					</span>
+					<div className='flex items-center gap-2'>
+						<span
+							className={`inline-flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border ${status.border} ${status.bg} ${status.text}`}>
+							<span
+								className={`w-1.5 h-1.5 rounded-full shrink-0 ${status.dot}`}
+							/>
+							{status.label}
+						</span>
+						{assigned.size > 0 && (
+							<span className='font-mono text-[7px] text-btn border border-btn/25 bg-btn/5 px-1.5 py-0.5'>
+								{assigned.size} kit{assigned.size !== 1 ? "s" : ""}
+							</span>
+						)}
+					</div>
 				</div>
 			</div>
 
-			{/* Loadout body */}
-			<div className='flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4'>
-				{loadouts.length === 0 ? (
-					<div className='flex flex-col items-center justify-center gap-3 py-10'>
-						<div className='w-6 h-6 border border-neutral-700 rotate-45' />
-						<p className='font-mono text-[9px] text-neutral-600 uppercase tracking-widest'>No loadouts configured</p>
-						<button
-							onClick={onEditLoadout}
-							className='font-mono text-[9px] tracking-widest uppercase px-3 py-1.5 border border-btn/30 text-btn hover:border-btn/60 hover:bg-btn/10 rounded-sm transition-all'>
-							+ Add Loadout
-						</button>
-					</div>
-				) : (
-					<>
-						{/* Profile nav + Edit button */}
-						<div className='flex items-center justify-between gap-2'>
-							<div className='flex flex-col gap-0.5 min-w-0'>
-								<span className='font-mono text-[8px] text-neutral-600 uppercase tracking-widest'>Profile</span>
-								<span className='font-mono text-[11px] text-neutral-300 truncate'>
-									{currentProfile?.name || currentLoadout?.missionProfile || "—"}
-								</span>
-							</div>
-							<div className='flex items-center gap-2 shrink-0'>
-								{loadouts.length > 1 && (
-									<div className='flex items-center gap-1'>
-										<button
-											onClick={() => { setLoadoutIndex((i) => Math.max(0, i - 1)); setExpandedSlot(null); }}
-											disabled={safeIdx === 0}
-											className='w-6 h-6 flex items-center justify-center font-mono text-xs text-neutral-500 hover:text-neutral-200 border border-neutral-800 disabled:opacity-20 transition-colors'>
-											‹
-										</button>
-										<span className='font-mono text-[7px] text-neutral-600 w-8 text-center tabular-nums'>
-											{safeIdx + 1}/{loadouts.length}
-										</span>
-										<button
-											onClick={() => { setLoadoutIndex((i) => Math.min(loadouts.length - 1, i + 1)); setExpandedSlot(null); }}
-											disabled={safeIdx === loadouts.length - 1}
-											className='w-6 h-6 flex items-center justify-center font-mono text-xs text-neutral-500 hover:text-neutral-200 border border-neutral-800 disabled:opacity-20 transition-colors'>
-											›
-										</button>
-									</div>
-								)}
-								<button
-									onClick={onEditLoadout}
-									className='font-mono text-[8px] tracking-widest uppercase px-2.5 py-1 border border-neutral-700/50 text-neutral-500 hover:border-neutral-500 hover:text-neutral-200 bg-neutral-900/60 rounded-sm transition-all'>
-									Edit
-								</button>
-							</div>
-						</div>
+			{/* Section label */}
+			<div className='shrink-0 px-4 py-2 border-b border-neutral-800/60 bg-neutral-950/40'>
+				<p className='font-mono text-[7px] tracking-[0.35em] text-neutral-500 uppercase'>
+					Kit Assignment — tap to add / remove
+				</p>
+			</div>
 
-						{/* Weapon slots */}
-						<div className='flex flex-col gap-1.5'>
-							{[
-								{ label: "Primary",   slotKey: "primary",   typeKey: currentLoadout?.primary?.weaponType },
-								{ label: "Secondary", slotKey: "secondary", typeKey: currentLoadout?.secondary?.weaponType },
-								{ label: "Handgun",   slotKey: "handgun",   typeKey: "HDG" },
-							].map(({ label, slotKey, typeKey }) => {
-								const data     = currentLoadout?.[slotKey];
-								const isActive = expandedSlot === slotKey;
-								return (
-									<div key={slotKey}>
-										<button
-											type='button'
-											onClick={() => setExpandedSlot(isActive ? null : slotKey)}
-											className='w-full flex items-center gap-3 px-3 py-2 bg-neutral-900/50 border border-neutral-800/60 hover:border-neutral-700/60 transition-colors group'>
-											<span className='font-mono text-[7px] tracking-widest text-neutral-600 uppercase shrink-0 w-8'>{label}</span>
-											{WEAPONS[typeKey]?.imgUrl && (
-												<img
-													src={WEAPONS[typeKey].imgUrl}
-													alt={label}
-													className='w-12 h-6 object-contain shrink-0'
-													style={{ filter: "invert(1) opacity(0.45)" }}
-												/>
-											)}
-											<span className={`font-mono text-[10px] flex-1 text-left truncate transition-colors ${isActive ? "text-neutral-200" : "text-neutral-500 group-hover:text-neutral-300"}`}>
-												{data?.weapon || <span className='text-neutral-700'>—</span>}
-											</span>
-											{data?.weapon && (
-												<FontAwesomeIcon
-													icon={isActive ? faChevronUp : faChevronDown}
-													className='text-[7px] text-neutral-600 shrink-0'
-												/>
-											)}
-										</button>
-										{isActive && data && (
-											<div className='px-3 py-2 bg-neutral-950/80 border border-t-0 border-neutral-800/60 flex flex-col gap-1'>
-												{Object.entries(data.attachments || {})
-													.filter(([, v]) => v)
-													.map(([k, v]) => (
-														<div key={k} className='flex items-baseline gap-2 min-w-0'>
-															<span className='font-mono text-[7px] uppercase tracking-widest text-neutral-700 shrink-0 w-16'>{k}</span>
-															<span className='font-mono text-[9px] text-neutral-400 truncate'>{v}</span>
-														</div>
-													))}
-												{!Object.values(data.attachments || {}).some(Boolean) && (
-													<p className='font-mono text-[8px] text-neutral-700 italic'>No attachments</p>
-												)}
-											</div>
+			{/* Kit list */}
+			<div className='flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2'>
+				{kits.length === 0 ?
+					<p className='font-mono text-[8px] text-neutral-700 italic py-4 text-center'>
+						No kits in armory. Create kits in the Armory section.
+					</p>
+				:	kits.map((kit) => {
+						const isAssigned = assigned.has(kit._id);
+						const weapons = [
+							kit.primary?.weapon,
+							kit.secondary?.weapon,
+							kit.handgun?.weapon,
+						].filter(Boolean);
+
+						return (
+							<button
+								key={kit._id}
+								type='button'
+								onClick={() => onToggleKit(operator, kit._id)}
+								className={[
+									"flex flex-col gap-1.5 px-3 py-2.5 border transition-colors text-left",
+									isAssigned ?
+										"border-btn/50 bg-btn/5"
+									:	"border-neutral-800/60 hover:border-neutral-700/60",
+								].join(" ")}>
+								<div className='flex items-center gap-2'>
+									{/* Checkbox indicator */}
+									<div
+										className={[
+											"w-3.5 h-3.5 border shrink-0 flex items-center justify-center transition-colors",
+											isAssigned ?
+												"border-btn bg-btn/20"
+											:	"border-neutral-700",
+										].join(" ")}>
+										{isAssigned && <div className='w-1.5 h-1.5 bg-btn' />}
+									</div>
+									<span
+										className={`font-mono text-[10px] font-semibold tracking-wide uppercase flex-1 truncate ${isAssigned ? "text-btn" : "text-neutral-300"}`}>
+										{kit.name}
+									</span>
+									{isAssigned && (
+										<span className='font-mono text-[7px] text-btn shrink-0'>
+											ASSIGNED
+										</span>
+									)}
+								</div>
+								{weapons.length > 0 && (
+									<p className='font-mono text-[7px] text-neutral-600 truncate pl-5'>
+										{weapons.join(" · ")}
+									</p>
+								)}
+								{kit.items?.length > 0 && (
+									<div className='flex gap-1 pl-5 flex-wrap'>
+										{kit.items.slice(0, 6).map(
+											(item) =>
+												ITEMS[item] && (
+													<img
+														key={item}
+														src={ITEMS[item]}
+														alt={item}
+														title={item}
+														className='w-4 h-4 object-contain'
+														style={{ filter: "invert(1) opacity(0.35)" }}
+													/>
+												),
 										)}
 									</div>
-								);
-							})}
-						</div>
-					</>
-				)}
+								)}
+							</button>
+						);
+					})
+				}
 			</div>
 		</div>
 	);
 }
-OperatorLoadoutDetail.propTypes = {
-	operator:      PropTypes.object.isRequired,
-	onEditLoadout: PropTypes.func.isRequired,
+
+KitSelectorSheet.propTypes = {
+	operator: PropTypes.object.isRequired,
+	kits: PropTypes.array.isRequired,
+	onToggleKit: PropTypes.func.isRequired,
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -635,23 +599,24 @@ const TeamView = ({ teamId }) => {
 		detachTeamFrom,
 	} = useTeamsStore();
 	const { operators, fetchOperators } = useOperatorsStore();
+	const { kits, fetchKits } = useKitsStore();
 	const userId = localStorage.getItem("userId");
 
 	const [isInjuryDialogOpen, setIsInjuryDialogOpen] = useState(false);
 	const [selectedOperator, setSelectedOperator] = useState(null);
 	const [injuryType] = useState("choice");
-	const [missionProfile, setMissionProfile] = useState(null);
-	const [detailOp, setDetailOp] = useState(null);
-	const [isEditingLoadout, setIsEditingLoadout] = useState(false);
+	const [kitSelectorOp, setKitSelectorOp] = useState(null);
 	const [showAOSelector, setShowAOSelector] = useState(false);
 	const [savingAO, setSavingAO] = useState(false);
 	const [localAO, setLocalAO] = useState("");
 	const [showAttachPicker, setShowAttachPicker] = useState(false);
+	const [missionProfile, setMissionProfile] = useState(null);
 
 	useEffect(() => {
 		fetchOperators();
 		fetchTeams();
-	}, [fetchOperators, fetchTeams]);
+		fetchKits();
+	}, [fetchOperators, fetchTeams, fetchKits]);
 
 	const handleOpenInjuryDialog = (op) => {
 		setSelectedOperator(op);
@@ -700,8 +665,6 @@ const TeamView = ({ teamId }) => {
 			.filter(Boolean);
 	}, [selectedTeam, operators]);
 
-	const isAvailable = (op) => op.status !== "KIA" && op.status !== "Injured";
-
 	const statusCounts = useMemo(
 		() => ({
 			active: teamOps.filter((o) => o.status === "Active").length,
@@ -743,6 +706,41 @@ const TeamView = ({ teamId }) => {
 		};
 	}, [teamOps, selectedTeam?.assets, selectedTeam?.attachedTeams]);
 
+	/* Kit map: operatorId → kit[] (all assigned kits in order) */
+	const kitMap = useMemo(() => {
+		const map = {};
+		operators.forEach((op) => {
+			const ids = op.assignedKitIds || [];
+			map[op._id] = ids
+				.map((id) => kits.find((k) => k._id === id))
+				.filter(Boolean);
+		});
+		return map;
+	}, [operators, kits]);
+
+	const handleToggleKit = async (operator, kitId) => {
+		const current = new Set(operator.assignedKitIds || []);
+		if (current.has(kitId)) {
+			current.delete(kitId);
+		} else {
+			current.add(kitId);
+		}
+		const newIds = [...current];
+		try {
+			await OperatorsApi.updateOperator(operator._id, {
+				...operator,
+				assignedKitIds: newIds,
+			});
+			await fetchOperators();
+			// Keep sheet open with updated operator state
+			if (kitSelectorOp?._id === operator._id) {
+				setKitSelectorOp((prev) => ({ ...prev, assignedKitIds: newIds }));
+			}
+		} catch {
+			toast.error("Failed to update kit");
+		}
+	};
+
 	const handleAOSave = async (newAO) => {
 		if (!selectedTeam) return;
 		setSavingAO(true);
@@ -773,46 +771,6 @@ const TeamView = ({ teamId }) => {
 		() => selectedTeam?.attachedTeams || [],
 		[selectedTeam],
 	);
-
-	const attachedAllOps = useMemo(() => {
-		return attachedTeams.flatMap((attached) => {
-			if (typeof attached !== "object") return [];
-			return (attached.operators || []).map((op) => {
-				const id = typeof op === "object" ? op._id : op;
-				return operators.find((o) => o._id === id) || op;
-			}).filter(Boolean);
-		});
-	}, [attachedTeams, operators]);
-
-	const allOps = useMemo(() => [...teamOps, ...attachedAllOps], [teamOps, attachedAllOps]);
-
-	const combinedPerks = useMemo(() => {
-		const all = allOps.flatMap((op) => op.perks || []);
-		const unique = [...new Set(all)].filter((p) =>
-			Object.prototype.hasOwnProperty.call(PERKS, p),
-		);
-		return unique.map((perk) => ({
-			name: perk,
-			kiaBlackout: !allOps.some(
-				(op) => isAvailable(op) && (op.perks || []).includes(perk),
-			),
-		}));
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [allOps]);
-
-	const combinedEquipment = useMemo(() => {
-		const all = allOps.flatMap((op) => op.items || []);
-		const unique = [...new Set(all)].filter((e) =>
-			Object.prototype.hasOwnProperty.call(ITEMS, e),
-		);
-		return unique.map((item) => ({
-			name: item,
-			kiaBlackout: !allOps.some(
-				(op) => isAvailable(op) && (op.items || []).includes(item),
-			),
-		}));
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [allOps]);
 
 	const attachableTeams = useMemo(
 		() =>
@@ -846,17 +804,9 @@ const TeamView = ({ teamId }) => {
 		: readiness.score >= 40 ? "bg-amber-400"
 		: "bg-red-500";
 
-	const opCols =
-		teamOps.length === 1 ? "grid-cols-1"
-		: teamOps.length === 2 ? "grid-cols-2"
-		: teamOps.length === 3 ? "grid-cols-3"
-		: teamOps.length === 5 ? "grid-cols-5"
-		: teamOps.length === 6 ? "grid-cols-3 sm:grid-cols-6"
-		: teamOps.length === 7 ? "grid-cols-4 sm:grid-cols-7"
-		: "grid-cols-4";
+	const opCols = getOpCols(teamOps.length);
 
 	const assetCount = selectedTeam?.assets?.length ?? 0;
-	const hasLoadout = combinedPerks.length > 0 || combinedEquipment.length > 0;
 
 	return (
 		<div className='relative w-full min-w-0 text-fontz flex flex-col'>
@@ -1005,40 +955,6 @@ const TeamView = ({ teamId }) => {
 					</div>
 				)}
 
-				{/* Mission profile selector */}
-				{teamOps.length > 0 && (
-					<div className='mt-3 pt-3 border-t border-neutral-800/60 flex items-center justify-between'>
-						<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-600 uppercase'>
-							Mission Profile
-						</span>
-						<button
-							type='button'
-							onClick={() => {
-								const keys = Object.keys(MISSION_PROFILES);
-								if (!missionProfile) {
-									setMissionProfile(keys[0]);
-								} else {
-									const idx = keys.indexOf(missionProfile);
-									setMissionProfile(
-										idx < keys.length - 1 ? keys[idx + 1] : null,
-									);
-								}
-							}}
-							className={[
-								"flex items-center gap-1.5 font-mono text-[7px] tracking-widest uppercase px-2 py-0.5 border transition-colors",
-								missionProfile ?
-									PROFILE_STYLE[missionProfile] || "text-btn border-btn/30"
-								:	"text-neutral-600 border-neutral-700/40 hover:text-neutral-400 hover:border-neutral-600",
-							].join(" ")}>
-							‹{" "}
-							{missionProfile ?
-								MISSION_PROFILES[missionProfile]?.name
-							:	"All Profiles"}{" "}
-							›
-						</button>
-					</div>
-				)}
-
 				{/* Attach team row */}
 				<div className='mt-3 pt-3 border-t border-neutral-800/60 flex items-center gap-2 flex-wrap'>
 					<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-600 uppercase flex-1'>
@@ -1089,8 +1005,8 @@ const TeamView = ({ teamId }) => {
 							key={op._id || i}
 							operator={op}
 							onInjuryClick={handleOpenInjuryDialog}
-							missionProfile={missionProfile}
-							onDetailClick={setDetailOp}
+							onKitSelectClick={setKitSelectorOp}
+							assignedKits={kitMap[op._id] || []}
 						/>
 					))}
 				</div>
@@ -1140,7 +1056,6 @@ const TeamView = ({ teamId }) => {
 								<div
 									key={id}
 									className='px-4 py-3 bg-neutral-950/20'>
-									{/* Row: name + detach */}
 									<div className='flex items-center gap-2 mb-2'>
 										<span className='font-mono text-[9px] font-semibold text-neutral-300 flex-1 truncate tracking-wide uppercase'>
 											{name}
@@ -1156,31 +1071,29 @@ const TeamView = ({ teamId }) => {
 										</button>
 									</div>
 
-									{/* Operator portrait cards */}
-									{ops.length > 0 ? (
-										<div className={`grid mb-2 ${ops.length <= 2 ? "grid-cols-2" : ops.length <= 4 ? "grid-cols-4" : "grid-cols-4 sm:grid-cols-6"}`}>
+									{ops.length > 0 ?
+										<div className={`grid mb-2 ${getOpCols(ops.length)}`}>
 											{ops.map((op, i) => {
-												const resolved = typeof op === "object" && op._id
-													? (operators.find((o) => o._id === op._id) || op)
-													: op;
+												const resolved =
+													typeof op === "object" && op._id ?
+														operators.find((o) => o._id === op._id) || op
+													:	op;
 												return (
 													<OperatorCard
 														key={resolved._id || i}
 														operator={resolved}
 														onInjuryClick={() => {}}
-														missionProfile={missionProfile}
-														onDetailClick={setDetailOp}
+														onKitSelectClick={setKitSelectorOp}
+														assignedKits={kitMap[resolved._id] || []}
 													/>
 												);
 											})}
 										</div>
-									) : (
-										<span className='font-mono text-[7px] text-neutral-700 italic mb-2 block'>
+									:	<span className='font-mono text-[7px] text-neutral-700 italic mb-2 block'>
 											No operators
 										</span>
-									)}
+									}
 
-									{/* Assets */}
 									{assets.length > 0 && (
 										<div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
 											{assets.map((asset, i) => (
@@ -1198,52 +1111,7 @@ const TeamView = ({ teamId }) => {
 				</>
 			)}
 
-			{/* ── Team Perks ──────────────────────────────── */}
-			{combinedPerks.length > 0 && (
-				<>
-					<SectionHeader
-						label='Team Perks'
-						count={combinedPerks.length}
-					/>
-					<div className='px-4 pt-3 pb-4 border-b border-neutral-800/60'>
-						<div className='grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2'>
-							{combinedPerks.map(({ name, kiaBlackout }) => (
-								<GearIcon
-									key={name}
-									imgSrc={PERKS[name]}
-									name={name}
-									kiaBlackout={kiaBlackout}
-								/>
-							))}
-						</div>
-					</div>
-				</>
-			)}
-
-			{/* ── Team Equipment ───────────────────────────── */}
-			{combinedEquipment.length > 0 && (
-				<>
-					<SectionHeader
-						label='Team Equipment'
-						count={combinedEquipment.length}
-					/>
-					<div className='px-4 pt-3 pb-4 border-b border-neutral-800/60'>
-						<div className='grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2'>
-							{combinedEquipment.map(({ name, kiaBlackout }) => (
-								<GearIcon
-									key={name}
-									imgSrc={ITEMS[name]}
-									name={name}
-									invert
-									kiaBlackout={kiaBlackout}
-								/>
-							))}
-						</div>
-					</div>
-				</>
-			)}
-
-			{!teamOps.length && !assetCount && !hasLoadout && (
+			{!teamOps.length && !assetCount && (
 				<div className='flex flex-col items-center justify-center py-16 gap-3'>
 					<div className='w-8 h-8 border border-neutral-700/40 rotate-45' />
 					<p className='font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase'>
@@ -1265,36 +1133,25 @@ const TeamView = ({ teamId }) => {
 				/>
 			)}
 
-			{/* Operator loadout detail sheet */}
+			{/* Kit selector sheet */}
 			<Sheet
-				open={!!detailOp}
+				open={!!kitSelectorOp}
 				onOpenChange={(open) => {
-					if (!open) { setDetailOp(null); setIsEditingLoadout(false); }
+					if (!open) setKitSelectorOp(null);
 				}}>
 				<SheetContent
 					side='right'
 					className='p-0 sm:max-w-md overflow-hidden flex flex-col bg-blk border-l border-neutral-800/60'
 					aria-describedby={undefined}>
 					<SheetTitle className='sr-only'>
-						{detailOp?.callSign || "Operator"}
+						{kitSelectorOp?.callSign || "Operator"}
 					</SheetTitle>
-					{detailOp && !isEditingLoadout && (
-						<OperatorLoadoutDetail
-							operator={detailOp}
-							onEditLoadout={() => setIsEditingLoadout(true)}
+					{kitSelectorOp && (
+						<KitSelectorSheet
+							operator={kitSelectorOp}
+							kits={kits}
+							onToggleKit={handleToggleKit}
 						/>
-					)}
-					{detailOp && isEditingLoadout && (
-						<div className='flex flex-col h-full'>
-							<button
-								onClick={() => setIsEditingLoadout(false)}
-								className='flex items-center gap-2 px-4 py-3 border-b border-neutral-800/60 font-mono text-[9px] tracking-widest uppercase text-neutral-500 hover:text-neutral-200 transition-colors shrink-0'>
-								‹ Back to Loadout
-							</button>
-							<div className='flex-1 overflow-y-auto'>
-								<EditLoadout operator={detailOp} />
-							</div>
-						</div>
 					)}
 				</SheetContent>
 			</Sheet>
@@ -1304,21 +1161,13 @@ const TeamView = ({ teamId }) => {
 
 SectionHeader.propTypes = { label: PropTypes.string, count: PropTypes.number };
 FuelBar.propTypes = { pct: PropTypes.number };
-GearIcon.propTypes = {
-	imgSrc:     PropTypes.string,
-	name:       PropTypes.string,
-	invert:     PropTypes.bool,
-	kiaBlackout:PropTypes.bool,
-};
 OperatorCard.propTypes = {
 	operator: PropTypes.object,
 	onInjuryClick: PropTypes.func,
-	missionProfile: PropTypes.string,
-	onDetailClick: PropTypes.func,
+	onKitSelectClick: PropTypes.func,
+	assignedKits: PropTypes.array,
 };
 AssetCard.propTypes = { asset: PropTypes.object };
-TeamView.propTypes = {
-	teamId: PropTypes.string.isRequired,
-};
+TeamView.propTypes = { teamId: PropTypes.string.isRequired };
 
 export default TeamView;
