@@ -158,31 +158,6 @@ const OperatorImageView = ({ operator, openSheet }) => {
 									{squadName}
 								</span>
 							)}
-							{perks.length > 0 && (
-								<div className='flex flex-col gap-2 pt-3 border-t border-neutral-800/60'>
-									<span className='font-mono text-[9px] tracking-[0.25em] text-neutral-600 uppercase'>
-										Perks
-									</span>
-									<div className='grid grid-cols-4 gap-2'>
-										{perks.map((name) => (
-											<div
-												key={name}
-												title={name}
-												className='flex flex-col items-center gap-1 bg-neutral-950/60 border border-neutral-800/60 p-2 hover:border-neutral-700/60 transition-colors'>
-												<img
-													src={PERKS[name]}
-													alt={name}
-													className='w-8 h-8 object-contain'
-													style={{ opacity: 0.75 }}
-												/>
-												<span className='font-mono text-[8px] text-center leading-tight text-neutral-500 truncate w-full'>
-													{name}
-												</span>
-											</div>
-										))}
-									</div>
-								</div>
-							)}
 
 							{selectedOperator.support && (
 								<span className='inline-flex items-center gap-1 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border text-blue-400/80 border-blue-800/40 bg-blue-900/20'>

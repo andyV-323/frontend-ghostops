@@ -8,6 +8,7 @@ import {
 	ATTACHMENTS,
 	WEAPON_COMPATIBILITY,
 	ITEMS,
+	PERKS,
 } from "@/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -205,7 +206,10 @@ function KitCard({ kit, onEdit, onDelete }) {
 				<div className='flex items-center gap-1 shrink-0'>
 					<button
 						type='button'
-						onClick={(e) => { e.stopPropagation(); onEdit(kit); }}
+						onClick={(e) => {
+							e.stopPropagation();
+							onEdit(kit);
+						}}
 						className='w-6 h-6 flex items-center justify-center text-neutral-600 hover:text-btn border border-neutral-800/40 hover:border-btn/30 bg-neutral-950/40 transition-colors'>
 						<FontAwesomeIcon
 							icon={faPen}
@@ -214,7 +218,10 @@ function KitCard({ kit, onEdit, onDelete }) {
 					</button>
 					<button
 						type='button'
-						onClick={(e) => { e.stopPropagation(); onDelete(kit._id); }}
+						onClick={(e) => {
+							e.stopPropagation();
+							onDelete(kit._id);
+						}}
 						className='w-6 h-6 flex items-center justify-center text-neutral-600 hover:text-red-400 border border-neutral-800/40 hover:border-red-900/30 bg-neutral-950/40 transition-colors'>
 						<FontAwesomeIcon
 							icon={faTrash}
@@ -277,6 +284,30 @@ function KitCard({ kit, onEdit, onDelete }) {
 					)}
 				</div>
 			)}
+			{/* Items strip */}
+			{kit.perks?.length > 0 && (
+				<div className='px-3 pb-3 flex flex-wrap gap-1.5 border-t border-neutral-800/40 pt-2.5'>
+					{kit.perks.map(
+						(perk) =>
+							PERKS[perk] && (
+								<div
+									key={perk}
+									title={perk}
+									className='flex items-center gap-1 bg-neutral-950/60 border border-neutral-800/40 px-1.5 py-1'>
+									<img
+										src={PERKS[perk]}
+										alt={perk}
+										className='w-4 h-4 object-contain'
+										style={{ filter: "invert(1) opacity(0.45)" }}
+									/>
+									<span className='font-mono text-[6px] text-neutral-600 truncate max-w-14'>
+										{perk}
+									</span>
+								</div>
+							),
+					)}
+				</div>
+			)}
 		</div>
 	);
 }
@@ -299,6 +330,7 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 			attachments: { ...EMPTY_SLOT.attachments },
 		},
 		items: initial?.items || [],
+		perks: initial?.perks || [],
 	}));
 
 	const setSlot = (slot, val) => setKit((k) => ({ ...k, [slot]: val }));
@@ -312,6 +344,15 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 		setField(
 			"items",
 			kit.items.filter((i) => i !== item),
+		);
+	const addPerk = (perk) => {
+		if (perk && !kit.perks.includes(perk))
+			setField("perks", [...kit.perks, perk]);
+	};
+	const removePerk = (perk) =>
+		setField(
+			"perks",
+			kit.perks.filter((i) => i !== perk),
 		);
 
 	return (
@@ -425,6 +466,60 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 							))}
 					</select>
 				</div>
+				{/* Perks */}
+				<div className='flex flex-col gap-3'>
+					<div className='flex items-center gap-2 pb-1.5 border-b border-neutral-800/40'>
+						<div className='w-0.5 h-3 bg-btn/40' />
+						<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-500'>
+							Perks
+						</p>
+					</div>
+				</div>
+				<div className='flex flex-wrap gap-1.5 min-h-8'>
+					{kit.perks.length === 0 ?
+						<span className='font-mono text-[8px] text-neutral-700 italic self-center'>
+							No perks selected
+						</span>
+					:	kit.perks.map((perk) => (
+							<div
+								key={perk}
+								className='flex items-center gap-1.5 bg-neutral-950/60 border border-neutral-800/50 px-2 py-1'>
+								{PERKS[perk] && (
+									<img
+										src={PERKS[perk]}
+										alt={perk}
+										className='w-4 h-4 object-contain'
+										style={{ filter: "invert(1) opacity(0.55)" }}
+									/>
+								)}
+								<span className='font-mono text-[8px] text-neutral-400'>
+									{perk}
+								</span>
+								<button
+									type='button'
+									onClick={() => removePerk(perk)}
+									className='text-neutral-600 hover:text-red-400 ml-0.5 transition-colors leading-none'>
+									×
+								</button>
+							</div>
+						))
+					}
+				</div>
+				<select
+					className='form'
+					value=''
+					onChange={(e) => addPerk(e.target.value)}>
+					<option value=''>— Add Perk —</option>
+					{Object.keys(PERKS)
+						.filter((i) => !kit.perks.includes(i))
+						.map((perk) => (
+							<option
+								key={perk}
+								value={perk}>
+								{perk}
+							</option>
+						))}
+				</select>
 			</div>
 
 			{/* Footer */}

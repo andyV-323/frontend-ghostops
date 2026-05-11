@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faChevronDown,
@@ -7,10 +7,11 @@ import {
 	faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 import { WeatherPanel, AOIntelMap } from "@/components";
-import { PROVINCES, PROVINCE_TERRAIN, PROVINCE_BIOMES } from "@/config";
+import { PROVINCES, PROVINCE_TERRAIN, PROVINCE_BIOMES, GARAGE } from "@/config";
 import PropTypes from "prop-types";
 import { getWeatherIcon } from "./dashboardHelpers";
 import { getThreats } from "@/utils/Restrictions";
+import useTeamsStore from "@/zustand/useTeamStore";
 
 // ─── Province display names ───────────────────────────────────────────────────
 
@@ -143,6 +144,36 @@ export default function AOBriefingPage() {
 	const provinceKeys = Object.keys(PROVINCE_BIOMES);
 	const [selectedKey, setSelectedKey] = useState(provinceKeys[0] || "");
 
+	const { teams, fetchTeams } = useTeamsStore();
+	useEffect(() => { fetchTeams(); }, [fetchTeams]);
+
+	const enrichAssets = (assets) =>
+		(assets || []).map((a) => {
+			if (typeof a !== "object") return a;
+			const g = GARAGE.find((v) => v.name === a.vehicle);
+			return { ...a, imgUrl: g?.imgUrl || "/img/default-vehicle.png" };
+		});
+
+	const aoTeams = useMemo(() => {
+		if (!teams?.length || !selectedKey) return [];
+		return teams
+			.filter((t) => t.AO === selectedKey)
+			.map((team) => ({
+				...team,
+				assets: enrichAssets(team.assets),
+				attachedTeams: (team.attachedTeams || [])
+					.map((at) => {
+						const resolved =
+							typeof at === "object" && at.name ? at
+							: teams.find((t) => t._id === (typeof at === "object" ? at._id : at)) ?? null;
+						if (!resolved) return null;
+						return { ...resolved, assets: enrichAssets(resolved.assets) };
+					})
+					.filter(Boolean),
+			}));
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [teams, selectedKey]);
+
 	const province = PROVINCES[selectedKey];
 	const terrain = PROVINCE_TERRAIN[selectedKey];
 	const biome = province?.biome ?? PROVINCE_BIOMES[selectedKey] ?? "Unknown";
@@ -218,6 +249,7 @@ export default function AOBriefingPage() {
 							terrain={terrain}
 							provinceName={displayName}
 							biome={biome}
+							teams={aoTeams}
 						/>
 					:	<div className='w-full h-full flex flex-col items-center justify-center gap-3'>
 							<div className='w-10 h-10 border border-neutral-700/50 rotate-45' />

@@ -246,6 +246,22 @@ function KitPanel({ operator, kits, onManageKits }) {
 												)}
 											</div>
 										)}
+										{kit.perks?.length > 0 && (
+											<div className='flex flex-wrap gap-1 pt-1 border-t border-neutral-800/40'>
+												{kit.perks.slice(0, 8).map((perk) =>
+													PERKS[perk] ?
+														<img
+															key={perk}
+															src={PERKS[perk]}
+															alt={perk}
+															title={perk}
+															className='w-5 h-5 object-contain'
+															style={{ filter: "invert(1) opacity(0.4)" }}
+														/>
+													:	null,
+												)}
+											</div>
+										)}
 									</div>
 								)}
 							</button>

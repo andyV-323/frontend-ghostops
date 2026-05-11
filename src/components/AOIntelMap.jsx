@@ -2,9 +2,8 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import PropTypes from "prop-types";
-import { resolveRestrictions, RESTRICTION_LABELS, getWeatherConditionData } from "@/utils/Restrictions";
+import { resolveRestrictions } from "@/utils/Restrictions";
 import { SOURCE, STATUS } from "@/config";
-import { getProvinceWeather } from "@/utils/Weather";
 
 /* ─────────────────────────────────────────────────────────
    AO INTEL MAP
@@ -22,23 +21,6 @@ import { getProvinceWeather } from "@/utils/Weather";
 const COLS = 8;
 const ROWS = 6;
 const COL_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
-
-/* ── Atmosphere display config ── */
-const ATM_HUD = {
-	cloudless:     { label: "CLOUDLESS",     sym: "☼", color: "rgba(125,211,252,0.85)" },
-	sunshine:      { label: "SUNSHINE",      sym: "☀", color: "rgba(251,191,36,0.85)"  },
-	overcast:      { label: "OVERCAST",      sym: "☁", color: "rgba(148,163,184,0.85)" },
-	precipitation: { label: "PRECIPITATION", sym: "↓", color: "rgba(96,165,250,0.85)"  },
-	storm:         { label: "STORM",         sym: "↯", color: "rgba(248,113,113,0.85)" },
-};
-
-/* ── Mobility display labels ── */
-const MOB_HUD = {
-	foot:           "FOOT",
-	aircraft:       "AIR",
-	"ground vehicle":"GND",
-	boat:           "BOAT",
-};
 
 /* ── Inject global styles once ── */
 const injectStyles = () => {
@@ -107,28 +89,52 @@ const addGrid = (map, bounds) => {
 	const cellW = (maxX - minX) / COLS;
 	const cellH = (maxY - minY) / ROWS;
 
-	const lineStyle = { color: "rgba(143,184,64,0.12)", weight: 0.5, interactive: false };
+	const lineStyle = {
+		color: "rgba(143,184,64,0.12)",
+		weight: 0.5,
+		interactive: false,
+	};
 
 	for (let c = 1; c < COLS; c++) {
 		const x = minX + c * cellW;
-		L.polyline([[minY, x], [maxY, x]], lineStyle).addTo(map);
+		L.polyline(
+			[
+				[minY, x],
+				[maxY, x],
+			],
+			lineStyle,
+		).addTo(map);
 	}
 	for (let r = 1; r < ROWS; r++) {
 		const y = minY + r * cellH;
-		L.polyline([[y, minX], [y, maxX]], lineStyle).addTo(map);
+		L.polyline(
+			[
+				[y, minX],
+				[y, maxX],
+			],
+			lineStyle,
+		).addTo(map);
 	}
 
 	for (let c = 0; c < COLS; c++) {
 		const x = minX + c * cellW + cellW / 2;
 		L.marker([maxY - cellH * 0.18, x], {
-			icon: L.divIcon({ className: "ao-map-grid-label", iconAnchor: [6, 0], html: COL_LETTERS[c] }),
+			icon: L.divIcon({
+				className: "ao-map-grid-label",
+				iconAnchor: [6, 0],
+				html: COL_LETTERS[c],
+			}),
 			interactive: false,
 		}).addTo(map);
 	}
 	for (let r = 0; r < ROWS; r++) {
 		const y = maxY - r * cellH - cellH / 2;
 		L.marker([y, minX + cellW * 0.08], {
-			icon: L.divIcon({ className: "ao-map-grid-label", iconAnchor: [0, 6], html: `${r + 1}` }),
+			icon: L.divIcon({
+				className: "ao-map-grid-label",
+				iconAnchor: [0, 6],
+				html: `${r + 1}`,
+			}),
 			interactive: false,
 		}).addTo(map);
 	}
@@ -137,13 +143,22 @@ const addGrid = (map, bounds) => {
 /* ── SAM / AAA zone ── */
 const addSAMZone = (map, bounds) => {
 	L.rectangle(bounds, {
-		color: "rgba(255,30,30,0.45)", weight: 1.5, dashArray: "8, 10",
-		fill: true, fillColor: "rgba(255,0,0,0.06)", fillOpacity: 1, interactive: false,
+		color: "rgba(255,30,30,0.45)",
+		weight: 1.5,
+		dashArray: "8, 10",
+		fill: true,
+		fillColor: "rgba(255,0,0,0.06)",
+		fillOpacity: 1,
+		interactive: false,
 	}).addTo(map);
 
 	const [[minY, minX], [maxY, maxX]] = bounds;
 	L.marker([(minY + maxY) * 0.85, (minX + maxX) / 2], {
-		icon: L.divIcon({ className: "ao-sam-label", iconAnchor: [80, 10], html: "⚠ SAM / AAA COVERAGE ACTIVE" }),
+		icon: L.divIcon({
+			className: "ao-sam-label",
+			iconAnchor: [80, 10],
+			html: "⚠ SAM / AAA COVERAGE ACTIVE",
+		}),
 		interactive: false,
 	}).addTo(map);
 };
@@ -160,27 +175,49 @@ const addCoastZones = (map, coastZones, bounds) => {
 		const margin = 18;
 		switch (zone.side) {
 			case "north":
-				line = [[maxY - margin, minX + 80], [maxY - margin, maxX - 80]];
+				line = [
+					[maxY - margin, minX + 80],
+					[maxY - margin, maxX - 80],
+				];
 				labelPos = [maxY - margin * 2, midX];
 				break;
 			case "south":
-				line = [[minY + margin, minX + 80], [minY + margin, maxX - 80]];
+				line = [
+					[minY + margin, minX + 80],
+					[minY + margin, maxX - 80],
+				];
 				labelPos = [minY + margin * 2.5, midX];
 				break;
 			case "west":
-				line = [[minY + 80, minX + margin], [maxY - 80, minX + margin]];
+				line = [
+					[minY + 80, minX + margin],
+					[maxY - 80, minX + margin],
+				];
 				labelPos = [midY, minX + margin * 3];
 				break;
 			case "east":
-				line = [[minY + 80, maxX - margin], [maxY - 80, maxX - margin]];
+				line = [
+					[minY + 80, maxX - margin],
+					[maxY - 80, maxX - margin],
+				];
 				labelPos = [midY, maxX - margin * 3];
 				break;
-			default: return;
+			default:
+				return;
 		}
 
-		L.polyline(line, { color: "rgba(100,200,255,0.35)", weight: 1.5, dashArray: "4, 8", interactive: false }).addTo(map);
+		L.polyline(line, {
+			color: "rgba(100,200,255,0.35)",
+			weight: 1.5,
+			dashArray: "4, 8",
+			interactive: false,
+		}).addTo(map);
 		L.marker(labelPos, {
-			icon: L.divIcon({ className: "ao-coast-label", iconAnchor: [40, 6], html: `▸ ${zone.label.toUpperCase()}` }),
+			icon: L.divIcon({
+				className: "ao-coast-label",
+				iconAnchor: [40, 6],
+				html: `▸ ${zone.label.toUpperCase()}`,
+			}),
 			interactive: false,
 		}).addTo(map);
 	});
@@ -191,98 +228,70 @@ const addAirfieldMarker = (map, bounds) => {
 	const [[minY, minX], [maxY, maxX]] = bounds;
 	const pos = [(minY + maxY) * 0.3, (minX + maxX) * 0.65];
 	L.marker(pos, {
-		icon: L.divIcon({ className: "ao-airfield-label", iconAnchor: [30, 8], html: "✈ AIRFIELD" }),
+		icon: L.divIcon({
+			className: "ao-airfield-label",
+			iconAnchor: [30, 8],
+			html: "✈ AIRFIELD",
+		}),
 		interactive: false,
 	}).addTo(map);
 };
 
-/* ── Restriction HUD (top-right) ── */
-const buildRestrictionHUD = (restrictions) => {
-	const control = L.control({ position: "topright" });
+/* ── Operators / Personnel HUD (bottom-left) ── */
+const buildOperatorsHUD = (teams) => {
+	const control = L.control({ position: "bottomleft" });
 	control.onAdd = () => {
 		const div = L.DomUtil.create("div");
-		div.style.cssText = "pointer-events:none;";
+		div.style.cssText =
+			"pointer-events:none;margin-bottom:4px;display:flex;flex-direction:column;gap:3px;font-family:'Share Tech Mono',monospace;max-width:220px;";
 
-		const entries = Object.entries(RESTRICTION_LABELS)
-			.map(([key, meta]) => {
-				const r = restrictions?.[key];
-				if (!r || r.status === STATUS.NOMINAL) return null;
-				const isDenied = r.status === STATUS.DENIED;
-				const color  = isDenied ? "rgba(255,60,60,0.9)"  : "rgba(255,170,40,0.85)";
-				const bg     = isDenied ? "rgba(80,10,10,0.75)"  : "rgba(60,40,5,0.75)";
-				const border = isDenied ? "rgba(180,30,30,0.5)"  : "rgba(160,100,10,0.5)";
-				const tag    = isDenied ? "DENIED" : "DEGR";
-				return `
-					<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;
-						padding:3px 8px;margin-bottom:2px;
-						background:${bg};border:1px solid ${border};border-radius:1px;">
-						<span style="font-family:'Share Tech Mono',monospace;font-size:7.5px;
-							letter-spacing:0.12em;color:${color};">${meta.name}</span>
-						<span style="font-family:'Share Tech Mono',monospace;font-size:7px;
-							letter-spacing:0.18em;color:${color};opacity:0.8;">${tag}</span>
-					</div>`;
-			})
-			.filter(Boolean);
+		if (!teams?.length) { div.innerHTML = ""; return div; }
 
-		if (entries.length === 0) {
-			div.innerHTML = `
-				<div style="padding:4px 8px;background:rgba(5,20,5,0.75);border:1px solid rgba(74,90,40,0.3);border-radius:1px;">
-					<span style="font-family:'Share Tech Mono',monospace;font-size:7.5px;
-						letter-spacing:0.15em;color:rgba(143,184,64,0.6);">ALL ASSETS NOMINAL</span>
-				</div>`;
-		} else {
-			div.innerHTML = `
-				<div style="margin-bottom:3px;padding:2px 8px;">
-					<span style="font-family:'Share Tech Mono',monospace;font-size:7px;
-						letter-spacing:0.2em;color:rgba(255,100,100,0.5);">ASSET RESTRICTIONS</span>
-				</div>
-				${entries.join("")}`;
-		}
-		return div;
-	};
-	return control;
-};
-
-/* ── Weather + mobility HUD (bottom-right) ── */
-const buildWeatherHUD = (atmosphere, condData) => {
-	const control = L.control({ position: "bottomright" });
-	control.onAdd = () => {
-		const div = L.DomUtil.create("div");
-		div.style.cssText = "pointer-events:none;margin-bottom:4px;";
-
-		const atm = ATM_HUD[atmosphere];
-		if (!atm) { div.innerHTML = ""; return div; }
-
-		const available   = condData?.mobility           ?? [];
-		const conditional = condData?.mobilityConditional ?? [];
-		const ALL_MODES   = ["foot", "aircraft", "ground vehicle", "boat"];
-
-		const mobRows = ALL_MODES.map((mode) => {
-			const isAvail = available.includes(mode);
-			const isCond  = conditional.includes(mode);
-			const color   = isAvail ? "rgba(74,222,128,0.85)"  : isCond ? "rgba(251,191,36,0.85)"  : "rgba(82,82,91,0.6)";
-			const sym     = isAvail ? "●" : isCond ? "◐" : "✕";
-			return `<span style="font-family:'Share Tech Mono',monospace;font-size:7px;
-				letter-spacing:0.12em;color:${color};margin-right:6px;">${sym} ${MOB_HUD[mode]}</span>`;
-		}).join("");
-
-		const soundRule = condData?.sound?.[0];
-		const soundColor = soundRule === "suppressors" ? "rgba(45,212,191,0.7)" : "rgba(251,191,36,0.7)";
-		const soundLabel = soundRule === "suppressors" ? "◼ SUPP REQ" : soundRule === "go loud" ? "◉ GO LOUD" : "";
-
-		div.innerHTML = `
-			<div style="padding:5px 8px;background:rgba(5,8,4,0.82);
-				border:1px solid ${atm.color.replace("0.85", "0.25")};border-radius:1px;
-				border-left:2px solid ${atm.color.replace("0.85", "0.5")};">
-				<div style="font-family:'Share Tech Mono',monospace;font-size:9px;
-					letter-spacing:0.18em;color:${atm.color};margin-bottom:4px;">
-					${atm.sym} ${atm.label}
-				</div>
-				<div style="margin-bottom:${soundLabel ? "3px" : "0"};">${mobRows}</div>
-				${soundLabel ? `<div style="font-family:'Share Tech Mono',monospace;font-size:7px;
-					letter-spacing:0.15em;color:${soundColor};border-top:1px solid rgba(255,255,255,0.05);
-					padding-top:3px;margin-top:1px;">${soundLabel}</div>` : ""}
+		const assetThumb = (a) =>
+			`<div style="width:44px;height:28px;border:1px solid rgba(251,191,36,0.2);overflow:hidden;flex-shrink:0;">
+				<img src="${a.imgUrl || "/img/default-vehicle.png"}"
+					style="width:44px;height:28px;object-fit:cover;filter:brightness(0.6) saturate(0.45);" />
 			</div>`;
+
+		const teamCard = (team, isAttached = false) => {
+			const ops = (team.operators || []).filter(
+				(op) => typeof op === "object" && op.callSign,
+			);
+			const assets = (team.assets || []).filter(
+				(a) => typeof a === "object" && (a.vehicle || a.nickName),
+			);
+			const accent  = isAttached ? "rgba(143,184,64,0.3)"  : "rgba(143,184,64,0.6)";
+			const hdrBg   = isAttached ? "rgba(143,184,64,0.03)" : "rgba(143,184,64,0.07)";
+			const nameClr = isAttached ? "rgba(143,184,64,0.6)"  : "rgba(143,184,64,0.92)";
+
+			return `
+				<div style="background:rgba(5,10,4,0.92);border:1px solid rgba(74,90,40,0.35);border-left:2px solid ${accent};">
+					<div style="padding:3px 7px;background:${hdrBg};border-bottom:1px solid rgba(74,90,40,0.2);">
+						<span style="font-size:7.5px;color:${nameClr};letter-spacing:0.14em;font-weight:bold;">
+							${team.name.toUpperCase()}
+						</span>
+					</div>
+					<div style="padding:5px 7px;">
+						${ops.length > 0 ? `
+						<div style="display:flex;flex-wrap:wrap;gap:2px 8px;${assets.length > 0 ? "margin-bottom:5px;" : ""}">
+							${ops.map((op) => `<span style="font-size:7px;color:rgba(210,225,210,0.85);letter-spacing:0.06em;">${op.callSign.toUpperCase()}</span>`).join("")}
+						</div>` : ""}
+						${assets.length > 0 ? `
+						<div style="display:flex;flex-wrap:wrap;gap:3px;">
+							${assets.map(assetThumb).join("")}
+						</div>` : ""}
+					</div>
+				</div>`;
+		};
+
+		div.innerHTML = teams
+			.map((team) => {
+				const attached = (team.attachedTeams || []).filter(
+					(t) => typeof t === "object" && t.name,
+				);
+				return teamCard(team) + attached.map((at) => teamCard(at, true)).join("");
+			})
+			.join("");
 		return div;
 	};
 	return control;
@@ -314,15 +323,28 @@ const buildClassificationHeader = (provinceName, biome) => {
 
 /* ════════════════════════════════════════════════════════ */
 
-const AOIntelMap = ({ bounds, imgURL, province, terrain, provinceName, biome }) => {
-	const mapRef  = useRef(null);
+const AOIntelMap = ({
+	bounds,
+	imgURL,
+	province,
+	terrain,
+	provinceName,
+	biome,
+	teams,
+}) => {
+	const mapRef = useRef(null);
 	const mapInst = useRef(null);
 
 	useEffect(() => {
 		if (!bounds || !imgURL) return;
 
 		if (mapInst.current) {
-			try { mapInst.current.stop(); mapInst.current.remove(); } catch { /* removed */ }
+			try {
+				mapInst.current.stop();
+				mapInst.current.remove();
+			} catch {
+				/* removed */
+			}
 			mapInst.current = null;
 		}
 
@@ -344,11 +366,14 @@ const AOIntelMap = ({ bounds, imgURL, province, terrain, provinceName, biome }) 
 		mapInst.current = map;
 
 		/* ── Base image ── */
-		const overlay = L.imageOverlay(imgURL, bounds, { className: "ao-intel-map-img" }).addTo(map);
+		const overlay = L.imageOverlay(imgURL, bounds, {
+			className: "ao-intel-map-img",
+		}).addTo(map);
 		overlay.on("load", () => {
 			const el = overlay.getElement();
 			if (el) {
-				el.style.filter = "brightness(0.68) saturate(0.6) contrast(1.12) sepia(0.1)";
+				el.style.filter =
+					"brightness(0.68) saturate(0.6) contrast(1.12) sepia(0.1)";
 				el.style.transition = "filter 0.4s ease";
 			}
 		});
@@ -356,11 +381,7 @@ const AOIntelMap = ({ bounds, imgURL, province, terrain, provinceName, biome }) 
 		/* ── Grid ── */
 		addGrid(map, bounds);
 
-		/* ── Weather roll for this province ── */
-		const weather  = biome ? getProvinceWeather(biome) : null;
-		const condData = weather && province ? getWeatherConditionData(province, weather.atmosphere) : null;
-
-		/* ── Restrictions (terrain + threats) ── */
+		/* ── Restrictions (terrain + threats — used for SAM zone) ── */
 		const restrictions = province ? resolveRestrictions(province, null) : null;
 
 		/* ── SAM zone ── */
@@ -382,47 +403,69 @@ const AOIntelMap = ({ bounds, imgURL, province, terrain, provinceName, biome }) 
 		}
 
 		/* ── HUD controls ── */
-		if (window.innerWidth >= 1024) {
-			buildRestrictionHUD(restrictions).addTo(map);
-			if (weather?.atmosphere) buildWeatherHUD(weather.atmosphere, condData).addTo(map);
+		if (window.innerWidth >= 1024 && teams?.length) {
+			buildOperatorsHUD(teams).addTo(map);
 		}
-		buildClassificationHeader(provinceName || province || "UNKNOWN", biome).addTo(map);
+		buildClassificationHeader(
+			provinceName || province || "UNKNOWN",
+			biome,
+		).addTo(map);
 
 		/* ── Fit to full bounds ── */
 		map.fitBounds(bounds, { padding: [10, 10] });
 
 		/* ── Fix size after layout settle ── */
-		const rafId   = requestAnimationFrame(() => { if (mapInst.current) mapInst.current.invalidateSize(); });
-		const timerId = setTimeout(() => { if (mapInst.current) mapInst.current.invalidateSize(); }, 300);
+		const rafId = requestAnimationFrame(() => {
+			if (mapInst.current) mapInst.current.invalidateSize();
+		});
+		const timerId = setTimeout(() => {
+			if (mapInst.current) mapInst.current.invalidateSize();
+		}, 300);
 
 		return () => {
 			cancelAnimationFrame(rafId);
 			clearTimeout(timerId);
 			if (mapInst.current) {
-				try { mapInst.current.stop(); mapInst.current.remove(); } catch { /* removed */ }
+				try {
+					mapInst.current.stop();
+					mapInst.current.remove();
+				} catch {
+					/* removed */
+				}
 				mapInst.current = null;
 			}
 		};
-	}, [bounds, imgURL, province, terrain, provinceName, biome]);
+	}, [bounds, imgURL, province, terrain, provinceName, biome, teams]);
 
 	return (
-		<div style={{ position: "relative", width: "100%", height: "100%", background: "#050704", overflow: "hidden" }}>
-			<div ref={mapRef} style={{ width: "100%", height: "100%", background: "#050704" }} />
+		<div
+			style={{
+				position: "relative",
+				width: "100%",
+				height: "100%",
+				background: "#050704",
+				overflow: "hidden",
+			}}>
+			<div
+				ref={mapRef}
+				style={{ width: "100%", height: "100%", background: "#050704" }}
+			/>
 		</div>
 	);
 };
 
 AOIntelMap.propTypes = {
-	bounds:       PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)).isRequired,
-	imgURL:       PropTypes.string.isRequired,
-	province:     PropTypes.string,
-	terrain:      PropTypes.shape({
-		hasCoast:   PropTypes.bool,
+	bounds: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)).isRequired,
+	imgURL: PropTypes.string.isRequired,
+	province: PropTypes.string,
+	terrain: PropTypes.shape({
+		hasCoast: PropTypes.bool,
 		coastZones: PropTypes.array,
-		hasAirfield:PropTypes.bool,
+		hasAirfield: PropTypes.bool,
 	}),
 	provinceName: PropTypes.string,
-	biome:        PropTypes.string,
+	biome: PropTypes.string,
+	teams: PropTypes.array,
 };
 
 export default AOIntelMap;
