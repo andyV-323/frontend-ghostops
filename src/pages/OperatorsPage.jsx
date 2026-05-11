@@ -370,6 +370,7 @@ export default function OperatorsPage() {
 								<span
 									className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot(op)}`}
 								/>
+
 								<span className='font-mono text-[10px] text-neutral-200 truncate flex-1 leading-none'>
 									{op.callSign || "—"}
 								</span>

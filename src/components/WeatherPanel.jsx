@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import { getProvinceWeather } from "../utils/Weather";
 import { PROVINCE_BIOMES } from "@/config";
@@ -313,19 +313,29 @@ function MobIcon({ mode, color }) {
 		case "foot":
 			return (
 				<svg {...p}>
-					<circle
-						cx='12'
-						cy='5'
-						r='1.5'
-					/>
-					<path d='M9 20l1-5 2 2 1-7' />
-					<path d='M7 17l2-2 4 1 2-3' />
+					<path d='M5 20h12v-2H5z' />
+					<path d='M5 18v-5h4V9h4v4h2v5' />
+					<path d='M15 13h2v5h-2z' />
 				</svg>
 			);
 		case "aircraft":
 			return (
 				<svg {...p}>
-					<path d='M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z' />
+					{/* main rotor */}
+					<line x1='2' y1='7' x2='22' y2='7' />
+					<circle cx='12' cy='7' r='1' fill={color} stroke='none' />
+					{/* mast */}
+					<line x1='12' y1='7' x2='12' y2='10' />
+					{/* fuselage */}
+					<path d='M4 10h14a2 2 0 0 1 0 4H6l-2-2v-2z' />
+					{/* tail boom */}
+					<line x1='18' y1='12' x2='22' y2='10' />
+					{/* tail rotor */}
+					<line x1='22' y1='8' x2='22' y2='12' />
+					{/* skids */}
+					<line x1='6' y1='14' x2='6' y2='17' />
+					<line x1='12' y1='14' x2='12' y2='17' />
+					<line x1='4' y1='17' x2='14' y2='17' />
 				</svg>
 			);
 		case "ground vehicle":
@@ -519,10 +529,11 @@ Rule.propTypes = { label: PropTypes.string, hex: PropTypes.string };
 export default function WeatherPanel({
 	province,
 	provinceKey: provinceKeyProp,
-	userUnit = "C",
+	onAtmosphereChange = null,
 }) {
-	const [unit, setUnit] = useState(userUnit);
+	const [unit, setUnit] = useState("C");
 	const [rollKey, setRollKey] = useState(0);
+	const [selectedAtmosphere, setSelectedAtmosphere] = useState(null);
 
 	const biomeKey = useMemo(() => {
 		if (!province) return null;
@@ -530,6 +541,11 @@ export default function WeatherPanel({
 			return PROVINCE_BIOMES[province] ?? province;
 		return province.biome ?? PROVINCE_BIOMES[province] ?? null;
 	}, [province]);
+
+	// reset selection when province changes
+	useEffect(() => {
+		setSelectedAtmosphere(null);
+	}, [biomeKey]);
 
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	const weatherC = useMemo(
@@ -543,13 +559,33 @@ export default function WeatherPanel({
 	);
 	const weather = weatherC;
 
-	const handleReroll = useCallback(() => setRollKey((k) => k + 1), []);
+	const resolvedAtmosphere = selectedAtmosphere ?? weather?.atmosphere;
+
+	// report current atmosphere to parent whenever it changes
+	const onAtmosphereChangeRef = useRef(onAtmosphereChange);
+	useEffect(() => { onAtmosphereChangeRef.current = onAtmosphereChange; });
+	useEffect(() => {
+		if (resolvedAtmosphere) onAtmosphereChangeRef.current?.(resolvedAtmosphere);
+	}, [resolvedAtmosphere]);
+
+	// reroll = clear manual selection + new random temp
+	const handleReroll = useCallback(() => {
+		setSelectedAtmosphere(null);
+		setRollKey((k) => k + 1);
+	}, []);
+
+	// select = lock atmosphere + new random temp
+	const handleAtmosphereSelect = useCallback((e) => {
+		setSelectedAtmosphere(e.target.value);
+		setRollKey((k) => k + 1);
+	}, []);
 
 	const provinceKey =
 		provinceKeyProp ?? (typeof province === "string" ? province : null);
+
 	const condData = useMemo(
-		() => getWeatherConditionData(provinceKey, weather?.atmosphere),
-		[provinceKey, weather?.atmosphere],
+		() => getWeatherConditionData(provinceKey, resolvedAtmosphere),
+		[provinceKey, resolvedAtmosphere],
 	);
 	const terrain = useMemo(() => getTerrainData(provinceKey), [provinceKey]);
 	const degradedKeys = useMemo(() => {
@@ -562,7 +598,7 @@ export default function WeatherPanel({
 
 	if (!weather) return null;
 
-	const atm = ATM[weather.atmosphere] ?? ATM_DEFAULT;
+	const atm = ATM[resolvedAtmosphere] ?? ATM_DEFAULT;
 	const displayTemp =
 		unit === "F" ? weatherF?.temperature : weatherC?.temperature;
 	const tColor =
@@ -609,30 +645,37 @@ export default function WeatherPanel({
 			</div>
 
 			{/* ── Controls bar ── */}
-			<div className='relative z-10 flex items-center justify-between px-3 py-2 border-b border-neutral-800/50'>
+			<div className='relative z-10 flex items-center gap-2 px-3 py-2 border-b border-neutral-800/50'>
 				<button
 					onClick={handleReroll}
-					className='flex items-center gap-1.5 text-[9px] uppercase tracking-widest font-bold px-2 py-1 border transition-all'
+					className='flex items-center gap-1.5 text-[9px] uppercase tracking-widest font-bold px-2 py-1 border transition-all shrink-0'
 					style={{ borderColor: `${atm.hex}40`, color: `${atm.hex}cc` }}
-					title='Re-roll weather'>
-					↺ Reroll
+					title='Re-roll temperature'>
+					↺ Temp
 				</button>
-				<div className='flex items-center gap-2'>
-					<div className='flex items-center border border-neutral-700 overflow-hidden'>
-						{["C", "F"].map((u) => (
-							<button
-								key={u}
-								onClick={() => setUnit(u)}
-								className='px-2.5 py-1 text-[10px] uppercase tracking-widest font-bold transition-all'
-								style={
-									unit === u ?
-										{ background: `${atm.hex}25`, color: atm.hex }
-									:	{ color: "#6b7280" }
-								}>
-								°{u}
-							</button>
-						))}
-					</div>
+				<select
+					value={resolvedAtmosphere ?? ""}
+					onChange={handleAtmosphereSelect}
+					className='flex-1 appearance-none font-mono text-[9px] tracking-widest uppercase bg-neutral-900 border border-btn/25 text-fontz px-2 py-1 focus:outline-none focus:border-btn/50 transition-colors cursor-pointer'
+					style={{ borderColor: `${atm.hex}30` }}>
+					{Object.entries(ATM).map(([key, val]) => (
+						<option key={key} value={key}>{val.label}</option>
+					))}
+				</select>
+				<div className='flex items-center border border-neutral-700 overflow-hidden shrink-0'>
+					{["C", "F"].map((u) => (
+						<button
+							key={u}
+							onClick={() => setUnit(u)}
+							className='px-2.5 py-1 text-[10px] uppercase tracking-widest font-bold transition-all'
+							style={
+								unit === u ?
+									{ background: `${atm.hex}25`, color: atm.hex }
+								:	{ color: "#6b7280" }
+							}>
+							°{u}
+						</button>
+					))}
 				</div>
 			</div>
 
@@ -655,7 +698,7 @@ export default function WeatherPanel({
 				<div className='flex items-center gap-4'>
 					<div className='shrink-0 relative'>
 						<HeroIcon
-							condition={weather.atmosphere}
+							condition={resolvedAtmosphere}
 							color={atm.hex}
 						/>
 					</div>
@@ -900,5 +943,5 @@ export default function WeatherPanel({
 WeatherPanel.propTypes = {
 	province: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
 	provinceKey: PropTypes.string,
-	userUnit: PropTypes.oneOf(["C", "F"]),
+	onAtmosphereChange: PropTypes.func,
 };

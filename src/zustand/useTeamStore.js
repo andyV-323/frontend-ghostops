@@ -746,6 +746,175 @@ const useTeamsStore = create((set, get) => ({
 		}
 	},
 
+	// Find a team by ID (always resolves to the top-level entry)
+	_findTeam: (teams, teamId) => {
+		const team = teams.find((t) => t._id === teamId);
+		if (team) return { team };
+		for (const t of teams) {
+			const at = (t.attachedTeams || []).find(
+				(a) => typeof a === "object" && a._id === teamId,
+			);
+			if (at) return { team: at };
+		}
+		return null;
+	},
+
+	// Patch a team in the store — always updates the top-level entry AND any
+	// nested copies inside parent attachedTeams arrays.
+	_patchTeam: (state, teamId, patch) => ({
+		teams: state.teams.map((t) => {
+			if (t._id === teamId) return { ...t, ...patch };
+			if ((t.attachedTeams || []).some((at) => typeof at === "object" && at._id === teamId)) {
+				return {
+					...t,
+					attachedTeams: (t.attachedTeams || []).map((at) =>
+						typeof at === "object" && at._id === teamId ? { ...at, ...patch } : at,
+					),
+				};
+			}
+			return t;
+		}),
+	}),
+
+	// Advance one day in AO: degrade operator conditions + increment aoDeployedDays
+	advanceDay: async (teamId, { missionDeg, biomeDeg, weatherDeg, terrainDeg = 0 }) => {
+		const { calcConditionLevel } = await import("../config/fatigue");
+		const totalDeg = missionDeg + biomeDeg + weatherDeg + terrainDeg;
+		const { teams, _findTeam, _patchTeam } = get();
+		const found = _findTeam(teams, teamId);
+		if (!found) return;
+		const { team } = found;
+
+		const newDays = (team.aoDeployedDays ?? 0) + 1;
+
+		const updatedOperators = await Promise.all(
+			(team.operators || []).map(async (op) => {
+				if (op.status === "KIA") return op;
+				if (op.status === "Injured") {
+					if (op.conditionLevel !== "Spent") {
+						await OperatorsApi.updateCondition(op._id, "Spent", op.fatiguePoints ?? 0);
+					}
+					return { ...op, conditionLevel: "Spent" };
+				}
+				const curPoints = op.fatiguePoints ?? 0;
+				const newPoints = curPoints + totalDeg;
+				const newLevel = calcConditionLevel(newPoints);
+				await OperatorsApi.updateCondition(op._id, newLevel, newPoints);
+				return { ...op, conditionLevel: newLevel, fatiguePoints: newPoints };
+			}),
+		);
+
+		await TeamsApi.updateFatigue(teamId, newDays);
+		set((state) => _patchTeam(state, teamId, { aoDeployedDays: newDays, operators: updatedOperators }));
+
+		const isAttached = get().teams.some(
+			(t) => t._id !== teamId &&
+				(t.attachedTeams || []).some((at) => typeof at === "object" && at._id === teamId),
+		);
+		if (!isAttached) {
+			const freshTeam = get().teams.find((t) => t._id === teamId);
+			const attachedIds = (freshTeam?.attachedTeams || [])
+				.filter((at) => typeof at === "object" && at._id)
+				.map((at) => at._id);
+			for (const id of attachedIds) {
+				await get().advanceDay(id, { missionDeg, biomeDeg, weatherDeg, terrainDeg });
+			}
+		}
+	},
+
+	// Rest day: recover operator conditions
+	restDay: async (teamId) => {
+		const { calcConditionLevel, REST_RECOVERY } = await import("../config/fatigue");
+		const { teams, _findTeam, _patchTeam } = get();
+		const found = _findTeam(teams, teamId);
+		if (!found) return;
+		const { team } = found;
+
+		const updatedOperators = await Promise.all(
+			(team.operators || []).map(async (op) => {
+				if (op.status === "KIA" || op.status === "Injured") return op;
+				const curPoints = op.fatiguePoints ?? 0;
+				const newPoints = Math.max(0, curPoints - REST_RECOVERY);
+				const newLevel = calcConditionLevel(newPoints);
+				await OperatorsApi.updateCondition(op._id, newLevel, newPoints);
+				return { ...op, conditionLevel: newLevel, fatiguePoints: newPoints };
+			}),
+		);
+
+		const newDays = (team.aoDeployedDays ?? 0) + 1;
+		await TeamsApi.updateFatigue(teamId, newDays);
+		set((state) => _patchTeam(state, teamId, { aoDeployedDays: newDays, operators: updatedOperators }));
+
+		const isAttached = get().teams.some(
+			(t) => t._id !== teamId &&
+				(t.attachedTeams || []).some((at) => typeof at === "object" && at._id === teamId),
+		);
+		if (!isAttached) {
+			const freshTeam = get().teams.find((t) => t._id === teamId);
+			const attachedIds = (freshTeam?.attachedTeams || [])
+				.filter((at) => typeof at === "object" && at._id)
+				.map((at) => at._id);
+			for (const id of attachedIds) {
+				await get().restDay(id);
+			}
+		}
+	},
+
+	// Return to base: reset all operators to Fresh, clear AO + days
+	returnToBase: async (teamId) => {
+		const { teams, _findTeam, _patchTeam } = get();
+		const found = _findTeam(teams, teamId);
+		if (!found) return;
+		const { team } = found;
+
+		await Promise.all(
+			(team.operators || []).map(async (op) => {
+				if (op.status === "KIA" || op.status === "Injured") return;
+				await OperatorsApi.updateCondition(op._id, "Fresh", 0);
+			}),
+		);
+
+		await TeamsApi.updateFatigue(teamId, 0);
+		await TeamsApi.updateTeam(teamId, {
+			name: team.name,
+			AO: null,
+			operators: (team.operators || []).map((op) =>
+				typeof op === "object" ? op._id : op,
+			),
+			assets: (team.assets || []).map((a) =>
+				typeof a === "object" ? a._id : a,
+			),
+		});
+
+		set((state) =>
+			_patchTeam(state, teamId, {
+				AO: null,
+				aoDeployedDays: 0,
+				operators: (team.operators || []).map((op) =>
+					op.status === "KIA" || op.status === "Injured"
+						? op
+						: { ...op, conditionLevel: "Fresh", fatiguePoints: 0 },
+				),
+			}),
+		);
+
+		toast.success("Team returned to base — all operators restored to Fresh");
+
+		const isAttached = get().teams.some(
+			(t) => t._id !== teamId &&
+				(t.attachedTeams || []).some((at) => typeof at === "object" && at._id === teamId),
+		);
+		if (!isAttached) {
+			const freshTeam = get().teams.find((t) => t._id === teamId);
+			const attachedIds = (freshTeam?.attachedTeams || [])
+				.filter((at) => typeof at === "object" && at._id)
+				.map((at) => at._id);
+			for (const id of attachedIds) {
+				await get().returnToBase(id);
+			}
+		}
+	},
+
 	// Reset store when opening form
 	resetStore: () => {
 		set({

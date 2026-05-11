@@ -12,7 +12,6 @@ import {
 import { PropTypes } from "prop-types";
 import { EditOperatorForm } from "./forms";
 import ConfirmDialog from "./ConfirmDialog";
-import { PERKS } from "@/config";
 
 /* ─── Status config ──────────────────────────────────────────── */
 const STATUS = {
@@ -30,6 +29,34 @@ const STATUS = {
 		dot: "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)]",
 		badge: "text-red-400 border-red-900/50 bg-red-900/20",
 		label: "KIA",
+	},
+};
+
+const CONDITION = {
+	Fresh: {
+		square: "bg-green-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-green-400 border-green-900/50 bg-green-900/20",
+		label: "FRESH",
+	},
+	Steady: {
+		square: "bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-green-400 border-green-900/50 bg-green-900/20",
+		label: "STEADY",
+	},
+	Worn: {
+		square: "bg-yellow-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-yellow-600 border-yellow-900/50 bg-yellow-900/20",
+		label: "WORN",
+	},
+	Degraded: {
+		square: "bg-amber-500 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-amber-500 border-amber-900/50 bg-amber-900/20",
+		label: "DEGRADED",
+	},
+	Spent: {
+		square: "bg-red-700 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-red-700 border-red-900/50 bg-red-900/20",
+		label: "SPENT",
 	},
 };
 
@@ -60,7 +87,7 @@ const OperatorImageView = ({ operator, openSheet }) => {
 		);
 		return team ? team.name : null;
 	}, [teams, operator?._id]);
-	const perks = (selectedOperator.perks || []).filter((p) => PERKS[p]);
+
 	const squadName =
 		selectedOperator?.squad?.name ||
 		(typeof selectedOperator?.squad === "string" && selectedOperator.squad) ||
@@ -84,6 +111,9 @@ const OperatorImageView = ({ operator, openSheet }) => {
 	const isWIA =
 		selectedOperator.status === "Injured" ||
 		selectedOperator.status === "Wounded";
+
+	const condition =
+		CONDITION[selectedOperator.conditionLevel] ?? CONDITION.Fresh;
 
 	const assignedKits = (selectedOperator.assignedKitIds || [])
 		.map((id) => kits.find((k) => k._id === id))
@@ -147,6 +177,11 @@ const OperatorImageView = ({ operator, openSheet }) => {
 								className={`inline-flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border ${status.badge}`}>
 								<span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
 								{status.label}
+							</span>
+							<span
+								className={`inline-flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border ${condition.badge}`}>
+								<span className={`w-1.5 h-1.5  ${condition.square}`} />
+								{condition.label}
 							</span>
 							{teamName && (
 								<span className='font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border text-lines/60 border-lines/20 bg-blk/40'>

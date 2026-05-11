@@ -20,6 +20,7 @@ import PhaseList from "./PhaseList";
 import PhaseReportSheet from "./PhaseReportSheet";
 import CampaignView from "./CampaignView";
 import TacticalTerminal from "./TacticalTerminal";
+import FatigueSimulator from "./FatigueSimulator";
 
 export {
 	Header,
@@ -44,4 +45,5 @@ export {
 	PhaseReportSheet,
 	CampaignView,
 	TacticalTerminal,
+	FatigueSimulator,
 };

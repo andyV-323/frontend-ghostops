@@ -34,8 +34,35 @@ const STATUS_MAP = {
 		text: "text-red-500",
 	},
 };
+const CONDITION = {
+	fresh: {
+		square: "bg-green-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-green-400 border-green-900/50 bg-green-900/20",
+		label: "FRESH",
+	},
+	steady: {
+		square: "bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-green-400 border-green-900/50 bg-green-900/20",
+		label: "STEADY",
+	},
+	worn: {
+		square: "bg-yellow-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-yellow-600 border-yellow-900/50 bg-yellow-900/20",
+		label: "WORN",
+	},
+	degraded: {
+		square: "bg-amber-500 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-amber-500 border-amber-900/50 bg-amber-900/20",
+		label: "DEGRADED",
+	},
+	spent: {
+		square: "bg-red-700 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-red-700 border-red-900/50 bg-red-900/20",
+		label: "SPENT",
+	},
+};
 const getStatus = (s = "") => STATUS_MAP[s.toLowerCase()] ?? STATUS_MAP.kia;
-
+const getCondition = (s = "") => CONDITION[s.toLowerCase()] ?? CONDITION.Fresh;
 // ─── Team badge ───────────────────────────────────────────────
 function TeamBadge({ operator }) {
 	const { teams } = useTeamsStore();
@@ -51,8 +78,11 @@ function TeamBadge({ operator }) {
 
 // ─── Operator card ────────────────────────────────────────────
 function OperatorCard({ operator, openSheet, fetchTeams }) {
-	const { setClickedOperator, setSelectedOperator, activeClasses } = useOperatorsStore();
+	const { setClickedOperator, setSelectedOperator, activeClasses } =
+		useOperatorsStore();
 	const status = getStatus(operator?.status);
+
+	const condition = getCondition(operator?.conditionLevel);
 
 	return (
 		<div
@@ -62,7 +92,10 @@ function OperatorCard({ operator, openSheet, fetchTeams }) {
 				setSelectedOperator(operator._id);
 				openSheet(
 					"left",
-					<OperatorImageView operator={operator} openSheet={openSheet} />,
+					<OperatorImageView
+						operator={operator}
+						openSheet={openSheet}
+					/>,
 				);
 			}}>
 			{/* Avatar */}
@@ -73,12 +106,27 @@ function OperatorCard({ operator, openSheet, fetchTeams }) {
 							"w-full h-full object-cover object-top",
 							operator.status === "KIA" ? "grayscale opacity-50" : "",
 						].join(" ")}
-						onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
+						onError={(e) => {
+							e.currentTarget.src = "/ghost/Default.png";
+						}}
 						src={operator.imageKey || operator.image || "/ghost/Default.png"}
 						alt={operator.callSign || "Operator"}
 					/>
 				</div>
-				<span className={["absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-blk", status.dot, status.glow].join(" ")} />
+				<span
+					className={[
+						"absolute -bottom-0.5 -left-0.5 w-2.5 h-2.5 rounded-full border border-blk",
+						status.dot,
+						status.glow,
+					].join(" ")}
+				/>
+				<span
+					className={[
+						"absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5  border border-blk",
+						condition.square,
+						condition.glow,
+					].join(" ")}
+				/>
 			</div>
 
 			{/* Callsign */}
@@ -87,10 +135,15 @@ function OperatorCard({ operator, openSheet, fetchTeams }) {
 			</span>
 
 			{/* Status */}
-			<span className={`font-mono text-[8px] tracking-widest uppercase ${status.text} leading-none`}>
+			<span
+				className={`font-mono text-[8px] tracking-widest uppercase ${status.text} leading-none`}>
 				{status.label}
 			</span>
-
+			{/* Condition */}
+			<span
+				className={`font-mono text-[8px] tracking-widest uppercase ${condition.badge} leading-none`}>
+				{condition.label}
+			</span>
 			{/* Class */}
 			<span className='font-mono text-[8px] text-lines/40 truncate max-w-full text-center leading-none'>
 				{activeClasses[operator._id] || operator.class || "—"}
@@ -116,7 +169,10 @@ function OperatorCard({ operator, openSheet, fetchTeams }) {
 				}}>
 				<span className='flex items-center justify-center gap-1 w-full font-mono text-[8px] tracking-widest uppercase px-1.5 py-0.5 rounded border border-lines/15 hover:border-btn hover:text-btn transition-colors cursor-pointer'>
 					<TeamBadge operator={operator} />
-					<FontAwesomeIcon icon={faChevronRight} className='text-[6px] opacity-40' />
+					<FontAwesomeIcon
+						icon={faChevronRight}
+						className='text-[6px] opacity-40'
+					/>
 				</span>
 			</div>
 		</div>
@@ -144,17 +200,25 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 				<div className='flex-1' />
 				<button
 					onClick={() =>
-						openSheet("left", <NewOperatorForm />, "New Operator", "Customize an elite operator with background, class, loadout, and perks.")
+						openSheet(
+							"left",
+							<NewOperatorForm />,
+							"New Operator",
+							"Customize an elite operator with background, class, loadout, and perks.",
+						)
 					}
 					className='w-6 h-6 flex items-center justify-center bg-btn hover:bg-highlight text-blk rounded transition-colors'
 					title='New Operator'>
-					<FontAwesomeIcon icon={faUserPlus} className='text-[9px]' />
+					<FontAwesomeIcon
+						icon={faUserPlus}
+						className='text-[9px]'
+					/>
 				</button>
 			</div>
 
 			{/* ── Card grid ─────────────────────────────────── */}
 			<div className='flex-1 min-h-0 overflow-y-auto p-3'>
-				{operators.length > 0 ? (
+				{operators.length > 0 ?
 					<div className='grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2'>
 						{operators.map((operator) => (
 							<OperatorCard
@@ -165,13 +229,12 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 							/>
 						))}
 					</div>
-				) : (
-					<div className='flex items-center justify-center h-32'>
+				:	<div className='flex items-center justify-center h-32'>
 						<p className='font-mono text-[10px] tracking-widest text-lines/25 uppercase text-center'>
 							Click + to add your first operator.
 						</p>
 					</div>
-				)}
+				}
 			</div>
 		</div>
 	);

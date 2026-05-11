@@ -34,6 +34,9 @@ export const attachTeam = async (mainTeamId, teamId) =>
 export const detachTeam = async (mainTeamId, attachedTeamId) =>
 	api.delete(`/teams/${mainTeamId}/attach/${attachedTeamId}`);
 
+export const updateFatigue = async (teamId, aoDeployedDays) =>
+	api.put(`/teams/${teamId}/fatigue`, { aoDeployedDays });
+
 //Remove injured or KIA Operator
 export const removeOperatorFromTeams = async (operatorId) => {
 	try {

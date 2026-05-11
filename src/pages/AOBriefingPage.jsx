@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faChevronDown,
@@ -6,7 +6,7 @@ import {
 	faSkullCrossbones,
 	faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
-import { WeatherPanel, AOIntelMap } from "@/components";
+import { WeatherPanel, AOIntelMap, FatigueSimulator } from "@/components";
 import { PROVINCES, PROVINCE_TERRAIN, PROVINCE_BIOMES, GARAGE } from "@/config";
 import PropTypes from "prop-types";
 import { getWeatherIcon } from "./dashboardHelpers";
@@ -147,6 +147,10 @@ export default function AOBriefingPage() {
 	const { teams, fetchTeams } = useTeamsStore();
 	useEffect(() => { fetchTeams(); }, [fetchTeams]);
 
+	const [forcedAtmosphere, setForcedAtmosphere] = useState(null);
+	useEffect(() => { setForcedAtmosphere(null); }, [selectedKey]);
+	const handleWeatherRolled = useCallback((atm) => setForcedAtmosphere(atm), []);
+
 	const enrichAssets = (assets) =>
 		(assets || []).map((a) => {
 			if (typeof a !== "object") return a;
@@ -163,9 +167,10 @@ export default function AOBriefingPage() {
 				assets: enrichAssets(team.assets),
 				attachedTeams: (team.attachedTeams || [])
 					.map((at) => {
+						const atId = typeof at === "object" ? at._id : at;
 						const resolved =
-							typeof at === "object" && at.name ? at
-							: teams.find((t) => t._id === (typeof at === "object" ? at._id : at)) ?? null;
+							teams.find((t) => t._id === atId) ??
+							(typeof at === "object" && at.name ? at : null);
 						if (!resolved) return null;
 						return { ...resolved, assets: enrichAssets(resolved.assets) };
 					})
@@ -283,11 +288,24 @@ export default function AOBriefingPage() {
 						</div>
 					</div>
 
+					{/* Fatigue */}
+					{aoTeams.length > 0 && (
+						<div className='shrink-0'>
+							<FatigueSimulator
+								teams={aoTeams}
+								biome={biome}
+								provinceKey={selectedKey}
+								atmosphere={forcedAtmosphere}
+							/>
+						</div>
+					)}
+
 					{/* Weather */}
 					<div className='shrink-0'>
 						<WeatherPanel
 							province={biome}
 							provinceKey={selectedKey}
+							onAtmosphereChange={handleWeatherRolled}
 						/>
 					</div>
 

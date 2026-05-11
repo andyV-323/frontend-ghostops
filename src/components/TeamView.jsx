@@ -44,6 +44,33 @@ const STATUS_MAP = {
 		label: "KIA",
 	},
 };
+const CONDITION = {
+	Fresh: {
+		square: "bg-green-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-green-400 border-green-900/50 bg-green-900/20",
+		label: "FRESH",
+	},
+	Steady: {
+		square: "bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-green-400 border-green-900/50 bg-green-900/20",
+		label: "STEADY",
+	},
+	Worn: {
+		square: "bg-yellow-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-yellow-600 border-yellow-900/50 bg-yellow-900/20",
+		label: "WORN",
+	},
+	Degraded: {
+		square: "bg-amber-500 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-amber-500 border-amber-900/50 bg-amber-900/20",
+		label: "DEGRADED",
+	},
+	Spent: {
+		square: "bg-red-700 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+		badge: "text-red-700 border-red-900/50 bg-red-900/20",
+		label: "SPENT",
+	},
+};
 
 const CONDITION_BADGE = {
 	Optimal: "text-green-400 border-green-900/50 bg-green-950/30",
@@ -111,6 +138,7 @@ function OperatorCard({
 	const img = operator.imageKey || operator.image || "/ghost/Default.png";
 	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
 	const isKIA = operator.status === "KIA";
+	const condition = CONDITION[operator.conditionLevel] || CONDITION.Fresh;
 
 	const [kitIdx, setKitIdx] = useState(0);
 	const [expandedSlot, setExpandedSlot] = useState(null);
@@ -186,6 +214,7 @@ function OperatorCard({
 					<span
 						className={`w-2 h-2 rounded-full mt-0.5 shrink-0 ${status.dot}`}
 					/>
+
 					<div className='flex flex-col gap-0.5'>
 						{operator.support && (
 							<div className='w-4 h-4 flex items-center justify-center bg-blue-950/80 border border-blue-800/50'>
@@ -204,6 +233,10 @@ function OperatorCard({
 							</div>
 						)}
 					</div>
+				</div>
+				<div className='absolute top-0  right-0 flex items-start justify-between p-1.5 gap-1'>
+					{" "}
+					<span className={`w-2 h-2  mt-0.5 shrink-0 ${condition.square}`} />
 				</div>
 
 				{/* Tap hint */}

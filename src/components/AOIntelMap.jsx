@@ -237,61 +237,38 @@ const addAirfieldMarker = (map, bounds) => {
 	}).addTo(map);
 };
 
-/* ── Operators / Personnel HUD (bottom-left) ── */
-const buildOperatorsHUD = (teams) => {
+/* ── Assets image HUD (bottom-left) ── */
+const buildAssetsHUD = (teams) => {
 	const control = L.control({ position: "bottomleft" });
 	control.onAdd = () => {
 		const div = L.DomUtil.create("div");
 		div.style.cssText =
-			"pointer-events:none;margin-bottom:4px;display:flex;flex-direction:column;gap:3px;font-family:'Share Tech Mono',monospace;max-width:220px;";
+			"pointer-events:none;margin-bottom:4px;display:flex;flex-wrap:wrap;gap:3px;max-width:220px;";
 
-		if (!teams?.length) { div.innerHTML = ""; return div; }
-
-		const assetThumb = (a) =>
-			`<div style="width:44px;height:28px;border:1px solid rgba(251,191,36,0.2);overflow:hidden;flex-shrink:0;">
-				<img src="${a.imgUrl || "/img/default-vehicle.png"}"
-					style="width:44px;height:28px;object-fit:cover;filter:brightness(0.6) saturate(0.45);" />
-			</div>`;
-
-		const teamCard = (team, isAttached = false) => {
-			const ops = (team.operators || []).filter(
-				(op) => typeof op === "object" && op.callSign,
-			);
-			const assets = (team.assets || []).filter(
+		const allAssets = teams.flatMap((team) => {
+			const own = (team.assets || []).filter(
 				(a) => typeof a === "object" && (a.vehicle || a.nickName),
 			);
-			const accent  = isAttached ? "rgba(143,184,64,0.3)"  : "rgba(143,184,64,0.6)";
-			const hdrBg   = isAttached ? "rgba(143,184,64,0.03)" : "rgba(143,184,64,0.07)";
-			const nameClr = isAttached ? "rgba(143,184,64,0.6)"  : "rgba(143,184,64,0.92)";
+			const attached = (team.attachedTeams || []).flatMap((at) =>
+				(at.assets || []).filter(
+					(a) => typeof a === "object" && (a.vehicle || a.nickName),
+				),
+			);
+			return [...own, ...attached];
+		});
 
-			return `
-				<div style="background:rgba(5,10,4,0.92);border:1px solid rgba(74,90,40,0.35);border-left:2px solid ${accent};">
-					<div style="padding:3px 7px;background:${hdrBg};border-bottom:1px solid rgba(74,90,40,0.2);">
-						<span style="font-size:7.5px;color:${nameClr};letter-spacing:0.14em;font-weight:bold;">
-							${team.name.toUpperCase()}
-						</span>
-					</div>
-					<div style="padding:5px 7px;">
-						${ops.length > 0 ? `
-						<div style="display:flex;flex-wrap:wrap;gap:2px 8px;${assets.length > 0 ? "margin-bottom:5px;" : ""}">
-							${ops.map((op) => `<span style="font-size:7px;color:rgba(210,225,210,0.85);letter-spacing:0.06em;">${op.callSign.toUpperCase()}</span>`).join("")}
-						</div>` : ""}
-						${assets.length > 0 ? `
-						<div style="display:flex;flex-wrap:wrap;gap:3px;">
-							${assets.map(assetThumb).join("")}
-						</div>` : ""}
-					</div>
-				</div>`;
-		};
+		if (!allAssets.length) { div.innerHTML = ""; return div; }
 
-		div.innerHTML = teams
-			.map((team) => {
-				const attached = (team.attachedTeams || []).filter(
-					(t) => typeof t === "object" && t.name,
-				);
-				return teamCard(team) + attached.map((at) => teamCard(at, true)).join("");
-			})
+		div.innerHTML = allAssets
+			.map(
+				(a) =>
+					`<div style="width:44px;height:28px;border:1px solid rgba(251,191,36,0.2);overflow:hidden;">
+						<img src="${a.imgUrl || "/img/default-vehicle.png"}"
+							style="width:44px;height:28px;object-fit:cover;filter:brightness(0.6) saturate(0.45);" />
+					</div>`,
+			)
 			.join("");
+
 		return div;
 	};
 	return control;
@@ -404,7 +381,7 @@ const AOIntelMap = ({
 
 		/* ── HUD controls ── */
 		if (window.innerWidth >= 1024 && teams?.length) {
-			buildOperatorsHUD(teams).addTo(map);
+			buildAssetsHUD(teams).addTo(map);
 		}
 		buildClassificationHeader(
 			provinceName || province || "UNKNOWN",

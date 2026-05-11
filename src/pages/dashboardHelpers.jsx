@@ -2,7 +2,7 @@
 // Panel, usePageSheet, and biome weather icon utilities used across dashboard pages.
 
 import { useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
 import {
 	faCloudSun,
 	faCloudRain,
@@ -117,7 +117,10 @@ export const BIOME_ICON_MAP = {
 	"Mead Lands": { icon: faCloudSun, color: "text-lime-400" },
 	"Meadow Lands and Urban City": { icon: faCity, color: "text-zinc-300" },
 	"Meadow Lands": { icon: faWind, color: "text-lime-300" },
-	"High Thundra and Rain Shadows": { icon: faSnowflake, color: "text-indigo-300" },
+	"High Thundra and Rain Shadows": {
+		icon: faSnowflake,
+		color: "text-indigo-300",
+	},
 	"Rain SHadows": { icon: faCloudSun, color: "text-yellow-400" },
 };
 
