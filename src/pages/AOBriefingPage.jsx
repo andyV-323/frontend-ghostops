@@ -179,6 +179,11 @@ export default function AOBriefingPage() {
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [teams, selectedKey]);
 
+	const activeAOs = useMemo(() => {
+		const aoSet = new Set(teams.filter((t) => t.AO).map((t) => t.AO));
+		return [...aoSet];
+	}, [teams]);
+
 	const province = PROVINCES[selectedKey];
 	const terrain = PROVINCE_TERRAIN[selectedKey];
 	const biome = province?.biome ?? PROVINCE_BIOMES[selectedKey] ?? "Unknown";
@@ -204,6 +209,30 @@ export default function AOBriefingPage() {
 					Auroa Archipelago
 				</span>
 			</div>
+
+			{/* ── Active AO bar ── */}
+			{activeAOs.length > 0 && (
+				<div className='shrink-0 flex items-center gap-2 px-4 py-1.5 border-b border-neutral-800/50 bg-neutral-950/60'>
+					<span className='font-mono text-[7px] tracking-[0.35em] text-btn/60 uppercase shrink-0'>
+						● Active
+					</span>
+					<div className='flex items-center gap-1.5 flex-wrap'>
+						{activeAOs.map((ao) => (
+							<button
+								key={ao}
+								onClick={() => setSelectedKey(ao)}
+								className={[
+									"font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border transition-colors",
+									selectedKey === ao
+										? "text-btn border-btn/60 bg-btn/10"
+										: "text-neutral-400 border-neutral-700/40 hover:text-btn hover:border-btn/40",
+								].join(" ")}>
+								{PROVINCE_DISPLAY_NAMES[ao] || ao}
+							</button>
+						))}
+					</div>
+				</div>
+			)}
 
 			{/* ── Province selector bar ── */}
 			<div className='shrink-0 flex items-center gap-3 px-4 py-2 border-b border-neutral-700/50 bg-neutral-950/80'>

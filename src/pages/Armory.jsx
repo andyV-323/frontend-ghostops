@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useKitsStore } from "@/zustand";
+import { KIT_TYPES } from "@/utils/operatorImage";
 import {
 	WEAPON_TYPES,
 	WEAPONS_BY_TYPE,
@@ -48,6 +49,7 @@ const EMPTY_SLOT = {
 
 const EMPTY_KIT = {
 	name: "",
+	type: "specialty",
 	primary: { ...EMPTY_SLOT },
 	secondary: { ...EMPTY_SLOT },
 	handgun: {
@@ -203,6 +205,9 @@ function KitCard({ kit, onEdit, onDelete }) {
 				<span className='font-mono text-[11px] font-bold text-neutral-100 flex-1 truncate tracking-wide uppercase'>
 					{kit.name}
 				</span>
+				<span className='font-mono text-[7px] tracking-widest uppercase text-neutral-600 border border-neutral-800/40 px-1.5 py-0.5 shrink-0'>
+					{KIT_TYPES[kit.type] ?? "Specialty"}
+				</span>
 				<div className='flex items-center gap-1 shrink-0'>
 					<button
 						type='button'
@@ -322,6 +327,7 @@ KitCard.propTypes = {
 function KitForm({ initial, onSave, onCancel, saving }) {
 	const [kit, setKit] = useState(() => ({
 		name: initial?.name || "",
+		type: initial?.type || "specialty",
 		primary: initial?.primary || { ...EMPTY_SLOT },
 		secondary: initial?.secondary || { ...EMPTY_SLOT },
 		handgun: initial?.handgun || {
@@ -372,7 +378,7 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 
 			{/* Body */}
 			<div className='flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-6'>
-				{/* Name */}
+				{/* Name + Type */}
 				<div className='flex flex-col gap-1.5'>
 					<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-500'>
 						Kit Designation
@@ -384,6 +390,19 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 						value={kit.name}
 						onChange={(e) => setField("name", e.target.value)}
 					/>
+				</div>
+				<div className='flex flex-col gap-1.5'>
+					<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-500'>
+						Type
+					</p>
+					<select
+						className='form text-xs'
+						value={kit.type || "specialty"}
+						onChange={(e) => setField("type", e.target.value)}>
+						{Object.entries(KIT_TYPES).map(([k, label]) => (
+							<option key={k} value={k}>{label}</option>
+						))}
+					</select>
 				</div>
 
 				{/* Weapons */}

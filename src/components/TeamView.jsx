@@ -19,6 +19,7 @@ import {
 import { TeamsApi, OperatorsApi } from "@/api";
 import { toast } from "react-toastify";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { getOperatorDisplayImage, KIT_TYPES } from "@/utils/operatorImage";
 
 /* ─── Status config ─────────────────────────────────────────── */
 const STATUS_MAP = {
@@ -135,20 +136,19 @@ function OperatorCard({
 	onKitSelectClick,
 	assignedKits,
 }) {
-	const img = operator.imageKey || operator.image || "/ghost/Default.png";
+	const img = getOperatorDisplayImage(operator, assignedKits);
 	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
 	const isKIA = operator.status === "KIA";
 	const condition = CONDITION[operator.conditionLevel] || CONDITION.Fresh;
 
-	const [kitIdx, setKitIdx] = useState(0);
 	const [expandedSlot, setExpandedSlot] = useState(null);
 
-	const safeIdx =
-		assignedKits.length > 0 ? Math.min(kitIdx, assignedKits.length - 1) : 0;
-	const activeKit = assignedKits[safeIdx] || null;
+	const activeKit =
+		assignedKits.find((k) => k._id === operator.activeKitId) ||
+		assignedKits[0] ||
+		null;
 
 	useEffect(() => {
-		setKitIdx(0);
 		setExpandedSlot(null);
 	}, [operator._id]);
 
@@ -265,44 +265,10 @@ function OperatorCard({
 
 					{activeKit ?
 						<div className='flex flex-col gap-0.5'>
-							{/* Kit name + cycle controls */}
 							<div className='flex items-center gap-1 min-w-0'>
-								{assignedKits.length > 1 && (
-									<button
-										type='button'
-										onClick={(e) => {
-											e.stopPropagation();
-											setKitIdx((i) =>
-												i > 0 ? i - 1 : assignedKits.length - 1,
-											);
-											setExpandedSlot(null);
-										}}
-										className='font-mono text-[11px] text-neutral-600 hover:text-neutral-300 shrink-0 leading-none'>
-										‹
-									</button>
-								)}
 								<p className='font-mono text-[9px] text-btn/60 truncate tracking-widest uppercase flex-1'>
 									{activeKit.name}
 								</p>
-								{assignedKits.length > 1 && (
-									<>
-										<button
-											type='button'
-											onClick={(e) => {
-												e.stopPropagation();
-												setKitIdx((i) =>
-													i < assignedKits.length - 1 ? i + 1 : 0,
-												);
-												setExpandedSlot(null);
-											}}
-											className='font-mono text-[11px] text-neutral-600 hover:text-neutral-300 shrink-0 leading-none'>
-											›
-										</button>
-										<span className='font-mono text-[7px] text-neutral-700 shrink-0 tabular-nums'>
-											{safeIdx + 1}/{assignedKits.length}
-										</span>
-									</>
-								)}
 							</div>
 							{kitWeapons.map(({ key, label, weapon, weaponType }) => (
 								<button
@@ -476,8 +442,8 @@ const CONDITION_SCORE = {
 };
 
 /* ─── Kit selector sheet (multi-select) ─────────────────────── */
-function KitSelectorSheet({ operator, kits, onToggleKit }) {
-	const img = operator.imageKey || operator.image || "/ghost/Default.png";
+function KitSelectorSheet({ operator, kits, onToggleKit, onSetActiveKit }) {
+	const img = getOperatorDisplayImage(operator, kits);
 	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
 	const isKIA = operator.status === "KIA";
 	const assigned = new Set(operator.assignedKitIds || []);
@@ -514,9 +480,7 @@ function KitSelectorSheet({ operator, kits, onToggleKit }) {
 					<div className='flex items-center gap-2'>
 						<span
 							className={`inline-flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border ${status.border} ${status.bg} ${status.text}`}>
-							<span
-								className={`w-1.5 h-1.5 rounded-full shrink-0 ${status.dot}`}
-							/>
+							<span className={`w-1.5 h-1.5 rounded-full shrink-0 ${status.dot}`} />
 							{status.label}
 						</span>
 						{assigned.size > 0 && (
@@ -531,7 +495,7 @@ function KitSelectorSheet({ operator, kits, onToggleKit }) {
 			{/* Section label */}
 			<div className='shrink-0 px-4 py-2 border-b border-neutral-800/60 bg-neutral-950/40'>
 				<p className='font-mono text-[7px] tracking-[0.35em] text-neutral-500 uppercase'>
-					Kit Assignment — tap to add / remove
+					Tap kit name to activate · ✕ to unassign
 				</p>
 			</div>
 
@@ -543,6 +507,7 @@ function KitSelectorSheet({ operator, kits, onToggleKit }) {
 					</p>
 				:	kits.map((kit) => {
 						const isAssigned = assigned.has(kit._id);
+						const isActive = kit._id === operator.activeKitId;
 						const weapons = [
 							kit.primary?.weapon,
 							kit.secondary?.weapon,
@@ -550,44 +515,65 @@ function KitSelectorSheet({ operator, kits, onToggleKit }) {
 						].filter(Boolean);
 
 						return (
-							<button
+							<div
 								key={kit._id}
-								type='button'
-								onClick={() => onToggleKit(operator, kit._id)}
 								className={[
-									"flex flex-col gap-1.5 px-3 py-2.5 border transition-colors text-left",
-									isAssigned ?
+									"flex flex-col gap-1.5 px-3 py-2.5 border transition-colors",
+									isActive ?
+										"border-green-600/50 bg-green-950/10"
+									: isAssigned ?
 										"border-btn/50 bg-btn/5"
 									:	"border-neutral-800/60 hover:border-neutral-700/60",
 								].join(" ")}>
 								<div className='flex items-center gap-2'>
-									{/* Checkbox indicator */}
-									<div
-										className={[
-											"w-3.5 h-3.5 border shrink-0 flex items-center justify-center transition-colors",
+									<button
+										type='button'
+										className='flex-1 min-w-0 text-left'
+										onClick={() =>
 											isAssigned ?
-												"border-btn bg-btn/20"
-											:	"border-neutral-700",
-										].join(" ")}>
-										{isAssigned && <div className='w-1.5 h-1.5 bg-btn' />}
-									</div>
-									<span
-										className={`font-mono text-[10px] font-semibold tracking-wide uppercase flex-1 truncate ${isAssigned ? "text-btn" : "text-neutral-300"}`}>
-										{kit.name}
+												onSetActiveKit(operator, kit._id)
+											:	onToggleKit(operator, kit._id)
+										}>
+										<span
+											className={`font-mono text-[10px] font-semibold tracking-wide uppercase truncate block ${isActive ? "text-green-400" : isAssigned ? "text-btn" : "text-neutral-400"}`}>
+											{kit.name}
+										</span>
+									</button>
+									<span className='font-mono text-[7px] tracking-widest uppercase text-neutral-600 border border-neutral-800/40 px-1.5 py-0.5 shrink-0'>
+										{KIT_TYPES[kit.type] ?? "Specialty"}
 									</span>
-									{isAssigned && (
-										<span className='font-mono text-[7px] text-btn shrink-0'>
+									{isActive && (
+										<span className='font-mono text-[7px] text-green-400 shrink-0'>
+											● ACTIVE
+										</span>
+									)}
+									{isAssigned && !isActive && (
+										<span className='font-mono text-[7px] text-btn/60 shrink-0'>
 											ASSIGNED
 										</span>
 									)}
+									{isAssigned ?
+										<button
+											type='button'
+											onClick={() => onToggleKit(operator, kit._id)}
+											className='w-5 h-5 flex items-center justify-center font-mono text-[9px] text-neutral-600 hover:text-red-400 shrink-0 transition-colors'>
+											✕
+										</button>
+									:	<button
+											type='button'
+											onClick={() => onToggleKit(operator, kit._id)}
+											className='font-mono text-[7px] text-neutral-600 hover:text-btn border border-neutral-800/40 hover:border-btn/30 px-1.5 py-0.5 shrink-0 transition-colors'>
+											+ Add
+										</button>
+									}
 								</div>
 								{weapons.length > 0 && (
-									<p className='font-mono text-[7px] text-neutral-600 truncate pl-5'>
+									<p className='font-mono text-[7px] text-neutral-600 truncate'>
 										{weapons.join(" · ")}
 									</p>
 								)}
 								{kit.items?.length > 0 && (
-									<div className='flex gap-1 pl-5 flex-wrap'>
+									<div className='flex gap-1 flex-wrap'>
 										{kit.items.slice(0, 6).map(
 											(item) =>
 												ITEMS[item] && (
@@ -603,7 +589,7 @@ function KitSelectorSheet({ operator, kits, onToggleKit }) {
 										)}
 									</div>
 								)}
-							</button>
+							</div>
 						);
 					})
 				}
@@ -616,6 +602,7 @@ KitSelectorSheet.propTypes = {
 	operator: PropTypes.object.isRequired,
 	kits: PropTypes.array.isRequired,
 	onToggleKit: PropTypes.func.isRequired,
+	onSetActiveKit: PropTypes.func.isRequired,
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -630,6 +617,7 @@ const TeamView = ({ teamId }) => {
 		assignUnknownFate,
 		attachTeamTo,
 		detachTeamFrom,
+		fullRest,
 	} = useTeamsStore();
 	const { operators, fetchOperators } = useOperatorsStore();
 	const { kits, fetchKits } = useKitsStore();
@@ -753,24 +741,51 @@ const TeamView = ({ teamId }) => {
 
 	const handleToggleKit = async (operator, kitId) => {
 		const current = new Set(operator.assignedKitIds || []);
-		if (current.has(kitId)) {
-			current.delete(kitId);
-		} else {
+		const isAdding = !current.has(kitId);
+		if (isAdding) {
 			current.add(kitId);
+		} else {
+			current.delete(kitId);
 		}
 		const newIds = [...current];
+		let newActiveKitId = operator.activeKitId ?? null;
+		if (isAdding) {
+			newActiveKitId = kitId; // assigning always activates the kit
+		} else if (!isAdding && operator.activeKitId === kitId) {
+			newActiveKitId = newIds[0] ?? null;
+		}
 		try {
 			await OperatorsApi.updateOperator(operator._id, {
 				...operator,
 				assignedKitIds: newIds,
+				activeKitId: newActiveKitId,
 			});
 			await fetchOperators();
-			// Keep sheet open with updated operator state
 			if (kitSelectorOp?._id === operator._id) {
-				setKitSelectorOp((prev) => ({ ...prev, assignedKitIds: newIds }));
+				setKitSelectorOp((prev) => ({
+					...prev,
+					assignedKitIds: newIds,
+					activeKitId: newActiveKitId,
+				}));
 			}
 		} catch {
 			toast.error("Failed to update kit");
+		}
+	};
+
+	const handleSetActiveKit = async (operator, kitId) => {
+		if (operator.activeKitId === kitId) return;
+		try {
+			await OperatorsApi.updateOperator(operator._id, {
+				...operator,
+				activeKitId: kitId,
+			});
+			await fetchOperators();
+			if (kitSelectorOp?._id === operator._id) {
+				setKitSelectorOp((prev) => ({ ...prev, activeKitId: kitId }));
+			}
+		} catch {
+			toast.error("Failed to set active kit");
 		}
 	};
 
@@ -997,6 +1012,12 @@ const TeamView = ({ teamId }) => {
 					</span>
 					<button
 						type='button'
+						onClick={() => fullRest(selectedTeam._id)}
+						className='flex items-center gap-1 font-mono text-[7px] tracking-widest uppercase px-2 py-0.5 border text-green-400/60 border-green-900/30 hover:text-green-400 hover:border-green-500/50 transition-colors'>
+						Full Rest
+					</button>
+					<button
+						type='button'
 						onClick={() => setShowAttachPicker((v) => !v)}
 						className='flex items-center gap-1 font-mono text-[7px] tracking-widest uppercase px-2 py-0.5 border text-neutral-600 border-neutral-700/40 hover:text-btn hover:border-btn transition-colors'>
 						Attach
@@ -1184,6 +1205,7 @@ const TeamView = ({ teamId }) => {
 							operator={kitSelectorOp}
 							kits={kits}
 							onToggleKit={handleToggleKit}
+							onSetActiveKit={handleSetActiveKit}
 						/>
 					)}
 				</SheetContent>

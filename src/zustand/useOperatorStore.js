@@ -42,8 +42,10 @@ const useOperatorsStore = create((set, get) => ({
 	fetchOperators: async () => {
 		try {
 			const data = await OperatorsApi.getOperators();
-
-			set({ operators: data });
+			const current = get().selectedOperator;
+			const refreshed =
+				current ? (data.find((o) => o._id === current._id) ?? current) : current;
+			set({ operators: data, selectedOperator: refreshed });
 		} catch (error) {
 			console.error("ERROR fetching operators:", error);
 			set({ operators: [] });

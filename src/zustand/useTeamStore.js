@@ -915,6 +915,50 @@ const useTeamsStore = create((set, get) => ({
 		}
 	},
 
+	// Full rest: reset all operators to Fresh without clearing AO or days
+	fullRest: async (teamId) => {
+		const { teams, _findTeam, _patchTeam } = get();
+		const found = _findTeam(teams, teamId);
+		if (!found) return;
+		const { team } = found;
+
+		await Promise.all(
+			(team.operators || []).map(async (op) => {
+				if (op.status === "KIA" || op.status === "Injured") return;
+				await OperatorsApi.updateCondition(op._id, "Fresh", 0);
+			}),
+		);
+
+		set((state) =>
+			_patchTeam(state, teamId, {
+				operators: (team.operators || []).map((op) =>
+					op.status === "KIA" || op.status === "Injured"
+						? op
+						: { ...op, conditionLevel: "Fresh", fatiguePoints: 0 },
+				),
+			}),
+		);
+
+		toast.success("All operators restored to Fresh");
+
+		const isAttached = get().teams.some(
+			(t) =>
+				t._id !== teamId &&
+				(t.attachedTeams || []).some(
+					(at) => typeof at === "object" && at._id === teamId,
+				),
+		);
+		if (!isAttached) {
+			const freshTeam = get().teams.find((t) => t._id === teamId);
+			const attachedIds = (freshTeam?.attachedTeams || [])
+				.filter((at) => typeof at === "object" && at._id)
+				.map((at) => at._id);
+			for (const id of attachedIds) {
+				await get().fullRest(id);
+			}
+		}
+	},
+
 	// Reset store when opening form
 	resetStore: () => {
 		set({

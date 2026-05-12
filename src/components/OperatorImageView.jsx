@@ -1,6 +1,8 @@
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { useOperatorsStore, useTeamsStore } from "@/zustand";
 import { useKitsStore } from "@/zustand";
+import { getOperatorDisplayImage, KIT_TYPES } from "@/utils/operatorImage";
+import { OperatorsApi } from "@/api";
 import { useEffect, useMemo, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Infirmary, Memorial } from "@/components/tables";
@@ -73,6 +75,7 @@ const OperatorImageView = ({ operator, openSheet }) => {
 	} = useTeamsStore();
 	const { kits } = useKitsStore();
 	const [injuryDialogOpen, setInjuryDialogOpen] = useState(false);
+	const [savingKit, setSavingKit] = useState(false);
 
 	useEffect(() => {
 		fetchTeams();
@@ -80,6 +83,28 @@ const OperatorImageView = ({ operator, openSheet }) => {
 	useEffect(() => {
 		if (operator?._id) fetchOperatorById(operator._id);
 	}, [operator?._id, fetchOperatorById]);
+
+	const handleFullRest = async () => {
+		if (!selectedOperator || selectedOperator.conditionLevel === "Fresh") return;
+		await OperatorsApi.updateCondition(selectedOperator._id, "Fresh", 0);
+		await fetchOperatorById(selectedOperator._id);
+		await fetchOperators();
+	};
+
+	const handleActivateKit = async (kitId) => {
+		if (!selectedOperator || selectedOperator.activeKitId === kitId || savingKit) return;
+		setSavingKit(true);
+		try {
+			await OperatorsApi.updateOperator(selectedOperator._id, {
+				...selectedOperator,
+				activeKitId: kitId,
+			});
+			await fetchOperatorById(selectedOperator._id);
+			await fetchOperators();
+		} finally {
+			setSavingKit(false);
+		}
+	};
 
 	const teamName = useMemo(() => {
 		const team = teams.find((t) =>
@@ -104,8 +129,7 @@ const OperatorImageView = ({ operator, openSheet }) => {
 		);
 	}
 
-	const displayImage =
-		selectedOperator.imageKey || selectedOperator.image || "/ghost/Default.png";
+	const displayImage = getOperatorDisplayImage(selectedOperator, kits);
 	const status = STATUS[selectedOperator.status] ?? STATUS.Active;
 	const isKIA = selectedOperator.status === "KIA";
 	const isWIA =
@@ -245,34 +269,56 @@ const OperatorImageView = ({ operator, openSheet }) => {
 						)}
 					</div>
 
-					{/* Kits — mobile only */}
+					{/* Kit selector */}
 					{assignedKits.length > 0 && (
-						<div className='lg:hidden flex flex-col gap-1.5 pb-2.5 border-b border-lines/10'>
+						<div className='flex flex-col gap-1.5 pb-2.5 border-b border-lines/10'>
 							<span className='font-mono text-[7px] tracking-widest text-lines/30 uppercase'>
-								Kits
+								Kits — tap to activate
 							</span>
-							{assignedKits.map((kit) => (
-								<div
-									key={kit._id}
-									className='flex flex-col gap-0.5'>
-									<span className='font-mono text-[9px] text-fontz/80 truncate tracking-wide uppercase'>
-										{kit.name}
-									</span>
-									{[
-										kit.primary?.weapon,
-										kit.secondary?.weapon,
-										kit.handgun?.weapon,
-									]
-										.filter(Boolean)
-										.map((w, i) => (
+							{assignedKits.map((kit) => {
+								const isActive = kit._id === selectedOperator.activeKitId;
+								const weapons = [
+									kit.primary?.weapon,
+									kit.secondary?.weapon,
+									kit.handgun?.weapon,
+								].filter(Boolean);
+								return (
+									<button
+										key={kit._id}
+										type='button'
+										disabled={savingKit}
+										onClick={() => handleActivateKit(kit._id)}
+										className={[
+											"flex flex-col gap-0.5 px-2 py-1.5 border transition-colors text-left w-full",
+											isActive ?
+												"border-green-600/40 bg-green-950/20"
+											:	"border-lines/10 hover:border-lines/25 bg-blk/20",
+										].join(" ")}>
+										<div className='flex items-center gap-1.5 min-w-0'>
 											<span
-												key={i}
-												className='font-mono text-[7px] text-lines/40 truncate pl-2'>
-												{w}
+												className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? "bg-green-400" : "bg-neutral-700"}`}
+											/>
+											<span
+												className={`font-mono text-[9px] font-semibold uppercase tracking-wide flex-1 truncate ${isActive ? "text-green-300" : "text-fontz/70"}`}>
+												{kit.name}
 											</span>
-										))}
-								</div>
-							))}
+											<span className='font-mono text-[7px] tracking-widest uppercase text-neutral-600 shrink-0'>
+												{KIT_TYPES[kit.type] ?? "Specialty"}
+											</span>
+											{isActive && (
+												<span className='font-mono text-[7px] text-green-400 shrink-0'>
+													● ACTIVE
+												</span>
+											)}
+										</div>
+										{weapons.length > 0 && (
+											<span className='font-mono text-[7px] text-lines/30 truncate pl-3'>
+												{weapons.join(" · ")}
+											</span>
+										)}
+									</button>
+								);
+							})}
 						</div>
 					)}
 				</div>
@@ -292,13 +338,22 @@ const OperatorImageView = ({ operator, openSheet }) => {
 				Edit
 			</button>
 
-			{/* Casualty button */}
+			{/* Casualty + Full Rest buttons */}
 			{!isKIA && (
-				<button
-					onClick={() => setInjuryDialogOpen(true)}
-					className='absolute top-3 left-10 z-30 flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-red-400/50 border border-red-900/30 hover:border-red-500/50 hover:text-red-400 bg-blk/70 hover:bg-red-950/30 px-2.5 py-1.5 rounded-sm transition-all'>
-					Casualty
-				</button>
+				<div className='absolute top-3 left-10 z-30 flex flex-col gap-1'>
+					<button
+						onClick={() => setInjuryDialogOpen(true)}
+						className='flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-red-400/50 border border-red-900/30 hover:border-red-500/50 hover:text-red-400 bg-blk/70 hover:bg-red-950/30 px-2.5 py-1.5 rounded-sm transition-all'>
+						Casualty
+					</button>
+					{selectedOperator.conditionLevel !== "Fresh" && (
+						<button
+							onClick={handleFullRest}
+							className='flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-green-400/50 border border-green-900/30 hover:border-green-500/50 hover:text-green-400 bg-blk/70 hover:bg-green-950/30 px-2.5 py-1.5 rounded-sm transition-all'>
+							Full Rest
+						</button>
+					)}
+				</div>
 			)}
 
 			<ConfirmDialog

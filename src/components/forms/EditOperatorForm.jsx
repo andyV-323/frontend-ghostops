@@ -8,6 +8,7 @@ import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { useHandleChange, useFormActions, useConfirmDialog } from "@/hooks";
 import { ConfirmDialog, ImageUpload } from "@/components";
 import { deleteOperatorImage } from "@/api/OperatorsApi";
+import { IMAGE_TYPE_LIST } from "@/utils/operatorImage";
 
 const EditOperatorForm = ({ operator }) => {
 	const handleChange = useHandleChange();
@@ -24,7 +25,7 @@ const EditOperatorForm = ({ operator }) => {
 		loading,
 	} = useOperatorsStore();
 	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
-	const [removingImage, setRemovingImage] = useState(false);
+	const [removingKey, setRemovingKey] = useState(null);
 
 	useEffect(() => {
 		if (operator) {
@@ -48,38 +49,22 @@ const EditOperatorForm = ({ operator }) => {
 		});
 	};
 
-	const handleFullBodyUpload = async (imageUrl) => {
-		if (selectedOperator.imageKey) {
-			await deleteOperatorImage(selectedOperator.imageKey);
+	const handleImageUpload = (fieldKey) => async (imageUrl) => {
+		if (selectedOperator[fieldKey]) {
+			await deleteOperatorImage(selectedOperator[fieldKey]);
 		}
-		setSelectedOperator({
-			...selectedOperator,
-			imageKey: imageUrl,
-		});
+		setSelectedOperator({ ...selectedOperator, [fieldKey]: imageUrl });
 	};
 
-	const handleRemoveImage = async () => {
-		if (!selectedOperator.imageKey) return;
-		setRemovingImage(true);
+	const handleRemoveImage = (fieldKey) => async () => {
+		if (!selectedOperator[fieldKey]) return;
+		setRemovingKey(fieldKey);
 		try {
-			await deleteOperatorImage(selectedOperator.imageKey);
-			setSelectedOperator({ ...selectedOperator, imageKey: null });
+			await deleteOperatorImage(selectedOperator[fieldKey]);
+			setSelectedOperator({ ...selectedOperator, [fieldKey]: null });
 		} finally {
-			setRemovingImage(false);
+			setRemovingKey(null);
 		}
-	};
-
-	// Simplified URL handler for S3
-	const getImageUrl = (imagePath) => {
-		if (!imagePath) return null;
-
-		// S3 URLs are complete - use directly
-		if (imagePath.startsWith("https://")) {
-			return imagePath;
-		}
-
-		// Preset Ghost images
-		return imagePath;
 	};
 
 	return (
@@ -135,59 +120,48 @@ const EditOperatorForm = ({ operator }) => {
 							</p>
 						</div>
 
-						{/** FULL BODY IMAGE - UPLOAD ONLY **/}
-						<div className='mb-6 w-full p-4 border border-gray-700 rounded-lg bg-gray-900/30'>
-							<h3 className='text-lg font-semibold text-fontz mb-2'>
-								Full Body Image (Optional)
+						{/** OPERATOR IMAGES — 4 TYPES **/}
+						<div className='mb-6 w-full flex flex-col gap-4'>
+							<h3 className='text-lg font-semibold text-fontz'>
+								Operator Images
 							</h3>
-
-							{/** CURRENT FULL BODY PREVIEW **/}
-							{selectedOperator.imageKey && (
-								<div className='mb-4 w-full'>
-									<label className='block mb-2 font-medium text-sm'>
-										Current Full Body Image
-									</label>
-									<div className='flex justify-center'>
-										<img
-											src={getImageUrl(selectedOperator.imageKey)}
-											alt={`${selectedOperator.callSign} Full Body`}
-											className='max-w-full max-h-64 object-contain rounded-lg border-2 border-gray-600 bg-gray-800'
-											onError={(e) => {
-												console.error(
-													"Full body image failed to load:",
-													selectedOperator.imageKey,
-												);
-												e.target.style.display = "none";
-											}}
-										/>
-									</div>
-									<button
-										type='button'
-										onClick={handleRemoveImage}
-										disabled={removingImage}
-										className='mt-2 w-full font-mono text-[9px] tracking-widest uppercase px-3 py-1.5 rounded border border-red-900/50 text-red-400 hover:bg-red-900/20 disabled:opacity-40 transition-colors'>
-										{removingImage ? "Removing..." : "Remove Image"}
-									</button>
-								</div>
-							)}
-
-							<p className='text-xs text-gray-400 mb-4'>
-								Upload a full body image to display in the operator profile view
+							<p className='text-xs text-gray-400 -mt-2'>
+								Upload a full-body image per mission type. The displayed image
+								matches the operator&apos;s active kit type.
 							</p>
-
-							{/** FULL BODY UPLOAD **/}
-							<ImageUpload
-								currentImage={selectedOperator?.imageKey}
-								onImageUpload={handleFullBodyUpload}
-							/>
-
-							{selectedOperator?.imageKey && (
-								<div className='mt-3'>
-									<p className='text-xs text-green-400'>
-										✓ Full body image uploaded to S3
+							{IMAGE_TYPE_LIST.map(({ key, label }) => (
+								<div
+									key={key}
+									className='p-4 border border-gray-700 rounded-lg bg-gray-900/30'>
+									<p className='font-mono text-[9px] tracking-[0.3em] uppercase text-neutral-500 mb-3'>
+										{label}{label === "Specialty" ? " — Default" : ""}
 									</p>
+									{selectedOperator[key] && (
+										<div className='mb-3'>
+											<img
+												src={selectedOperator[key]}
+												alt={`${selectedOperator.callSign} ${label}`}
+												className='max-w-full max-h-40 object-contain rounded border border-gray-600 bg-gray-800'
+												onError={(e) => { e.target.style.display = "none"; }}
+											/>
+											<button
+												type='button'
+												onClick={handleRemoveImage(key)}
+												disabled={removingKey === key}
+												className='mt-2 w-full font-mono text-[9px] tracking-widest uppercase px-3 py-1.5 rounded border border-red-900/50 text-red-400 hover:bg-red-900/20 disabled:opacity-40 transition-colors'>
+												{removingKey === key ? "Removing..." : "Remove Image"}
+											</button>
+										</div>
+									)}
+									<ImageUpload
+										currentImage={selectedOperator[key]}
+										onImageUpload={handleImageUpload(key)}
+									/>
+									{selectedOperator[key] && (
+										<p className='mt-2 text-xs text-green-400'>✓ {label} image uploaded</p>
+									)}
 								</div>
-							)}
+							))}
 						</div>
 
 						{/*CALL SIGN*/}

@@ -6,6 +6,7 @@ import {
 	faBed,
 	faHelicopter,
 	faChevronDown,
+	faSun,
 } from "@fortawesome/free-solid-svg-icons";
 import {
 	CONDITION_META,
@@ -15,6 +16,64 @@ import {
 } from "@/config/fatigue";
 import { getTerrainData } from "@/utils/Restrictions";
 import useTeamsStore from "@/zustand/useTeamStore";
+import { useKitsStore, useOperatorsStore } from "@/zustand";
+import { getOperatorDisplayImage } from "@/utils/operatorImage";
+
+const STATUS_DOT = {
+	active: "bg-green-500 shadow-[0_0_4px_rgba(74,222,128,0.7)]",
+	injured: "bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.7)]",
+	wounded: "bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.7)]",
+	kia: "bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.7)]",
+};
+const CONDITION = {
+	fresh: "bg-green-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+	steady: "bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+	worn: "bg-yellow-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+	degraded: "bg-amber-500 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+	spent: "bg-red-700 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
+};
+const getDot = (s = "") => STATUS_DOT[s.toLowerCase()] ?? STATUS_DOT.active;
+const getCon = (c = "") => CONDITION[c.toLowerCase()] ?? CONDITION.fresh;
+
+function SimOperator({ op }) {
+	const { kits } = useKitsStore();
+	const { operators } = useOperatorsStore();
+	const freshOp = operators.find((o) => o._id === op._id) || op;
+	const avatarSrc = getOperatorDisplayImage(freshOp, kits);
+
+	return (
+		<div className='group flex flex-col items-center gap-1'>
+			<div className='relative'>
+				<img
+					className='w-12 h-12 rounded-full border border-neutral-700/40 group-hover:border-btn/50 bg-neutral-900 object-cover object-top transition-all'
+					src={avatarSrc}
+					onError={(e) => {
+						e.currentTarget.src = "/ghost/Default.png";
+					}}
+					alt={op.callSign}
+					title={op.callSign}
+				/>
+				<span
+					className={[
+						"absolute -bottom-0.5 -left-0.5 w-2 h-2 rounded-full border border-neutral-950",
+						getDot(op.status),
+					].join(" ")}
+				/>
+				<span
+					className={[
+						"absolute -bottom-0.5 -right-0.5 w-2 h-2 border border-neutral-950",
+						getCon(op.conditionLevel),
+					].join(" ")}
+				/>
+			</div>
+			<span className='font-mono text-[10px] tracking-wide text-neutral-600 group-hover:text-neutral-300 transition-colors text-center max-w-[48px] truncate leading-none'>
+				{op.callSign}
+			</span>
+		</div>
+	);
+}
+
+SimOperator.propTypes = { op: PropTypes.object.isRequired };
 
 const MISSION_CATEGORIES = Object.keys(MISSION_FATIGUE);
 
@@ -44,6 +103,7 @@ function TeamFatigueCard({
 	onAdvance,
 	onRest,
 	onRTB,
+	onFullRest,
 	isAttached,
 	busy,
 }) {
@@ -61,8 +121,7 @@ function TeamFatigueCard({
 
 	const activeOps = (team.operators || []).filter((op) => op.status !== "KIA");
 	const worstLevel = activeOps.reduce((worst, op) => {
-		const meta = CONDITION_META;
-		const levels = Object.keys(meta);
+		const levels = Object.keys(CONDITION_META);
 		const curIdx = levels.indexOf(op.conditionLevel ?? "Fresh");
 		const wIdx = levels.indexOf(worst);
 		return curIdx > wIdx ? (op.conditionLevel ?? "Fresh") : worst;
@@ -71,16 +130,13 @@ function TeamFatigueCard({
 	const worstMeta = CONDITION_META[worstLevel] ?? CONDITION_META.Fresh;
 
 	return (
-		<div
-			className='border border-neutral-800/60 mb-3'
-			style={{ fontFamily: "'Courier New','Lucida Console',monospace" }}>
+		<div className='font-mono border border-neutral-800/60 mb-3'>
 			{/* Team header */}
-			<div
-				className='flex items-center justify-between px-3 py-1.5 border-b border-neutral-800/60'
-				style={{ background: "rgba(74,222,128,0.04)" }}>
+			<div className='flex items-center justify-between px-3 py-1.5 border-b border-neutral-800/60 bg-neutral-950/40'>
 				<div className='flex items-center gap-2'>
+					<div className='w-0.5 h-3.5 bg-btn/60 shrink-0' />
 					<span
-						className='w-1.5 h-1.5 rounded-full'
+						className='w-1.5 h-1.5 rounded-full shrink-0'
 						style={{ background: worstMeta.hex }}
 					/>
 					<span className='text-[9px] font-bold uppercase tracking-widest text-fontz'>
@@ -88,7 +144,7 @@ function TeamFatigueCard({
 					</span>
 				</div>
 				<div className='flex items-center gap-2'>
-					<span className='text-[8px] tracking-widest uppercase text-neutral-500'>
+					<span className='text-[7px] tracking-[0.3em] uppercase text-neutral-600'>
 						Day
 					</span>
 					<span
@@ -100,34 +156,27 @@ function TeamFatigueCard({
 			</div>
 
 			{/* Operators */}
-			<div className='px-3 py-2 flex flex-col gap-1.5'>
-				{activeOps.length === 0 && (
-					<span className='text-[9px] text-neutral-600 uppercase tracking-widest'>
+			<div className='px-3 py-2.5'>
+				<p className='font-mono text-[10px] tracking-[0.25em] text-neutral-700 uppercase mb-2'>
+					Operators
+				</p>
+				{activeOps.length === 0 ?
+					<span className='font-mono text-[10px] text-neutral-700'>
 						No active operators
 					</span>
-				)}
-				{activeOps.map((op) => (
-					<div
-						key={op._id}
-						className='flex items-center justify-between gap-2'>
-						<span className='text-[9px] text-fontz/80 tracking-wide truncate'>
-							{op.callSign}
-							{op.status === "Injured" && (
-								<span className='ml-1.5 text-[8px] text-amber-400 uppercase tracking-widest'>
-									[WIA]
-								</span>
-							)}
-						</span>
-						<ConditionBadge level={op.conditionLevel ?? "Fresh"} />
+				:	<div className='flex flex-wrap gap-3'>
+						{activeOps.map((op) => (
+							<SimOperator key={op._id} op={op} />
+						))}
 					</div>
-				))}
+				}
 			</div>
 
 			{/* Mission selector + controls — hidden for attached teams */}
 			{!isAttached && (
-				<div className='px-3 pb-2.5 pt-1 border-t border-neutral-800/40 flex flex-col gap-2 mt-1'>
+				<div className='px-3 pb-2.5 pt-1.5 border-t border-neutral-800/40 flex flex-col gap-2'>
 					<div className='flex items-center gap-2'>
-						<span className='text-[8px] uppercase tracking-[0.3em] text-neutral-500 shrink-0'>
+						<span className='text-[7px] uppercase tracking-[0.3em] text-neutral-600 shrink-0'>
 							Mission
 						</span>
 						<div className='relative flex items-center flex-1'>
@@ -135,7 +184,7 @@ function TeamFatigueCard({
 								value={missionCat}
 								onChange={(e) => setMissionCat(e.target.value)}
 								disabled={busy}
-								className='appearance-none w-full font-mono text-[9px] tracking-widest uppercase bg-neutral-900 border border-btn/25 text-fontz pr-6 pl-2 py-1 focus:outline-none focus:border-btn/50 transition-colors cursor-pointer'>
+								className='appearance-none w-full font-mono text-[8px] tracking-widest uppercase bg-neutral-900 border border-neutral-700/60 text-fontz pr-6 pl-2 py-1 focus:outline-none focus:border-btn/50 transition-colors cursor-pointer'>
 								{MISSION_CATEGORIES.map((cat) => (
 									<option
 										key={cat}
@@ -146,41 +195,40 @@ function TeamFatigueCard({
 							</select>
 							<FontAwesomeIcon
 								icon={faChevronDown}
-								className='absolute right-2 text-[7px] text-btn/40 pointer-events-none'
+								className='absolute right-2 text-[7px] text-neutral-600 pointer-events-none'
 							/>
 						</div>
 					</div>
 
-					<div className='flex items-center gap-2'>
+					<div className='flex items-center gap-1.5'>
 						<button
 							onClick={handleAdvance}
 							disabled={busy}
-							className='flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 border border-btn/30 bg-btn/5 text-btn text-[9px] font-bold uppercase tracking-widest hover:bg-btn/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed'>
-							<FontAwesomeIcon
-								icon={faForwardStep}
-								className='text-[9px]'
-							/>
-							Advance Day
+							className='flex-1 flex items-center justify-center gap-1 px-2 py-1.5 border border-btn/30 bg-btn/5 text-btn font-mono text-[8px] font-bold uppercase tracking-widest hover:bg-btn/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed'>
+							<FontAwesomeIcon icon={faForwardStep} className='text-[8px]' />
+							Advance
 						</button>
 						<button
 							onClick={() => onRest(team._id)}
 							disabled={busy}
-							className='flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 border border-neutral-700/60 text-neutral-400 text-[9px] font-bold uppercase tracking-widest hover:bg-neutral-800/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed'>
-							<FontAwesomeIcon
-								icon={faBed}
-								className='text-[9px]'
-							/>
-							Rest Day
+							className='flex-1 flex items-center justify-center gap-1 px-2 py-1.5 border border-neutral-700/60 text-neutral-400 font-mono text-[8px] font-bold uppercase tracking-widest hover:bg-neutral-800/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed'>
+							<FontAwesomeIcon icon={faBed} className='text-[8px]' />
+							Rest
+						</button>
+						<button
+							onClick={() => onFullRest(team._id)}
+							disabled={busy}
+							title='Full Rest — restore all operators to Fresh'
+							className='flex items-center justify-center gap-1 px-2 py-1.5 border border-green-900/40 text-green-400/70 font-mono text-[8px] font-bold uppercase tracking-widest hover:bg-green-950/20 hover:text-green-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed'>
+							<FontAwesomeIcon icon={faSun} className='text-[8px]' />
+							Fresh
 						</button>
 						<button
 							onClick={() => onRTB(team._id)}
 							disabled={busy}
 							title='Return to Base — resets all operators to Fresh and removes from AO'
-							className='flex items-center justify-center gap-1 px-2 py-1.5 border border-red-900/40 text-red-400/70 text-[8px] font-bold uppercase tracking-widest hover:bg-red-950/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed'>
-							<FontAwesomeIcon
-								icon={faHelicopter}
-								className='text-[9px]'
-							/>
+							className='flex items-center justify-center gap-1 px-2 py-1.5 border border-red-900/40 text-red-400/70 font-mono text-[8px] font-bold uppercase tracking-widest hover:bg-red-950/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed'>
+							<FontAwesomeIcon icon={faHelicopter} className='text-[8px]' />
 							RTB
 						</button>
 					</div>
@@ -198,6 +246,7 @@ TeamFatigueCard.propTypes = {
 	onAdvance: PropTypes.func.isRequired,
 	onRest: PropTypes.func.isRequired,
 	onRTB: PropTypes.func.isRequired,
+	onFullRest: PropTypes.func.isRequired,
 	isAttached: PropTypes.bool,
 	busy: PropTypes.bool,
 };
@@ -208,7 +257,7 @@ export default function FatigueSimulator({
 	provinceKey,
 	atmosphere,
 }) {
-	const { advanceDay, restDay, returnToBase } = useTeamsStore();
+	const { advanceDay, restDay, returnToBase, fullRest } = useTeamsStore();
 	const [busy, setBusy] = useState(false);
 
 	const handleAdvance = useCallback(
@@ -247,6 +296,18 @@ export default function FatigueSimulator({
 		[returnToBase],
 	);
 
+	const handleFullRest = useCallback(
+		async (teamId) => {
+			setBusy(true);
+			try {
+				await fullRest(teamId);
+			} finally {
+				setBusy(false);
+			}
+		},
+		[fullRest],
+	);
+
 	if (!teams?.length) return null;
 
 	const totalCount = teams.reduce(
@@ -259,17 +320,14 @@ export default function FatigueSimulator({
 	);
 
 	return (
-		<div
-			className='relative w-full overflow-hidden'
-			style={{ fontFamily: "'Courier New','Lucida Console',monospace" }}>
+		<div className='relative w-full overflow-hidden font-mono'>
 			{/* Header */}
-			<div
-				className='flex items-center justify-between px-3 py-1.5 border-b border-neutral-800/60'
-				style={{ background: "rgba(74,222,128,0.04)" }}>
-				<span className='text-[8px] uppercase tracking-[0.35em] font-bold text-btn/80'>
-					◈ Operator Fatigue
+			<div className='flex items-center gap-2 px-3 py-1.5 border-b border-neutral-800/60 bg-neutral-950/40'>
+				<div className='w-0.5 h-3.5 bg-btn/60 shrink-0' />
+				<span className='text-[8px] uppercase tracking-[0.35em] font-bold text-btn/80 flex-1'>
+					Operator Fatigue
 				</span>
-				<span className='text-[8px] uppercase tracking-widest text-btn/50'>
+				<span className='text-[7px] uppercase tracking-widest text-neutral-600'>
 					{totalCount} {totalCount === 1 ? "Team" : "Teams"} in AO
 				</span>
 			</div>
@@ -285,6 +343,7 @@ export default function FatigueSimulator({
 							onAdvance={handleAdvance}
 							onRest={handleRest}
 							onRTB={handleRTB}
+							onFullRest={handleFullRest}
 							busy={busy}
 						/>
 						{(team.attachedTeams || [])
@@ -301,6 +360,7 @@ export default function FatigueSimulator({
 										onAdvance={handleAdvance}
 										onRest={handleRest}
 										onRTB={handleRTB}
+										onFullRest={handleFullRest}
 										isAttached
 										busy={busy}
 									/>

@@ -2,7 +2,8 @@
 import { useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUserPlus, faChevronRight } from "@fortawesome/free-solid-svg-icons";
-import { useOperatorsStore, useTeamsStore, useSheetStore } from "@/zustand";
+import { useOperatorsStore, useTeamsStore, useSheetStore, useKitsStore } from "@/zustand";
+import { getOperatorDisplayImage } from "@/utils/operatorImage";
 import { PropTypes } from "prop-types";
 import { NewOperatorForm, AssignTeamSheet } from "@/components/forms";
 import { OperatorImageView } from "@/components";
@@ -77,12 +78,15 @@ function TeamBadge({ operator }) {
 }
 
 // ─── Operator card ────────────────────────────────────────────
-function OperatorCard({ operator, openSheet, fetchTeams }) {
-	const { setClickedOperator, setSelectedOperator, activeClasses } =
+function OperatorCard({ operatorId, openSheet, fetchTeams }) {
+	const { operators, setClickedOperator, setSelectedOperator, activeClasses } =
 		useOperatorsStore();
+	const operator = operators.find((o) => o._id === operatorId);
+	const { kits } = useKitsStore();
+	if (!operator) return null;
 	const status = getStatus(operator?.status);
-
 	const condition = getCondition(operator?.conditionLevel);
+	const avatarSrc = getOperatorDisplayImage(operator, kits);
 
 	return (
 		<div
@@ -109,7 +113,7 @@ function OperatorCard({ operator, openSheet, fetchTeams }) {
 						onError={(e) => {
 							e.currentTarget.src = "/ghost/Default.png";
 						}}
-						src={operator.imageKey || operator.image || "/ghost/Default.png"}
+						src={avatarSrc}
 						alt={operator.callSign || "Operator"}
 					/>
 				</div>
@@ -183,11 +187,13 @@ function OperatorCard({ operator, openSheet, fetchTeams }) {
 const TabbedRoster = ({ dataUpdated, openSheet }) => {
 	const { operators, fetchOperators } = useOperatorsStore();
 	const { fetchTeams } = useTeamsStore();
+	const { fetchKits } = useKitsStore();
 
 	useEffect(() => {
 		fetchOperators();
 		fetchTeams();
-	}, [fetchOperators, fetchTeams, dataUpdated]);
+		fetchKits();
+	}, [fetchOperators, fetchTeams, fetchKits, dataUpdated]);
 
 	return (
 		<div className='flex flex-col h-full'>
@@ -223,7 +229,7 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 						{operators.map((operator) => (
 							<OperatorCard
 								key={operator._id}
-								operator={operator}
+								operatorId={operator._id}
 								openSheet={openSheet}
 								fetchTeams={fetchTeams}
 							/>
@@ -243,7 +249,7 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 // ─── PropTypes ────────────────────────────────────────────────
 TeamBadge.propTypes = { operator: PropTypes.object.isRequired };
 OperatorCard.propTypes = {
-	operator: PropTypes.object.isRequired,
+	operatorId: PropTypes.string.isRequired,
 	openSheet: PropTypes.func.isRequired,
 	fetchTeams: PropTypes.func.isRequired,
 };

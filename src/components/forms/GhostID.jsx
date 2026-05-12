@@ -2,17 +2,14 @@ import { useHandleChange } from "@/hooks";
 import { useOperatorsStore } from "@/zustand";
 import { ghostID, CLASS, ITEMS, PERKS } from "@/config";
 import { ImageUpload } from "@/components";
+import { IMAGE_TYPE_LIST } from "@/utils/operatorImage";
 
 const GhostID = () => {
 	const handleChange = useHandleChange();
 	const { selectedOperator, setSelectedOperator } = useOperatorsStore();
 
-	// Handle full body image upload (imageKey)
-	const handleFullBodyUpload = (imageUrl) => {
-		setSelectedOperator({
-			...selectedOperator,
-			imageKey: imageUrl,
-		});
+	const handleImageUpload = (fieldKey) => (imageUrl) => {
+		setSelectedOperator({ ...selectedOperator, [fieldKey]: imageUrl });
 	};
 
 	return (
@@ -48,27 +45,31 @@ const GhostID = () => {
 					</p>
 				</div>
 
-				{/** FULL BODY IMAGE - UPLOAD ONLY **/}
-				<div className='mb-6 p-4 border border-gray-700 rounded-lg bg-gray-900/30'>
-					<h3 className='text-lg font-semibold text-fontz mb-2'>
-						Full Body Image (Optional)
+				{/** OPERATOR IMAGES — 4 TYPES **/}
+				<div className='mb-6 flex flex-col gap-4'>
+					<h3 className='text-lg font-semibold text-fontz'>
+						Operator Images
 					</h3>
-					<p className='text-xs text-gray-400 mb-4'>
-						Upload a full body image to display in the operator profile view
+					<p className='text-xs text-gray-400 -mt-2'>
+						Upload a full-body image for each mission type. Specialty is the
+						default. The image shown will match the operator&apos;s active kit type.
 					</p>
-
-					<ImageUpload
-						currentImage={selectedOperator?.imageKey}
-						onImageUpload={handleFullBodyUpload}
-					/>
-
-					{selectedOperator?.imageKey && (
-						<div className='mt-3'>
-							<p className='text-xs text-green-400'>
-								✓ Full body image uploaded
+					{IMAGE_TYPE_LIST.map(({ key, label }) => (
+						<div
+							key={key}
+							className='p-4 border border-gray-700 rounded-lg bg-gray-900/30'>
+							<p className='font-mono text-[9px] tracking-[0.3em] uppercase text-neutral-500 mb-3'>
+								{label}{label === "Specialty" ? " — Default" : ""}
 							</p>
+							<ImageUpload
+								currentImage={selectedOperator?.[key]}
+								onImageUpload={handleImageUpload(key)}
+							/>
+							{selectedOperator?.[key] && (
+								<p className='mt-2 text-xs text-green-400'>✓ {label} image uploaded</p>
+							)}
 						</div>
-					)}
+					))}
 				</div>
 
 				{/** CALL SIGN **/}
@@ -130,7 +131,6 @@ const GhostID = () => {
 				<div>
 					<label className='block mb-2 font-medium'>Items</label>
 
-					{/* Selected items display */}
 					<div className='flex flex-wrap gap-2 mb-2'>
 						{(selectedOperator?.items || []).map((item) => (
 							<div
@@ -159,7 +159,6 @@ const GhostID = () => {
 						))}
 					</div>
 
-					{/* Dropdown to add items */}
 					<select
 						className='form'
 						value=''
@@ -194,7 +193,6 @@ const GhostID = () => {
 				<div>
 					<label className='block mb-2 font-medium'>Perks</label>
 
-					{/* Selected items display */}
 					<div className='flex flex-wrap gap-2 mb-2'>
 						{(selectedOperator?.perks || []).map((perk) => (
 							<div
@@ -223,7 +221,6 @@ const GhostID = () => {
 						))}
 					</div>
 
-					{/* Dropdown to add perks */}
 					<select
 						className='form'
 						value=''
@@ -252,9 +249,7 @@ const GhostID = () => {
 								</option>
 							))}
 					</select>
-
 				</div>
-
 			</div>
 		</div>
 	);

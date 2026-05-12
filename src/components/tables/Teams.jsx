@@ -8,7 +8,7 @@ import {
 	faPlus,
 	faLink,
 } from "@fortawesome/free-solid-svg-icons";
-import { useTeamsStore } from "@/zustand";
+import { useTeamsStore, useKitsStore, useOperatorsStore } from "@/zustand";
 import { TeamsApi } from "@/api";
 import { toast } from "react-toastify";
 import { PROVINCES } from "@/config";
@@ -17,6 +17,7 @@ import { useConfirmDialog } from "@/hooks";
 import { ConfirmDialog, TeamView } from "@/components";
 import { EditTeamForm, NewTeamForm } from "@/components/forms";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { getOperatorDisplayImage } from "@/utils/operatorImage";
 
 // ─── Status dot ───────────────────────────────────────────────
 const STATUS_DOT = {
@@ -44,6 +45,11 @@ function TeamOperator({
 	onDragEnd,
 	onOperatorClick,
 }) {
+	const { kits } = useKitsStore();
+	const { operators } = useOperatorsStore();
+	const freshOp = operators.find((o) => o._id === op._id) || op;
+	const avatarSrc = getOperatorDisplayImage(freshOp, kits);
+
 	return (
 		<div
 			className={[
@@ -57,7 +63,7 @@ function TeamOperator({
 			<div className='relative'>
 				<img
 					className='w-12 h-12 rounded-full border border-neutral-700/40 group-hover:border-btn/50 bg-neutral-900 object-cover object-top transition-all'
-					src={op.imageKey || op.image || "/ghost/Default.png"}
+					src={avatarSrc}
 					onError={(e) => {
 						e.currentTarget.src = "/ghost/Default.png";
 					}}
@@ -446,11 +452,20 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		confirmAction: confirmRemoveAll,
 	} = useConfirmDialog();
 
+	const { fetchKits } = useKitsStore();
+
 	useEffect(() => {
 		fetchTeams();
 		fetchOperators();
 		fetchVehiclesForTeams();
-	}, [fetchTeams, dataUpdated, fetchOperators, fetchVehiclesForTeams]);
+		fetchKits();
+	}, [
+		fetchTeams,
+		dataUpdated,
+		fetchOperators,
+		fetchVehiclesForTeams,
+		fetchKits,
+	]);
 
 	const handleOperatorClick = (operator, e) => {
 		e.stopPropagation();
