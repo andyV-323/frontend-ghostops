@@ -15,7 +15,7 @@ import {
 import { GARAGE } from "./garage";
 import { CONDITION } from "./vehicleCondition";
 import { ITEMS, ITEM_RESTRICTION_KEYS } from "./items";
-import { PERKS, PERK_RESTRICTION_KEYS } from "./perks";
+import { PERKS, PERKS_MAP, PERK_RESTRICTION_KEYS } from "./perks";
 import { BIOME_WEATHER } from "./biome";
 import { PROVINCE_BIOMES } from "./provinceBiomes";
 import { PROVINCE_TERRAIN } from "./provinceTerrain";
@@ -44,6 +44,7 @@ export {
 	ITEMS,
 	ITEM_RESTRICTION_KEYS,
 	PERKS,
+	PERKS_MAP,
 	PERK_RESTRICTION_KEYS,
 	BIOME_WEATHER,
 	PROVINCE_BIOMES,

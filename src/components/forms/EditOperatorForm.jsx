@@ -134,7 +134,8 @@ const EditOperatorForm = ({ operator }) => {
 									key={key}
 									className='p-4 border border-gray-700 rounded-lg bg-gray-900/30'>
 									<p className='font-mono text-[9px] tracking-[0.3em] uppercase text-neutral-500 mb-3'>
-										{label}{label === "Specialty" ? " — Default" : ""}
+										{label}
+										{label === "Specialty" ? " — Default" : ""}
 									</p>
 									{selectedOperator[key] && (
 										<div className='mb-3'>
@@ -142,7 +143,9 @@ const EditOperatorForm = ({ operator }) => {
 												src={selectedOperator[key]}
 												alt={`${selectedOperator.callSign} ${label}`}
 												className='max-w-full max-h-40 object-contain rounded border border-gray-600 bg-gray-800'
-												onError={(e) => { e.target.style.display = "none"; }}
+												onError={(e) => {
+													e.target.style.display = "none";
+												}}
 											/>
 											<button
 												type='button'
@@ -158,7 +161,9 @@ const EditOperatorForm = ({ operator }) => {
 										onImageUpload={handleImageUpload(key)}
 									/>
 									{selectedOperator[key] && (
-										<p className='mt-2 text-xs text-green-400'>✓ {label} image uploaded</p>
+										<p className='mt-2 text-xs text-green-400'>
+											✓ {label} image uploaded
+										</p>
 									)}
 								</div>
 							))}
@@ -219,143 +224,13 @@ const EditOperatorForm = ({ operator }) => {
 						</div>
 
 						<br />
-						{/** ITEMS **/}
-						<div className='w-full'>
-							<label className='block mb-2 font-medium'>Items</label>
-
-							{/* Selected items display */}
-							<div className='flex flex-wrap gap-2 mb-2'>
-								{(selectedOperator?.items || []).map((item) => (
-									<div
-										key={item}
-										className='flex items-center gap-2 bg-highlight px-3 py-1 rounded-full'>
-										<img
-											src={ITEMS[item]}
-											alt={item}
-											className='w-4 h-4'
-										/>
-										<span className='text-sm'>{item}</span>
-										<button
-											type='button'
-											onClick={() => {
-												const newItems = selectedOperator.items.filter(
-													(i) => i !== item,
-												);
-												handleChange({
-													target: { name: "items", value: newItems },
-												});
-											}}
-											className='text-red-500 hover:text-red-700'>
-											×
-										</button>
-									</div>
-								))}
-							</div>
-
-							{/* Dropdown to add items */}
-							<select
-								className='form'
-								value=''
-								onChange={(e) => {
-									if (
-										e.target.value &&
-										!selectedOperator?.items?.includes(e.target.value)
-									) {
-										const newItems = [
-											...(selectedOperator?.items || []),
-											e.target.value,
-										];
-										handleChange({
-											target: { name: "items", value: newItems },
-										});
-									}
-								}}>
-								<option value=''>Add an item...</option>
-								{Object.keys(ITEMS)
-									.filter((item) => !selectedOperator?.items?.includes(item))
-									.map((item) => (
-										<option
-											key={item}
-											value={item}>
-											{item}
-										</option>
-									))}
-							</select>
-						</div>
-						<br />
-						{/* PERKS */}
-						<div>
-							<label className='block mb-2 font-medium'>Perks</label>
-
-							{/* Selected items display */}
-							<div className='flex flex-wrap gap-2 mb-2'>
-								{(selectedOperator?.perks || []).map((perk) => (
-									<div
-										key={perk}
-										className='flex items-center gap-2 bg-highlight px-3 py-1 rounded-full'>
-										<img
-											src={PERKS[perk]}
-											alt={perk}
-											className='w-4 h-4'
-										/>
-										<span className='text-sm'>{perk}</span>
-										<button
-											type='button'
-											onClick={() => {
-												const newPerks = selectedOperator.perks.filter(
-													(i) => i !== perk,
-												);
-												handleChange({
-													target: { name: "perks", value: newPerks },
-												});
-											}}
-											className='text-red-500 hover:text-red-700'>
-											×
-										</button>
-									</div>
-								))}
-							</div>
-
-							{/* Dropdown to add perks */}
-							<select
-								className='form'
-								value=''
-								onChange={(e) => {
-									if (
-										e.target.value &&
-										!selectedOperator?.perks?.includes(e.target.value)
-									) {
-										const newPerks = [
-											...(selectedOperator?.perks || []),
-											e.target.value,
-										];
-										handleChange({
-											target: { name: "perks", value: newPerks },
-										});
-									}
-								}}>
-								<option value=''>Add a perk...</option>
-								{Object.keys(PERKS)
-									.filter((perk) => !selectedOperator?.perks?.includes(perk))
-									.map((perk) => (
-										<option
-											key={perk}
-											value={perk}>
-											{perk}
-										</option>
-									))}
-							</select>
-	
-						</div>
-						<br />
-
 						<Button
-						type='submit'
-						className='btn'
-						onClick={(e) => handleUpdateOperator(e, operatorId)}>
-						Update
-					</Button>
-				</div>
+							type='submit'
+							className='btn'
+							onClick={(e) => handleUpdateOperator(e, operatorId)}>
+							Update
+						</Button>
+					</div>
 				</form>
 			</div>
 			<ConfirmDialog

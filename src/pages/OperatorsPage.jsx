@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { Roster, Infirmary, Memorial, Teams } from "@/components/tables";
 import { OperatorImageView } from "@/components";
 import { NewOperatorForm, AssignTeamSheet } from "@/components/forms";
@@ -11,7 +11,8 @@ import {
 	useKitsStore,
 } from "@/zustand";
 import { Panel, usePageSheet } from "./dashboardHelpers";
-import { ITEMS, PERKS } from "@/config";
+import { ITEMS, PERKS_MAP } from "@/config";
+import { KIT_TYPES } from "@/utils/operatorImage";
 import { OperatorsApi } from "@/api";
 import { toast } from "react-toastify";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -100,19 +101,197 @@ function KitAssignContent({ operator, kits, onToggle }) {
 	);
 }
 
+// ─── Kit detail sheet content ──────────────────────────────────────────────────
+
+function KitDetailContent({ kit, onClose }) {
+	const weapons = [
+		kit.primary?.weapon && {
+			label: "Primary",
+			weapon: kit.primary.weapon,
+			att: kit.primary.attachments,
+		},
+		kit.secondary?.weapon && {
+			label: "Secondary",
+			weapon: kit.secondary.weapon,
+			att: kit.secondary.attachments,
+		},
+		kit.handgun?.weapon && {
+			label: "Handgun",
+			weapon: kit.handgun.weapon,
+			att: kit.handgun.attachments,
+		},
+	].filter(Boolean);
+
+	const activeItems = (kit.items || []).filter((i) => ITEMS[i]);
+	const activePerks = (kit.perks || [])
+		.map((n) => PERKS_MAP[n])
+		.filter(Boolean);
+
+	return (
+		<div className='flex flex-col h-full'>
+			{/* Header */}
+			<div className='shrink-0 px-5 py-4 border-b border-neutral-800/60 bg-neutral-950/60'>
+				<div className='flex items-start gap-3'>
+					<div className='flex-1 min-w-0'>
+						<div className='flex items-center gap-2 mb-1'>
+							<div className='w-1 h-4 bg-btn shrink-0' />
+							<h2 className='font-mono text-sm font-bold text-white uppercase tracking-widest truncate'>
+								{kit.name}
+							</h2>
+						</div>
+						<span className='font-mono text-[8px] tracking-[0.3em] uppercase text-neutral-400 border border-neutral-700/40 px-2 py-0.5'>
+							{KIT_TYPES[kit.type] ?? "Specialty"}
+						</span>
+					</div>
+					<button
+						type='button'
+						onClick={onClose}
+						className='w-7 h-7 flex items-center justify-center text-neutral-400 hover:text-white border border-neutral-700/40 hover:border-neutral-500/40 bg-neutral-950/40 transition-colors shrink-0'>
+						<FontAwesomeIcon icon={faXmark} className='text-[10px]' />
+					</button>
+				</div>
+			</div>
+
+			{/* Body */}
+			<div className='flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-6'>
+				{/* Weapons */}
+				{weapons.length > 0 && (
+					<div className='flex flex-col gap-3'>
+						<div className='flex items-center gap-2 pb-1.5 border-b border-neutral-700/40'>
+							<div className='w-0.5 h-3 bg-btn' />
+							<span className='font-mono text-[8px] tracking-[0.3em] uppercase text-neutral-300 font-semibold'>
+								Weapons
+							</span>
+						</div>
+						{weapons.map(({ label, weapon, att }) => {
+							const activeAtts = Object.entries(att || {}).filter(([, v]) => v);
+							return (
+								<div
+									key={label}
+									className='flex flex-col gap-1.5 p-3 border border-neutral-800/60 bg-neutral-950/30'>
+									<span className='font-mono text-[7px] tracking-[0.25em] uppercase text-neutral-500'>
+										{label}
+									</span>
+									<span className='font-mono text-[11px] font-semibold text-white tracking-wide'>
+										{weapon}
+									</span>
+									{activeAtts.length > 0 && (
+										<div className='grid grid-cols-2 gap-x-4 gap-y-0.5 pt-1.5 border-t border-neutral-800/40 mt-0.5'>
+											{activeAtts.map(([k, v]) => (
+												<div key={k} className='flex items-baseline gap-1.5'>
+													<span className='font-mono text-[6px] tracking-widest uppercase text-neutral-500 shrink-0 w-14'>
+														{k}
+													</span>
+													<span className='font-mono text-[8px] text-neutral-300 truncate'>
+														{v}
+													</span>
+												</div>
+											))}
+										</div>
+									)}
+									{activeAtts.length === 0 && (
+										<span className='font-mono text-[7px] text-neutral-500 italic'>
+											No attachments
+										</span>
+									)}
+								</div>
+							);
+						})}
+					</div>
+				)}
+
+				{/* Equipment */}
+				{activeItems.length > 0 && (
+					<div className='flex flex-col gap-3'>
+						<div className='flex items-center gap-2 pb-1.5 border-b border-neutral-700/40'>
+							<div className='w-0.5 h-3 bg-btn' />
+							<span className='font-mono text-[8px] tracking-[0.3em] uppercase text-neutral-300 font-semibold'>
+								Equipment
+							</span>
+						</div>
+						<div className='grid grid-cols-2 gap-2 sm:grid-cols-3'>
+							{activeItems.map((item) => (
+								<div
+									key={item}
+									className='flex items-center gap-2 p-2 border border-neutral-800/50 bg-neutral-950/30'>
+									<img
+										src={ITEMS[item]}
+										alt={item}
+										className='w-6 h-6 object-contain shrink-0'
+										style={{ filter: "invert(1) opacity(0.6)" }}
+									/>
+									<span className='font-mono text-[8px] text-neutral-200 leading-tight'>
+										{item}
+									</span>
+								</div>
+							))}
+						</div>
+					</div>
+				)}
+
+				{/* Perks */}
+				{activePerks.length > 0 && (
+					<div className='flex flex-col gap-3'>
+						<div className='flex items-center gap-2 pb-1.5 border-b border-neutral-700/40'>
+							<div className='w-0.5 h-3 bg-btn' />
+							<span className='font-mono text-[8px] tracking-[0.3em] uppercase text-neutral-300 font-semibold'>
+								Perks
+							</span>
+						</div>
+						<div className='flex flex-col gap-2'>
+							{activePerks.map((perk) => (
+								<div
+									key={perk.name}
+									className='flex items-center gap-3 p-3 border border-neutral-800/50 bg-neutral-950/30'>
+									<img
+										src={perk.icon}
+										alt={perk.name}
+										className='w-8 h-8 object-contain shrink-0'
+									/>
+									<div className='flex flex-col gap-0.5 min-w-0'>
+										<div className='flex items-center gap-2 flex-wrap'>
+											<span className='font-mono text-[9px] font-semibold text-white leading-none'>
+												{perk.name}
+											</span>
+											<span className='font-mono text-[6px] tracking-widest uppercase text-btn/80 border border-btn/25 px-1'>
+												{perk.type}
+											</span>
+										</div>
+										<span className='font-mono text-[7px] text-neutral-400 leading-tight'>
+											{perk.description}
+										</span>
+									</div>
+								</div>
+							))}
+						</div>
+					</div>
+				)}
+
+				{weapons.length === 0 && activeItems.length === 0 && activePerks.length === 0 && (
+					<div className='flex items-center justify-center py-12'>
+						<span className='font-mono text-[9px] text-neutral-500 italic'>
+							Kit is empty
+						</span>
+					</div>
+				)}
+			</div>
+		</div>
+	);
+}
+
 // ─── Kit panel (desktop right column) ─────────────────────────────────────────
 
 function KitPanel({ operator, kits, onManageKits }) {
-	const [expandedKitId, setExpandedKitId] = useState(null);
+	const [viewingKit, setViewingKit] = useState(null);
 
 	useEffect(() => {
-		setExpandedKitId(null);
+		setViewingKit(null);
 	}, [operator?._id]);
 
 	if (!operator) {
 		return (
 			<div className='flex items-center justify-center h-16'>
-				<span className='font-mono text-[9px] tracking-widest text-neutral-700 uppercase'>
+				<span className='font-mono text-[9px] tracking-widest text-neutral-500 uppercase'>
 					Select an operator
 				</span>
 			</div>
@@ -122,24 +301,18 @@ function KitPanel({ operator, kits, onManageKits }) {
 	const assignedKits = (operator.assignedKitIds || [])
 		.map((id) => kits.find((k) => k._id === id))
 		.filter(Boolean);
-	const perks = (operator.perks || []).filter((p) => PERKS[p]);
-	const items = (operator.items || []).filter((i) => ITEMS[i]);
 
 	return (
-		<div className='p-4 flex flex-col gap-4'>
-			{/* Kits */}
-			<div className='flex flex-col gap-2'>
+		<>
+			<div className='p-4 flex flex-col gap-3'>
 				<div className='flex items-center justify-between'>
-					<span className='font-mono text-[9px] tracking-[0.25em] text-neutral-600 uppercase'>
+					<span className='font-mono text-[9px] tracking-[0.25em] text-neutral-400 uppercase'>
 						Assigned Kits
 					</span>
 					<button
 						onClick={onManageKits}
-						className='font-mono text-[8px] tracking-widest uppercase text-neutral-700 hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all flex items-center gap-1'>
-						<FontAwesomeIcon
-							icon={faPlus}
-							className='text-[7px]'
-						/>
+						className='font-mono text-[8px] tracking-widest uppercase text-neutral-400 hover:text-btn border border-neutral-700/40 hover:border-btn/40 px-1.5 py-0.5 transition-all flex items-center gap-1'>
+						<FontAwesomeIcon icon={faPlus} className='text-[7px]' />
 						Manage
 					</button>
 				</div>
@@ -147,129 +320,64 @@ function KitPanel({ operator, kits, onManageKits }) {
 				{assignedKits.length === 0 ?
 					<button
 						onClick={onManageKits}
-						className='flex items-center justify-center py-4 border border-dashed border-neutral-800/40 hover:border-btn/30 transition-colors w-full'>
-						<span className='font-mono text-[8px] text-neutral-700 italic'>
+						className='flex items-center justify-center py-4 border border-dashed border-neutral-700/40 hover:border-btn/30 transition-colors w-full'>
+						<span className='font-mono text-[8px] text-neutral-500 italic'>
 							No kits — click to assign
 						</span>
 					</button>
 				:	assignedKits.map((kit) => {
-						const isExpanded = expandedKitId === kit._id;
 						const weapons = [
-							kit.primary?.weapon && {
-								label: "PRI",
-								weapon: kit.primary.weapon,
-								att: kit.primary.attachments,
-							},
-							kit.secondary?.weapon && {
-								label: "SEC",
-								weapon: kit.secondary.weapon,
-								att: kit.secondary.attachments,
-							},
-							kit.handgun?.weapon && {
-								label: "HDG",
-								weapon: kit.handgun.weapon,
-								att: kit.handgun.attachments,
-							},
+							kit.primary?.weapon,
+							kit.secondary?.weapon,
+							kit.handgun?.weapon,
 						].filter(Boolean);
 
 						return (
 							<button
 								key={kit._id}
 								type='button'
-								onClick={() => setExpandedKitId(isExpanded ? null : kit._id)}
-								className='flex flex-col gap-1.5 px-3 py-2.5 border border-neutral-800/60 hover:border-neutral-700/60 bg-neutral-950/40 text-left transition-colors w-full'>
+								onClick={() => setViewingKit(kit)}
+								className='flex flex-col gap-1 px-3 py-2.5 border border-neutral-800/60 hover:border-btn/40 bg-neutral-950/40 text-left transition-colors w-full group'>
 								<div className='flex items-center gap-2'>
-									<div className='w-1.5 h-1.5 bg-btn/50 shrink-0' />
-									<span className='font-mono text-[10px] font-semibold text-neutral-200 truncate tracking-wide uppercase flex-1'>
+									<div className='w-1.5 h-1.5 bg-btn shrink-0' />
+									<span className='font-mono text-[10px] font-semibold text-white truncate tracking-wide uppercase flex-1 group-hover:text-btn transition-colors'>
 										{kit.name}
 									</span>
-									<span className='font-mono text-[7px] text-neutral-600 shrink-0'>
-										{isExpanded ? "▲" : "▼"}
+									<span className='font-mono text-[7px] text-neutral-500 shrink-0'>
+										›
 									</span>
 								</div>
-								<div className='flex flex-col gap-0.5 pl-3.5'>
-									{weapons.map(({ label, weapon }) => (
-										<div
-											key={label}
-											className='flex items-center gap-1.5'>
-											<span className='font-mono text-[7px] text-neutral-600 w-5 uppercase tracking-widest'>
-												{label}
-											</span>
-											<span className='font-mono text-[9px] text-neutral-400 truncate'>
-												{weapon}
-											</span>
-										</div>
-									))}
-								</div>
-
-								{isExpanded && (
-									<div className='pl-3.5 pt-2 border-t border-neutral-800/40 flex flex-col gap-2 mt-1 w-full'>
-										{weapons.map(({ label, weapon, att }) => (
-											<div key={label}>
-												<p className='font-mono text-[7px] text-neutral-500 uppercase tracking-wide mb-1'>
-													{label} — {weapon}
-												</p>
-												{Object.entries(att || {})
-													.filter(([, v]) => v)
-													.map(([k, v]) => (
-														<div
-															key={k}
-															className='flex items-baseline gap-2'>
-															<span className='font-mono text-[7px] text-neutral-700 uppercase tracking-widest w-14 shrink-0'>
-																{k}
-															</span>
-															<span className='font-mono text-[8px] text-neutral-500'>
-																{v}
-															</span>
-														</div>
-													))}
-												{!Object.values(att || {}).some(Boolean) && (
-													<p className='font-mono text-[7px] text-neutral-700 italic'>
-														No attachments
-													</p>
-												)}
-											</div>
-										))}
-										{kit.items?.length > 0 && (
-											<div className='flex flex-wrap gap-1 pt-1 border-t border-neutral-800/40'>
-												{kit.items.slice(0, 8).map((item) =>
-													ITEMS[item] ?
-														<img
-															key={item}
-															src={ITEMS[item]}
-															alt={item}
-															title={item}
-															className='w-5 h-5 object-contain'
-															style={{ filter: "invert(1) opacity(0.4)" }}
-														/>
-													:	null,
-												)}
-											</div>
-										)}
-										{kit.perks?.length > 0 && (
-											<div className='flex flex-wrap gap-1 pt-1 border-t border-neutral-800/40'>
-												{kit.perks.slice(0, 8).map((perk) =>
-													PERKS[perk] ?
-														<img
-															key={perk}
-															src={PERKS[perk]}
-															alt={perk}
-															title={perk}
-															className='w-5 h-5 object-contain'
-															style={{ filter: "invert(1) opacity(0.4)" }}
-														/>
-													:	null,
-												)}
-											</div>
-										)}
-									</div>
+								{weapons.length > 0 && (
+									<p className='font-mono text-[7px] text-neutral-500 truncate pl-3.5'>
+										{weapons.join(" · ")}
+									</p>
 								)}
 							</button>
 						);
 					})
 				}
 			</div>
-		</div>
+
+			{/* Kit detail side sheet */}
+			<Sheet
+				open={!!viewingKit}
+				onOpenChange={(open) => {
+					if (!open) setViewingKit(null);
+				}}>
+				<SheetContent
+					side='right'
+					className='p-0 sm:max-w-md overflow-hidden flex flex-col bg-blk border-l border-neutral-800/60'
+					aria-describedby={undefined}>
+					<SheetTitle className='sr-only'>Kit Details</SheetTitle>
+					{viewingKit && (
+						<KitDetailContent
+							kit={viewingKit}
+							onClose={() => setViewingKit(null)}
+						/>
+					)}
+				</SheetContent>
+			</Sheet>
+		</>
 	);
 }
 
