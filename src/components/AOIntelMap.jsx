@@ -4,292 +4,163 @@ import "leaflet/dist/leaflet.css";
 import PropTypes from "prop-types";
 import { resolveRestrictions } from "@/utils/Restrictions";
 import { SOURCE, STATUS } from "@/config";
+import { LOC_TYPE_CONFIG, getLocationType } from "@/utils/locationTypes";
 
 /* ─────────────────────────────────────────────────────────
-   AO INTEL MAP
-   Province-level intelligence display for AO Briefing.
-   - Military satellite imagery aesthetic
-   - MGRS-style alphanumeric grid overlay
-   - Asset restriction badges HUD (top-right)
-   - Weather condition badge integrated into classification header
-   - Terrain feature overlays: coast zones, airfield marker
-   - SAM / AAA zone when aviation denied by threat
-   - Classification header + scanlines overlay
-   - Compass rose
+   AO INTEL MAP  —  Full-stage tactical display
+   Handles:
+     - Satellite imagery with tactical filter
+     - MGRS-style alphanumeric grid
+     - SAM / AAA zone overlay (when aviation threat-denied)
+     - Coast zone lines + airfield marker
+     - Key location markers from ProvinceKeyLocations
+       (click fires onLocationSelect callback)
+   React overlays (weather HUD, restrictions, teams)
+   are rendered by AOBriefingPage on top of this div.
 ───────────────────────────────────────────────────────── */
 
 const COLS = 8;
 const ROWS = 6;
 const COL_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
-/* ── Inject global styles once ── */
+
 const injectStyles = () => {
 	if (document.getElementById("ao-intel-map-style")) return;
 	const style = document.createElement("style");
 	style.id = "ao-intel-map-style";
 	style.textContent = `
 		@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-
 		.ao-map-grid-label {
 			font-family: 'Share Tech Mono', monospace;
-			font-size: 9px; color: rgba(143,184,64,0.4);
+			font-size: 8px; color: rgba(143,184,64,0.3);
 			letter-spacing: 0.08em; pointer-events: none; white-space: nowrap;
 		}
 		.ao-sam-label {
-			font-family: 'Share Tech Mono', monospace; font-size: 8px;
-			letter-spacing: 0.15em; color: rgba(255,68,68,0.75);
+			font-family: 'Share Tech Mono', monospace; font-size: 7px;
+			letter-spacing: 0.12em; color: rgba(255,68,68,0.75);
 			text-shadow: 0 0 8px rgba(255,50,50,0.6);
 			white-space: nowrap; pointer-events: none;
 		}
 		.ao-coast-label {
-			font-family: 'Share Tech Mono', monospace; font-size: 7px;
-			letter-spacing: 0.18em; color: rgba(100,200,255,0.7);
-			text-shadow: 0 0 6px rgba(100,200,255,0.4);
+			font-family: 'Share Tech Mono', monospace; font-size: 6px;
+			letter-spacing: 0.15em; color: rgba(100,200,255,0.6);
 			white-space: nowrap; pointer-events: none; text-align: center;
 		}
 		.ao-airfield-label {
-			font-family: 'Share Tech Mono', monospace; font-size: 8px;
-			letter-spacing: 0.15em; color: rgba(255,200,80,0.8);
-			text-shadow: 0 0 8px rgba(255,180,40,0.5);
+			font-family: 'Share Tech Mono', monospace; font-size: 7px;
+			letter-spacing: 0.12em; color: rgba(255,200,80,0.75);
 			white-space: nowrap; pointer-events: none; text-align: center;
 		}
-		.leaflet-control-zoom {
-			border: 1px solid rgba(74,90,40,0.35) !important;
-			border-radius: 2px !important; box-shadow: none !important;
+		.ao-loc-marker {
+			transition: transform 0.1s ease, box-shadow 0.1s ease;
+			cursor: pointer !important;
 		}
-		.leaflet-control-zoom a {
-			background: rgba(8,10,6,0.92) !important; color: #7a9060 !important;
-			border-bottom: 1px solid rgba(74,90,40,0.25) !important;
-			font-family: 'Share Tech Mono', monospace !important; font-size: 14px !important;
-			width: 26px !important; height: 26px !important; line-height: 26px !important;
+		.ao-loc-marker:hover {
+			transform: scale(1.35) !important;
 		}
-		.leaflet-control-zoom a:hover { background: rgba(60,75,40,0.4) !important; color: #c1ff72 !important; }
+		.leaflet-div-icon {
+			background: transparent !important;
+			border: none !important;
+		}
 	`;
 	document.head.appendChild(style);
 };
 
-/* ── MGRS grid ref from map coordinates ── */
 const toGridRef = (coords, bounds) => {
 	if (!coords || !bounds) return "??-??";
 	const [[minY, minX], [maxY, maxX]] = bounds;
-	const colIdx = Math.min(
-		Math.floor(((coords[1] - minX) / (maxX - minX)) * COLS),
-		COLS - 1,
-	);
-	const rowIdx = Math.min(
-		Math.floor(((maxY - coords[0]) / (maxY - minY)) * ROWS),
-		ROWS - 1,
-	);
+	const colIdx = Math.min(Math.floor(((coords[1] - minX) / (maxX - minX)) * COLS), COLS - 1);
+	const rowIdx = Math.min(Math.floor(((maxY - coords[0]) / (maxY - minY)) * ROWS), ROWS - 1);
 	return `${COL_LETTERS[colIdx] || "?"}${rowIdx + 1}`;
 };
 
-/* ── Draw MGRS-style grid lines + labels ── */
 const addGrid = (map, bounds) => {
 	const [[minY, minX], [maxY, maxX]] = bounds;
 	const cellW = (maxX - minX) / COLS;
 	const cellH = (maxY - minY) / ROWS;
-
-	const lineStyle = {
-		color: "rgba(143,184,64,0.12)",
-		weight: 0.5,
-		interactive: false,
-	};
+	const lineStyle = { color: "rgba(143,184,64,0.1)", weight: 0.4, interactive: false };
 
 	for (let c = 1; c < COLS; c++) {
 		const x = minX + c * cellW;
-		L.polyline(
-			[
-				[minY, x],
-				[maxY, x],
-			],
-			lineStyle,
-		).addTo(map);
+		L.polyline([[minY, x], [maxY, x]], lineStyle).addTo(map);
 	}
 	for (let r = 1; r < ROWS; r++) {
 		const y = minY + r * cellH;
-		L.polyline(
-			[
-				[y, minX],
-				[y, maxX],
-			],
-			lineStyle,
-		).addTo(map);
+		L.polyline([[y, minX], [y, maxX]], lineStyle).addTo(map);
 	}
-
 	for (let c = 0; c < COLS; c++) {
 		const x = minX + c * cellW + cellW / 2;
-		L.marker([maxY - cellH * 0.18, x], {
-			icon: L.divIcon({
-				className: "ao-map-grid-label",
-				iconAnchor: [6, 0],
-				html: COL_LETTERS[c],
-			}),
+		L.marker([maxY - cellH * 0.15, x], {
+			icon: L.divIcon({ className: "ao-map-grid-label", iconAnchor: [5, 0], html: COL_LETTERS[c] }),
 			interactive: false,
 		}).addTo(map);
 	}
 	for (let r = 0; r < ROWS; r++) {
 		const y = maxY - r * cellH - cellH / 2;
-		L.marker([y, minX + cellW * 0.08], {
-			icon: L.divIcon({
-				className: "ao-map-grid-label",
-				iconAnchor: [0, 6],
-				html: `${r + 1}`,
-			}),
+		L.marker([y, minX + cellW * 0.06], {
+			icon: L.divIcon({ className: "ao-map-grid-label", iconAnchor: [0, 5], html: `${r + 1}` }),
 			interactive: false,
 		}).addTo(map);
 	}
 };
 
-/* ── SAM / AAA zone ── */
 const addSAMZone = (map, bounds) => {
 	L.rectangle(bounds, {
-		color: "rgba(255,30,30,0.45)",
-		weight: 1.5,
-		dashArray: "8, 10",
-		fill: true,
-		fillColor: "rgba(255,0,0,0.06)",
-		fillOpacity: 1,
-		interactive: false,
+		color: "rgba(255,30,30,0.5)", weight: 1.5, dashArray: "8, 10",
+		fill: true, fillColor: "rgba(255,0,0,0.06)", fillOpacity: 1, interactive: false,
 	}).addTo(map);
-
 	const [[minY, minX], [maxY, maxX]] = bounds;
 	L.marker([(minY + maxY) * 0.85, (minX + maxX) / 2], {
-		icon: L.divIcon({
-			className: "ao-sam-label",
-			iconAnchor: [80, 10],
-			html: "⚠ SAM / AAA COVERAGE ACTIVE",
-		}),
+		icon: L.divIcon({ className: "ao-sam-label", iconAnchor: [70, 8], html: "⚠ SAM / AAA ACTIVE" }),
 		interactive: false,
 	}).addTo(map);
 };
 
-/* ── Coast zone overlays ── */
 const addCoastZones = (map, coastZones, bounds) => {
 	if (!coastZones?.length) return;
 	const [[minY, minX], [maxY, maxX]] = bounds;
 	const midX = (minX + maxX) / 2;
 	const midY = (minY + maxY) / 2;
-
 	coastZones.forEach((zone) => {
 		let line, labelPos;
-		const margin = 18;
+		const m = 18;
 		switch (zone.side) {
-			case "north":
-				line = [
-					[maxY - margin, minX + 80],
-					[maxY - margin, maxX - 80],
-				];
-				labelPos = [maxY - margin * 2, midX];
-				break;
-			case "south":
-				line = [
-					[minY + margin, minX + 80],
-					[minY + margin, maxX - 80],
-				];
-				labelPos = [minY + margin * 2.5, midX];
-				break;
-			case "west":
-				line = [
-					[minY + 80, minX + margin],
-					[maxY - 80, minX + margin],
-				];
-				labelPos = [midY, minX + margin * 3];
-				break;
-			case "east":
-				line = [
-					[minY + 80, maxX - margin],
-					[maxY - 80, maxX - margin],
-				];
-				labelPos = [midY, maxX - margin * 3];
-				break;
-			default:
-				return;
+			case "north": line = [[maxY - m, minX + 80], [maxY - m, maxX - 80]]; labelPos = [maxY - m * 2.2, midX]; break;
+			case "south": line = [[minY + m, minX + 80], [minY + m, maxX - 80]]; labelPos = [minY + m * 2.8, midX]; break;
+			case "west":  line = [[minY + 80, minX + m], [maxY - 80, minX + m]]; labelPos = [midY, minX + m * 3]; break;
+			case "east":  line = [[minY + 80, maxX - m], [maxY - 80, maxX - m]]; labelPos = [midY, maxX - m * 3.5]; break;
+			default: return;
 		}
-
-		L.polyline(line, {
-			color: "rgba(100,200,255,0.35)",
-			weight: 1.5,
-			dashArray: "4, 8",
-			interactive: false,
-		}).addTo(map);
+		L.polyline(line, { color: "rgba(100,200,255,0.28)", weight: 1, dashArray: "4, 8", interactive: false }).addTo(map);
 		L.marker(labelPos, {
-			icon: L.divIcon({
-				className: "ao-coast-label",
-				iconAnchor: [40, 6],
-				html: `▸ ${zone.label.toUpperCase()}`,
-			}),
+			icon: L.divIcon({ className: "ao-coast-label", iconAnchor: [35, 5], html: `▸ ${zone.label.toUpperCase()}` }),
 			interactive: false,
 		}).addTo(map);
 	});
 };
 
-/* ── Airfield marker ── */
 const addAirfieldMarker = (map, bounds) => {
 	const [[minY, minX], [maxY, maxX]] = bounds;
-	const pos = [(minY + maxY) * 0.3, (minX + maxX) * 0.65];
-	L.marker(pos, {
-		icon: L.divIcon({
-			className: "ao-airfield-label",
-			iconAnchor: [30, 8],
-			html: "✈ AIRFIELD",
-		}),
+	L.marker([(minY + maxY) * 0.3, (minX + maxX) * 0.65], {
+		icon: L.divIcon({ className: "ao-airfield-label", iconAnchor: [28, 7], html: "✈ AIRFIELD" }),
 		interactive: false,
 	}).addTo(map);
 };
 
-/* ── Assets image HUD (bottom-left) ── */
-const buildAssetsHUD = (teams) => {
-	const control = L.control({ position: "bottomleft" });
-	control.onAdd = () => {
-		const div = L.DomUtil.create("div");
-		div.style.cssText =
-			"pointer-events:none;margin-bottom:4px;display:flex;flex-wrap:wrap;gap:3px;max-width:220px;";
-
-		const allAssets = teams.flatMap((team) => {
-			const own = (team.assets || []).filter(
-				(a) => typeof a === "object" && (a.vehicle || a.nickName),
-			);
-			const attached = (team.attachedTeams || []).flatMap((at) =>
-				(at.assets || []).filter(
-					(a) => typeof a === "object" && (a.vehicle || a.nickName),
-				),
-			);
-			return [...own, ...attached];
-		});
-
-		if (!allAssets.length) { div.innerHTML = ""; return div; }
-
-		div.innerHTML = allAssets
-			.map(
-				(a) =>
-					`<div style="width:44px;height:28px;border:1px solid rgba(251,191,36,0.2);overflow:hidden;">
-						<img src="${a.imgUrl || "/img/default-vehicle.png"}"
-							style="width:44px;height:28px;object-fit:cover;filter:brightness(0.6) saturate(0.45);" />
-					</div>`,
-			)
-			.join("");
-
-		return div;
-	};
-	return control;
-};
-
-/* ── Classification header (top-left) ── */
 const buildClassificationHeader = (provinceName, biome) => {
 	const control = L.control({ position: "topleft" });
 	control.onAdd = () => {
 		const div = L.DomUtil.create("div");
 		div.style.cssText = "pointer-events:none;";
 		div.innerHTML = `
-			<div style="padding:4px 10px;background:rgba(5,8,4,0.82);
-				border:1px solid rgba(74,90,40,0.3);border-radius:1px;
-				border-left:2px solid rgba(143,184,64,0.4);">
-				<div style="font-family:'Share Tech Mono',monospace;font-size:14px;
-					letter-spacing:0.15em;color:rgba(143,184,64,0.7);margin-bottom:1px;">
+			<div style="padding:3px 8px;background:rgba(4,6,3,0.88);
+				border:1px solid rgba(74,90,40,0.3);border-left:2px solid rgba(143,184,64,0.45);">
+				<div style="font-family:'Share Tech Mono',monospace;font-size:12px;
+					letter-spacing:0.14em;color:rgba(143,184,64,0.8);margin-bottom:1px;">
 					${provinceName.toUpperCase()}
 				</div>
-				<div style="font-family:'Share Tech Mono',monospace;font-size:12px;
-					letter-spacing:0.22em;color:rgba(143,184,64,0.35);">
+				<div style="font-family:'Share Tech Mono',monospace;font-size:9px;
+					letter-spacing:0.2em;color:rgba(143,184,64,0.35);">
 					${biome ? biome.toUpperCase() : "AO-INTEL // CLASSIFIED"}
 				</div>
 			</div>`;
@@ -307,126 +178,116 @@ const AOIntelMap = ({
 	terrain,
 	provinceName,
 	biome,
-	teams,
+	locations,
+	onLocationSelect,
 }) => {
-	const mapRef = useRef(null);
-	const mapInst = useRef(null);
+	const mapRef            = useRef(null);
+	const mapInst           = useRef(null);
+	const onSelectRef       = useRef(onLocationSelect);
+
+	useEffect(() => { onSelectRef.current = onLocationSelect; }, [onLocationSelect]);
 
 	useEffect(() => {
 		if (!bounds || !imgURL) return;
 
 		if (mapInst.current) {
-			try {
-				mapInst.current.stop();
-				mapInst.current.remove();
-			} catch {
-				/* removed */
-			}
+			try { mapInst.current.stop(); mapInst.current.remove(); } catch { /* removed */ }
 			mapInst.current = null;
 		}
 
 		injectStyles();
 
-		const initialZoom = window.innerWidth >= 1024 ? 0 : -2;
 		const map = L.map(mapRef.current, {
 			center: [bounds[1][0] / 2, bounds[1][1] / 2],
-			zoom: initialZoom,
+			zoom: -1,
 			crs: L.CRS.Simple,
-			dragging: true,
+			dragging: false,
 			zoomControl: false,
 			scrollWheelZoom: false,
 			zoomAnimation: false,
 			attributionControl: false,
+			keyboard: false,
 		});
 		map.setMinZoom(-3);
 		map.setMaxZoom(1);
 		mapInst.current = map;
 
-		/* ── Base image ── */
-		const overlay = L.imageOverlay(imgURL, bounds, {
-			className: "ao-intel-map-img",
-		}).addTo(map);
+		/* ── Base satellite image ── */
+		const overlay = L.imageOverlay(imgURL, bounds, {}).addTo(map);
 		overlay.on("load", () => {
 			const el = overlay.getElement();
 			if (el) {
-				el.style.filter =
-					"brightness(0.68) saturate(0.6) contrast(1.12) sepia(0.1)";
+				el.style.filter = "brightness(0.62) saturate(0.52) contrast(1.18) sepia(0.08)";
 				el.style.transition = "filter 0.4s ease";
 			}
 		});
 
-		/* ── Grid ── */
+		/* ── MGRS grid ── */
 		addGrid(map, bounds);
 
-		/* ── Restrictions (terrain + threats — used for SAM zone) ── */
+		/* ── Terrain + threat restrictions ── */
 		const restrictions = province ? resolveRestrictions(province, null) : null;
-
-		/* ── SAM zone ── */
-		if (
-			restrictions?.aviation?.status === STATUS.DENIED &&
-			restrictions?.aviation?.source === SOURCE.THREAT
-		) {
+		if (restrictions?.aviation?.status === STATUS.DENIED && restrictions?.aviation?.source === SOURCE.THREAT) {
 			addSAMZone(map, bounds);
 		}
+		if (terrain?.hasCoast && terrain?.coastZones?.length) addCoastZones(map, terrain.coastZones, bounds);
+		if (terrain?.hasAirfield) addAirfieldMarker(map, bounds);
 
-		/* ── Coast zones ── */
-		if (terrain?.hasCoast && terrain?.coastZones?.length) {
-			addCoastZones(map, terrain.coastZones, bounds);
-		}
+		/* ── Location markers ── */
+		(locations || []).forEach((loc) => {
+			const type   = getLocationType(loc.name);
+			const config = LOC_TYPE_CONFIG[type] || LOC_TYPE_CONFIG.poi;
+			const size   = config.size;
 
-		/* ── Airfield marker ── */
-		if (terrain?.hasAirfield) {
-			addAirfieldMarker(map, bounds);
-		}
+			const marker = L.marker(loc.coordinates, {
+				icon: L.divIcon({
+					className: "",
+					iconSize: [size, size],
+					iconAnchor: [size / 2, size / 2],
+					html: `<div
+						class="ao-loc-marker"
+						title="${loc.name}"
+						style="
+							width:${size}px;height:${size}px;
+							background:${config.bg};
+							border:1px solid ${config.color}66;
+							display:flex;align-items:center;justify-content:center;
+							font-size:${Math.round(size * 0.55)}px;
+							color:${config.color};
+							border-radius:2px;
+							box-shadow:0 0 8px ${config.color}28,inset 0 0 4px ${config.color}10;
+							font-family:'Share Tech Mono',monospace;
+						">${config.symbol}</div>`,
+				}),
+			}).addTo(map);
 
-		/* ── HUD controls ── */
-		if (window.innerWidth >= 1024 && teams?.length) {
-			buildAssetsHUD(teams).addTo(map);
-		}
-		buildClassificationHeader(
-			provinceName || province || "UNKNOWN",
-			biome,
-		).addTo(map);
-
-		/* ── Fit to full bounds ── */
-		map.fitBounds(bounds, { padding: [10, 10] });
-
-		/* ── Fix size after layout settle ── */
-		const rafId = requestAnimationFrame(() => {
-			if (mapInst.current) mapInst.current.invalidateSize();
+			marker.on("click", () => {
+				const gridRef = toGridRef(loc.coordinates, bounds);
+				onSelectRef.current?.({ ...loc, type, gridRef });
+			});
 		});
-		const timerId = setTimeout(() => {
-			if (mapInst.current) mapInst.current.invalidateSize();
-		}, 300);
+
+		/* ── Classification header ── */
+		buildClassificationHeader(provinceName || province || "UNKNOWN", biome).addTo(map);
+
+		/* ── Fit + fix layout ── */
+		map.fitBounds(bounds, { padding: [8, 8] });
+		const rafId   = requestAnimationFrame(() => { if (mapInst.current) mapInst.current.invalidateSize(); });
+		const timerId = setTimeout(() => { if (mapInst.current) mapInst.current.invalidateSize(); }, 300);
 
 		return () => {
 			cancelAnimationFrame(rafId);
 			clearTimeout(timerId);
 			if (mapInst.current) {
-				try {
-					mapInst.current.stop();
-					mapInst.current.remove();
-				} catch {
-					/* removed */
-				}
+				try { mapInst.current.stop(); mapInst.current.remove(); } catch { /* removed */ }
 				mapInst.current = null;
 			}
 		};
-	}, [bounds, imgURL, province, terrain, provinceName, biome, teams]);
+	}, [bounds, imgURL, province, terrain, provinceName, biome, locations]);
 
 	return (
-		<div
-			style={{
-				position: "relative",
-				width: "100%",
-				height: "100%",
-				background: "#050704",
-				overflow: "hidden",
-			}}>
-			<div
-				ref={mapRef}
-				style={{ width: "100%", height: "100%", background: "#050704" }}
-			/>
+		<div style={{ position: "relative", width: "100%", height: "100%", background: "#050704", overflow: "hidden" }}>
+			<div ref={mapRef} style={{ width: "100%", height: "100%", background: "#050704" }} />
 		</div>
 	);
 };
@@ -442,7 +303,12 @@ AOIntelMap.propTypes = {
 	}),
 	provinceName: PropTypes.string,
 	biome: PropTypes.string,
-	teams: PropTypes.array,
+	locations: PropTypes.arrayOf(PropTypes.shape({
+		name: PropTypes.string,
+		coordinates: PropTypes.arrayOf(PropTypes.number),
+		description: PropTypes.string,
+	})),
+	onLocationSelect: PropTypes.func,
 };
 
 export default AOIntelMap;
