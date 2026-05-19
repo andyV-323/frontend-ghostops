@@ -14,6 +14,7 @@ import {
 import { PropTypes } from "prop-types";
 import { EditOperatorForm } from "./forms";
 import ConfirmDialog from "./ConfirmDialog";
+import { Bio } from "./ai";
 
 /* ─── Status config ──────────────────────────────────────────── */
 const STATUS = {
@@ -85,14 +86,20 @@ const OperatorImageView = ({ operator, openSheet }) => {
 	}, [operator?._id, fetchOperatorById]);
 
 	const handleFullRest = async () => {
-		if (!selectedOperator || selectedOperator.conditionLevel === "Fresh") return;
+		if (!selectedOperator || selectedOperator.conditionLevel === "Fresh")
+			return;
 		await OperatorsApi.updateCondition(selectedOperator._id, "Fresh", 0);
 		await fetchOperatorById(selectedOperator._id);
 		await fetchOperators();
 	};
 
 	const handleActivateKit = async (kitId) => {
-		if (!selectedOperator || selectedOperator.activeKitId === kitId || savingKit) return;
+		if (
+			!selectedOperator ||
+			selectedOperator.activeKitId === kitId ||
+			savingKit
+		)
+			return;
 		setSavingKit(true);
 		try {
 			await OperatorsApi.updateOperator(selectedOperator._id, {
@@ -192,7 +199,7 @@ const OperatorImageView = ({ operator, openSheet }) => {
 						<h2 className='font-mono text-2xl font-bold text-white tracking-wide truncate leading-none'>
 							{selectedOperator.callSign || "Unknown"}
 						</h2>
-						<p className='font-mono text-[9px] tracking-[0.22em] text-lines/50 uppercase mt-1'>
+						<p className='font-mono text-[9px] tracking-[0.22em] text-lines uppercase mt-1'>
 							{selectedOperator.class || "No Class"}
 							{selectedOperator.role ? ` · ${selectedOperator.role}` : ""}
 						</p>
@@ -207,13 +214,28 @@ const OperatorImageView = ({ operator, openSheet }) => {
 								<span className={`w-1.5 h-1.5  ${condition.square}`} />
 								{condition.label}
 							</span>
+							<button
+								onClick={() =>
+									openSheet(
+										"left",
+										<Bio
+											operator={selectedOperator}
+											refreshData={refreshAll}
+										/>,
+										"Operator Bio",
+									)
+								}
+								className='mt-2.5 font-mono text-[9px] tracking-widest uppercase px-2.5 py-1.5 rounded-sm border transition-all text-lines/60 border-lines/20 hover:border-lines/40 hover:text-lines bg-blk/60'>
+								Bio
+							</button>
+							
 							{teamName && (
-								<span className='font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border text-lines/60 border-lines/20 bg-blk/40'>
+								<span className='font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border text-lines border-lines/20 bg-blk/40'>
 									{teamName}
 								</span>
 							)}
 							{squadName && (
-								<span className='font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border text-lines/60 border-lines/20 bg-blk/40'>
+								<span className='font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border text-lines border-lines/20 bg-blk/40'>
 									{squadName}
 								</span>
 							)}
@@ -272,16 +294,8 @@ const OperatorImageView = ({ operator, openSheet }) => {
 					{/* Kit selector */}
 					{assignedKits.length > 0 && (
 						<div className='flex flex-col gap-1.5 pb-2.5 border-b border-lines/10'>
-							<span className='font-mono text-[7px] tracking-widest text-lines/30 uppercase'>
-								Kits — tap to activate
-							</span>
 							{assignedKits.map((kit) => {
 								const isActive = kit._id === selectedOperator.activeKitId;
-								const weapons = [
-									kit.primary?.weapon,
-									kit.secondary?.weapon,
-									kit.handgun?.weapon,
-								].filter(Boolean);
 								return (
 									<button
 										key={kit._id}
@@ -299,10 +313,11 @@ const OperatorImageView = ({ operator, openSheet }) => {
 												className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? "bg-green-400" : "bg-neutral-700"}`}
 											/>
 											<span
-												className={`font-mono text-[9px] font-semibold uppercase tracking-wide flex-1 truncate ${isActive ? "text-green-300" : "text-fontz/70"}`}>
+												className={`font-mono text-[9px] font-semibold uppercase tracking-wide flex-1 truncate ${isActive ? "text-lines" : "text-lines/50"}`}>
 												{kit.name}
 											</span>
-											<span className='font-mono text-[7px] tracking-widest uppercase text-neutral-600 shrink-0'>
+											<span
+												className={`font-mono text-[9px] tracking-widest uppercase ${isActive ? "text-lines" : "text-lines/50"}`}>
 												{KIT_TYPES[kit.type] ?? "Specialty"}
 											</span>
 											{isActive && (
@@ -311,11 +326,6 @@ const OperatorImageView = ({ operator, openSheet }) => {
 												</span>
 											)}
 										</div>
-										{weapons.length > 0 && (
-											<span className='font-mono text-[7px] text-lines/30 truncate pl-3'>
-												{weapons.join(" · ")}
-											</span>
-										)}
 									</button>
 								);
 							})}

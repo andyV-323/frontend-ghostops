@@ -260,13 +260,13 @@ function WeatherHUD({
 				minWidth: 175,
 			}}>
 			{/* Atmosphere label + temp */}
-			<div className='flex items-center justify-between px-2 py-1.5 border-b border-neutral-800/60'>
+			<div className='flex items-center justify-between px-2 py-1.5 border-b border-lines/60'>
 				<div className='flex items-center gap-1.5'>
-					<span style={{ color: atm.color, fontSize: 12 }}>{atm.icon}</span>
+					<span style={{ color: atm.color, fontSize: 14 }}>{atm.icon}</span>
 					<div>
 						<div
 							style={{
-								fontSize: 9,
+								fontSize: 11,
 								letterSpacing: "0.15em",
 								color: "rgba(220,220,210,0.75)",
 								textTransform: "uppercase",
@@ -276,7 +276,7 @@ function WeatherHUD({
 						{tempData && (
 							<div
 								style={{
-									fontSize: 8,
+									fontSize: 10,
 									color: atm.color,
 									opacity: 0.7,
 									letterSpacing: "0.1em",
@@ -298,13 +298,13 @@ function WeatherHUD({
 					}}>
 					<FontAwesomeIcon
 						icon={faRotate}
-						style={{ fontSize: 9 }}
+						style={{ fontSize: 11 }}
 					/>
 				</button>
 			</div>
 
 			{/* Atmosphere selector */}
-			<div className='flex border-b border-neutral-800/50'>
+			<div className='flex border-b border-lines/60'>
 				{Object.entries(ATM).map(([key, cfg]) => (
 					<button
 						key={key}
@@ -312,7 +312,7 @@ function WeatherHUD({
 						style={{
 							flex: 1,
 							padding: "3px 0",
-							fontSize: 7,
+							fontSize: 9,
 							letterSpacing: "0.08em",
 							fontFamily: "'Courier New','Lucida Console',monospace",
 							color: atmosphere === key ? cfg.color : "rgba(120,120,100,0.5)",
@@ -351,7 +351,7 @@ function WeatherHUD({
 						}}>
 						<span
 							style={{
-								fontSize: 6,
+								fontSize: 9,
 								color: "rgba(130,140,110,0.5)",
 								letterSpacing: "0.1em",
 							}}>
@@ -359,7 +359,7 @@ function WeatherHUD({
 						</span>
 						<span
 							style={{
-								fontSize: 7,
+								fontSize: 9,
 								fontWeight: "bold",
 								letterSpacing: "0.08em",
 								color: val === "GO" ? "#7caa79" : "#f87171",
@@ -378,7 +378,7 @@ function WeatherHUD({
 					{suppressed && (
 						<span
 							style={{
-								fontSize: 7,
+								fontSize: 9,
 								color: "rgba(148,163,184,0.6)",
 								letterSpacing: "0.1em",
 							}}>
@@ -388,7 +388,7 @@ function WeatherHUD({
 					{nvgReq && (
 						<span
 							style={{
-								fontSize: 7,
+								fontSize: 9,
 								color: "rgba(148,163,184,0.6)",
 								letterSpacing: "0.1em",
 							}}>
@@ -454,7 +454,7 @@ function RestrictionsHUD({ restrictions }) {
 			<div
 				style={{
 					padding: "3px 8px 4px",
-					fontSize: 7,
+					fontSize: 9,
 					letterSpacing: "0.28em",
 					color: "rgba(143,184,64,0.45)",
 					borderBottom: "1px solid rgba(60,70,50,0.4)",
@@ -477,7 +477,7 @@ function RestrictionsHUD({ restrictions }) {
 						}}>
 						<span
 							style={{
-								fontSize: 7,
+								fontSize: 9,
 								letterSpacing: "0.12em",
 								color: "rgba(180,180,160,0.5)",
 							}}>
@@ -485,7 +485,7 @@ function RestrictionsHUD({ restrictions }) {
 						</span>
 						<span
 							style={{
-								fontSize: 7,
+								fontSize: 9,
 								fontWeight: "bold",
 								letterSpacing: "0.1em",
 								color,
@@ -522,7 +522,7 @@ function TeamsSummaryHUD({ teams }) {
 			<div
 				style={{
 					padding: "3px 8px 4px",
-					fontSize: 7,
+					fontSize: 9,
 					letterSpacing: "0.28em",
 					color: "rgba(143,184,64,0.45)",
 					borderBottom: "1px solid rgba(60,70,50,0.4)",
@@ -552,7 +552,7 @@ function TeamsSummaryHUD({ teams }) {
 						}}>
 						<span
 							style={{
-								fontSize: 8,
+								fontSize: 10,
 								letterSpacing: "0.08em",
 								color: "rgba(200,210,190,0.75)",
 								flex: 1,
@@ -561,7 +561,7 @@ function TeamsSummaryHUD({ teams }) {
 						</span>
 						<span
 							style={{
-								fontSize: 7,
+								fontSize: 9,
 								color: "rgba(143,184,64,0.4)",
 								letterSpacing: "0.06em",
 							}}>
@@ -584,20 +584,20 @@ function LocationDetailCard({ location, bounds, onClear }) {
 
 	return (
 		<div
-			className='border-b border-neutral-800/60'
+			className='border-b border-lines/60'
 			style={{ fontFamily: "'Courier New','Lucida Console',monospace" }}>
 			<div
-				className='flex items-center justify-between px-3 py-2 border-b border-neutral-800/40'
+				className='flex items-center justify-between px-3 py-2 border-b border-lines/60'
 				style={{ background: "rgba(143,184,64,0.04)" }}>
-				<span className='text-[8px] uppercase tracking-[0.35em] font-bold text-btn/60'>
+				<span className='text-[10px] uppercase tracking-[0.35em] font-bold text-btn/60'>
 					◈ Selected Location
 				</span>
 				<button
 					onClick={onClear}
-					className='text-neutral-600 hover:text-neutral-300 transition-colors'>
+					className='text-lines hover:text-neutral-300 transition-colors'>
 					<FontAwesomeIcon
 						icon={faXmark}
-						style={{ fontSize: 9 }}
+						style={{ fontSize: 11 }}
 					/>
 				</button>
 			</div>
@@ -606,7 +606,7 @@ function LocationDetailCard({ location, bounds, onClear }) {
 				{/* Type badge + name */}
 				<div className='flex items-start gap-2 mb-3'>
 					<span
-						className='text-[7px] font-bold uppercase tracking-widest px-1.5 py-0.5 border shrink-0 mt-0.5'
+						className='text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 border shrink-0 mt-0.5'
 						style={{
 							color: config.color,
 							borderColor: `${config.color}44`,
@@ -614,28 +614,28 @@ function LocationDetailCard({ location, bounds, onClear }) {
 						}}>
 						{config.label}
 					</span>
-					<span className='text-[11px] font-bold uppercase tracking-wide text-neutral-200 leading-snug'>
+					<span className='text-[13px] font-bold uppercase tracking-wide text-lines leading-snug'>
 						{location.name}
 					</span>
 				</div>
 
 				{/* Grid ref */}
 				<div className='flex items-center gap-2 mb-3'>
-					<span className='text-[7px] uppercase tracking-[0.25em] text-neutral-600'>
+					<span className='text-[9px] uppercase tracking-[0.25em] text-lines'>
 						Grid
 					</span>
 					<span
-						className='text-[9px] font-bold tracking-widest'
+						className='text-[11px] font-bold tracking-widest'
 						style={{ color: config.color, opacity: 0.7 }}>
 						{gridRef}
 					</span>
-					<span className='text-[7px] text-neutral-700'>
+					<span className='text-[9px] text-lines'>
 						[{location.coordinates[0]}, {location.coordinates[1]}]
 					</span>
 				</div>
 
 				{/* Description */}
-				<p className='text-[8px] leading-relaxed text-neutral-500'>
+				<p className='text-[10px] leading-relaxed text-neutral-500'>
 					{location.description}
 				</p>
 			</div>
@@ -698,33 +698,31 @@ function AOAnalysisPanel({ biome, locations }) {
 		GO: "#7caa79",
 		CONDITIONAL: "#fbbf24",
 		RESTRICTED: "#f97316",
-		CONDITIONAL: "#fbbf24",
-		RESTRICTED: "#f97316",
 		"DENIED (wheeled)": "#ef4444",
 		"GO (urban limited)": "#fbbf24",
 	};
 
 	return (
 		<div
-			className='border-b border-neutral-800/60'
+			className='border-b border-lines/60'
 			style={{ fontFamily: "'Courier New','Lucida Console',monospace" }}>
 			<div
-				className='flex items-center justify-between px-3 py-2 border-b border-neutral-800/40'
+				className='flex items-center justify-between px-3 py-2 border-b border-lines/60'
 				style={{ background: "rgba(143,184,64,0.04)" }}>
-				<span className='text-[8px] uppercase tracking-[0.35em] font-bold text-btn/60'>
+				<span className='text-[10px] uppercase tracking-[0.35em] font-bold text-btn/60'>
 					◈ AO Analysis — IPB
 				</span>
-				<span className='text-[7px] uppercase tracking-widest text-neutral-700'>
+				<span className='text-[9px] uppercase tracking-widest text-neutral-700'>
 					OAKOC
 				</span>
 			</div>
 
 			<div className='px-3 py-2.5'>
 				{/* Biome header */}
-				<div className='text-[7px] uppercase tracking-[0.3em] text-neutral-600 mb-1'>
+				<div className='text-[10px] uppercase tracking-[0.3em] text-lines mb-1'>
 					Biome Classification
 				</div>
-				<div className='text-[9px] font-bold uppercase tracking-wide text-neutral-300 mb-3'>
+				<div className='text-[11px] font-bold uppercase tracking-wide text-lines/60 mb-3'>
 					{biome}
 				</div>
 
@@ -759,11 +757,11 @@ function AOAnalysisPanel({ biome, locations }) {
 							<div
 								key={label}
 								className='flex flex-col gap-0.5'>
-								<span className='text-[6px] uppercase tracking-[0.2em] text-neutral-700'>
+								<span className='text-[10px] uppercase tracking-[0.2em] text-lines'>
 									{label}
 								</span>
 								<span
-									className='text-[7px] font-bold tracking-wide'
+									className='text-[10px] font-bold tracking-wide'
 									style={{ color }}>
 									{val}
 								</span>
@@ -774,22 +772,22 @@ function AOAnalysisPanel({ biome, locations }) {
 
 				{/* Terrain notes */}
 				{oakoc?.notes && (
-					<p className='text-[8px] leading-relaxed text-neutral-600 mb-3 pb-3 border-b border-neutral-800/40'>
+					<p className='text-[10px] leading-relaxed text-lines mb-3 pb-3 border-b border-lines/60'>
 						{oakoc.notes}
 					</p>
 				)}
 
 				{/* Hazards */}
 				{oakoc?.hazards?.length > 0 && (
-					<div className='mb-3 pb-3 border-b border-neutral-800/40'>
-						<div className='text-[7px] uppercase tracking-[0.25em] text-neutral-600 mb-1.5'>
+					<div className='mb-3 pb-3 border-b border-lines/60'>
+						<div className='text-[10px] uppercase tracking-[0.25em] text-lines mb-1.5'>
 							Operational Hazards
 						</div>
 						<div className='flex flex-wrap gap-1'>
 							{oakoc.hazards.map((h) => (
 								<span
 									key={h}
-									className='text-[6px] font-bold uppercase tracking-widest px-1.5 py-0.5'
+									className='text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5'
 									style={{
 										color: "rgba(251,191,36,0.7)",
 										border: "1px solid rgba(180,130,0,0.25)",
@@ -805,17 +803,17 @@ function AOAnalysisPanel({ biome, locations }) {
 				{/* Enemy posture */}
 				<div>
 					<div className='flex items-center justify-between mb-2'>
-						<span className='text-[7px] uppercase tracking-[0.25em] text-neutral-600'>
+						<span className='text-[10px] uppercase tracking-[0.25em] text-lines'>
 							Enemy Posture
 						</span>
 						<span
-							className='text-[10px] font-bold uppercase tracking-widest'
+							className='text-[12px] font-bold uppercase tracking-widest'
 							style={{ color: strengthColor }}>
 							{strength}
 						</span>
 					</div>
 
-					<div className='text-[7px] text-neutral-700 mb-2'>
+					<div className='text-[10px] text-lines mb-2'>
 						{locations?.length ?? 0} locations · threat score {score}
 					</div>
 
@@ -824,7 +822,7 @@ function AOAnalysisPanel({ biome, locations }) {
 							{highThreat.map(({ type, count, label }) => (
 								<span
 									key={type}
-									className='text-[6px] font-bold uppercase tracking-widest px-1.5 py-0.5'
+									className='text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5'
 									style={{
 										color: LOC_TYPE_CONFIG[type]?.color ?? "#f97316",
 										border: `1px solid ${LOC_TYPE_CONFIG[type]?.color ?? "#f97316"}33`,
@@ -841,7 +839,7 @@ function AOAnalysisPanel({ biome, locations }) {
 							{supportThreat.map(({ type, count, label }) => (
 								<span
 									key={type}
-									className='text-[6px] font-bold uppercase tracking-widest px-1.5 py-0.5 border border-neutral-700/40 bg-neutral-800/20 text-neutral-600'>
+									className='text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 border border-lines/60 bg-neutral-800/20 text-lines'>
 									{count}× {label}
 								</span>
 							))}
@@ -866,15 +864,15 @@ function ThreatsPanel({ provinceKey }) {
 
 	return (
 		<div
-			className='border-b border-neutral-800/60'
+			className='border-b border-lines/60'
 			style={{ fontFamily: "'Courier New','Lucida Console',monospace" }}>
 			<div
-				className='flex items-center justify-between px-3 py-2 border-b border-neutral-800/40'
+				className='flex items-center justify-between px-3 py-2 border-b border-lines/60'
 				style={{ background: "rgba(239,68,68,0.05)" }}>
-				<span className='text-[8px] uppercase tracking-[0.35em] font-bold text-red-400/70'>
+				<span className='text-[10px] uppercase tracking-[0.35em] font-bold text-red-400/70'>
 					◈ Active Threats
 				</span>
-				<span className='text-[7px] uppercase tracking-widest text-red-500/50'>
+				<span className='text-[10px] uppercase tracking-widest text-red-500/50'>
 					{threats.length}
 				</span>
 			</div>
@@ -894,14 +892,14 @@ function ThreatsPanel({ provinceKey }) {
 											faTriangleExclamation
 										:	faSkullCrossbones
 									}
-									className={`text-[8px] shrink-0 ${threat.unlockable ? "text-amber-400" : "text-red-400"}`}
+									className={`text-[10px] shrink-0 ${threat.unlockable ? "text-amber-400" : "text-red-400"}`}
 								/>
-								<span className='text-[9px] font-bold uppercase tracking-wide text-red-200 truncate'>
+								<span className='text-[11px] font-bold uppercase tracking-wide text-red-200 truncate'>
 									{threat.name}
 								</span>
 							</div>
 							{threat.unlockable && (
-								<span className='text-[6px] font-bold tracking-widest uppercase px-1.5 py-0.5 border border-amber-600/35 bg-amber-950/15 text-amber-400/80 shrink-0'>
+								<span className='text-[10px] font-bold tracking-widest uppercase px-1.5 py-0.5 border border-amber-600/35 bg-amber-950/15 text-amber-400/80 shrink-0'>
 									Unlockable
 								</span>
 							)}
@@ -911,7 +909,7 @@ function ThreatsPanel({ provinceKey }) {
 								{threat.denies.map((cat) => (
 									<span
 										key={cat}
-										className='text-[7px] font-bold uppercase tracking-widest px-1.5 py-0.5 border border-red-800/35 bg-red-950/15 text-red-300/80'>
+										className='text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 border border-red-800/35 bg-red-950/15 text-red-300/80'>
 										{DENY_LABEL[cat] ?? cat}
 									</span>
 								))}
@@ -959,12 +957,12 @@ function MapLegend() {
 									<div
 										key={type}
 										className='flex items-center gap-1'>
-										<span style={{ color: c.color, fontSize: 9 }}>
+										<span style={{ color: c.color, fontSize: 11 }}>
 											{c.symbol}
 										</span>
 										<span
 											style={{
-												fontSize: 6,
+												fontSize: 9,
 												color: "rgba(160,160,140,0.6)",
 												letterSpacing: "0.1em",
 												textTransform: "uppercase",
@@ -981,7 +979,7 @@ function MapLegend() {
 			<button
 				onClick={() => setOpen((v) => !v)}
 				style={{
-					fontSize: 7,
+					fontSize: 9,
 					letterSpacing: "0.2em",
 					textTransform: "uppercase",
 					color: "rgba(143,184,64,0.5)",
@@ -1088,7 +1086,7 @@ export default function AOBriefingPage() {
 			className='flex flex-col flex-1 min-h-0 overflow-hidden'
 			style={{ fontFamily: "'Courier New','Lucida Console',monospace" }}>
 			{/* ── Province selector bar ── */}
-			<div className='shrink-0 flex items-center gap-3 px-4 py-2 border-b border-neutral-700/50 bg-neutral-950/80'>
+			<div className='shrink-0 flex items-center gap-3 px-4 py-2 border-b border-lines/60 bg-neutral-950/80'>
 				<FontAwesomeIcon
 					icon={weatherMeta.icon}
 					className={`text-sm ${weatherMeta.color}`}
@@ -1098,7 +1096,7 @@ export default function AOBriefingPage() {
 					<select
 						value={selectedKey}
 						onChange={(e) => setSelectedKey(e.target.value)}
-						className='appearance-none font-mono text-[10px] tracking-widest uppercase bg-neutral-900 border border-btn/30 text-fontz pr-7 pl-2 py-1.5 focus:outline-none focus:border-btn/60 transition-colors cursor-pointer font-bold'>
+						className='appearance-none font-mono text-[12px] tracking-widest uppercase bg-neutral-900 border border-btn/30 text-fontz pr-7 pl-2 py-1.5 focus:outline-none focus:border-btn/60 transition-colors cursor-pointer font-bold'>
 						{provinceKeys.map((k) => (
 							<option
 								key={k}
@@ -1109,14 +1107,14 @@ export default function AOBriefingPage() {
 					</select>
 					<FontAwesomeIcon
 						icon={faChevronDown}
-						className='absolute right-2 text-[8px] text-btn/50 pointer-events-none'
+						className='absolute right-2 text-[10px] text-btn/50 pointer-events-none'
 					/>
 				</div>
 
 				{activeAOs.length > 0 && (
 					<>
 						<div className='h-4 w-px bg-neutral-700/50 shrink-0' />
-						<span className='font-mono text-[7px] tracking-[0.35em] text-btn/50 uppercase shrink-0'>
+						<span className='font-mono text-[10px] tracking-[0.35em] text-btn/50 uppercase shrink-0'>
 							●{" "}
 						</span>
 						<div className='flex items-center gap-1.5 overflow-x-auto min-w-0 flex-1'>
@@ -1125,7 +1123,7 @@ export default function AOBriefingPage() {
 									key={ao}
 									onClick={() => setSelectedKey(ao)}
 									className={[
-										"font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border transition-colors shrink-0",
+										"font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 border transition-colors shrink-0",
 										selectedKey === ao ?
 											"text-btn border-btn/60 bg-btn/10"
 										:	"text-neutral-400 border-neutral-700/40 hover:text-btn hover:border-btn/40",
@@ -1154,11 +1152,11 @@ export default function AOBriefingPage() {
 							onLocationSelect={setSelectedLocation}
 						/>
 					:	<div className='w-full h-full flex flex-col items-center justify-center gap-3'>
-							<div className='w-10 h-10 border border-neutral-700/50 rotate-45' />
-							<span className='text-[9px] tracking-[0.3em] uppercase text-neutral-600 font-bold'>
+							<div className='w-10 h-10 border border-lines/60 rotate-45' />
+							<span className='text-[11px] tracking-[0.3em] uppercase text-lines font-bold'>
 								No Map Data
 							</span>
-							<span className='text-[8px] tracking-widest uppercase text-neutral-700'>
+							<span className='text-[10px] tracking-widest uppercase text-lines'>
 								{displayName}
 							</span>
 						</div>
@@ -1227,7 +1225,7 @@ export default function AOBriefingPage() {
 				</div>
 
 				{/* ══ RIGHT PANEL — intel + teams ══ */}
-				<div className='flex-1 lg:flex-none lg:w-[350px] shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-neutral-800/60 bg-neutral-950/80 overflow-y-auto'>
+				<div className='flex-1 lg:flex-none lg:w-[350px] shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-lines/60 bg-neutral-950/80 overflow-y-auto'>
 					{/* Selected location detail */}
 					{selectedLocation && (
 						<LocationDetailCard
@@ -1248,15 +1246,15 @@ export default function AOBriefingPage() {
 
 					{/* Deployed units */}
 					<div
-						className='border-b border-neutral-800/60'
+						className='border-b border-lines/60'
 						style={{ background: "rgba(143,184,64,0.03)" }}>
 						<div
-							className='flex items-center justify-between px-3 py-2 border-b border-neutral-800/40'
+							className='flex items-center justify-between px-3 py-2 border-b border-lines/40'
 							style={{ background: "rgba(143,184,64,0.04)" }}>
-							<span className='text-[8px] uppercase tracking-[0.35em] font-bold text-btn/60'>
+							<span className='text-[10px] uppercase tracking-[0.35em] font-bold text-btn/60'>
 								◈ Deployed Units
 							</span>
-							<span className='text-[7px] uppercase tracking-widest text-neutral-600'>
+							<span className='text-[10px] uppercase tracking-widest text-lines'>
 								{aoTeams.length} team{aoTeams.length !== 1 ? "s" : ""} ·{" "}
 								{displayName}
 							</span>
@@ -1270,8 +1268,8 @@ export default function AOBriefingPage() {
 								atmosphere={atmosphere}
 							/>
 						:	<div className='flex flex-col items-center gap-2 py-8 px-6 text-center'>
-								<div className='w-7 h-7 border border-neutral-700/40 rotate-45' />
-								<span className='text-[8px] tracking-[0.3em] uppercase text-neutral-600'>
+								<div className='w-7 h-7 border border-lines/40 rotate-45' />
+								<span className='text-[10px] tracking-[0.3em] uppercase text-lines'>
 									No units deployed to {displayName}
 								</span>
 							</div>

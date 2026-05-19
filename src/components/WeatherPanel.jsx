@@ -492,7 +492,7 @@ const ALL_EQUIP_KEYS = Object.keys(RESTRICTION_LABELS);
 function Field({ label, children }) {
 	return (
 		<div className='flex flex-col gap-0.5'>
-			<span className='text-[8px] uppercase tracking-[0.25em] font-bold text-btn/60'>
+			<span className='text-[10px] uppercase tracking-[0.25em] font-bold text-btn/60'>
 				{label}
 			</span>
 			<div>{children}</div>
@@ -511,7 +511,7 @@ function Rule({ label, hex }) {
 				style={{ background: `linear-gradient(to right, ${hex}60, ${hex}10)` }}
 			/>
 			<span
-				className='text-[9px] font-bold uppercase tracking-[0.3em] shrink-0'
+				className='text-[11px] font-bold uppercase tracking-[0.3em] shrink-0'
 				style={{ color: hex }}>
 				{label}
 			</span>
@@ -635,11 +635,11 @@ export default function WeatherPanel({
 				className='relative z-10 flex items-center justify-between px-3 py-1.5 border-b'
 				style={{ borderColor: `${atm.hex}40`, background: `${atm.hex}10` }}>
 				<span
-					className='text-[8px] uppercase tracking-[0.35em] font-bold'
+					className='text-[10px] uppercase tracking-[0.35em] font-bold'
 					style={{ color: atm.hex }}>
 					◈ Meteorological Intel
 				</span>
-				<span className='text-[8px] uppercase tracking-widest text-btn/50'>
+				<span className='text-[10px] uppercase tracking-widest text-btn/80'>
 					AO — Auroa
 				</span>
 			</div>
@@ -648,7 +648,7 @@ export default function WeatherPanel({
 			<div className='relative z-10 flex items-center gap-2 px-3 py-2 border-b border-neutral-800/50'>
 				<button
 					onClick={handleReroll}
-					className='flex items-center gap-1.5 text-[9px] uppercase tracking-widest font-bold px-2 py-1 border transition-all shrink-0'
+					className='flex items-center gap-1.5 text-[11px] uppercase tracking-widest font-bold px-2 py-1 border transition-all shrink-0'
 					style={{ borderColor: `${atm.hex}40`, color: `${atm.hex}cc` }}
 					title='Re-roll temperature'>
 					↺ Temp
@@ -656,7 +656,7 @@ export default function WeatherPanel({
 				<select
 					value={resolvedAtmosphere ?? ""}
 					onChange={handleAtmosphereSelect}
-					className='flex-1 appearance-none font-mono text-[9px] tracking-widest uppercase bg-neutral-900 border border-btn/25 text-fontz px-2 py-1 focus:outline-none focus:border-btn/50 transition-colors cursor-pointer'
+					className='flex-1 appearance-none font-mono text-[11px] tracking-widest uppercase bg-neutral-900 border border-btn/25 text-fontz px-2 py-1 focus:outline-none focus:border-btn/50 transition-colors cursor-pointer'
 					style={{ borderColor: `${atm.hex}30` }}>
 					{Object.entries(ATM).map(([key, val]) => (
 						<option key={key} value={key}>{val.label}</option>
@@ -667,11 +667,11 @@ export default function WeatherPanel({
 						<button
 							key={u}
 							onClick={() => setUnit(u)}
-							className='px-2.5 py-1 text-[10px] uppercase tracking-widest font-bold transition-all'
+							className='px-2.5 py-1 text-[12px] uppercase tracking-widest font-bold transition-all'
 							style={
 								unit === u ?
 									{ background: `${atm.hex}25`, color: atm.hex }
-								:	{ color: "#6b7280" }
+								:	{ color: "#8ca89e" }
 							}>
 							°{u}
 						</button>
@@ -706,7 +706,7 @@ export default function WeatherPanel({
 						{/* condition code + label */}
 						<div className='flex items-baseline gap-2'>
 							<span
-								className='text-[10px] font-bold tracking-[0.35em] uppercase'
+								className='text-[12px] font-bold tracking-[0.35em] uppercase'
 								style={{ color: `${atm.hex}80` }}>
 								{atm.code}
 							</span>
@@ -731,7 +731,7 @@ export default function WeatherPanel({
 								</span>
 							</div>
 							<div className='flex flex-col gap-0.5 mb-0.5'>
-								<span className='text-[8px] uppercase tracking-[0.25em] text-btn/50'>
+								<span className='text-[10px] uppercase tracking-[0.25em] text-btn/80'>
 									Humidity
 								</span>
 								<span className='text-xs font-bold uppercase tracking-wide text-fontz/80'>
@@ -764,7 +764,7 @@ export default function WeatherPanel({
 								bg = "rgba(251,191,36,0.07)";
 								label = "COND";
 							} else {
-								hex = "#4b5563";
+								hex = "#8ca89e";
 								bg = "rgba(255,255,255,0.02)";
 								label = "DENY";
 							}
@@ -779,12 +779,12 @@ export default function WeatherPanel({
 										color={hex}
 									/>
 									<span
-										className='text-[9px] font-bold uppercase tracking-widest'
+										className='text-[11px] font-bold uppercase tracking-widest'
 										style={{ color: hex }}>
 										{MOB_ABBR[mode]}
 									</span>
 									<span
-										className='text-[8px] font-bold uppercase tracking-widest'
+										className='text-[10px] font-bold uppercase tracking-widest'
 										style={{ color: `${hex}80` }}>
 										{label}
 									</span>
@@ -793,7 +793,7 @@ export default function WeatherPanel({
 						})}
 					</div>
 					{conditional.size > 0 && (
-						<p className='text-[9px] text-amber-400/60 mt-2'>
+						<p className='text-[11px] text-amber-400/60 mt-2'>
 							◐ Conditional — active threat neutralization required
 						</p>
 					)}
@@ -810,7 +810,7 @@ export default function WeatherPanel({
 					<div className='grid grid-cols-3 gap-2'>
 						{VIS_MODES.map((mode) => {
 							const isActive = visionGear.includes(mode);
-							const hex = isActive ? "#4ade80" : "#4b5563";
+							const hex = isActive ? "#4ade80" : "#8ca89e";
 							const bg =
 								isActive ?
 									"rgba(74,222,128,0.07)"
@@ -825,12 +825,12 @@ export default function WeatherPanel({
 										color={hex}
 									/>
 									<span
-										className='text-[9px] font-bold uppercase tracking-widest'
+										className='text-[11px] font-bold uppercase tracking-widest'
 										style={{ color: hex }}>
 										{VIS_ABBR[mode]}
 									</span>
 									<span
-										className='text-[8px] font-bold uppercase tracking-widest'
+										className='text-[10px] font-bold uppercase tracking-widest'
 										style={{ color: `${hex}80` }}>
 										{isActive ? "REQ" : "N/A"}
 									</span>
@@ -851,7 +851,7 @@ export default function WeatherPanel({
 					<div className='grid grid-cols-2 gap-2'>
 						{SOUND_MODES.map((mode) => {
 							const isActive = soundRule === mode;
-							const hex = isActive ? "#4ade80" : "#4b5563";
+							const hex = isActive ? "#4ade80" : "#8ca89e";
 							const bg =
 								isActive ?
 									"rgba(74,222,128,0.07)"
@@ -866,12 +866,12 @@ export default function WeatherPanel({
 										color={hex}
 									/>
 									<span
-										className='text-[9px] font-bold uppercase tracking-widest'
+										className='text-[11px] font-bold uppercase tracking-widest'
 										style={{ color: hex }}>
 										{SOUND_ABBR[mode]}
 									</span>
 									<span
-										className='text-[8px] font-bold uppercase tracking-widest'
+										className='text-[10px] font-bold uppercase tracking-widest'
 										style={{ color: `${hex}80` }}>
 										{isActive ? "ACTIVE" : "OFF"}
 									</span>
@@ -890,7 +890,7 @@ export default function WeatherPanel({
 						hex='#d97706'
 					/>
 					{terrain?.description && (
-						<p className='text-[9px] text-fontz/50 mb-3 leading-relaxed'>
+						<p className='text-[11px] text-fontz/80 mb-3 leading-relaxed'>
 							{terrain.description}
 						</p>
 					)}
@@ -926,7 +926,7 @@ export default function WeatherPanel({
 										}}
 									/>
 									<span
-										className='text-[8px] font-bold uppercase tracking-widest text-center leading-tight'
+										className='text-[10px] font-bold uppercase tracking-widest text-center leading-tight'
 										style={{ color: hex }}>
 										{cfg.name}
 									</span>

@@ -115,8 +115,8 @@ function WeaponBuilder({ label, value, onChange, isHandgun = false }) {
 		:	[];
 
 	return (
-		<div className='flex flex-col gap-2 p-3 border border-neutral-800/50 bg-neutral-950/20'>
-			<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-400'>
+		<div className='flex flex-col gap-2 p-3 border border-lines/40 bg-neutral-950/20'>
+			<p className='font-mono text-[9px] tracking-[0.3em] uppercase text-lines/60'>
 				{label}
 			</p>
 			<div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
@@ -147,14 +147,14 @@ function WeaponBuilder({ label, value, onChange, isHandgun = false }) {
 				</select>
 			</div>
 			{activeSlots.length > 0 && (
-				<div className='grid grid-cols-2 gap-2 pt-1 border-t border-neutral-800/40'>
+				<div className='grid grid-cols-2 gap-2 pt-1 border-t border-lines/40'>
 					{activeSlots.map((slot) => (
 						<div key={slot} className='flex flex-col gap-1'>
-							<p className='font-mono text-[6px] tracking-widest uppercase text-neutral-500'>
+							<p className='font-mono text-[9px] tracking-widest uppercase text-lines/40'>
 								{slot}
 							</p>
 							<select
-								className='form text-[10px]'
+								className='form text-[12px]'
 								value={value.attachments[slot] || ""}
 								onChange={(e) => handleAtt(slot, e.target.value)}>
 								<option value=''>— None —</option>
@@ -199,10 +199,10 @@ function PerkPicker({ selectedPerks, onAdd }) {
 						key={type}
 						type='button'
 						onClick={() => setActiveType(type)}
-						className={`font-mono text-[7px] tracking-widest uppercase px-2 py-0.5 border transition-colors ${
+						className={`font-mono text-[9px] tracking-widest uppercase px-2 py-0.5 border transition-colors ${
 							activeType === type ?
 								"border-btn/60 text-btn bg-btn/10"
-							:	"border-neutral-700/40 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600/40"
+							:	"border-lines/40 text-lines/60 hover:text-lines hover:border-lines/40"
 						}`}>
 						{type}
 					</button>
@@ -212,7 +212,7 @@ function PerkPicker({ selectedPerks, onAdd }) {
 			{/* Perk list */}
 			<div className='flex flex-col gap-1 max-h-52 overflow-y-auto pr-0.5'>
 				{available.length === 0 ?
-					<span className='font-mono text-[7px] text-neutral-500 italic text-center py-4'>
+					<span className='font-mono text-[9px] text-lines/40 italic text-center py-4'>
 						{activeType !== "All" ?
 							`All ${activeType} perks selected`
 						:	"All perks selected"}
@@ -222,21 +222,21 @@ function PerkPicker({ selectedPerks, onAdd }) {
 							key={perk.name}
 							type='button'
 							onClick={() => onAdd(perk.name)}
-							className='flex items-center gap-2.5 p-2 border border-neutral-800/40 hover:border-btn/30 bg-neutral-950/20 hover:bg-btn/5 text-left transition-colors group'>
+							className='flex items-center gap-2.5 p-2 border border-lines/40 hover:border-btn/30 bg-neutral-950/20 hover:bg-btn/5 text-left transition-colors group'>
 							<img
 								src={perk.icon}
 								alt={perk.name}
 								className='w-7 h-7 object-contain shrink-0'
 							/>
 							<div className='flex flex-col gap-0.5 min-w-0 flex-1'>
-								<span className='font-mono text-[8px] text-neutral-200 leading-none group-hover:text-btn transition-colors'>
+								<span className='font-mono text-[10px] text-lines leading-none group-hover:text-btn transition-colors'>
 									{perk.name}
 								</span>
-								<span className='font-mono text-[7px] text-neutral-400 leading-tight'>
+								<span className='font-mono text-[9px] text-lines/60 leading-tight'>
 									{perk.description}
 								</span>
 							</div>
-							<span className='font-mono text-[10px] text-neutral-500 group-hover:text-btn/70 shrink-0 transition-colors'>
+							<span className='font-mono text-[12px] text-lines/40 group-hover:text-btn/70 shrink-0 transition-colors'>
 								+
 							</span>
 						</button>
@@ -286,7 +286,7 @@ function KitDetail({ kit, onEdit, onClose }) {
 	return (
 		<div className='flex flex-col h-full'>
 			{/* Header */}
-			<div className='shrink-0 px-5 py-4 border-b border-neutral-800/60 bg-neutral-950/60'>
+			<div className='shrink-0 px-5 py-4 border-b border-lines/40 bg-neutral-950/60'>
 				<div className='flex items-start gap-3'>
 					<div className='flex-1 min-w-0'>
 						<div className='flex items-center gap-2 mb-1'>
@@ -295,7 +295,7 @@ function KitDetail({ kit, onEdit, onClose }) {
 								{kit.name}
 							</h2>
 						</div>
-						<span className='font-mono text-[8px] tracking-[0.3em] uppercase text-neutral-400 border border-neutral-700/40 px-2 py-0.5'>
+						<span className='font-mono text-[10px] tracking-[0.3em] uppercase text-lines/60 border border-lines/40 px-2 py-0.5'>
 							{KIT_TYPES[kit.type] ?? "Specialty"}
 						</span>
 					</div>
@@ -303,15 +303,15 @@ function KitDetail({ kit, onEdit, onClose }) {
 						<button
 							type='button'
 							onClick={onEdit}
-							className='flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase px-2.5 py-1.5 border border-btn/40 text-btn hover:border-btn hover:bg-btn/10 transition-all'>
-							<FontAwesomeIcon icon={faPen} className='text-[7px]' />
+							className='flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase px-2.5 py-1.5 border border-btn/40 text-btn hover:border-btn hover:bg-btn/10 transition-all'>
+							<FontAwesomeIcon icon={faPen} className='text-[9px]' />
 							Edit
 						</button>
 						<button
 							type='button'
 							onClick={onClose}
-							className='w-7 h-7 flex items-center justify-center text-neutral-400 hover:text-white border border-neutral-700/40 hover:border-neutral-500/40 bg-neutral-950/40 transition-colors'>
-							<FontAwesomeIcon icon={faXmark} className='text-[10px]' />
+							className='w-7 h-7 flex items-center justify-center text-lines/60 hover:text-white border border-lines/40 hover:border-lines/40 bg-neutral-950/40 transition-colors'>
+							<FontAwesomeIcon icon={faXmark} className='text-[12px]' />
 						</button>
 					</div>
 				</div>
@@ -322,9 +322,9 @@ function KitDetail({ kit, onEdit, onClose }) {
 				{/* Weapons */}
 				{weapons.length > 0 && (
 					<div className='flex flex-col gap-3'>
-						<div className='flex items-center gap-2 pb-1.5 border-b border-neutral-700/40'>
+						<div className='flex items-center gap-2 pb-1.5 border-b border-lines/40'>
 							<div className='w-0.5 h-3 bg-btn' />
-							<span className='font-mono text-[8px] tracking-[0.3em] uppercase text-neutral-300 font-semibold'>
+							<span className='font-mono text-[10px] tracking-[0.3em] uppercase text-lines font-semibold'>
 								Weapons
 							</span>
 						</div>
@@ -333,9 +333,9 @@ function KitDetail({ kit, onEdit, onClose }) {
 							return (
 								<div
 									key={label}
-									className='flex flex-col gap-1.5 p-3 border border-neutral-800/60 bg-neutral-950/30'>
+									className='flex flex-col gap-1.5 p-3 border border-lines/40 bg-neutral-950/30'>
 									<div className='flex items-center gap-2'>
-										<span className='font-mono text-[7px] tracking-[0.25em] uppercase text-neutral-500 w-16 shrink-0'>
+										<span className='font-mono text-[9px] tracking-[0.25em] uppercase text-lines/40 w-16 shrink-0'>
 											{label}
 										</span>
 										{type && WEAPON_TYPES[type]?.imgUrl && (
@@ -347,17 +347,17 @@ function KitDetail({ kit, onEdit, onClose }) {
 											/>
 										)}
 									</div>
-									<span className='font-mono text-[11px] font-semibold text-white tracking-wide'>
+									<span className='font-mono text-[13px] font-semibold text-white tracking-wide'>
 										{weapon}
 									</span>
 									{activeAtts.length > 0 && (
-										<div className='grid grid-cols-2 gap-x-4 gap-y-0.5 pt-1.5 border-t border-neutral-800/40 mt-0.5'>
+										<div className='grid grid-cols-2 gap-x-4 gap-y-0.5 pt-1.5 border-t border-lines/40 mt-0.5'>
 											{activeAtts.map(([k, v]) => (
 												<div key={k} className='flex items-baseline gap-1.5'>
-													<span className='font-mono text-[6px] tracking-widest uppercase text-neutral-500 shrink-0 w-14'>
+													<span className='font-mono text-[9px] tracking-widest uppercase text-lines/40 shrink-0 w-14'>
 														{k}
 													</span>
-													<span className='font-mono text-[8px] text-neutral-300 truncate'>
+													<span className='font-mono text-[10px] text-lines truncate'>
 														{v}
 													</span>
 												</div>
@@ -373,9 +373,9 @@ function KitDetail({ kit, onEdit, onClose }) {
 				{/* Equipment */}
 				{activeItems.length > 0 && (
 					<div className='flex flex-col gap-3'>
-						<div className='flex items-center gap-2 pb-1.5 border-b border-neutral-700/40'>
+						<div className='flex items-center gap-2 pb-1.5 border-b border-lines/40'>
 							<div className='w-0.5 h-3 bg-btn' />
-							<span className='font-mono text-[8px] tracking-[0.3em] uppercase text-neutral-300 font-semibold'>
+							<span className='font-mono text-[10px] tracking-[0.3em] uppercase text-lines font-semibold'>
 								Equipment
 							</span>
 						</div>
@@ -383,14 +383,14 @@ function KitDetail({ kit, onEdit, onClose }) {
 							{activeItems.map((item) => (
 								<div
 									key={item}
-									className='flex items-center gap-2 p-2 border border-neutral-800/50 bg-neutral-950/30'>
+									className='flex items-center gap-2 p-2 border border-lines/40 bg-neutral-950/30'>
 									<img
 										src={ITEMS[item]}
 										alt={item}
 										className='w-6 h-6 object-contain shrink-0'
 										style={{ filter: "invert(1) opacity(0.6)" }}
 									/>
-									<span className='font-mono text-[8px] text-neutral-200 leading-tight'>
+									<span className='font-mono text-[10px] text-lines leading-tight'>
 										{item}
 									</span>
 								</div>
@@ -402,9 +402,9 @@ function KitDetail({ kit, onEdit, onClose }) {
 				{/* Perks */}
 				{activePerks.length > 0 && (
 					<div className='flex flex-col gap-3'>
-						<div className='flex items-center gap-2 pb-1.5 border-b border-neutral-700/40'>
+						<div className='flex items-center gap-2 pb-1.5 border-b border-lines/40'>
 							<div className='w-0.5 h-3 bg-btn' />
-							<span className='font-mono text-[8px] tracking-[0.3em] uppercase text-neutral-300 font-semibold'>
+							<span className='font-mono text-[10px] tracking-[0.3em] uppercase text-lines font-semibold'>
 								Perks
 							</span>
 						</div>
@@ -412,7 +412,7 @@ function KitDetail({ kit, onEdit, onClose }) {
 							{activePerks.map((perk) => (
 								<div
 									key={perk.name}
-									className='flex items-center gap-3 p-3 border border-neutral-800/50 bg-neutral-950/30'>
+									className='flex items-center gap-3 p-3 border border-lines/40 bg-neutral-950/30'>
 									<img
 										src={perk.icon}
 										alt={perk.name}
@@ -420,14 +420,14 @@ function KitDetail({ kit, onEdit, onClose }) {
 									/>
 									<div className='flex flex-col gap-0.5 min-w-0'>
 										<div className='flex items-center gap-2'>
-											<span className='font-mono text-[9px] font-semibold text-white leading-none'>
+											<span className='font-mono text-[11px] font-semibold text-white leading-none'>
 												{perk.name}
 											</span>
-											<span className='font-mono text-[6px] tracking-widest uppercase text-btn/70 border border-btn/20 px-1'>
+											<span className='font-mono text-[9px] tracking-widest uppercase text-btn/70 border border-btn/20 px-1'>
 												{perk.type}
 											</span>
 										</div>
-										<span className='font-mono text-[7px] text-neutral-400 leading-tight'>
+										<span className='font-mono text-[9px] text-lines/60 leading-tight'>
 											{perk.description}
 										</span>
 									</div>
@@ -439,8 +439,8 @@ function KitDetail({ kit, onEdit, onClose }) {
 
 				{weapons.length === 0 && activeItems.length === 0 && activePerks.length === 0 && (
 					<div className='flex items-center justify-center py-12'>
-						<span className='font-mono text-[9px] text-neutral-500 italic'>
-							Kit is empty
+						<span className='font-mono text-[11px] text-lines/40 italic'>
+							Loadout is empty
 						</span>
 					</div>
 				)}
@@ -477,15 +477,15 @@ function KitCard({ kit, onView, onEdit, onDelete }) {
 
 	return (
 		<div
-			className='flex flex-col border border-neutral-800/60 bg-neutral-900/40 hover:border-neutral-600/50 transition-colors overflow-hidden cursor-pointer'
+			className='flex flex-col border border-lines/40 bg-neutral-900/40 hover:border-lines/40 transition-colors overflow-hidden cursor-pointer'
 			onClick={() => onView(kit)}>
 			{/* Header */}
-			<div className='flex items-center gap-2 px-3 py-2.5 border-b border-neutral-800/60 bg-neutral-950/60'>
+			<div className='flex items-center gap-2 px-3 py-2.5 border-b border-lines/40 bg-neutral-950/60'>
 				<div className='w-1.5 h-1.5 bg-btn shrink-0' />
-				<span className='font-mono text-[11px] font-bold text-white flex-1 truncate tracking-wide uppercase'>
+				<span className='font-mono text-[13px] font-bold text-white flex-1 truncate tracking-wide uppercase'>
 					{kit.name}
 				</span>
-				<span className='font-mono text-[7px] tracking-widest uppercase text-neutral-400 border border-neutral-700/40 px-1.5 py-0.5 shrink-0'>
+				<span className='font-mono text-[9px] tracking-widest uppercase text-lines/60 border border-lines/40 px-1.5 py-0.5 shrink-0'>
 					{KIT_TYPES[kit.type] ?? "Specialty"}
 				</span>
 				<div className='flex items-center gap-1 shrink-0'>
@@ -495,8 +495,8 @@ function KitCard({ kit, onView, onEdit, onDelete }) {
 							e.stopPropagation();
 							onEdit(kit);
 						}}
-						className='w-6 h-6 flex items-center justify-center text-neutral-400 hover:text-btn border border-neutral-700/40 hover:border-btn/30 bg-neutral-950/40 transition-colors'>
-						<FontAwesomeIcon icon={faPen} className='text-[8px]' />
+						className='w-6 h-6 flex items-center justify-center text-lines/60 hover:text-btn border border-lines/40 hover:border-btn/30 bg-neutral-950/40 transition-colors'>
+						<FontAwesomeIcon icon={faPen} className='text-[10px]' />
 					</button>
 					<button
 						type='button'
@@ -504,8 +504,8 @@ function KitCard({ kit, onView, onEdit, onDelete }) {
 							e.stopPropagation();
 							onDelete(kit._id);
 						}}
-						className='w-6 h-6 flex items-center justify-center text-neutral-400 hover:text-red-400 border border-neutral-700/40 hover:border-red-900/30 bg-neutral-950/40 transition-colors'>
-						<FontAwesomeIcon icon={faTrash} className='text-[8px]' />
+						className='w-6 h-6 flex items-center justify-center text-lines/60 hover:text-red-400 border border-lines/40 hover:border-red-900/30 bg-neutral-950/40 transition-colors'>
+						<FontAwesomeIcon icon={faTrash} className='text-[10px]' />
 					</button>
 				</div>
 			</div>
@@ -515,7 +515,7 @@ function KitCard({ kit, onView, onEdit, onDelete }) {
 				{weapons.length > 0 ?
 					weapons.map(({ label, weapon, type }) => (
 						<div key={label} className='flex items-center gap-2 min-w-0'>
-							<span className='font-mono text-[6px] tracking-widest uppercase text-neutral-500 w-6 shrink-0'>
+							<span className='font-mono text-[9px] tracking-widest uppercase text-lines/40 w-6 shrink-0'>
 								{label}
 							</span>
 							{type && WEAPON_TYPES[type]?.imgUrl && (
@@ -526,12 +526,12 @@ function KitCard({ kit, onView, onEdit, onDelete }) {
 									style={{ filter: "invert(1) opacity(0.3)" }}
 								/>
 							)}
-							<span className='font-mono text-[9px] text-neutral-300 truncate'>
+							<span className='font-mono text-[11px] text-lines truncate'>
 								{weapon}
 							</span>
 						</div>
 					))
-				:	<span className='font-mono text-[8px] text-neutral-500 italic'>
+				:	<span className='font-mono text-[10px] text-lines/40 italic'>
 						No weapons configured
 					</span>
 				}
@@ -539,21 +539,21 @@ function KitCard({ kit, onView, onEdit, onDelete }) {
 
 			{/* Items strip */}
 			{kit.items?.length > 0 && (
-				<div className='px-3 pb-3 flex flex-wrap gap-1.5 border-t border-neutral-800/40 pt-2.5'>
+				<div className='px-3 pb-3 flex flex-wrap gap-1.5 border-t border-lines/40 pt-2.5'>
 					{kit.items.map(
 						(item) =>
 							ITEMS[item] && (
 								<div
 									key={item}
 									title={item}
-									className='flex items-center gap-1 bg-neutral-950/60 border border-neutral-700/40 px-1.5 py-1'>
+									className='flex items-center gap-1 bg-neutral-950/60 border border-lines/40 px-1.5 py-1'>
 									<img
 										src={ITEMS[item]}
 										alt={item}
 										className='w-4 h-4 object-contain'
 										style={{ filter: "invert(1) opacity(0.55)" }}
 									/>
-									<span className='font-mono text-[6px] text-neutral-400 truncate max-w-14'>
+									<span className='font-mono text-[9px] text-lines/60 truncate max-w-14'>
 										{item}
 									</span>
 								</div>
@@ -564,7 +564,7 @@ function KitCard({ kit, onView, onEdit, onDelete }) {
 
 			{/* Perks strip */}
 			{kit.perks?.length > 0 && (
-				<div className='px-3 pb-3 flex flex-wrap gap-1.5 border-t border-neutral-800/40 pt-2.5'>
+				<div className='px-3 pb-3 flex flex-wrap gap-1.5 border-t border-lines/40 pt-2.5'>
 					{kit.perks.map((perkName) => {
 						const perk = PERKS_MAP[perkName];
 						if (!perk) return null;
@@ -572,13 +572,13 @@ function KitCard({ kit, onView, onEdit, onDelete }) {
 							<div
 								key={perkName}
 								title={perk.description}
-								className='flex items-center gap-1 bg-neutral-950/60 border border-neutral-700/40 px-1.5 py-1'>
+								className='flex items-center gap-1 bg-neutral-950/60 border border-lines/40 px-1.5 py-1'>
 								<img
 									src={perk.icon}
 									alt={perkName}
 									className='w-4 h-4 object-contain shrink-0'
 								/>
-								<span className='font-mono text-[6px] text-neutral-400 truncate max-w-14'>
+								<span className='font-mono text-[9px] text-lines/60 truncate max-w-14'>
 									{perkName}
 								</span>
 							</div>
@@ -638,15 +638,15 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 	return (
 		<div className='flex flex-col h-full'>
 			{/* Header */}
-			<div className='shrink-0 px-4 py-3 border-b border-neutral-800/60 flex items-center gap-3 bg-neutral-950/40'>
+			<div className='shrink-0 px-4 py-3 border-b border-lines/40 flex items-center gap-3 bg-neutral-950/40'>
 				<button
 					type='button'
 					onClick={onCancel}
-					className='font-mono text-[9px] tracking-widest uppercase text-neutral-400 hover:text-white transition-colors'>
+					className='font-mono text-[11px] tracking-widest uppercase text-lines/60 hover:text-white transition-colors'>
 					‹ Cancel
 				</button>
-				<span className='flex-1 font-mono text-[9px] text-neutral-400 tracking-widest uppercase text-right'>
-					{initial?._id ? "Edit Kit" : "New Kit"}
+				<span className='flex-1 font-mono text-[11px] text-lines/60 tracking-widest uppercase text-right'>
+					{initial?._id ? "Edit Loadout" : "New Loadout"}
 				</span>
 			</div>
 
@@ -654,8 +654,8 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 			<div className='flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-6'>
 				{/* Name + Type */}
 				<div className='flex flex-col gap-1.5'>
-					<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-400'>
-						Kit Designation
+					<p className='font-mono text-[9px] tracking-[0.3em] uppercase text-lines/60'>
+						Loadout Designation
 					</p>
 					<input
 						type='text'
@@ -666,7 +666,7 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 					/>
 				</div>
 				<div className='flex flex-col gap-1.5'>
-					<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-400'>
+					<p className='font-mono text-[9px] tracking-[0.3em] uppercase text-lines/60'>
 						Type
 					</p>
 					<select
@@ -683,9 +683,9 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 
 				{/* Weapons */}
 				<div className='flex flex-col gap-2'>
-					<div className='flex items-center gap-2 pb-1.5 border-b border-neutral-700/40'>
+					<div className='flex items-center gap-2 pb-1.5 border-b border-lines/40'>
 						<div className='w-0.5 h-3 bg-btn' />
-						<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-300'>
+						<p className='font-mono text-[9px] tracking-[0.3em] uppercase text-lines'>
 							Weapons
 						</p>
 					</div>
@@ -709,21 +709,21 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 
 				{/* Equipment */}
 				<div className='flex flex-col gap-3'>
-					<div className='flex items-center gap-2 pb-1.5 border-b border-neutral-700/40'>
+					<div className='flex items-center gap-2 pb-1.5 border-b border-lines/40'>
 						<div className='w-0.5 h-3 bg-btn' />
-						<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-300'>
+						<p className='font-mono text-[9px] tracking-[0.3em] uppercase text-lines'>
 							Equipment
 						</p>
 					</div>
 					<div className='flex flex-wrap gap-1.5 min-h-8'>
 						{kit.items.length === 0 ?
-							<span className='font-mono text-[8px] text-neutral-500 italic self-center'>
+							<span className='font-mono text-[10px] text-lines/40 italic self-center'>
 								No equipment selected
 							</span>
 						:	kit.items.map((item) => (
 								<div
 									key={item}
-									className='flex items-center gap-1.5 bg-neutral-950/60 border border-neutral-700/40 px-2 py-1'>
+									className='flex items-center gap-1.5 bg-neutral-950/60 border border-lines/40 px-2 py-1'>
 									{ITEMS[item] && (
 										<img
 											src={ITEMS[item]}
@@ -732,13 +732,13 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 											style={{ filter: "invert(1) opacity(0.6)" }}
 										/>
 									)}
-									<span className='font-mono text-[8px] text-neutral-300'>
+									<span className='font-mono text-[10px] text-lines'>
 										{item}
 									</span>
 									<button
 										type='button'
 										onClick={() => removeItem(item)}
-										className='text-neutral-500 hover:text-red-400 ml-0.5 transition-colors leading-none'>
+										className='text-lines/40 hover:text-red-400 ml-0.5 transition-colors leading-none'>
 										×
 									</button>
 								</div>
@@ -762,13 +762,13 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 
 				{/* Perks */}
 				<div className='flex flex-col gap-3'>
-					<div className='flex items-center gap-2 pb-1.5 border-b border-neutral-700/40'>
+					<div className='flex items-center gap-2 pb-1.5 border-b border-lines/40'>
 						<div className='w-0.5 h-3 bg-btn' />
-						<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-300'>
+						<p className='font-mono text-[9px] tracking-[0.3em] uppercase text-lines'>
 							Perks
 						</p>
 						{kit.perks.length > 0 && (
-							<span className='font-mono text-[7px] text-btn border border-btn/30 px-1 ml-auto'>
+							<span className='font-mono text-[9px] text-btn border border-btn/30 px-1 ml-auto'>
 								{kit.perks.length} selected
 							</span>
 						)}
@@ -783,7 +783,7 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 									<div
 										key={perkName}
 										title={perk?.description}
-										className='flex items-center gap-1.5 bg-neutral-950/60 border border-neutral-700/40 px-2 py-1'>
+										className='flex items-center gap-1.5 bg-neutral-950/60 border border-lines/40 px-2 py-1'>
 										{perk?.icon && (
 											<img
 												src={perk.icon}
@@ -791,13 +791,13 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 												className='w-4 h-4 object-contain shrink-0'
 											/>
 										)}
-										<span className='font-mono text-[8px] text-neutral-300'>
+										<span className='font-mono text-[10px] text-lines'>
 											{perkName}
 										</span>
 										<button
 											type='button'
 											onClick={() => removePerk(perkName)}
-											className='text-neutral-500 hover:text-red-400 ml-0.5 transition-colors leading-none'>
+											className='text-lines/40 hover:text-red-400 ml-0.5 transition-colors leading-none'>
 											×
 										</button>
 									</div>
@@ -812,12 +812,12 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 			</div>
 
 			{/* Footer */}
-			<div className='shrink-0 px-4 py-3 border-t border-neutral-800/60 bg-neutral-950/40'>
+			<div className='shrink-0 px-4 py-3 border-t border-lines/40 bg-neutral-950/40'>
 				<button
 					type='button'
 					disabled={!kit.name.trim() || saving}
 					onClick={() => onSave(kit)}
-					className='w-full font-mono text-[9px] tracking-widest uppercase py-2 border border-btn/40 text-btn hover:border-btn hover:bg-btn/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all'>
+					className='w-full font-mono text-[11px] tracking-widest uppercase py-2 border border-btn/40 text-btn hover:border-btn hover:bg-btn/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all'>
 					{saving ? "Saving…" : "Save Kit"}
 				</button>
 			</div>
@@ -869,7 +869,7 @@ export default function Armory() {
 	return (
 		<div className='flex flex-col min-h-0 h-full text-fontz overflow-hidden'>
 			{/* ── Header ──────────────────────────────────────── */}
-			<div className='shrink-0 px-5 py-4 bg-neutral-950/60 border-b border-neutral-800/60 relative'>
+			<div className='shrink-0 px-5 py-4 bg-neutral-950/60 border-b border-lines/40 relative'>
 				{[
 					"top-2 left-2 border-t border-l",
 					"top-2 right-2 border-t border-r",
@@ -878,29 +878,29 @@ export default function Armory() {
 				].map((cls, i) => (
 					<div
 						key={i}
-						className={`absolute w-3 h-3 border-neutral-700/40 pointer-events-none ${cls}`}
+						className={`absolute w-3 h-3 border-lines/40 pointer-events-none ${cls}`}
 					/>
 				))}
 				<div className='flex items-center gap-4'>
 					<div className='flex flex-col gap-0.5 flex-1 min-w-0'>
 						<div className='flex items-center gap-2'>
 							<div className='w-0.5 h-4 bg-btn shrink-0' />
-							<FontAwesomeIcon icon={faGun} className='text-btn/70 text-[10px]' />
+							<FontAwesomeIcon icon={faGun} className='text-btn/70 text-[12px]' />
 							<h1 className='font-mono text-xs tracking-[0.35em] text-white uppercase font-bold'>
 								Armory
 							</h1>
 						</div>
-						<p className='font-mono text-[8px] tracking-widest text-neutral-500 uppercase pl-5'>
-							Kit Repository //{" "}
-							<span className='text-neutral-300'>{kits.length}</span> Configured
+						<p className='font-mono text-[10px] tracking-widest text-lines/40 uppercase pl-5'>
+							Loadout Repository //{" "}
+							<span className='text-lines'>{kits.length}</span> Configured
 						</p>
 					</div>
 					<button
 						type='button'
 						onClick={() => setEditingKit({ ...EMPTY_KIT })}
-						className='flex items-center gap-2 font-mono text-[9px] tracking-widest uppercase px-3 py-1.5 border border-btn/40 text-btn hover:border-btn hover:bg-btn/10 transition-all shrink-0'>
-						<FontAwesomeIcon icon={faPlus} className='text-[8px]' />
-						New Kit
+						className='flex items-center gap-2 font-mono text-[11px] tracking-widest uppercase px-3 py-1.5 border border-btn/40 text-btn hover:border-btn hover:bg-btn/10 transition-all shrink-0'>
+						<FontAwesomeIcon icon={faPlus} className='text-[10px]' />
+						New Loadout
 					</button>
 				</div>
 			</div>
@@ -909,36 +909,36 @@ export default function Armory() {
 			<div className='flex-1 overflow-y-auto'>
 				{loading ?
 					<div className='flex items-center justify-center py-16'>
-						<span className='font-mono text-[9px] tracking-widest text-neutral-500 uppercase animate-pulse'>
+						<span className='font-mono text-[11px] tracking-widest text-lines/40 uppercase animate-pulse'>
 							Loading armory…
 						</span>
 					</div>
 				: kits.length === 0 ?
 					<div className='flex flex-col items-center justify-center py-24 gap-5'>
 						<div className='relative'>
-							<div className='w-16 h-16 border border-neutral-800/60 bg-neutral-950/40 flex items-center justify-center'>
+							<div className='w-16 h-16 border border-lines/40 bg-neutral-950/40 flex items-center justify-center'>
 								<FontAwesomeIcon
 									icon={faBoxOpen}
-									className='text-neutral-600 text-2xl'
+									className='text-lines/30 text-2xl'
 								/>
 							</div>
-							<div className='absolute -top-1 -right-1 w-3 h-3 border-t border-r border-neutral-700/40' />
-							<div className='absolute -bottom-1 -left-1 w-3 h-3 border-b border-l border-neutral-700/40' />
+							<div className='absolute -top-1 -right-1 w-3 h-3 border-t border-r border-lines/40' />
+							<div className='absolute -bottom-1 -left-1 w-3 h-3 border-b border-l border-lines/40' />
 						</div>
 						<div className='text-center'>
-							<p className='font-mono text-[10px] tracking-[0.25em] text-neutral-400 uppercase'>
+							<p className='font-mono text-[12px] tracking-[0.25em] text-lines/60 uppercase'>
 								Armory Empty
 							</p>
-							<p className='font-mono text-[8px] text-neutral-500 mt-1'>
+							<p className='font-mono text-[10px] text-lines/40 mt-1'>
 								Build kits to equip your operators
 							</p>
 						</div>
 						<button
 							type='button'
 							onClick={() => setEditingKit({ ...EMPTY_KIT })}
-							className='flex items-center gap-2 font-mono text-[9px] tracking-widest uppercase px-4 py-2 border border-btn/40 text-btn hover:border-btn hover:bg-btn/10 transition-all'>
-							<FontAwesomeIcon icon={faPlus} className='text-[8px]' />
-							Create First Kit
+							className='flex items-center gap-2 font-mono text-[11px] tracking-widest uppercase px-4 py-2 border border-btn/40 text-btn hover:border-btn hover:bg-btn/10 transition-all'>
+							<FontAwesomeIcon icon={faPlus} className='text-[10px]' />
+							Create First Loadout
 						</button>
 					</div>
 				:	<div className='p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3'>
@@ -963,9 +963,9 @@ export default function Armory() {
 				}}>
 				<SheetContent
 					side='right'
-					className='p-0 sm:max-w-md overflow-hidden flex flex-col bg-blk border-l border-neutral-800/60'
+					className='p-0 sm:max-w-md overflow-hidden flex flex-col bg-blk border-l border-lines/40'
 					aria-describedby={undefined}>
-					<SheetTitle className='sr-only'>Kit Details</SheetTitle>
+					<SheetTitle className='sr-only'>Loadout Details</SheetTitle>
 					{viewingKit && (
 						<KitDetail
 							kit={viewingKit}
@@ -984,10 +984,10 @@ export default function Armory() {
 				}}>
 				<SheetContent
 					side='right'
-					className='p-0 sm:max-w-md overflow-hidden flex flex-col bg-blk border-l border-neutral-800/60'
+					className='p-0 sm:max-w-md overflow-hidden flex flex-col bg-blk border-l border-lines/40'
 					aria-describedby={undefined}>
 					<SheetTitle className='sr-only'>
-						{editingKit?._id ? "Edit Kit" : "New Kit"}
+						{editingKit?._id ? "Edit Loadout" : "New Loadout"}
 					</SheetTitle>
 					{editingKit && (
 						<KitForm

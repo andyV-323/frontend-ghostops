@@ -34,14 +34,14 @@ export function Panel({
 			].join(" ")}>
 			{(title || badge || actions) && (
 				<div className='flex items-center gap-3 px-4 py-2.5 bg-neutral-800 border-b border-neutral-700/50 shrink-0'>
-					<span className='font-mono text-[10px] tracking-[0.2em] text-neutral-400 uppercase flex-1 truncate'>
+					<span className='font-mono text-[12px] tracking-[0.2em] text-neutral-400 uppercase flex-1 truncate'>
 						{title}
 					</span>
 					{actions}
 					{badge && (
 						<span
 							className={[
-								"font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border rounded-sm",
+								"font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 border rounded-sm",
 								badgeGreen ?
 									"text-green-400/80 border-green-800/50 bg-green-950/30"
 								:	"text-btn/70 border-btn/20 bg-btn/5",

@@ -24,16 +24,16 @@ function KitAssignContent({ operator, kits, onToggle }) {
 	const assigned = new Set(operator.assignedKitIds || []);
 	return (
 		<div className='flex flex-col h-full'>
-			<div className='shrink-0 px-4 py-3 border-b border-neutral-800/60 bg-neutral-950/40'>
-				<h3 className='font-mono text-sm font-bold text-white tracking-wide truncate'>
+			<div className='shrink-0 px-4 py-3 border-b border-lines/60 bg-neutral-950/40'>
+				<h3 className='font-mono text-md font-bold text-white tracking-wide truncate'>
 					{operator.callSign}
 				</h3>
 				<div className='flex items-center justify-between mt-1'>
-					<p className='font-mono text-[8px] text-neutral-500 uppercase tracking-widest'>
+					<p className='font-mono text-[10px] text-lines uppercase tracking-widest'>
 						Kit Assignment
 					</p>
 					{assigned.size > 0 && (
-						<span className='font-mono text-[7px] text-btn border border-btn/25 bg-btn/5 px-1.5 py-0.5'>
+						<span className='font-mono text-[8px] text-btn border border-btn/25 bg-btn/5 px-1.5 py-0.5'>
 							{assigned.size} kit{assigned.size !== 1 ? "s" : ""}
 						</span>
 					)}
@@ -135,19 +135,22 @@ function KitDetailContent({ kit, onClose }) {
 					<div className='flex-1 min-w-0'>
 						<div className='flex items-center gap-2 mb-1'>
 							<div className='w-1 h-4 bg-btn shrink-0' />
-							<h2 className='font-mono text-sm font-bold text-white uppercase tracking-widest truncate'>
+							<h2 className='font-mono text-md font-bold text-white uppercase tracking-widest truncate'>
 								{kit.name}
 							</h2>
 						</div>
-						<span className='font-mono text-[8px] tracking-[0.3em] uppercase text-neutral-400 border border-neutral-700/40 px-2 py-0.5'>
+						<span className='font-mono text-[8px] tracking-[0.3em] uppercase text-lines border border-lines/60 px-2 py-0.5'>
 							{KIT_TYPES[kit.type] ?? "Specialty"}
 						</span>
 					</div>
 					<button
 						type='button'
 						onClick={onClose}
-						className='w-7 h-7 flex items-center justify-center text-neutral-400 hover:text-white border border-neutral-700/40 hover:border-neutral-500/40 bg-neutral-950/40 transition-colors shrink-0'>
-						<FontAwesomeIcon icon={faXmark} className='text-[10px]' />
+						className='w-7 h-7 flex items-center justify-center text-lines hover:text-white border border-lines/60 hover:border-neutral-500/40 bg-neutral-950/40 transition-colors shrink-0'>
+						<FontAwesomeIcon
+							icon={faXmark}
+							className='text-[10px]'
+						/>
 					</button>
 				</div>
 			</div>
@@ -157,9 +160,9 @@ function KitDetailContent({ kit, onClose }) {
 				{/* Weapons */}
 				{weapons.length > 0 && (
 					<div className='flex flex-col gap-3'>
-						<div className='flex items-center gap-2 pb-1.5 border-b border-neutral-700/40'>
+						<div className='flex items-center gap-2 pb-1.5 border-b border-lines/60'>
 							<div className='w-0.5 h-3 bg-btn' />
-							<span className='font-mono text-[8px] tracking-[0.3em] uppercase text-neutral-300 font-semibold'>
+							<span className='font-mono text-[10px] tracking-[0.3em] uppercase text-lines font-semibold'>
 								Weapons
 							</span>
 						</div>
@@ -168,21 +171,23 @@ function KitDetailContent({ kit, onClose }) {
 							return (
 								<div
 									key={label}
-									className='flex flex-col gap-1.5 p-3 border border-neutral-800/60 bg-neutral-950/30'>
-									<span className='font-mono text-[7px] tracking-[0.25em] uppercase text-neutral-500'>
+									className='flex flex-col gap-1.5 p-3 border border-lines/60 bg-neutral-950/30'>
+									<span className='font-mono text-[10px] tracking-[0.25em] uppercase text-lines'>
 										{label}
 									</span>
-									<span className='font-mono text-[11px] font-semibold text-white tracking-wide'>
+									<span className='font-mono text-[10px] font-semibold text-lines tracking-wide'>
 										{weapon}
 									</span>
 									{activeAtts.length > 0 && (
-										<div className='grid grid-cols-2 gap-x-4 gap-y-0.5 pt-1.5 border-t border-neutral-800/40 mt-0.5'>
+										<div className='grid grid-cols-2 gap-x-4 gap-y-0.5 pt-1.5 border-t border-lines/60 mt-0.5'>
 											{activeAtts.map(([k, v]) => (
-												<div key={k} className='flex items-baseline gap-1.5'>
-													<span className='font-mono text-[6px] tracking-widest uppercase text-neutral-500 shrink-0 w-14'>
+												<div
+													key={k}
+													className='flex items-baseline gap-1.5'>
+													<span className='font-mono text-[7px] tracking-widest uppercase text-lines/60 shrink-0 w-14'>
 														{k}
 													</span>
-													<span className='font-mono text-[8px] text-neutral-300 truncate'>
+													<span className='font-mono text-[8px] text-lines truncate'>
 														{v}
 													</span>
 												</div>
@@ -190,7 +195,7 @@ function KitDetailContent({ kit, onClose }) {
 										</div>
 									)}
 									{activeAtts.length === 0 && (
-										<span className='font-mono text-[7px] text-neutral-500 italic'>
+										<span className='font-mono text-[7px] text-lines italic'>
 											No attachments
 										</span>
 									)}
@@ -205,7 +210,7 @@ function KitDetailContent({ kit, onClose }) {
 					<div className='flex flex-col gap-3'>
 						<div className='flex items-center gap-2 pb-1.5 border-b border-neutral-700/40'>
 							<div className='w-0.5 h-3 bg-btn' />
-							<span className='font-mono text-[8px] tracking-[0.3em] uppercase text-neutral-300 font-semibold'>
+							<span className='font-mono text-[10px] tracking-[0.3em] uppercase text-lines font-semibold'>
 								Equipment
 							</span>
 						</div>
@@ -213,14 +218,14 @@ function KitDetailContent({ kit, onClose }) {
 							{activeItems.map((item) => (
 								<div
 									key={item}
-									className='flex items-center gap-2 p-2 border border-neutral-800/50 bg-neutral-950/30'>
+									className='flex items-center gap-2 p-2 border border-lines/60 bg-neutral-950/30'>
 									<img
 										src={ITEMS[item]}
 										alt={item}
 										className='w-6 h-6 object-contain shrink-0'
 										style={{ filter: "invert(1) opacity(0.6)" }}
 									/>
-									<span className='font-mono text-[8px] text-neutral-200 leading-tight'>
+									<span className='font-mono text-[8px] text-lines leading-tight'>
 										{item}
 									</span>
 								</div>
@@ -234,7 +239,7 @@ function KitDetailContent({ kit, onClose }) {
 					<div className='flex flex-col gap-3'>
 						<div className='flex items-center gap-2 pb-1.5 border-b border-neutral-700/40'>
 							<div className='w-0.5 h-3 bg-btn' />
-							<span className='font-mono text-[8px] tracking-[0.3em] uppercase text-neutral-300 font-semibold'>
+							<span className='font-mono text-[10px] tracking-[0.3em] uppercase text-lines font-semibold'>
 								Perks
 							</span>
 						</div>
@@ -242,7 +247,7 @@ function KitDetailContent({ kit, onClose }) {
 							{activePerks.map((perk) => (
 								<div
 									key={perk.name}
-									className='flex items-center gap-3 p-3 border border-neutral-800/50 bg-neutral-950/30'>
+									className='flex items-center gap-3 p-3 border border-lines/60 bg-neutral-950/30'>
 									<img
 										src={perk.icon}
 										alt={perk.name}
@@ -250,14 +255,14 @@ function KitDetailContent({ kit, onClose }) {
 									/>
 									<div className='flex flex-col gap-0.5 min-w-0'>
 										<div className='flex items-center gap-2 flex-wrap'>
-											<span className='font-mono text-[9px] font-semibold text-white leading-none'>
+											<span className='font-mono text-[10px] font-semibold text-lines leading-none'>
 												{perk.name}
 											</span>
 											<span className='font-mono text-[6px] tracking-widest uppercase text-btn/80 border border-btn/25 px-1'>
 												{perk.type}
 											</span>
 										</div>
-										<span className='font-mono text-[7px] text-neutral-400 leading-tight'>
+										<span className='font-mono text-[8px] text-lines/60 leading-tight'>
 											{perk.description}
 										</span>
 									</div>
@@ -267,13 +272,15 @@ function KitDetailContent({ kit, onClose }) {
 					</div>
 				)}
 
-				{weapons.length === 0 && activeItems.length === 0 && activePerks.length === 0 && (
-					<div className='flex items-center justify-center py-12'>
-						<span className='font-mono text-[9px] text-neutral-500 italic'>
-							Kit is empty
-						</span>
-					</div>
-				)}
+				{weapons.length === 0 &&
+					activeItems.length === 0 &&
+					activePerks.length === 0 && (
+						<div className='flex items-center justify-center py-12'>
+							<span className='font-mono text-[9px] text-neutral-500 italic'>
+								Kit is empty
+							</span>
+						</div>
+					)}
 			</div>
 		</div>
 	);
@@ -306,13 +313,16 @@ function KitPanel({ operator, kits, onManageKits }) {
 		<>
 			<div className='p-4 flex flex-col gap-3'>
 				<div className='flex items-center justify-between'>
-					<span className='font-mono text-[9px] tracking-[0.25em] text-neutral-400 uppercase'>
+					<span className='font-mono text-[9px] tracking-[0.25em] text-lines uppercase'>
 						Assigned Kits
 					</span>
 					<button
 						onClick={onManageKits}
-						className='font-mono text-[8px] tracking-widest uppercase text-neutral-400 hover:text-btn border border-neutral-700/40 hover:border-btn/40 px-1.5 py-0.5 transition-all flex items-center gap-1'>
-						<FontAwesomeIcon icon={faPlus} className='text-[7px]' />
+						className='font-mono text-[9px] tracking-widest uppercase text-btn hover:text-btn border border-neutral-700/40 hover:border-btn/40 px-1.5 py-0.5 transition-all flex items-center gap-1'>
+						<FontAwesomeIcon
+							icon={faPlus}
+							className='text-[9px]'
+						/>
 						Manage
 					</button>
 				</div>
@@ -321,7 +331,7 @@ function KitPanel({ operator, kits, onManageKits }) {
 					<button
 						onClick={onManageKits}
 						className='flex items-center justify-center py-4 border border-dashed border-neutral-700/40 hover:border-btn/30 transition-colors w-full'>
-						<span className='font-mono text-[8px] text-neutral-500 italic'>
+						<span className='font-mono text-[8px] text-lines italic'>
 							No kits — click to assign
 						</span>
 					</button>
@@ -340,15 +350,15 @@ function KitPanel({ operator, kits, onManageKits }) {
 								className='flex flex-col gap-1 px-3 py-2.5 border border-neutral-800/60 hover:border-btn/40 bg-neutral-950/40 text-left transition-colors w-full group'>
 								<div className='flex items-center gap-2'>
 									<div className='w-1.5 h-1.5 bg-btn shrink-0' />
-									<span className='font-mono text-[10px] font-semibold text-white truncate tracking-wide uppercase flex-1 group-hover:text-btn transition-colors'>
+									<span className='font-mono text-[10px] font-semibold text-lines truncate tracking-wide uppercase flex-1 group-hover:text-btn transition-colors'>
 										{kit.name}
 									</span>
-									<span className='font-mono text-[7px] text-neutral-500 shrink-0'>
+									<span className='font-mono text-[18px] text-lines shrink-0'>
 										›
 									</span>
 								</div>
 								{weapons.length > 0 && (
-									<p className='font-mono text-[7px] text-neutral-500 truncate pl-3.5'>
+									<p className='font-mono text-[8px] text-lines/60 truncate pl-3.5'>
 										{weapons.join(" · ")}
 									</p>
 								)}
@@ -457,7 +467,7 @@ export default function OperatorsPage() {
 			null
 		:	<>
 				<div
-					className={`px-3 py-1 font-mono text-[7px] tracking-[0.3em] uppercase border-b border-neutral-800/80 ${color}`}>
+					className={`px-3 py-1 font-mono text-[10px] tracking-[0.3em] uppercase border-b border-neutral-800/80 ${color}`}>
 					{label}
 				</div>
 				{ops.map((op) => {
@@ -479,7 +489,7 @@ export default function OperatorsPage() {
 									className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot(op)}`}
 								/>
 
-								<span className='font-mono text-[10px] text-neutral-200 truncate flex-1 leading-none'>
+								<span className='font-mono text-[12px] text-neutral-200 truncate flex-1 leading-none'>
 									{op.callSign || "—"}
 								</span>
 							</div>
@@ -501,7 +511,7 @@ export default function OperatorsPage() {
 								}}
 								className='font-mono text-[7px] tracking-widest uppercase shrink-0 px-1.5 py-0.5 rounded border border-neutral-800 hover:border-btn/40 transition-colors'>
 								<span
-									className={assignedTeam ? "text-btn" : "text-neutral-700"}>
+									className={`font-mono text-[10px] ${assignedTeam ? "text-btn" : "text-neutral-700"}`}>
 									{assignedTeam ? assignedTeam.name : "—"}
 								</span>
 							</button>
@@ -563,7 +573,7 @@ export default function OperatorsPage() {
 				{/* LEFT — Operator list */}
 				<div className='w-80 shrink-0 flex flex-col border-r border-neutral-700/40 bg-neutral-900/60'>
 					<div className='flex items-center border-b border-neutral-700/40 bg-neutral-900 shrink-0'>
-						<span className='font-mono text-[8px] tracking-widest uppercase px-3 py-2 border-b-2 border-btn text-btn shrink-0'>
+						<span className='font-mono text-[10px] tracking-widest uppercase px-3 py-2 border-b-2 border-btn text-btn shrink-0'>
 							Operators
 						</span>
 						<div className='ml-auto flex items-center gap-0.5 pr-2'>
@@ -622,7 +632,7 @@ export default function OperatorsPage() {
 						/>
 					:	<div className='flex flex-col items-center justify-center h-full gap-3'>
 							<div className='w-10 h-10 border border-neutral-700/50 rotate-45' />
-							<span className='font-mono text-[9px] tracking-[0.3em] text-neutral-700 uppercase'>
+							<span className='font-mono text-[11px] tracking-[0.3em] text-neutral-700 uppercase'>
 								Select Operator
 							</span>
 						</div>

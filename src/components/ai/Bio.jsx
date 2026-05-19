@@ -1,90 +1,179 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useOperatorsStore } from "@/zustand";
+import useMemorialStore from "@/zustand/useMemorialStore";
+import useTeamsStore from "@/zustand/useTeamStore";
 import { OperatorsApi } from "@/api";
-import { Button } from "@material-tailwind/react";
-import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
-import { PropTypes } from "prop-types";
+import api from "@/api/ApiClient";
 import { toast } from "react-toastify";
+import PropTypes from "prop-types";
 
-const Bio = ({ operator, setOperator }) => {
-	const [bio, setBio] = useState("No bio available.");
-	const [loading, setLoading] = useState(false);
+const Bio = ({ operator, refreshData }) => {
+	const { fetchOperatorById } = useOperatorsStore();
+	const { KIAOperators, fetchKIAOperators } = useMemorialStore();
+	const { teams } = useTeamsStore();
 
-	// When a new operator is selected, update bio
+	const [bioText, setBioText] = useState(operator?.bio || "");
+	const [userNote, setUserNote] = useState("");
+	const [isGenerating, setIsGenerating] = useState(false);
+	const [isSaving, setIsSaving] = useState(false);
+
+	const isKIA = operator?.status === "KIA";
+
 	useEffect(() => {
-		setBio((prevBio) =>
-			operator?.bio !== prevBio ?
-				operator?.bio || "No bio available."
-			:	prevBio,
-		);
-	}, [operator]);
+		if (isKIA) fetchKIAOperators();
+	}, [isKIA, fetchKIAOperators]);
 
-	const handleGenerateBio = useCallback(async () => {
-		if (!operator || !operator._id) {
-			toast.warn("No operator selected!");
-			return;
-		}
+	// Sync bioText if operator prop updates (e.g. after save + refresh)
+	useEffect(() => {
+		setBioText(operator?.bio || "");
+	}, [operator?.bio]);
 
-		setLoading(true);
+	const memorialEntry = isKIA
+		? KIAOperators.find((e) => {
+				const opId =
+					typeof e.operator === "object" ? e.operator._id : e.operator;
+				return opId === operator?._id;
+			})
+		: null;
+
+	const kiaInjury = memorialEntry?.name || null;
+
+	const operatorTeam = teams.find((t) =>
+		(t.operators || []).some((op) => {
+			const opId = typeof op === "object" ? op._id : op;
+			return opId === operator?._id;
+		}),
+	);
+	const kiaAO = operatorTeam?.AO || null;
+
+	const handleGenerate = async () => {
+		setIsGenerating(true);
 		try {
-			const response = await chatGPTApi("bio", {
-				name: operator.name,
+			const res = await api.post("/ai/bio", {
 				callSign: operator.callSign,
-				nationality: operator.nationality,
-				class: operator.class,
-				sf: operator.sf,
+				operatorClass: operator.class,
+				role: operator.role || null,
 				status: operator.status,
+				userNote: userNote.trim() || null,
+				kiaAO: isKIA ? kiaAO : null,
+				kiaInjury: isKIA ? kiaInjury : null,
 			});
-
-			if (response?.Response) {
-				const generatedBio = response.Response;
-
-				// Update bio state only if it changed
-				if (generatedBio !== bio) {
-					setBio(generatedBio);
-					setOperator({ ...operator, bio: generatedBio });
-
-					// Save to backend
-					await OperatorsApi.updateOperatorBio(operator._id, generatedBio);
-				}
-			} else {
-				throw new Error("Invalid API response format");
-			}
-		} catch (error) {
-			console.error("ERROR fetching bio:", error);
-			setBio("Error fetching bio.");
+			setBioText(res.data.bio);
+		} catch (err) {
+			toast.error("Failed to generate bio. Try again.");
+			console.error(err);
 		} finally {
-			setLoading(false);
+			setIsGenerating(false);
 		}
-	}, [operator, setOperator, bio]);
+	};
+
+	const handleSave = async () => {
+		if (!bioText.trim()) return;
+		setIsSaving(true);
+		try {
+			await OperatorsApi.updateOperatorBio(operator._id, bioText.trim());
+			await fetchOperatorById(operator._id);
+			toast.success("Bio saved.");
+			if (refreshData) refreshData();
+		} catch (err) {
+			toast.error("Failed to save bio.");
+			console.error(err);
+		} finally {
+			setIsSaving(false);
+		}
+	};
+
+	if (!operator) return null;
 
 	return (
-		<div className='flex flex-col items-center'>
-			<div className='block max-w-md p-6 bg-transparent rounded-lg'>
-				<h5 className='mb-2 text-2xl font-bold tracking-tight text-fontz'>
-					Bio:
-				</h5>
-				<p className='font-normal text-sm text-gray-400 whitespace-pre-line'>
-					{bio}
+		<div className='flex flex-col gap-5 p-4 font-mono text-lines h-full'>
+			{/* Header */}
+			<div className='border-b border-lines/10 pb-4'>
+				<p className='text-[9px] tracking-[0.22em] uppercase text-lines/40 mb-1'>
+					Operator Dossier
 				</p>
+				<h3 className='text-lg font-bold text-white tracking-wide truncate'>
+					{operator.callSign}
+				</h3>
+				<p className='text-[9px] tracking-widest uppercase text-lines/40 mt-0.5'>
+					{operator.class || "No Class"}
+					{operator.role ? ` · ${operator.role}` : ""}
+				</p>
+				{isKIA && (
+					<span className='inline-block mt-1.5 text-[8px] tracking-widest uppercase px-2 py-0.5 border border-red-900/40 text-red-400/70 bg-red-950/10'>
+						KIA
+					</span>
+				)}
 			</div>
-			<Button
-				type='button'
-				className='bg-transparent flex flex-col items-center '
-				onClick={handleGenerateBio}>
-				<img
-					src='/icons/ai.svg'
-					alt='AI Icon'
-					className='bg-blk/50 hover:bg-highlight rounded'
+
+			{/* Bio textarea */}
+			<div className='flex flex-col gap-1.5 flex-1'>
+				<label className='text-[9px] tracking-widest uppercase text-lines/40'>
+					Bio
+				</label>
+				<textarea
+					value={bioText}
+					onChange={(e) => setBioText(e.target.value)}
+					rows={7}
+					placeholder='Write a bio or generate one with AI...'
+					className='bg-blk/60 border border-lines/15 text-lines text-[11px] leading-relaxed p-3 resize-none focus:outline-none focus:border-lines/35 placeholder:text-lines/20 w-full'
 				/>
-			</Button>
-			{loading && (
-				<div className='w-10 h-10 border-4 border-gray-300 border-t-highlight rounded-full animate-spin'></div>
+			</div>
+
+			{/* Additional context */}
+			<div className='flex flex-col gap-1.5'>
+				<label className='text-[9px] tracking-widest uppercase text-lines/40'>
+					Additional context for AI
+				</label>
+				<textarea
+					value={userNote}
+					onChange={(e) => setUserNote(e.target.value)}
+					rows={2}
+					placeholder='e.g. veteran sniper, cold demeanor, served with 75th Rangers...'
+					className='bg-blk/60 border border-lines/15 text-lines text-[11px] leading-relaxed p-3 resize-none focus:outline-none focus:border-lines/35 placeholder:text-lines/20 w-full'
+				/>
+			</div>
+
+			{/* KIA data notice */}
+			{isKIA && (kiaAO || kiaInjury) && (
+				<div className='text-[9px] text-red-400/60 border border-red-900/20 bg-red-950/10 px-3 py-2 leading-relaxed'>
+					<span className='text-red-400/40 uppercase tracking-widest block mb-0.5'>
+						KIA Data
+					</span>
+					{kiaAO && <span className='block'>AO: {kiaAO}</span>}
+					{kiaInjury && <span className='block'>Cause: {kiaInjury}</span>}
+				</div>
 			)}
+
+			{isKIA && !kiaAO && !kiaInjury && (
+				<p className='text-[9px] text-lines/25 italic'>
+					No AO or injury data found — KIA section will be omitted from
+					generation.
+				</p>
+			)}
+
+			{/* Action buttons */}
+			<div className='flex flex-col gap-2 mt-auto'>
+				<button
+					onClick={handleGenerate}
+					disabled={isGenerating}
+					className='font-mono text-[9px] tracking-widest uppercase px-3 py-2.5 border transition-all text-green-400/80 border-green-900/40 hover:border-green-500/60 hover:text-green-400 bg-blk/60 hover:bg-green-950/20 disabled:opacity-40 disabled:cursor-not-allowed'>
+					{isGenerating ? "Generating..." : "Generate with AI"}
+				</button>
+				<button
+					onClick={handleSave}
+					disabled={isSaving || !bioText.trim()}
+					className='font-mono text-[9px] tracking-widest uppercase px-3 py-2.5 border transition-all text-lines/60 border-lines/20 hover:border-lines/40 hover:text-lines bg-blk/60 hover:bg-blk/80 disabled:opacity-40 disabled:cursor-not-allowed'>
+					{isSaving ? "Saving..." : "Save Bio"}
+				</button>
+			</div>
 		</div>
 	);
 };
+
 Bio.propTypes = {
-	operator: OperatorPropTypes,
-	setOperator: PropTypes.func.isRequired,
+	operator: PropTypes.object,
+	refreshData: PropTypes.func,
 };
+
 export default Bio;
