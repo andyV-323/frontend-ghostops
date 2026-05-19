@@ -50,7 +50,7 @@ const GhostID = () => {
 					<h3 className='text-lg font-semibold text-fontz'>Operator Images</h3>
 					<p className='text-xs text-gray-400 -mt-2'>
 						Upload a full-body image for each mission type. Specialty is the
-						default. The image shown will match the operator&apos;s active kit
+						default. The image shown will match the operator&apos;s active loadout
 						type.
 					</p>
 					{IMAGE_TYPE_LIST.map(({ key, label }) => (

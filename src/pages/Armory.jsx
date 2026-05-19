@@ -818,7 +818,7 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 					disabled={!kit.name.trim() || saving}
 					onClick={() => onSave(kit)}
 					className='w-full font-mono text-[11px] tracking-widest uppercase py-2 border border-btn/40 text-btn hover:border-btn hover:bg-btn/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all'>
-					{saving ? "Saving…" : "Save Kit"}
+					{saving ? "Saving…" : "Save Loadout"}
 				</button>
 			</div>
 		</div>
@@ -930,7 +930,7 @@ export default function Armory() {
 								Armory Empty
 							</p>
 							<p className='font-mono text-[10px] text-lines/40 mt-1'>
-								Build kits to equip your operators
+								Build loadouts to equip your operators
 							</p>
 						</div>
 						<button

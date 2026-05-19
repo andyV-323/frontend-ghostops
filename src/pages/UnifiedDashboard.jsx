@@ -39,7 +39,7 @@ const NAV = [
 	{ id: "briefing",   label: "Ops Room",       sub: "SCIF",            icon: faCrosshairs },
 	{ id: "vehicles",   label: "Asset Registry", sub: "Organic Assets",  icon: faTruck },
 	{ id: "ao-briefing",label: "AO Briefing",    sub: "Intel",           icon: faLayerGroup },
-	{ id: "armory",     label: "Armory",          sub: "Kit Repository",  icon: faGun },
+	{ id: "armory",     label: "Armory",          sub: "Loadout Repository",  icon: faGun },
 ];
 
 // ─── Clock ────────────────────────────────────────────────────────────────────

@@ -30,11 +30,11 @@ function KitAssignContent({ operator, kits, onToggle }) {
 				</h3>
 				<div className='flex items-center justify-between mt-1'>
 					<p className='font-mono text-[10px] text-lines uppercase tracking-widest'>
-						Kit Assignment
+						Loadout Assignment
 					</p>
 					{assigned.size > 0 && (
 						<span className='font-mono text-[8px] text-btn border border-btn/25 bg-btn/5 px-1.5 py-0.5'>
-							{assigned.size} kit{assigned.size !== 1 ? "s" : ""}
+							{assigned.size} loadout{assigned.size !== 1 ? "s" : ""}
 						</span>
 					)}
 				</div>
@@ -47,7 +47,7 @@ function KitAssignContent({ operator, kits, onToggle }) {
 			<div className='flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2'>
 				{kits.length === 0 ?
 					<p className='font-mono text-[8px] text-neutral-700 italic py-4 text-center'>
-						No kits in armory. Create kits in the Armory section.
+						No loadouts in armory. Create loadouts in the Armory section.
 					</p>
 				:	kits.map((kit) => {
 						const isAssigned = assigned.has(kit._id);
@@ -277,7 +277,7 @@ function KitDetailContent({ kit, onClose }) {
 					activePerks.length === 0 && (
 						<div className='flex items-center justify-center py-12'>
 							<span className='font-mono text-[9px] text-neutral-500 italic'>
-								Kit is empty
+								Loadout is empty
 							</span>
 						</div>
 					)}
@@ -314,7 +314,7 @@ function KitPanel({ operator, kits, onManageKits }) {
 			<div className='p-4 flex flex-col gap-3'>
 				<div className='flex items-center justify-between'>
 					<span className='font-mono text-[9px] tracking-[0.25em] text-lines uppercase'>
-						Assigned Kits
+						Assigned Loadouts
 					</span>
 					<button
 						onClick={onManageKits}
@@ -332,7 +332,7 @@ function KitPanel({ operator, kits, onManageKits }) {
 						onClick={onManageKits}
 						className='flex items-center justify-center py-4 border border-dashed border-neutral-700/40 hover:border-btn/30 transition-colors w-full'>
 						<span className='font-mono text-[8px] text-lines italic'>
-							No kits — click to assign
+							No loadouts — click to assign
 						</span>
 					</button>
 				:	assignedKits.map((kit) => {
@@ -378,7 +378,7 @@ function KitPanel({ operator, kits, onManageKits }) {
 					side='right'
 					className='p-0 sm:max-w-md overflow-hidden flex flex-col bg-blk border-l border-neutral-800/60'
 					aria-describedby={undefined}>
-					<SheetTitle className='sr-only'>Kit Details</SheetTitle>
+					<SheetTitle className='sr-only'>Loadout Details</SheetTitle>
 					{viewingKit && (
 						<KitDetailContent
 							kit={viewingKit}
@@ -674,7 +674,7 @@ export default function OperatorsPage() {
 					side='right'
 					className='p-0 sm:max-w-md overflow-hidden flex flex-col bg-blk border-l border-neutral-800/60'
 					aria-describedby={undefined}>
-					<SheetTitle className='sr-only'>Kit Assignment</SheetTitle>
+					<SheetTitle className='sr-only'>Loadout Assignment</SheetTitle>
 					<KitAssignContent
 						operator={selectedOp}
 						kits={kits}

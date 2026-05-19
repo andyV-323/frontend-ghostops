@@ -127,7 +127,7 @@ const EditOperatorForm = ({ operator }) => {
 							</h3>
 							<p className='text-xs text-gray-400 -mt-2'>
 								Upload a full-body image per mission type. The displayed image
-								matches the operator&apos;s active kit type.
+								matches the operator&apos;s active loadout type.
 							</p>
 							{IMAGE_TYPE_LIST.map(({ key, label }) => (
 								<div

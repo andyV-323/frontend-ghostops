@@ -298,7 +298,7 @@ function OperatorCard({
 							))}
 						</div>
 					:	<p className='font-mono text-[8px] text-neutral-700 italic tracking-widest'>
-							No kit assigned
+							No loadout assigned
 						</p>
 					}
 				</div>
@@ -485,7 +485,7 @@ function KitSelectorSheet({ operator, kits, onToggleKit, onSetActiveKit }) {
 						</span>
 						{assigned.size > 0 && (
 							<span className='font-mono text-[7px] text-btn border border-btn/25 bg-btn/5 px-1.5 py-0.5'>
-								{assigned.size} kit{assigned.size !== 1 ? "s" : ""}
+								{assigned.size} loadout{assigned.size !== 1 ? "s" : ""}
 							</span>
 						)}
 					</div>
@@ -495,7 +495,7 @@ function KitSelectorSheet({ operator, kits, onToggleKit, onSetActiveKit }) {
 			{/* Section label */}
 			<div className='shrink-0 px-4 py-2 border-b border-neutral-800/60 bg-neutral-950/40'>
 				<p className='font-mono text-[7px] tracking-[0.35em] text-neutral-500 uppercase'>
-					Tap kit name to activate · ✕ to unassign
+					Tap loadout name to activate · ✕ to unassign
 				</p>
 			</div>
 
@@ -503,7 +503,7 @@ function KitSelectorSheet({ operator, kits, onToggleKit, onSetActiveKit }) {
 			<div className='flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2'>
 				{kits.length === 0 ?
 					<p className='font-mono text-[8px] text-neutral-700 italic py-4 text-center'>
-						No kits in armory. Create kits in the Armory section.
+						No loadouts in armory. Create loadouts in the Armory section.
 					</p>
 				:	kits.map((kit) => {
 						const isAssigned = assigned.has(kit._id);
@@ -769,7 +769,7 @@ const TeamView = ({ teamId }) => {
 				}));
 			}
 		} catch {
-			toast.error("Failed to update kit");
+			toast.error("Failed to update loadout");
 		}
 	};
 
@@ -785,7 +785,7 @@ const TeamView = ({ teamId }) => {
 				setKitSelectorOp((prev) => ({ ...prev, activeKitId: kitId }));
 			}
 		} catch {
-			toast.error("Failed to set active kit");
+			toast.error("Failed to set active loadout");
 		}
 	};
 
