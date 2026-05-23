@@ -21,6 +21,7 @@ import { PROVINCE_BIOMES } from "./provinceBiomes";
 import { PROVINCE_TERRAIN } from "./provinceTerrain";
 import { PROVINCE_RESTRICTIONS } from "./provinceRestrictions";
 import { STATUS, SOURCE } from "../utils/Restrictions";
+import { HELMET_TYPE, VEST_TYPE, BELT_TYPE } from "./gear";
 
 // WEAPONS is kept as an alias for WEAPON_TYPES so existing imports don't break
 const WEAPONS = WEAPON_TYPES;
@@ -52,4 +53,7 @@ export {
 	PROVINCE_RESTRICTIONS,
 	SOURCE,
 	STATUS,
+	HELMET_TYPE,
+	VEST_TYPE,
+	BELT_TYPE,
 };

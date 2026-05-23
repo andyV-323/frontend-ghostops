@@ -2,14 +2,13 @@ import { useHandleChange } from "@/hooks";
 import { useOperatorsStore } from "@/zustand";
 import { ghostID, CLASS, ITEMS, PERKS } from "@/config";
 import { ImageUpload } from "@/components";
-import { IMAGE_TYPE_LIST } from "@/utils/operatorImage";
 
 const GhostID = () => {
 	const handleChange = useHandleChange();
 	const { selectedOperator, setSelectedOperator } = useOperatorsStore();
 
-	const handleImageUpload = (fieldKey) => (imageUrl) => {
-		setSelectedOperator({ ...selectedOperator, [fieldKey]: imageUrl });
+	const handleImageUpload = (imageUrl) => {
+		setSelectedOperator({ ...selectedOperator, imageKey: imageUrl });
 	};
 
 	return (
@@ -45,33 +44,18 @@ const GhostID = () => {
 					</p>
 				</div>
 
-				{/** OPERATOR IMAGES — 4 TYPES **/}
+				{/** OPERATOR IMAGE **/}
 				<div className='mb-6 flex flex-col gap-4'>
-					<h3 className='text-lg font-semibold text-fontz'>Operator Images</h3>
-					<p className='text-xs text-gray-400 -mt-2'>
-						Upload a full-body image for each mission type. Specialty is the
-						default. The image shown will match the operator&apos;s active loadout
-						type.
-					</p>
-					{IMAGE_TYPE_LIST.map(({ key, label }) => (
-						<div
-							key={key}
-							className='p-4 border border-gray-700 rounded-lg bg-gray-900/30'>
-							<p className='font-mono text-[9px] tracking-[0.3em] uppercase text-neutral-500 mb-3'>
-								{label}
-								{label === "Specialty" ? " — Default" : ""}
-							</p>
-							<ImageUpload
-								currentImage={selectedOperator?.[key]}
-								onImageUpload={handleImageUpload(key)}
-							/>
-							{selectedOperator?.[key] && (
-								<p className='mt-2 text-xs text-green-400'>
-									✓ {label} image uploaded
-								</p>
-							)}
-						</div>
-					))}
+					<h3 className='text-lg font-semibold text-fontz'>Operator Image</h3>
+					<div className='p-4 border border-gray-700 rounded-lg bg-gray-900/30'>
+						<ImageUpload
+							currentImage={selectedOperator?.imageKey}
+							onImageUpload={handleImageUpload}
+						/>
+						{selectedOperator?.imageKey && (
+							<p className='mt-2 text-xs text-green-400'>✓ Image uploaded</p>
+						)}
+					</div>
 				</div>
 
 				{/** CALL SIGN **/}

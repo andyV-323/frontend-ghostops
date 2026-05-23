@@ -2,7 +2,7 @@
 
 import { useTeamsStore, useOperatorsStore, useKitsStore } from "@/zustand";
 import { useEffect, useMemo, useState } from "react";
-import { WEAPONS, ITEMS, GARAGE, PROVINCES } from "@/config";
+import { ITEMS, GARAGE, PROVINCES } from "@/config";
 import { PropTypes } from "prop-types";
 import ConfirmDialog from "./ConfirmDialog";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -19,7 +19,8 @@ import {
 import { TeamsApi, OperatorsApi } from "@/api";
 import { toast } from "react-toastify";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { getOperatorDisplayImage, KIT_TYPES } from "@/utils/operatorImage";
+import { getOperatorDisplayImage } from "@/utils/operatorImage";
+import { KitDetailView } from "@/components";
 
 /* ─── Status config ─────────────────────────────────────────── */
 const STATUS_MAP = {
@@ -135,51 +136,17 @@ function OperatorCard({
 	onInjuryClick,
 	onKitSelectClick,
 	assignedKits,
+	onViewKit,
 }) {
 	const img = getOperatorDisplayImage(operator, assignedKits);
 	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
 	const isKIA = operator.status === "KIA";
 	const condition = CONDITION[operator.conditionLevel] || CONDITION.Fresh;
 
-	const [expandedSlot, setExpandedSlot] = useState(null);
-
 	const activeKit =
 		assignedKits.find((k) => k._id === operator.activeKitId) ||
 		assignedKits[0] ||
 		null;
-
-	useEffect(() => {
-		setExpandedSlot(null);
-	}, [operator._id]);
-
-	const kitWeapons =
-		activeKit ?
-			[
-				activeKit.primary?.weapon && {
-					key: "primary",
-					label: "PRI",
-					weapon: activeKit.primary.weapon,
-					weaponType: activeKit.primary.weaponType,
-					attachments: activeKit.primary.attachments,
-				},
-				activeKit.secondary?.weapon && {
-					key: "secondary",
-					label: "SEC",
-					weapon: activeKit.secondary.weapon,
-					weaponType: activeKit.secondary.weaponType,
-					attachments: activeKit.secondary.attachments,
-				},
-				activeKit.handgun?.weapon && {
-					key: "handgun",
-					label: "HDG",
-					weapon: activeKit.handgun.weapon,
-					weaponType: "HDG",
-					attachments: activeKit.handgun.attachments,
-				},
-			].filter(Boolean)
-		:	[];
-
-	const expandedWeapon = kitWeapons.find((w) => w.key === expandedSlot);
 
 	return (
 		<div
@@ -264,73 +231,23 @@ function OperatorCard({
 					</div>
 
 					{activeKit ?
-						<div className='flex flex-col gap-0.5'>
-							<div className='flex items-center gap-1 min-w-0'>
-								<p className='font-mono text-[9px] text-btn/60 truncate tracking-widest uppercase flex-1'>
-									{activeKit.name}
-								</p>
-							</div>
-							{kitWeapons.map(({ key, label, weapon, weaponType }) => (
-								<button
-									key={key}
-									type='button'
-									onClick={(e) => {
-										e.stopPropagation();
-										setExpandedSlot(expandedSlot === key ? null : key);
-									}}
-									className='flex items-center gap-1 min-w-0 text-left hover:opacity-80 transition-opacity'>
-									<span className='font-mono text-[8px] text-neutral-600 uppercase tracking-widest shrink-0 w-6'>
-										{label}
-									</span>
-									{WEAPONS[weaponType]?.imgUrl && (
-										<img
-											src={WEAPONS[weaponType].imgUrl}
-											alt=''
-											className='w-7 h-3.5 object-contain shrink-0'
-											style={{ filter: "invert(1) opacity(0.4)" }}
-										/>
-									)}
-									<span
-										className={`font-mono text-[9px] truncate ${expandedSlot === key ? "text-fontz/90" : "text-neutral-400"}`}>
-										{weapon}
-									</span>
-								</button>
-							))}
-						</div>
+						<button
+							type='button'
+							onClick={(e) => {
+								e.stopPropagation();
+								onViewKit?.(activeKit);
+							}}
+							className='w-full text-left'>
+							<p className='font-mono text-[9px] text-btn/60 truncate tracking-widest uppercase hover:text-btn transition-colors'>
+								{activeKit.name}
+							</p>
+						</button>
 					:	<p className='font-mono text-[8px] text-neutral-700 italic tracking-widest'>
 							No loadout assigned
 						</p>
 					}
 				</div>
 			</div>
-
-			{/* Attachment detail panel */}
-			{expandedSlot && expandedWeapon && (
-				<div className='px-2 py-2 bg-neutral-950/90 border-t border-neutral-800/50'>
-					<p className='font-mono text-[9px] font-semibold text-neutral-300 mb-1.5 uppercase tracking-wide'>
-						{expandedWeapon.label} · {expandedWeapon.weapon}
-					</p>
-					{Object.entries(expandedWeapon.attachments || {})
-						.filter(([, v]) => v)
-						.map(([k, v]) => (
-							<div
-								key={k}
-								className='flex items-baseline gap-1.5 min-w-0'>
-								<span className='font-mono text-[8px] uppercase tracking-widest text-neutral-600 shrink-0 w-14'>
-									{k}
-								</span>
-								<span className='font-mono text-[8px] text-neutral-500 truncate'>
-									{v}
-								</span>
-							</div>
-						))}
-					{!Object.values(expandedWeapon.attachments || {}).some(Boolean) && (
-						<p className='font-mono text-[8px] text-neutral-700 italic'>
-							No attachments
-						</p>
-					)}
-				</div>
-			)}
 
 			{/* Injury button */}
 			<button
@@ -539,9 +456,6 @@ function KitSelectorSheet({ operator, kits, onToggleKit, onSetActiveKit }) {
 											{kit.name}
 										</span>
 									</button>
-									<span className='font-mono text-[7px] tracking-widest uppercase text-neutral-600 border border-neutral-800/40 px-1.5 py-0.5 shrink-0'>
-										{KIT_TYPES[kit.type] ?? "Specialty"}
-									</span>
 									{isActive && (
 										<span className='font-mono text-[7px] text-green-400 shrink-0'>
 											● ACTIVE
@@ -627,11 +541,12 @@ const TeamView = ({ teamId }) => {
 	const [selectedOperator, setSelectedOperator] = useState(null);
 	const [injuryType] = useState("choice");
 	const [kitSelectorOp, setKitSelectorOp] = useState(null);
+	const [viewingKit, setViewingKit] = useState(null);
 	const [showAOSelector, setShowAOSelector] = useState(false);
 	const [savingAO, setSavingAO] = useState(false);
 	const [localAO, setLocalAO] = useState("");
 	const [showAttachPicker, setShowAttachPicker] = useState(false);
-	const [missionProfile, setMissionProfile] = useState(null);
+
 
 	useEffect(() => {
 		fetchOperators();
@@ -1061,6 +976,7 @@ const TeamView = ({ teamId }) => {
 							onInjuryClick={handleOpenInjuryDialog}
 							onKitSelectClick={setKitSelectorOp}
 							assignedKits={kitMap[op._id] || []}
+							onViewKit={(kit) => setViewingKit(kit)}
 						/>
 					))}
 				</div>
@@ -1139,6 +1055,7 @@ const TeamView = ({ teamId }) => {
 														onInjuryClick={() => {}}
 														onKitSelectClick={setKitSelectorOp}
 														assignedKits={kitMap[resolved._id] || []}
+														onViewKit={(kit) => setViewingKit(kit)}
 													/>
 												);
 											})}
@@ -1210,6 +1127,28 @@ const TeamView = ({ teamId }) => {
 					)}
 				</SheetContent>
 			</Sheet>
+
+			{/* Kit detail sheet */}
+			<Sheet
+				open={!!viewingKit}
+				onOpenChange={(open) => {
+					if (!open) setViewingKit(null);
+				}}>
+				<SheetContent
+					side='right'
+					className='p-0 sm:max-w-md overflow-hidden flex flex-col bg-blk border-l border-neutral-800/60'
+					aria-describedby={undefined}>
+					<SheetTitle className='sr-only'>
+						{viewingKit?.name || "Loadout"}
+					</SheetTitle>
+					{viewingKit && (
+						<KitDetailView
+							kit={viewingKit}
+							onClose={() => setViewingKit(null)}
+						/>
+					)}
+				</SheetContent>
+			</Sheet>
 		</div>
 	);
 };
@@ -1221,6 +1160,7 @@ OperatorCard.propTypes = {
 	onInjuryClick: PropTypes.func,
 	onKitSelectClick: PropTypes.func,
 	assignedKits: PropTypes.array,
+	onViewKit: PropTypes.func,
 };
 AssetCard.propTypes = { asset: PropTypes.object };
 TeamView.propTypes = { teamId: PropTypes.string.isRequired };

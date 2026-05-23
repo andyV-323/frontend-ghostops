@@ -1,7 +1,6 @@
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
-import { useOperatorsStore, useTeamsStore } from "@/zustand";
-import { useKitsStore } from "@/zustand";
-import { getOperatorDisplayImage, KIT_TYPES } from "@/utils/operatorImage";
+import { useOperatorsStore, useTeamsStore, useKitsStore } from "@/zustand";
+import { getOperatorDisplayImage } from "@/utils/operatorImage";
 import { OperatorsApi } from "@/api";
 import { useEffect, useMemo, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -10,11 +9,16 @@ import {
 	faUserPen,
 	faShieldHalved,
 	faStar,
+	faPlus,
+	faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { PropTypes } from "prop-types";
 import { EditOperatorForm } from "./forms";
 import ConfirmDialog from "./ConfirmDialog";
 import { Bio } from "./ai";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import KitDetailView from "./KitDetailView";
+import { toast } from "react-toastify";
 
 /* ─── Status config ──────────────────────────────────────────── */
 const STATUS = {
@@ -74,13 +78,44 @@ const OperatorImageView = ({ operator, openSheet }) => {
 		assignRandomKIAInjury,
 		assignUnknownFate,
 	} = useTeamsStore();
-	const { kits } = useKitsStore();
+	const { kits, fetchKits } = useKitsStore();
 	const [injuryDialogOpen, setInjuryDialogOpen] = useState(false);
-	const [savingKit, setSavingKit] = useState(false);
+	const [assignOpen, setAssignOpen] = useState(false);
+	const [viewingKit, setViewingKit] = useState(null);
 
 	useEffect(() => {
 		fetchTeams();
 	}, [fetchTeams]);
+	useEffect(() => {
+		fetchKits();
+	}, [fetchKits]);
+
+	const assignedKits = useMemo(() => {
+		if (!selectedOperator) return [];
+		const ids = selectedOperator.assignedKitIds || [];
+		return ids.map((id) => kits.find((k) => k._id === id)).filter(Boolean);
+	}, [selectedOperator, kits]);
+
+	const handleToggleKit = async (kitId) => {
+		const current = new Set(selectedOperator.assignedKitIds || []);
+		const isAdding = !current.has(kitId);
+		if (isAdding) current.add(kitId);
+		else current.delete(kitId);
+		const newIds = [...current];
+		let newActiveKitId = selectedOperator.activeKitId ?? null;
+		if (isAdding) newActiveKitId = kitId;
+		else if (selectedOperator.activeKitId === kitId) newActiveKitId = newIds[0] ?? null;
+		try {
+			await OperatorsApi.updateOperator(selectedOperator._id, {
+				...selectedOperator,
+				assignedKitIds: newIds,
+				activeKitId: newActiveKitId,
+			});
+			await fetchOperatorById(selectedOperator._id);
+		} catch {
+			toast.error("Failed to update loadout");
+		}
+	};
 	useEffect(() => {
 		if (operator?._id) fetchOperatorById(operator._id);
 	}, [operator?._id, fetchOperatorById]);
@@ -91,26 +126,6 @@ const OperatorImageView = ({ operator, openSheet }) => {
 		await OperatorsApi.updateCondition(selectedOperator._id, "Fresh", 0);
 		await fetchOperatorById(selectedOperator._id);
 		await fetchOperators();
-	};
-
-	const handleActivateKit = async (kitId) => {
-		if (
-			!selectedOperator ||
-			selectedOperator.activeKitId === kitId ||
-			savingKit
-		)
-			return;
-		setSavingKit(true);
-		try {
-			await OperatorsApi.updateOperator(selectedOperator._id, {
-				...selectedOperator,
-				activeKitId: kitId,
-			});
-			await fetchOperatorById(selectedOperator._id);
-			await fetchOperators();
-		} finally {
-			setSavingKit(false);
-		}
 	};
 
 	const teamName = useMemo(() => {
@@ -136,7 +151,7 @@ const OperatorImageView = ({ operator, openSheet }) => {
 		);
 	}
 
-	const displayImage = getOperatorDisplayImage(selectedOperator, kits);
+	const displayImage = getOperatorDisplayImage(selectedOperator);
 	const status = STATUS[selectedOperator.status] ?? STATUS.Active;
 	const isKIA = selectedOperator.status === "KIA";
 	const isWIA =
@@ -146,10 +161,6 @@ const OperatorImageView = ({ operator, openSheet }) => {
 	const condition =
 		CONDITION[selectedOperator.conditionLevel] ?? CONDITION.Fresh;
 
-	const assignedKits = (selectedOperator.assignedKitIds || [])
-		.map((id) => kits.find((k) => k._id === id))
-		.filter(Boolean);
-
 	const refreshAll = () => {
 		fetchOperators();
 		fetchTeams();
@@ -157,8 +168,10 @@ const OperatorImageView = ({ operator, openSheet }) => {
 
 	return (
 		<div
-			className='relative overflow-hidden bg-blk'
+			className='flex flex-col bg-blk'
 			style={{ minHeight: "100%" }}>
+			{/* Image section */}
+			<div className='relative overflow-hidden'>
 			{/* Corner brackets */}
 			{[
 				"top-3 left-3 border-t border-l",
@@ -291,46 +304,6 @@ const OperatorImageView = ({ operator, openSheet }) => {
 						)}
 					</div>
 
-					{/* Kit selector */}
-					{assignedKits.length > 0 && (
-						<div className='flex flex-col gap-1.5 pb-2.5 border-b border-lines/10'>
-							{assignedKits.map((kit) => {
-								const isActive = kit._id === selectedOperator.activeKitId;
-								return (
-									<button
-										key={kit._id}
-										type='button'
-										disabled={savingKit}
-										onClick={() => handleActivateKit(kit._id)}
-										className={[
-											"flex flex-col gap-0.5 px-2 py-1.5 border transition-colors text-left w-full",
-											isActive ?
-												"border-green-600/40 bg-green-950/20"
-											:	"border-lines/10 hover:border-lines/25 bg-blk/20",
-										].join(" ")}>
-										<div className='flex items-center gap-1.5 min-w-0'>
-											<span
-												className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? "bg-green-400" : "bg-neutral-700"}`}
-											/>
-											<span
-												className={`font-mono text-[9px] font-semibold uppercase tracking-wide flex-1 truncate ${isActive ? "text-lines" : "text-lines/50"}`}>
-												{kit.name}
-											</span>
-											<span
-												className={`font-mono text-[9px] tracking-widest uppercase ${isActive ? "text-lines" : "text-lines/50"}`}>
-												{KIT_TYPES[kit.type] ?? "Specialty"}
-											</span>
-											{isActive && (
-												<span className='font-mono text-[7px] text-green-400 shrink-0'>
-													● ACTIVE
-												</span>
-											)}
-										</div>
-									</button>
-								);
-							})}
-						</div>
-					)}
 				</div>
 			</div>
 
@@ -384,6 +357,119 @@ const OperatorImageView = ({ operator, openSheet }) => {
 					setInjuryDialogOpen(false);
 				}}
 			/>
+			</div>
+
+			{/* ── Assigned Loadouts ── */}
+			<div className='border-t border-lines/20'>
+				<div className='flex items-center justify-between px-4 py-2.5 border-b border-lines/15'>
+					<span className='font-mono text-[8px] tracking-[0.35em] text-lines/50 uppercase'>
+						Assigned Loadouts
+					</span>
+					<button
+						onClick={() => setAssignOpen(true)}
+						className='flex items-center gap-1 font-mono text-[8px] tracking-widest uppercase px-2 py-1 border border-lines/20 text-lines/50 hover:text-lines hover:border-lines/40 transition-colors'>
+						<FontAwesomeIcon icon={faPlus} className='text-[7px]' />
+						Manage
+					</button>
+				</div>
+				<div className='flex flex-col'>
+					{assignedKits.length === 0 ?
+						<p className='font-mono text-[8px] text-lines/25 italic px-4 py-3 tracking-widest'>
+							No loadouts assigned
+						</p>
+					:	assignedKits.map((kit) => (
+							<button
+								key={kit._id}
+								type='button'
+								onClick={() => setViewingKit(kit)}
+								className='flex items-center justify-between px-4 py-2.5 border-b border-lines/10 hover:bg-lines/5 transition-colors group'>
+								<span className='font-mono text-[10px] uppercase tracking-widest text-lines/70 group-hover:text-lines truncate'>
+									{kit.name}
+								</span>
+								<span className='font-mono text-[12px] text-lines/40 group-hover:text-lines/70 ml-2 shrink-0'>
+									›
+								</span>
+							</button>
+						))
+					}
+				</div>
+			</div>
+
+			{/* ── Assign/Manage Sheet ── */}
+			<Sheet open={assignOpen} onOpenChange={setAssignOpen}>
+				<SheetContent
+					side='right'
+					className='p-0 overflow-hidden flex flex-col bg-blk border-l border-lines/20'
+					aria-describedby={undefined}>
+					<SheetTitle className='sr-only'>Manage Loadouts</SheetTitle>
+					<div className='shrink-0 px-5 py-4 border-b border-lines/40 bg-neutral-950/60'>
+						<h3 className='font-mono text-sm font-bold text-white uppercase tracking-widest'>
+							Manage Loadouts
+						</h3>
+						<p className='font-mono text-[8px] text-lines/50 mt-1 tracking-widest uppercase'>
+							{selectedOperator.callSign}
+						</p>
+					</div>
+					<div className='flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2'>
+						{kits.length === 0 ?
+							<p className='font-mono text-[8px] text-lines/40 italic py-4 text-center'>
+								No loadouts in armory.
+							</p>
+						:	kits.map((kit) => {
+								const isAssigned = (selectedOperator.assignedKitIds || []).includes(kit._id);
+								return (
+									<div
+										key={kit._id}
+										className={[
+											"flex items-center gap-3 px-3 py-2.5 border transition-colors",
+											isAssigned ?
+												"border-btn/50 bg-btn/5"
+											:	"border-lines/20 hover:border-lines/40",
+										].join(" ")}>
+										<span
+											className={`font-mono text-[10px] uppercase tracking-wide flex-1 truncate ${isAssigned ? "text-btn" : "text-lines/50"}`}>
+											{kit.name}
+										</span>
+										<button
+											type='button'
+											onClick={() => handleToggleKit(kit._id)}
+											className={[
+												"font-mono text-[8px] tracking-widest uppercase px-2 py-1 border transition-colors",
+												isAssigned ?
+													"text-red-400/60 border-red-900/30 hover:text-red-400 hover:border-red-500/50"
+												:	"text-btn/60 border-btn/30 hover:text-btn hover:border-btn/60",
+											].join(" ")}>
+											{isAssigned ? "Remove" : "Add"}
+										</button>
+									</div>
+								);
+							})
+						}
+					</div>
+				</SheetContent>
+			</Sheet>
+
+			{/* ── Kit Detail Sheet ── */}
+			<Sheet
+				open={!!viewingKit}
+				onOpenChange={(open) => {
+					if (!open) setViewingKit(null);
+				}}>
+				<SheetContent
+					side='right'
+					className='p-0 overflow-hidden flex flex-col bg-blk border-l border-lines/20'
+					aria-describedby={undefined}>
+					<SheetTitle className='sr-only'>
+						{viewingKit?.name || "Loadout"}
+					</SheetTitle>
+					{viewingKit && (
+						<KitDetailView
+							kit={viewingKit}
+							onClose={() => setViewingKit(null)}
+						/>
+					)}
+				</SheetContent>
+			</Sheet>
 		</div>
 	);
 };

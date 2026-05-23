@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useKitsStore } from "@/zustand";
-import { KIT_TYPES } from "@/utils/operatorImage";
 import {
 	WEAPON_TYPES,
 	WEAPONS_BY_TYPE,
@@ -11,7 +10,11 @@ import {
 	ITEMS,
 	PERKS,
 	PERKS_MAP,
+	HELMET_TYPE,
+	VEST_TYPE,
+	BELT_TYPE,
 } from "@/config";
+import { KitDetailView } from "@/components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faPlus,
@@ -19,7 +22,6 @@ import {
 	faPen,
 	faGun,
 	faBoxOpen,
-	faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import PropTypes from "prop-types";
@@ -51,7 +53,6 @@ const EMPTY_SLOT = {
 
 const EMPTY_KIT = {
 	name: "",
-	type: "specialty",
 	primary: { ...EMPTY_SLOT },
 	secondary: { ...EMPTY_SLOT },
 	handgun: {
@@ -68,6 +69,10 @@ const EMPTY_KIT = {
 		},
 	},
 	items: [],
+	perks: [],
+	helmet: "",
+	vest: "",
+	belt: "",
 };
 
 const PERK_TYPE_ORDER = [
@@ -252,208 +257,6 @@ PerkPicker.propTypes = {
 	onAdd: PropTypes.func.isRequired,
 };
 
-/* ─── Kit Detail (read-only view) ───────────────────────────── */
-function KitDetail({ kit, onEdit, onClose }) {
-	const weapons = [
-		kit.primary?.weapon && {
-			label: "Primary",
-			slot: "primary",
-			weapon: kit.primary.weapon,
-			type: kit.primary.weaponType,
-			att: kit.primary.attachments,
-		},
-		kit.secondary?.weapon && {
-			label: "Secondary",
-			slot: "secondary",
-			weapon: kit.secondary.weapon,
-			type: kit.secondary.weaponType,
-			att: kit.secondary.attachments,
-		},
-		kit.handgun?.weapon && {
-			label: "Handgun",
-			slot: "handgun",
-			weapon: kit.handgun.weapon,
-			type: "HDG",
-			att: kit.handgun.attachments,
-		},
-	].filter(Boolean);
-
-	const activeItems = (kit.items || []).filter((i) => ITEMS[i]);
-	const activePerks = (kit.perks || [])
-		.map((n) => PERKS_MAP[n])
-		.filter(Boolean);
-
-	return (
-		<div className='flex flex-col h-full'>
-			{/* Header */}
-			<div className='shrink-0 px-5 py-4 border-b border-lines/40 bg-neutral-950/60'>
-				<div className='flex items-start gap-3'>
-					<div className='flex-1 min-w-0'>
-						<div className='flex items-center gap-2 mb-1'>
-							<div className='w-1 h-4 bg-btn shrink-0' />
-							<h2 className='font-mono text-sm font-bold text-white uppercase tracking-widest truncate'>
-								{kit.name}
-							</h2>
-						</div>
-						<span className='font-mono text-[10px] tracking-[0.3em] uppercase text-lines/60 border border-lines/40 px-2 py-0.5'>
-							{KIT_TYPES[kit.type] ?? "Specialty"}
-						</span>
-					</div>
-					<div className='flex items-center gap-1.5 shrink-0'>
-						<button
-							type='button'
-							onClick={onEdit}
-							className='flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase px-2.5 py-1.5 border border-btn/40 text-btn hover:border-btn hover:bg-btn/10 transition-all'>
-							<FontAwesomeIcon icon={faPen} className='text-[9px]' />
-							Edit
-						</button>
-						<button
-							type='button'
-							onClick={onClose}
-							className='w-7 h-7 flex items-center justify-center text-lines/60 hover:text-white border border-lines/40 hover:border-lines/40 bg-neutral-950/40 transition-colors'>
-							<FontAwesomeIcon icon={faXmark} className='text-[12px]' />
-						</button>
-					</div>
-				</div>
-			</div>
-
-			{/* Body */}
-			<div className='flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-6'>
-				{/* Weapons */}
-				{weapons.length > 0 && (
-					<div className='flex flex-col gap-3'>
-						<div className='flex items-center gap-2 pb-1.5 border-b border-lines/40'>
-							<div className='w-0.5 h-3 bg-btn' />
-							<span className='font-mono text-[10px] tracking-[0.3em] uppercase text-lines font-semibold'>
-								Weapons
-							</span>
-						</div>
-						{weapons.map(({ label, weapon, type, att }) => {
-							const activeAtts = Object.entries(att || {}).filter(([, v]) => v);
-							return (
-								<div
-									key={label}
-									className='flex flex-col gap-1.5 p-3 border border-lines/40 bg-neutral-950/30'>
-									<div className='flex items-center gap-2'>
-										<span className='font-mono text-[9px] tracking-[0.25em] uppercase text-lines/40 w-16 shrink-0'>
-											{label}
-										</span>
-										{type && WEAPON_TYPES[type]?.imgUrl && (
-											<img
-												src={WEAPON_TYPES[type].imgUrl}
-												alt=''
-												className='h-4 object-contain shrink-0'
-												style={{ filter: "invert(1) opacity(0.35)" }}
-											/>
-										)}
-									</div>
-									<span className='font-mono text-[13px] font-semibold text-white tracking-wide'>
-										{weapon}
-									</span>
-									{activeAtts.length > 0 && (
-										<div className='grid grid-cols-2 gap-x-4 gap-y-0.5 pt-1.5 border-t border-lines/40 mt-0.5'>
-											{activeAtts.map(([k, v]) => (
-												<div key={k} className='flex items-baseline gap-1.5'>
-													<span className='font-mono text-[9px] tracking-widest uppercase text-lines/40 shrink-0 w-14'>
-														{k}
-													</span>
-													<span className='font-mono text-[10px] text-lines truncate'>
-														{v}
-													</span>
-												</div>
-											))}
-										</div>
-									)}
-								</div>
-							);
-						})}
-					</div>
-				)}
-
-				{/* Equipment */}
-				{activeItems.length > 0 && (
-					<div className='flex flex-col gap-3'>
-						<div className='flex items-center gap-2 pb-1.5 border-b border-lines/40'>
-							<div className='w-0.5 h-3 bg-btn' />
-							<span className='font-mono text-[10px] tracking-[0.3em] uppercase text-lines font-semibold'>
-								Equipment
-							</span>
-						</div>
-						<div className='grid grid-cols-2 gap-2 sm:grid-cols-3'>
-							{activeItems.map((item) => (
-								<div
-									key={item}
-									className='flex items-center gap-2 p-2 border border-lines/40 bg-neutral-950/30'>
-									<img
-										src={ITEMS[item]}
-										alt={item}
-										className='w-6 h-6 object-contain shrink-0'
-										style={{ filter: "invert(1) opacity(0.6)" }}
-									/>
-									<span className='font-mono text-[10px] text-lines leading-tight'>
-										{item}
-									</span>
-								</div>
-							))}
-						</div>
-					</div>
-				)}
-
-				{/* Perks */}
-				{activePerks.length > 0 && (
-					<div className='flex flex-col gap-3'>
-						<div className='flex items-center gap-2 pb-1.5 border-b border-lines/40'>
-							<div className='w-0.5 h-3 bg-btn' />
-							<span className='font-mono text-[10px] tracking-[0.3em] uppercase text-lines font-semibold'>
-								Perks
-							</span>
-						</div>
-						<div className='flex flex-col gap-2'>
-							{activePerks.map((perk) => (
-								<div
-									key={perk.name}
-									className='flex items-center gap-3 p-3 border border-lines/40 bg-neutral-950/30'>
-									<img
-										src={perk.icon}
-										alt={perk.name}
-										className='w-8 h-8 object-contain shrink-0'
-									/>
-									<div className='flex flex-col gap-0.5 min-w-0'>
-										<div className='flex items-center gap-2'>
-											<span className='font-mono text-[11px] font-semibold text-white leading-none'>
-												{perk.name}
-											</span>
-											<span className='font-mono text-[9px] tracking-widest uppercase text-btn/70 border border-btn/20 px-1'>
-												{perk.type}
-											</span>
-										</div>
-										<span className='font-mono text-[9px] text-lines/60 leading-tight'>
-											{perk.description}
-										</span>
-									</div>
-								</div>
-							))}
-						</div>
-					</div>
-				)}
-
-				{weapons.length === 0 && activeItems.length === 0 && activePerks.length === 0 && (
-					<div className='flex items-center justify-center py-12'>
-						<span className='font-mono text-[11px] text-lines/40 italic'>
-							Loadout is empty
-						</span>
-					</div>
-				)}
-			</div>
-		</div>
-	);
-}
-
-KitDetail.propTypes = {
-	kit: PropTypes.object.isRequired,
-	onEdit: PropTypes.func.isRequired,
-	onClose: PropTypes.func.isRequired,
-};
 
 /* ─── Kit Card ──────────────────────────────────────────────── */
 function KitCard({ kit, onView, onEdit, onDelete }) {
@@ -484,9 +287,6 @@ function KitCard({ kit, onView, onEdit, onDelete }) {
 				<div className='w-1.5 h-1.5 bg-btn shrink-0' />
 				<span className='font-mono text-[13px] font-bold text-white flex-1 truncate tracking-wide uppercase'>
 					{kit.name}
-				</span>
-				<span className='font-mono text-[9px] tracking-widest uppercase text-lines/60 border border-lines/40 px-1.5 py-0.5 shrink-0'>
-					{KIT_TYPES[kit.type] ?? "Specialty"}
 				</span>
 				<div className='flex items-center gap-1 shrink-0'>
 					<button
@@ -536,6 +336,34 @@ function KitCard({ kit, onView, onEdit, onDelete }) {
 					</span>
 				}
 			</div>
+
+			{/* Gear strip */}
+			{(kit.helmet || kit.vest || kit.belt) && (
+				<div className='px-3 pb-2 flex flex-wrap gap-1.5 border-t border-lines/40 pt-2.5'>
+					{[
+						kit.helmet && { key: "helmet", url: HELMET_TYPE[kit.helmet]?.url, value: HELMET_TYPE[kit.helmet]?.name ?? kit.helmet },
+						kit.vest   && { key: "vest",   url: VEST_TYPE[kit.vest]?.url,     value: VEST_TYPE[kit.vest]?.name   ?? kit.vest   },
+						kit.belt   && { key: "belt",   url: BELT_TYPE[kit.belt]?.url,     value: BELT_TYPE[kit.belt]?.name   ?? kit.belt   },
+					].filter(Boolean).map(({ key, url, value }) => (
+						<div
+							key={key}
+							title={value}
+							className='flex items-center gap-1 bg-neutral-950/60 border border-lines/40 px-1.5 py-1'>
+							{url && (
+								<img
+									src={url}
+									alt={key}
+									className='w-3.5 h-3.5 object-contain shrink-0'
+									style={{ filter: "invert(1) opacity(0.5)" }}
+								/>
+							)}
+							<span className='font-mono text-[9px] text-lines/60 truncate max-w-20'>
+								{value}
+							</span>
+						</div>
+					))}
+				</div>
+			)}
 
 			{/* Items strip */}
 			{kit.items?.length > 0 && (
@@ -601,7 +429,6 @@ KitCard.propTypes = {
 function KitForm({ initial, onSave, onCancel, saving }) {
 	const [kit, setKit] = useState(() => ({
 		name: initial?.name || "",
-		type: initial?.type || "specialty",
 		primary: initial?.primary || { ...EMPTY_SLOT },
 		secondary: initial?.secondary || { ...EMPTY_SLOT },
 		handgun: initial?.handgun || {
@@ -611,6 +438,9 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 		},
 		items: initial?.items || [],
 		perks: initial?.perks || [],
+		helmet: initial?.helmet || "",
+		vest: initial?.vest || "",
+		belt: initial?.belt || "",
 	}));
 
 	const setSlot = (slot, val) => setKit((k) => ({ ...k, [slot]: val }));
@@ -652,7 +482,7 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 
 			{/* Body */}
 			<div className='flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-6'>
-				{/* Name + Type */}
+				{/* Name */}
 				<div className='flex flex-col gap-1.5'>
 					<p className='font-mono text-[9px] tracking-[0.3em] uppercase text-lines/60'>
 						Loadout Designation
@@ -664,21 +494,6 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 						value={kit.name}
 						onChange={(e) => setField("name", e.target.value)}
 					/>
-				</div>
-				<div className='flex flex-col gap-1.5'>
-					<p className='font-mono text-[9px] tracking-[0.3em] uppercase text-lines/60'>
-						Type
-					</p>
-					<select
-						className='form text-xs'
-						value={kit.type || "specialty"}
-						onChange={(e) => setField("type", e.target.value)}>
-						{Object.entries(KIT_TYPES).map(([k, label]) => (
-							<option key={k} value={k}>
-								{label}
-							</option>
-						))}
-					</select>
 				</div>
 
 				{/* Weapons */}
@@ -705,6 +520,54 @@ function KitForm({ initial, onSave, onCancel, saving }) {
 						onChange={(v) => setSlot("handgun", v)}
 						isHandgun
 					/>
+				</div>
+
+				{/* Gear */}
+				<div className='flex flex-col gap-2'>
+					<div className='flex items-center gap-2 pb-1.5 border-b border-lines/40'>
+						<div className='w-0.5 h-3 bg-btn' />
+						<p className='font-mono text-[9px] tracking-[0.3em] uppercase text-lines'>
+							Gear
+						</p>
+					</div>
+					<div className='grid grid-cols-3 gap-2'>
+						<div className='flex flex-col gap-1'>
+							<p className='font-mono text-[9px] tracking-widest uppercase text-lines/40'>Helmet</p>
+							<select
+								className='form text-xs'
+								value={kit.helmet}
+								onChange={(e) => setField("helmet", e.target.value)}>
+								<option value=''>— None —</option>
+								{Object.entries(HELMET_TYPE).map(([k, h]) => (
+									<option key={k} value={k}>{h.name}</option>
+								))}
+							</select>
+						</div>
+						<div className='flex flex-col gap-1'>
+							<p className='font-mono text-[9px] tracking-widest uppercase text-lines/40'>Vest</p>
+							<select
+								className='form text-xs'
+								value={kit.vest}
+								onChange={(e) => setField("vest", e.target.value)}>
+								<option value=''>— None —</option>
+								{Object.entries(VEST_TYPE).map(([k, v]) => (
+									<option key={k} value={k}>{v.name}</option>
+								))}
+							</select>
+						</div>
+						<div className='flex flex-col gap-1'>
+							<p className='font-mono text-[9px] tracking-widest uppercase text-lines/40'>Belt</p>
+							<select
+								className='form text-xs'
+								value={kit.belt}
+								onChange={(e) => setField("belt", e.target.value)}>
+								<option value=''>— None —</option>
+								{Object.entries(BELT_TYPE).map(([k, b]) => (
+									<option key={k} value={k}>{b.name}</option>
+								))}
+							</select>
+						</div>
+					</div>
 				</div>
 
 				{/* Equipment */}
@@ -967,7 +830,7 @@ export default function Armory() {
 					aria-describedby={undefined}>
 					<SheetTitle className='sr-only'>Loadout Details</SheetTitle>
 					{viewingKit && (
-						<KitDetail
+						<KitDetailView
 							kit={viewingKit}
 							onEdit={handleEditFromView}
 							onClose={() => setViewingKit(null)}

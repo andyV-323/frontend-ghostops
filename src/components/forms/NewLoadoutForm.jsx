@@ -6,8 +6,10 @@ import {
 	WEAPON_TYPES,
 	WEAPONS_BY_TYPE,
 	ATTACHMENTS,
-	MISSION_PROFILES,
 	WEAPON_COMPATIBILITY,
+	HELMET_TYPE,
+	VEST_TYPE,
+	BELT_TYPE,
 } from "@/config";
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import PropTypes from "prop-types";
@@ -155,7 +157,6 @@ const NewLoadoutForm = ({ operator }) => {
 	const operatorId = operator._id;
 
 	const [draft, setDraft] = useState({
-		missionProfile: "",
 		primary: { ...EMPTY_SLOT },
 		secondary: { ...EMPTY_SLOT },
 		handgun: {
@@ -171,6 +172,9 @@ const NewLoadoutForm = ({ operator }) => {
 				stock: null,
 			},
 		},
+		helmet: "",
+		vest: "",
+		belt: "",
 	});
 	const [saving, setSaving] = useState(false);
 
@@ -186,17 +190,8 @@ const NewLoadoutForm = ({ operator }) => {
 		);
 	}
 
-	const usedProfiles = (selectedOperator.loadouts || []).map(
-		(l) => l.missionProfile,
-	);
-	const availableProfiles = Object.entries(MISSION_PROFILES).filter(
-		([k]) => !usedProfiles.includes(k),
-	);
 	const isValid =
-		!!draft.missionProfile &&
-		(!!draft.primary.weapon ||
-			!!draft.secondary.weapon ||
-			!!draft.handgun.weapon);
+		!!draft.primary.weapon || !!draft.secondary.weapon || !!draft.handgun.weapon;
 
 	const handleSave = async (e) => {
 		e.preventDefault();
@@ -214,52 +209,14 @@ const NewLoadoutForm = ({ operator }) => {
 		}
 	};
 
-	if (availableProfiles.length === 0) {
-		return (
-			<section className='bg-transparent text-fontz'>
-				<h2 className='text-xl font-bold mb-1'>New Loadout</h2>
-				<p className='font-mono text-[9px] tracking-widest uppercase text-neutral-600 py-8 text-center border border-neutral-800/40 mt-4'>
-					All mission profiles already have loadouts.
-				</p>
-			</section>
-		);
-	}
-
 	return (
 		<section className='bg-transparent text-fontz'>
 			<h2 className='text-xl font-bold mb-1'>New Loadout</h2>
 			<p className='text-xs text-gray-400 mb-5'>
-				Configure a weapon preset for a mission profile.
+				Configure weapons and gear for this loadout.
 			</p>
 
 			<div className='flex flex-col gap-4'>
-				{/* Mission profile */}
-				<div className='flex flex-col gap-1.5'>
-					<p className='font-mono text-[7px] tracking-widest uppercase text-neutral-500'>
-						Mission Profile
-					</p>
-					<select
-						className='form'
-						value={draft.missionProfile}
-						onChange={(e) =>
-							setDraft({ ...draft, missionProfile: e.target.value })
-						}>
-						<option value=''>— Select Profile —</option>
-						{availableProfiles.map(([k, p]) => (
-							<option
-								key={k}
-								value={k}>
-								{p.name}
-							</option>
-						))}
-					</select>
-					{draft.missionProfile && MISSION_PROFILES[draft.missionProfile] && (
-						<p className='font-mono text-[7px] text-neutral-600 italic'>
-							{MISSION_PROFILES[draft.missionProfile].description}
-						</p>
-					)}
-				</div>
-
 				{/* Weapon builders */}
 				<WeaponBuilder
 					label='Primary'
@@ -277,6 +234,69 @@ const NewLoadoutForm = ({ operator }) => {
 					onChange={(v) => setDraft({ ...draft, handgun: v })}
 					isHandgun
 				/>
+
+				{/* Gear */}
+				<div className='flex flex-col gap-3 p-3 border border-neutral-800/50 bg-neutral-950/20'>
+					<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-500'>
+						Gear
+					</p>
+					<div className='grid grid-cols-1 gap-2 sm:grid-cols-3'>
+						<div className='flex flex-col gap-1'>
+							<p className='font-mono text-[6px] tracking-widest uppercase text-neutral-700'>
+								Helmet
+							</p>
+							<select
+								className='form text-xs'
+								value={draft.helmet}
+								onChange={(e) => setDraft({ ...draft, helmet: e.target.value })}>
+								<option value=''>— None —</option>
+								{Object.entries(HELMET_TYPE).map(([k, h]) => (
+									<option
+										key={k}
+										value={k}>
+										{h.name}
+									</option>
+								))}
+							</select>
+						</div>
+						<div className='flex flex-col gap-1'>
+							<p className='font-mono text-[6px] tracking-widest uppercase text-neutral-700'>
+								Vest
+							</p>
+							<select
+								className='form text-xs'
+								value={draft.vest}
+								onChange={(e) => setDraft({ ...draft, vest: e.target.value })}>
+								<option value=''>— None —</option>
+								{Object.entries(VEST_TYPE).map(([k, v]) => (
+									<option
+										key={k}
+										value={k}>
+										{v.name}
+									</option>
+								))}
+							</select>
+						</div>
+						<div className='flex flex-col gap-1'>
+							<p className='font-mono text-[6px] tracking-widest uppercase text-neutral-700'>
+								Belt
+							</p>
+							<select
+								className='form text-xs'
+								value={draft.belt}
+								onChange={(e) => setDraft({ ...draft, belt: e.target.value })}>
+								<option value=''>— None —</option>
+								{Object.entries(BELT_TYPE).map(([k, b]) => (
+									<option
+										key={k}
+										value={k}>
+										{b.name}
+									</option>
+								))}
+							</select>
+						</div>
+					</div>
+				</div>
 
 				<div className='flex justify-center pt-2'>
 					<Button

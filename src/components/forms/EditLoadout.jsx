@@ -6,8 +6,10 @@ import {
 	WEAPON_TYPES,
 	WEAPONS_BY_TYPE,
 	ATTACHMENTS,
-	MISSION_PROFILES,
 	WEAPON_COMPATIBILITY,
+	HELMET_TYPE,
+	VEST_TYPE,
+	BELT_TYPE,
 } from "@/config";
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -45,7 +47,6 @@ const EMPTY_SLOT = {
 };
 
 const EMPTY_LOADOUT = {
-	missionProfile: "",
 	primary: { ...EMPTY_SLOT },
 	secondary: { ...EMPTY_SLOT },
 	handgun: {
@@ -61,6 +62,9 @@ const EMPTY_LOADOUT = {
 			stock: null,
 		},
 	},
+	helmet: "",
+	vest: "",
+	belt: "",
 };
 
 /* ─── Returns compatible attachment options for a weapon + slot ─ */
@@ -190,7 +194,6 @@ const EditLoadout = ({ operator }) => {
 	}
 
 	const loadouts = selectedOperator.loadouts || [];
-	const usedProfiles = loadouts.map((l) => l.missionProfile);
 
 	const updateLoadouts = (next) =>
 		setSelectedOperator({ ...selectedOperator, loadouts: next });
@@ -213,18 +216,18 @@ const EditLoadout = ({ operator }) => {
 		updateLoadouts(next);
 	};
 
-	const handleProfileChange = (index, profile) => {
+	const handleGearChange = (index, field, value) => {
 		const next = loadouts.map((l, i) =>
-			i === index ? { ...l, missionProfile: profile } : l,
+			i === index ? { ...l, [field]: value } : l,
 		);
 		updateLoadouts(next);
 	};
 
 	return (
 		<section className='bg-transparent text-fontz'>
-			<h2 className='text-xl font-bold mb-1'>Mission Loadouts</h2>
+			<h2 className='text-xl font-bold mb-1'>Loadouts</h2>
 			<p className='text-xs text-gray-400 mb-5'>
-				Build weapon presets per mission profile.
+				Build weapon and gear presets for this operator.
 			</p>
 
 			{/* Loadout list */}
@@ -236,17 +239,12 @@ const EditLoadout = ({ operator }) => {
 				)}
 
 				{loadouts.map((loadout, i) => {
-					const profile = MISSION_PROFILES[loadout.missionProfile];
 					const isOpen = expandedIndex === i;
 					const weapons = [
 						loadout.primary?.weapon,
 						loadout.secondary?.weapon,
 						loadout.handgun?.weapon,
 					].filter(Boolean);
-
-					const availableProfiles = Object.entries(MISSION_PROFILES).filter(
-						([k]) => k === loadout.missionProfile || !usedProfiles.includes(k),
-					);
 
 					return (
 						<div
@@ -257,11 +255,14 @@ const EditLoadout = ({ operator }) => {
 								role='button'
 								tabIndex={0}
 								onClick={() => setExpandedIndex(isOpen ? null : i)}
-								onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setExpandedIndex(isOpen ? null : i); }}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" || e.key === " ")
+										setExpandedIndex(isOpen ? null : i);
+								}}
 								className='w-full flex items-start gap-3 px-3 py-2.5 text-left hover:bg-neutral-800/20 transition-colors cursor-pointer select-none'>
 								<div className='flex-1 min-w-0'>
 									<p className='font-mono text-[10px] font-semibold text-neutral-200 truncate'>
-										{profile?.name || loadout.missionProfile || "Unconfigured"}
+										Loadout {i + 1}
 									</p>
 									<p className='font-mono text-[7px] text-neutral-600 truncate mt-0.5'>
 										{weapons.join(" · ") || "No weapons set"}
@@ -290,32 +291,6 @@ const EditLoadout = ({ operator }) => {
 							{/* Expanded inline editor */}
 							{isOpen && (
 								<div className='flex flex-col gap-4 px-3 pb-4 pt-1 border-t border-neutral-800/40'>
-									{/* Profile selector */}
-									<div className='flex flex-col gap-1.5'>
-										<p className='font-mono text-[7px] tracking-widest uppercase text-neutral-500'>
-											Mission Profile
-										</p>
-										<select
-											className='form'
-											value={loadout.missionProfile}
-											onChange={(e) => handleProfileChange(i, e.target.value)}>
-											<option value=''>— Select Profile —</option>
-											{availableProfiles.map(([k, p]) => (
-												<option
-													key={k}
-													value={k}>
-													{p.name}
-												</option>
-											))}
-										</select>
-										{loadout.missionProfile &&
-											MISSION_PROFILES[loadout.missionProfile] && (
-												<p className='font-mono text-[7px] text-neutral-600 italic'>
-													{MISSION_PROFILES[loadout.missionProfile].description}
-												</p>
-											)}
-									</div>
-
 									<WeaponBuilder
 										label='Primary'
 										value={loadout.primary || EMPTY_SLOT}
@@ -334,6 +309,75 @@ const EditLoadout = ({ operator }) => {
 										onChange={(v) => handleWeaponSlotChange(i, "handgun", v)}
 										isHandgun
 									/>
+
+									{/* Gear */}
+									<div className='flex flex-col gap-3 p-3 border border-neutral-800/50 bg-neutral-950/20'>
+										<p className='font-mono text-[7px] tracking-[0.3em] uppercase text-neutral-500'>
+											Gear
+										</p>
+										<div className='grid grid-cols-1 gap-2 sm:grid-cols-3'>
+											<div className='flex flex-col gap-1'>
+												<p className='font-mono text-[6px] tracking-widest uppercase text-neutral-700'>
+													Helmet
+												</p>
+												<select
+													className='form text-xs'
+													value={loadout.helmet || ""}
+													onChange={(e) =>
+														handleGearChange(i, "helmet", e.target.value)
+													}>
+													<option value=''>— None —</option>
+													{Object.entries(HELMET_TYPE).map(([k, h]) => (
+														<option
+															key={k}
+															value={k}>
+															{h.name}
+														</option>
+													))}
+												</select>
+											</div>
+											<div className='flex flex-col gap-1'>
+												<p className='font-mono text-[6px] tracking-widest uppercase text-neutral-700'>
+													Vest
+												</p>
+												<select
+													className='form text-xs'
+													value={loadout.vest || ""}
+													onChange={(e) =>
+														handleGearChange(i, "vest", e.target.value)
+													}>
+													<option value=''>— None —</option>
+													{Object.entries(VEST_TYPE).map(([k, v]) => (
+														<option
+															key={k}
+															value={k}>
+															{v.name}
+														</option>
+													))}
+												</select>
+											</div>
+											<div className='flex flex-col gap-1'>
+												<p className='font-mono text-[6px] tracking-widest uppercase text-neutral-700'>
+													Belt
+												</p>
+												<select
+													className='form text-xs'
+													value={loadout.belt || ""}
+													onChange={(e) =>
+														handleGearChange(i, "belt", e.target.value)
+													}>
+													<option value=''>— None —</option>
+													{Object.entries(BELT_TYPE).map(([k, b]) => (
+														<option
+															key={k}
+															value={k}>
+															{b.name}
+														</option>
+													))}
+												</select>
+											</div>
+										</div>
+									</div>
 								</div>
 							)}
 						</div>
@@ -342,18 +386,16 @@ const EditLoadout = ({ operator }) => {
 			</div>
 
 			{/* Add button */}
-			{loadouts.length < Object.keys(MISSION_PROFILES).length && (
-				<button
-					type='button'
-					onClick={handleAddNew}
-					className='w-full flex items-center justify-center gap-2 font-mono text-[9px] tracking-widest uppercase py-2 border border-dashed border-neutral-700/50 text-neutral-500 hover:text-neutral-300 hover:border-neutral-600 transition-colors mt-2'>
-					<FontAwesomeIcon
-						icon={faPlus}
-						className='text-[8px]'
-					/>
-					Add Loadout
-				</button>
-			)}
+			<button
+				type='button'
+				onClick={handleAddNew}
+				className='w-full flex items-center justify-center gap-2 font-mono text-[9px] tracking-widest uppercase py-2 border border-dashed border-neutral-700/50 text-neutral-500 hover:text-neutral-300 hover:border-neutral-600 transition-colors mt-2'>
+				<FontAwesomeIcon
+					icon={faPlus}
+					className='text-[8px]'
+				/>
+				Add Loadout
+			</button>
 
 			<div className='flex justify-center mt-6'>
 				<Button
