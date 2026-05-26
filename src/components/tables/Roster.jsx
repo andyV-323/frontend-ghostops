@@ -6,7 +6,7 @@ import { useOperatorsStore, useTeamsStore, useSheetStore, useKitsStore } from "@
 import { getOperatorDisplayImage } from "@/utils/operatorImage";
 import { PropTypes } from "prop-types";
 import { NewOperatorForm, AssignTeamSheet } from "@/components/forms";
-import { OperatorImageView } from "@/components";
+import { OperatorImageView, FatigueBadge } from "@/components";
 
 // ─── Status config ────────────────────────────────────────────
 const STATUS_MAP = {
@@ -35,35 +35,7 @@ const STATUS_MAP = {
 		text: "text-red-500",
 	},
 };
-const CONDITION = {
-	fresh: {
-		square: "bg-green-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-		badge: "text-green-400 border-green-900/50 bg-green-900/20",
-		label: "FRESH",
-	},
-	steady: {
-		square: "bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-		badge: "text-green-400 border-green-900/50 bg-green-900/20",
-		label: "STEADY",
-	},
-	worn: {
-		square: "bg-yellow-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-		badge: "text-yellow-600 border-yellow-900/50 bg-yellow-900/20",
-		label: "WORN",
-	},
-	degraded: {
-		square: "bg-amber-500 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-		badge: "text-amber-500 border-amber-900/50 bg-amber-900/20",
-		label: "DEGRADED",
-	},
-	spent: {
-		square: "bg-red-700 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-		badge: "text-red-700 border-red-900/50 bg-red-900/20",
-		label: "SPENT",
-	},
-};
 const getStatus = (s = "") => STATUS_MAP[s.toLowerCase()] ?? STATUS_MAP.kia;
-const getCondition = (s = "") => CONDITION[s.toLowerCase()] ?? CONDITION.Fresh;
 // ─── Team badge ───────────────────────────────────────────────
 function TeamBadge({ operator }) {
 	const { teams } = useTeamsStore();
@@ -85,7 +57,6 @@ function OperatorCard({ operatorId, openSheet, fetchTeams }) {
 	const { kits } = useKitsStore();
 	if (!operator) return null;
 	const status = getStatus(operator?.status);
-	const condition = getCondition(operator?.conditionLevel);
 	const avatarSrc = getOperatorDisplayImage(operator, kits);
 
 	return (
@@ -124,13 +95,6 @@ function OperatorCard({ operatorId, openSheet, fetchTeams }) {
 						status.glow,
 					].join(" ")}
 				/>
-				<span
-					className={[
-						"absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5  border border-blk",
-						condition.square,
-						condition.glow,
-					].join(" ")}
-				/>
 			</div>
 
 			{/* Callsign */}
@@ -143,11 +107,7 @@ function OperatorCard({ operatorId, openSheet, fetchTeams }) {
 				className={`font-mono text-[8px] tracking-widest uppercase ${status.text} leading-none`}>
 				{status.label}
 			</span>
-			{/* Condition */}
-			<span
-				className={`font-mono text-[8px] tracking-widest uppercase ${condition.badge} leading-none`}>
-				{condition.label}
-			</span>
+			<FatigueBadge fatiguePoints={operator.fatiguePoints ?? 0} size='dot' />
 			{/* Class */}
 			<span className='font-mono text-[8px] text-lines/40 truncate max-w-full text-center leading-none'>
 				{activeClasses[operator._id] || operator.class || "—"}

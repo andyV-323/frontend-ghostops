@@ -23,7 +23,6 @@ const COLS = 8;
 const ROWS = 6;
 const COL_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
-
 const injectStyles = () => {
 	if (document.getElementById("ao-intel-map-style")) return;
 	const style = document.createElement("style");
@@ -69,8 +68,14 @@ const injectStyles = () => {
 const toGridRef = (coords, bounds) => {
 	if (!coords || !bounds) return "??-??";
 	const [[minY, minX], [maxY, maxX]] = bounds;
-	const colIdx = Math.min(Math.floor(((coords[1] - minX) / (maxX - minX)) * COLS), COLS - 1);
-	const rowIdx = Math.min(Math.floor(((maxY - coords[0]) / (maxY - minY)) * ROWS), ROWS - 1);
+	const colIdx = Math.min(
+		Math.floor(((coords[1] - minX) / (maxX - minX)) * COLS),
+		COLS - 1,
+	);
+	const rowIdx = Math.min(
+		Math.floor(((maxY - coords[0]) / (maxY - minY)) * ROWS),
+		ROWS - 1,
+	);
 	return `${COL_LETTERS[colIdx] || "?"}${rowIdx + 1}`;
 };
 
@@ -78,27 +83,51 @@ const addGrid = (map, bounds) => {
 	const [[minY, minX], [maxY, maxX]] = bounds;
 	const cellW = (maxX - minX) / COLS;
 	const cellH = (maxY - minY) / ROWS;
-	const lineStyle = { color: "rgba(143,184,64,0.1)", weight: 0.4, interactive: false };
+	const lineStyle = {
+		color: "rgba(143,184,64,0.1)",
+		weight: 0.4,
+		interactive: false,
+	};
 
 	for (let c = 1; c < COLS; c++) {
 		const x = minX + c * cellW;
-		L.polyline([[minY, x], [maxY, x]], lineStyle).addTo(map);
+		L.polyline(
+			[
+				[minY, x],
+				[maxY, x],
+			],
+			lineStyle,
+		).addTo(map);
 	}
 	for (let r = 1; r < ROWS; r++) {
 		const y = minY + r * cellH;
-		L.polyline([[y, minX], [y, maxX]], lineStyle).addTo(map);
+		L.polyline(
+			[
+				[y, minX],
+				[y, maxX],
+			],
+			lineStyle,
+		).addTo(map);
 	}
 	for (let c = 0; c < COLS; c++) {
 		const x = minX + c * cellW + cellW / 2;
 		L.marker([maxY - cellH * 0.15, x], {
-			icon: L.divIcon({ className: "ao-map-grid-label", iconAnchor: [5, 0], html: COL_LETTERS[c] }),
+			icon: L.divIcon({
+				className: "ao-map-grid-label",
+				iconAnchor: [5, 0],
+				html: COL_LETTERS[c],
+			}),
 			interactive: false,
 		}).addTo(map);
 	}
 	for (let r = 0; r < ROWS; r++) {
 		const y = maxY - r * cellH - cellH / 2;
 		L.marker([y, minX + cellW * 0.06], {
-			icon: L.divIcon({ className: "ao-map-grid-label", iconAnchor: [0, 5], html: `${r + 1}` }),
+			icon: L.divIcon({
+				className: "ao-map-grid-label",
+				iconAnchor: [0, 5],
+				html: `${r + 1}`,
+			}),
 			interactive: false,
 		}).addTo(map);
 	}
@@ -106,12 +135,21 @@ const addGrid = (map, bounds) => {
 
 const addSAMZone = (map, bounds) => {
 	L.rectangle(bounds, {
-		color: "rgba(255,30,30,0.5)", weight: 1.5, dashArray: "8, 10",
-		fill: true, fillColor: "rgba(255,0,0,0.06)", fillOpacity: 1, interactive: false,
+		color: "rgba(255,30,30,0.5)",
+		weight: 1.5,
+		dashArray: "8, 10",
+		fill: true,
+		fillColor: "rgba(255,0,0,0.06)",
+		fillOpacity: 1,
+		interactive: false,
 	}).addTo(map);
 	const [[minY, minX], [maxY, maxX]] = bounds;
 	L.marker([(minY + maxY) * 0.85, (minX + maxX) / 2], {
-		icon: L.divIcon({ className: "ao-sam-label", iconAnchor: [70, 8], html: "⚠ SAM / AAA ACTIVE" }),
+		icon: L.divIcon({
+			className: "ao-sam-label",
+			iconAnchor: [70, 8],
+			html: "⚠ SAM / AAA ACTIVE",
+		}),
 		interactive: false,
 	}).addTo(map);
 };
@@ -125,15 +163,49 @@ const addCoastZones = (map, coastZones, bounds) => {
 		let line, labelPos;
 		const m = 18;
 		switch (zone.side) {
-			case "north": line = [[maxY - m, minX + 80], [maxY - m, maxX - 80]]; labelPos = [maxY - m * 2.2, midX]; break;
-			case "south": line = [[minY + m, minX + 80], [minY + m, maxX - 80]]; labelPos = [minY + m * 2.8, midX]; break;
-			case "west":  line = [[minY + 80, minX + m], [maxY - 80, minX + m]]; labelPos = [midY, minX + m * 3]; break;
-			case "east":  line = [[minY + 80, maxX - m], [maxY - 80, maxX - m]]; labelPos = [midY, maxX - m * 3.5]; break;
-			default: return;
+			case "north":
+				line = [
+					[maxY - m, minX + 80],
+					[maxY - m, maxX - 80],
+				];
+				labelPos = [maxY - m * 2.2, midX];
+				break;
+			case "south":
+				line = [
+					[minY + m, minX + 80],
+					[minY + m, maxX - 80],
+				];
+				labelPos = [minY + m * 2.8, midX];
+				break;
+			case "west":
+				line = [
+					[minY + 80, minX + m],
+					[maxY - 80, minX + m],
+				];
+				labelPos = [midY, minX + m * 3];
+				break;
+			case "east":
+				line = [
+					[minY + 80, maxX - m],
+					[maxY - 80, maxX - m],
+				];
+				labelPos = [midY, maxX - m * 3.5];
+				break;
+			default:
+				return;
 		}
-		L.polyline(line, { color: "rgba(100,200,255,0.28)", weight: 1, dashArray: "4, 8", interactive: false }).addTo(map);
+		L.polyline(line, {
+			color: "rgba(100,200,255,0.28)",
+			weight: 1,
+			dashArray: "4, 8",
+			interactive: false,
+		}).addTo(map);
 		L.marker(labelPos, {
-			icon: L.divIcon({ className: "ao-coast-label", iconAnchor: [35, 5], html: `▸ ${zone.label.toUpperCase()}` }),
+			icon: L.divIcon({
+				className: "ao-coast-label",
+				iconAnchor: [35, 5],
+				html: `▸ ${zone.label.toUpperCase()}`,
+			}),
 			interactive: false,
 		}).addTo(map);
 	});
@@ -142,7 +214,11 @@ const addCoastZones = (map, coastZones, bounds) => {
 const addAirfieldMarker = (map, bounds) => {
 	const [[minY, minX], [maxY, maxX]] = bounds;
 	L.marker([(minY + maxY) * 0.3, (minX + maxX) * 0.65], {
-		icon: L.divIcon({ className: "ao-airfield-label", iconAnchor: [28, 7], html: "✈ AIRFIELD" }),
+		icon: L.divIcon({
+			className: "ao-airfield-label",
+			iconAnchor: [28, 7],
+			html: "✈ AIRFIELD",
+		}),
 		interactive: false,
 	}).addTo(map);
 };
@@ -181,17 +257,24 @@ const AOIntelMap = ({
 	locations,
 	onLocationSelect,
 }) => {
-	const mapRef            = useRef(null);
-	const mapInst           = useRef(null);
-	const onSelectRef       = useRef(onLocationSelect);
+	const mapRef = useRef(null);
+	const mapInst = useRef(null);
+	const onSelectRef = useRef(onLocationSelect);
 
-	useEffect(() => { onSelectRef.current = onLocationSelect; }, [onLocationSelect]);
+	useEffect(() => {
+		onSelectRef.current = onLocationSelect;
+	}, [onLocationSelect]);
 
 	useEffect(() => {
 		if (!bounds || !imgURL) return;
 
 		if (mapInst.current) {
-			try { mapInst.current.stop(); mapInst.current.remove(); } catch { /* removed */ }
+			try {
+				mapInst.current.stop();
+				mapInst.current.remove();
+			} catch {
+				/* removed */
+			}
 			mapInst.current = null;
 		}
 
@@ -217,7 +300,8 @@ const AOIntelMap = ({
 		overlay.on("load", () => {
 			const el = overlay.getElement();
 			if (el) {
-				el.style.filter = "brightness(0.62) saturate(0.52) contrast(1.18) sepia(0.08)";
+				el.style.filter =
+					"brightness(0.62) saturate(0.52) contrast(1.18) sepia(0.08)";
 				el.style.transition = "filter 0.4s ease";
 			}
 		});
@@ -227,17 +311,21 @@ const AOIntelMap = ({
 
 		/* ── Terrain + threat restrictions ── */
 		const restrictions = province ? resolveRestrictions(province, null) : null;
-		if (restrictions?.aviation?.status === STATUS.DENIED && restrictions?.aviation?.source === SOURCE.THREAT) {
+		if (
+			restrictions?.aviation?.status === STATUS.DENIED &&
+			restrictions?.aviation?.source === SOURCE.THREAT
+		) {
 			addSAMZone(map, bounds);
 		}
-		if (terrain?.hasCoast && terrain?.coastZones?.length) addCoastZones(map, terrain.coastZones, bounds);
+		if (terrain?.hasCoast && terrain?.coastZones?.length)
+			addCoastZones(map, terrain.coastZones, bounds);
 		if (terrain?.hasAirfield) addAirfieldMarker(map, bounds);
 
 		/* ── Location markers ── */
 		(locations || []).forEach((loc) => {
-			const type   = getLocationType(loc.name);
+			const type = getLocationType(loc.name);
 			const config = LOC_TYPE_CONFIG[type] || LOC_TYPE_CONFIG.poi;
-			const size   = config.size;
+			const size = config.size;
 
 			const marker = L.marker(loc.coordinates, {
 				icon: L.divIcon({
@@ -268,26 +356,48 @@ const AOIntelMap = ({
 		});
 
 		/* ── Classification header ── */
-		buildClassificationHeader(provinceName || province || "UNKNOWN", biome).addTo(map);
+		buildClassificationHeader(
+			provinceName || province || "UNKNOWN",
+			biome,
+		).addTo(map);
 
 		/* ── Fit + fix layout ── */
 		map.fitBounds(bounds, { padding: [8, 8] });
-		const rafId   = requestAnimationFrame(() => { if (mapInst.current) mapInst.current.invalidateSize(); });
-		const timerId = setTimeout(() => { if (mapInst.current) mapInst.current.invalidateSize(); }, 300);
+		const rafId = requestAnimationFrame(() => {
+			if (mapInst.current) mapInst.current.invalidateSize();
+		});
+		const timerId = setTimeout(() => {
+			if (mapInst.current) mapInst.current.invalidateSize();
+		}, 300);
 
 		return () => {
 			cancelAnimationFrame(rafId);
 			clearTimeout(timerId);
 			if (mapInst.current) {
-				try { mapInst.current.stop(); mapInst.current.remove(); } catch { /* removed */ }
+				try {
+					mapInst.current.stop();
+					mapInst.current.remove();
+				} catch {
+					/* removed */
+				}
 				mapInst.current = null;
 			}
 		};
 	}, [bounds, imgURL, province, terrain, provinceName, biome, locations]);
 
 	return (
-		<div style={{ position: "relative", width: "100%", height: "100%", background: "#050704", overflow: "hidden" }}>
-			<div ref={mapRef} style={{ width: "100%", height: "100%", background: "#050704" }} />
+		<div
+			style={{
+				position: "relative",
+				width: "100%",
+				height: "100%",
+				background: "#050704",
+				overflow: "hidden",
+			}}>
+			<div
+				ref={mapRef}
+				style={{ width: "100%", height: "100%", background: "#050704" }}
+			/>
 		</div>
 	);
 };
@@ -303,11 +413,13 @@ AOIntelMap.propTypes = {
 	}),
 	provinceName: PropTypes.string,
 	biome: PropTypes.string,
-	locations: PropTypes.arrayOf(PropTypes.shape({
-		name: PropTypes.string,
-		coordinates: PropTypes.arrayOf(PropTypes.number),
-		description: PropTypes.string,
-	})),
+	locations: PropTypes.arrayOf(
+		PropTypes.shape({
+			name: PropTypes.string,
+			coordinates: PropTypes.arrayOf(PropTypes.number),
+			description: PropTypes.string,
+		}),
+	),
 	onLocationSelect: PropTypes.func,
 };
 

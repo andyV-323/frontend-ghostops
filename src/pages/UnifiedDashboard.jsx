@@ -13,6 +13,7 @@ import {
 	faFolderOpen,
 	faLayerGroup,
 	faGun,
+	faGaugeHigh,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { SheetSide } from "@/components";
@@ -31,6 +32,7 @@ import OperatorsPage from "./OperatorsPage";
 import VehiclesPage from "./VehiclesPage";
 import AOBriefingPage from "./AOBriefingPage";
 import Armory from "./Armory";
+import ForceReadiness from "./ForceReadiness";
 
 // ─── Nav ─────────────────────────────────────────────────────────────────────
 
@@ -40,6 +42,7 @@ const NAV = [
 	{ id: "vehicles",   label: "Asset Registry", sub: "Organic Assets",  icon: faTruck },
 	{ id: "ao-briefing",label: "AO Briefing",    sub: "Intel",           icon: faLayerGroup },
 	{ id: "armory",     label: "Armory",          sub: "Loadout Repository",  icon: faGun },
+	{ id: "readiness",  label: "Readiness",       sub: "Force Status",    icon: faGaugeHigh },
 ];
 
 // ─── Clock ────────────────────────────────────────────────────────────────────
@@ -118,6 +121,8 @@ export default function UnifiedDashboard() {
 				return <AOBriefingPage />;
 			case "armory":
 				return <Armory />;
+			case "readiness":
+				return <ForceReadiness />;
 			default:
 				return null;
 		}

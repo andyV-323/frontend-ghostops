@@ -20,7 +20,7 @@ import { TeamsApi, OperatorsApi } from "@/api";
 import { toast } from "react-toastify";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { getOperatorDisplayImage } from "@/utils/operatorImage";
-import { KitDetailView } from "@/components";
+import { KitDetailView, FatigueBadge } from "@/components";
 
 /* ─── Status config ─────────────────────────────────────────── */
 const STATUS_MAP = {
@@ -44,33 +44,6 @@ const STATUS_MAP = {
 		border: "border-red-900/40",
 		bg: "bg-red-950/20",
 		label: "KIA",
-	},
-};
-const CONDITION = {
-	Fresh: {
-		square: "bg-green-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-		badge: "text-green-400 border-green-900/50 bg-green-900/20",
-		label: "FRESH",
-	},
-	Steady: {
-		square: "bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-		badge: "text-green-400 border-green-900/50 bg-green-900/20",
-		label: "STEADY",
-	},
-	Worn: {
-		square: "bg-yellow-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-		badge: "text-yellow-600 border-yellow-900/50 bg-yellow-900/20",
-		label: "WORN",
-	},
-	Degraded: {
-		square: "bg-amber-500 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-		badge: "text-amber-500 border-amber-900/50 bg-amber-900/20",
-		label: "DEGRADED",
-	},
-	Spent: {
-		square: "bg-red-700 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-		badge: "text-red-700 border-red-900/50 bg-red-900/20",
-		label: "SPENT",
 	},
 };
 
@@ -141,8 +114,6 @@ function OperatorCard({
 	const img = getOperatorDisplayImage(operator, assignedKits);
 	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
 	const isKIA = operator.status === "KIA";
-	const condition = CONDITION[operator.conditionLevel] || CONDITION.Fresh;
-
 	const activeKit =
 		assignedKits.find((k) => k._id === operator.activeKitId) ||
 		assignedKits[0] ||
@@ -201,9 +172,8 @@ function OperatorCard({
 						)}
 					</div>
 				</div>
-				<div className='absolute top-0  right-0 flex items-start justify-between p-1.5 gap-1'>
-					{" "}
-					<span className={`w-2 h-2  mt-0.5 shrink-0 ${condition.square}`} />
+				<div className='absolute top-0 right-0 flex flex-col items-end p-1.5 gap-1'>
+					<FatigueBadge fatiguePoints={operator.fatiguePoints ?? 0} size='dot' />
 				</div>
 
 				{/* Tap hint */}

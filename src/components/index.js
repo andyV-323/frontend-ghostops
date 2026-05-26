@@ -22,6 +22,7 @@ import CampaignView from "./CampaignView";
 import TacticalTerminal from "./TacticalTerminal";
 import FatigueSimulator from "./FatigueSimulator";
 import KitDetailView from "./KitDetailView";
+import FatigueBadge from "./FatigueBadge";
 
 export {
 	Header,
@@ -48,4 +49,5 @@ export {
 	TacticalTerminal,
 	FatigueSimulator,
 	KitDetailView,
+	FatigueBadge,
 };

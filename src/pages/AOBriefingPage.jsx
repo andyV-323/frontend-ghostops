@@ -7,13 +7,12 @@ import {
 	faXmark,
 	faRotate,
 } from "@fortawesome/free-solid-svg-icons";
-import { AOIntelMap, FatigueSimulator } from "@/components";
-import { PROVINCES, PROVINCE_TERRAIN, PROVINCE_BIOMES, GARAGE } from "@/config";
+import { AOIntelMap } from "@/components";
+import { PROVINCES, PROVINCE_TERRAIN, PROVINCE_BIOMES } from "@/config";
 import PropTypes from "prop-types";
 import { getWeatherIcon } from "./dashboardHelpers";
 import {
 	getThreats,
-	resolveRestrictions,
 	getWeatherConditionData,
 } from "@/utils/Restrictions";
 import { selectTemperature, selectAtmosphere } from "@/utils/Weather";
@@ -408,98 +407,6 @@ WeatherHUD.propTypes = {
 	onAtmosphereChange: PropTypes.func,
 	onReroll: PropTypes.func,
 };
-
-function RestrictionsHUD({ restrictions }) {
-	const RANK = { nominal: 0, degraded: 1, denied: 2 };
-	const worst = useCallback(
-		(keys) => {
-			let s = "nominal";
-			keys.forEach((k) => {
-				const r = restrictions?.[k];
-				if (r && (RANK[r.status] ?? 0) > (RANK[s] ?? 0)) s = r.status;
-			});
-			return s;
-		},
-		[restrictions],
-	);
-
-	const cats = useMemo(
-		() =>
-			[
-				{ label: "AVIATION", keys: ["aviation"] },
-				{
-					label: "DRONES",
-					keys: ["reconDrone", "syncDrone", "combatDrone", "supplyDrone"],
-				},
-				{ label: "VEHICLES", keys: ["vehicle"] },
-				{ label: "CROSS-COM", keys: ["crossCom", "satelliteFeed"] },
-				{ label: "AIR SUP", keys: ["strikeDesignator", "armarosDrone"] },
-			]
-				.map((c) => ({ ...c, status: worst(c.keys) }))
-				.filter((c) => c.status !== "nominal"),
-		[worst],
-	);
-
-	if (!cats.length) return null;
-
-	return (
-		<div
-			style={{
-				fontFamily: "'Courier New','Lucida Console',monospace",
-				background: "rgba(4,6,3,0.90)",
-				border: "1px solid rgba(100,100,100,0.3)",
-				backdropFilter: "blur(4px)",
-				minWidth: 155,
-			}}>
-			<div
-				style={{
-					padding: "3px 8px 4px",
-					fontSize: 9,
-					letterSpacing: "0.28em",
-					color: "rgba(143,184,64,0.45)",
-					borderBottom: "1px solid rgba(60,70,50,0.4)",
-					textTransform: "uppercase",
-				}}>
-				Asset Status
-			</div>
-			{cats.map(({ label, status }) => {
-				const color = status === "denied" ? "#f87171" : "#fbbf24";
-				return (
-					<div
-						key={label}
-						style={{
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "space-between",
-							padding: "3px 8px",
-							borderBottom: "1px solid rgba(40,45,35,0.5)",
-							gap: 12,
-						}}>
-						<span
-							style={{
-								fontSize: 9,
-								letterSpacing: "0.12em",
-								color: "rgba(180,180,160,0.5)",
-							}}>
-							{label}
-						</span>
-						<span
-							style={{
-								fontSize: 9,
-								fontWeight: "bold",
-								letterSpacing: "0.1em",
-								color,
-							}}>
-							{status.toUpperCase()}
-						</span>
-					</div>
-				);
-			})}
-		</div>
-	);
-}
-
-RestrictionsHUD.propTypes = { restrictions: PropTypes.object };
 
 function TeamsSummaryHUD({ teams }) {
 	if (!teams?.length) return null;
@@ -1027,32 +934,9 @@ export default function AOBriefingPage() {
 		setTempData(selectTemperature(biomeKey, "F"));
 	}, [selectedKey]);
 
-	const enrichAssets = (assets) =>
-		(assets || []).map((a) => {
-			if (typeof a !== "object") return a;
-			const g = GARAGE.find((v) => v.name === a.vehicle);
-			return { ...a, imgUrl: g?.imgUrl || "/img/default-vehicle.png" };
-		});
-
 	const aoTeams = useMemo(() => {
 		if (!teams?.length || !selectedKey) return [];
-		return teams
-			.filter((t) => t.AO === selectedKey)
-			.map((team) => ({
-				...team,
-				assets: enrichAssets(team.assets),
-				attachedTeams: (team.attachedTeams || [])
-					.map((at) => {
-						const atId = typeof at === "object" ? at._id : at;
-						const resolved =
-							teams.find((t) => t._id === atId) ??
-							(typeof at === "object" && at.name ? at : null);
-						if (!resolved) return null;
-						return { ...resolved, assets: enrichAssets(resolved.assets) };
-					})
-					.filter(Boolean),
-			}));
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		return teams.filter((t) => t.AO === selectedKey);
 	}, [teams, selectedKey]);
 
 	const activeAOs = useMemo(() => {
@@ -1068,10 +952,6 @@ export default function AOBriefingPage() {
 	const mapBounds = province?.coordinates?.bounds ?? null;
 	const imgURL = province?.imgURL ?? "";
 	const hasMap = !!(mapBounds && imgURL);
-	const restrictions = useMemo(
-		() => resolveRestrictions(selectedKey, null),
-		[selectedKey],
-	);
 	const condData = useMemo(
 		() => getWeatherConditionData(selectedKey, atmosphere),
 		[selectedKey, atmosphere],
@@ -1187,17 +1067,6 @@ export default function AOBriefingPage() {
 							/>
 						</div>
 
-						{/* Restrictions HUD — bottom right */}
-						<div
-							style={{
-								position: "absolute",
-								bottom: 8,
-								right: 8,
-								pointerEvents: "none",
-							}}>
-							<RestrictionsHUD restrictions={restrictions} />
-						</div>
-
 						{/* Teams summary — bottom left */}
 						{aoTeams.length > 0 && (
 							<div
@@ -1244,37 +1113,6 @@ export default function AOBriefingPage() {
 					{/* Active threats */}
 					<ThreatsPanel provinceKey={selectedKey} />
 
-					{/* Deployed units */}
-					<div
-						className='border-b border-lines/60'
-						style={{ background: "rgba(143,184,64,0.03)" }}>
-						<div
-							className='flex items-center justify-between px-3 py-2 border-b border-lines/40'
-							style={{ background: "rgba(143,184,64,0.04)" }}>
-							<span className='text-[10px] uppercase tracking-[0.35em] font-bold text-btn/60'>
-								◈ Deployed Units
-							</span>
-							<span className='text-[10px] uppercase tracking-widest text-lines'>
-								{aoTeams.length} team{aoTeams.length !== 1 ? "s" : ""} ·{" "}
-								{displayName}
-							</span>
-						</div>
-
-						{aoTeams.length > 0 ?
-							<FatigueSimulator
-								teams={aoTeams}
-								biome={biome}
-								provinceKey={selectedKey}
-								atmosphere={atmosphere}
-							/>
-						:	<div className='flex flex-col items-center gap-2 py-8 px-6 text-center'>
-								<div className='w-7 h-7 border border-lines/40 rotate-45' />
-								<span className='text-[10px] tracking-[0.3em] uppercase text-lines'>
-									No units deployed to {displayName}
-								</span>
-							</div>
-						}
-					</div>
 				</div>
 			</div>
 		</div>

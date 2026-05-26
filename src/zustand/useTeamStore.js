@@ -406,12 +406,23 @@ const useTeamsStore = create((set, get) => ({
 	},
 
 	assignUnknownFate: async (operatorId, userId) => {
+		// Combat Ineffective operators have a significantly reduced survival chance (+25% injury risk)
+		const state = get();
+		let foundOp = null;
+		if (state.allOperators?.length) foundOp = state.allOperators.find((op) => op._id === operatorId);
+		if (!foundOp && state.teams) {
+			for (const t of state.teams) {
+				foundOp = (t.operators || []).find((op) => op._id === operatorId);
+				if (foundOp) break;
+			}
+		}
+		const survivalThreshold = (foundOp?.fatiguePoints ?? 0) >= 11 ? 0.05 : 0.3;
+
 		const roll = Math.random();
 
-		// 30% chance of survival — tune this number
-		if (roll < 0.3) {
+		if (roll < survivalThreshold) {
 			toast.success("Operator extracted safe — no injuries sustained");
-			return; // Nothing happens, operator stays Active and on team
+			return;
 		}
 
 		// Otherwise fall through to full injury pool including KIA

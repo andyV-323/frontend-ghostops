@@ -10,6 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useSquadStore } from "@/zustand";
 import { PropTypes } from "prop-types";
+import FatigueBadge from "./FatigueBadge";
 
 const AssignSquadSheet = ({ operator, onComplete }) => {
 	const { squads, fetchSquads, updateSquadOperator, loading } = useSquadStore();
@@ -46,7 +47,10 @@ const AssignSquadSheet = ({ operator, onComplete }) => {
 					/>
 				</div>
 				<div>
-					<p className='font-mono text-sm text-fontz'>{operator.callSign}</p>
+					<div className='flex items-center gap-1.5'>
+						<p className='font-mono text-sm text-fontz'>{operator.callSign}</p>
+						<FatigueBadge fatiguePoints={operator.fatiguePoints ?? 0} size='dot' />
+					</div>
 					<p className='font-mono text-[9px] tracking-widest text-lines/35 uppercase'>
 						{operator.class} · {operator.role || "No Role"}
 					</p>

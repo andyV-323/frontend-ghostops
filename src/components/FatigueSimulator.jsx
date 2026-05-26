@@ -251,6 +251,60 @@ TeamFatigueCard.propTypes = {
 	busy: PropTypes.bool,
 };
 
+// ─── CI Confirmation Modal ────────────────────────────────────────────────────
+
+function CIConfirmModal({ ciNames, onConfirm, onCancel }) {
+	return (
+		<div
+			className='fixed inset-0 z-[9999] flex items-center justify-center bg-black/70'
+			style={{ fontFamily: "'Courier New','Lucida Console',monospace" }}>
+			<div className='w-full max-w-sm mx-4 border border-red-800/50 bg-neutral-950 shadow-2xl'>
+				<div className='flex items-center gap-2 px-4 py-3 border-b border-red-800/30 bg-red-950/20'>
+					<span className='w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0' />
+					<span className='font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-red-400'>
+						Combat Ineffective Warning
+					</span>
+				</div>
+				<div className='px-4 py-4'>
+					<p className='font-mono text-[11px] text-neutral-300 leading-relaxed mb-3'>
+						The following operators are <span className='text-red-400 font-bold'>Combat Ineffective</span>. Assigning them to this mission may result in increased injury risk.
+					</p>
+					<div className='flex flex-wrap gap-1 mb-4'>
+						{ciNames.map((name) => (
+							<span
+								key={name}
+								className='font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 border border-red-800/40 bg-red-950/20 text-red-300/80'>
+								{name}
+							</span>
+						))}
+					</div>
+					<p className='font-mono text-[10px] text-neutral-500 mb-4'>
+						Proceed anyway?
+					</p>
+					<div className='flex gap-2'>
+						<button
+							onClick={onCancel}
+							className='flex-1 font-mono text-[9px] uppercase tracking-widest py-2 border border-lines/20 text-lines/50 hover:text-lines hover:border-lines/40 transition-colors'>
+							Cancel
+						</button>
+						<button
+							onClick={onConfirm}
+							className='flex-1 font-mono text-[9px] uppercase tracking-widest py-2 border border-red-700/40 text-red-400/70 hover:text-red-400 hover:border-red-500/60 hover:bg-red-950/20 transition-colors'>
+							Proceed
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+CIConfirmModal.propTypes = {
+	ciNames: PropTypes.arrayOf(PropTypes.string).isRequired,
+	onConfirm: PropTypes.func.isRequired,
+	onCancel: PropTypes.func.isRequired,
+};
+
 export default function FatigueSimulator({
 	teams,
 	biome,
@@ -259,8 +313,9 @@ export default function FatigueSimulator({
 }) {
 	const { advanceDay, restDay, returnToBase, fullRest } = useTeamsStore();
 	const [busy, setBusy] = useState(false);
+	const [ciPending, setCiPending] = useState(null); // { teamId, degs, ciNames }
 
-	const handleAdvance = useCallback(
+	const executeAdvance = useCallback(
 		async (teamId, degs) => {
 			setBusy(true);
 			try {
@@ -270,6 +325,30 @@ export default function FatigueSimulator({
 			}
 		},
 		[advanceDay],
+	);
+
+	const handleAdvance = useCallback(
+		(teamId, degs) => {
+			// Find the team (top-level or attached) to check for CI operators
+			let team = teams.find((t) => t._id === teamId);
+			if (!team) {
+				for (const t of teams) {
+					const at = (t.attachedTeams || []).find(
+						(a) => typeof a === "object" && a._id === teamId,
+					);
+					if (at) { team = at; break; }
+				}
+			}
+			const ciOps = (team?.operators || []).filter(
+				(op) => op.status !== "KIA" && op.status !== "Injured" && (op.fatiguePoints ?? 0) >= 11,
+			);
+			if (ciOps.length > 0) {
+				setCiPending({ teamId, degs, ciNames: ciOps.map((op) => op.callSign) });
+				return;
+			}
+			executeAdvance(teamId, degs);
+		},
+		[teams, executeAdvance],
 	);
 
 	const handleRest = useCallback(
@@ -321,6 +400,19 @@ export default function FatigueSimulator({
 
 	return (
 		<div className='relative w-full overflow-hidden font-mono'>
+			{/* CI confirmation modal */}
+			{ciPending && (
+				<CIConfirmModal
+					ciNames={ciPending.ciNames}
+					onConfirm={() => {
+						const { teamId, degs } = ciPending;
+						setCiPending(null);
+						executeAdvance(teamId, degs);
+					}}
+					onCancel={() => setCiPending(null)}
+				/>
+			)}
+
 			{/* Header */}
 			<div className='flex items-center gap-2 px-3 py-1.5 border-b border-neutral-800/60 bg-neutral-950/40'>
 				<div className='w-0.5 h-3.5 bg-btn/60 shrink-0' />
