@@ -26,15 +26,7 @@ const STATUS_DOT = {
 	wounded: "bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.7)]",
 	kia: "bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.7)]",
 };
-const CONDITION = {
-	fresh: "bg-green-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-	steady: "bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-	worn: "bg-yellow-600 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-	degraded: "bg-amber-500 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-	spent: "bg-red-700 shadow-[0_0_6px_rgba(74,222,128,0.6)]",
-};
 const getDot = (s = "") => STATUS_DOT[s.toLowerCase()] ?? STATUS_DOT.active;
-const getCon = (c = "") => CONDITION[c.toLowerCase()] ?? CONDITION.fresh;
 
 // ─── Single operator avatar in team ──────────────────────────
 function TeamOperator({
@@ -74,12 +66,6 @@ function TeamOperator({
 					className={[
 						"absolute -bottom-0.5 -left-0.5 w-2 h-2 rounded-full border border-lines/60",
 						getDot(op.status),
-					].join(" ")}
-				/>
-				<span
-					className={[
-						"absolute -bottom-0.5 -right-0.5 w-2 h-2 border border-lines/40",
-						getCon(op.conditionLevel),
 					].join(" ")}
 				/>
 			</div>

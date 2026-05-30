@@ -20,7 +20,7 @@ import { TeamsApi, OperatorsApi } from "@/api";
 import { toast } from "react-toastify";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { getOperatorDisplayImage } from "@/utils/operatorImage";
-import { KitDetailView, FatigueBadge } from "@/components";
+import { KitDetailView } from "@/components";
 
 /* ─── Status config ─────────────────────────────────────────── */
 const STATUS_MAP = {
@@ -171,9 +171,6 @@ function OperatorCard({
 							</div>
 						)}
 					</div>
-				</div>
-				<div className='absolute top-0 right-0 flex flex-col items-end p-1.5 gap-1'>
-					<FatigueBadge fatiguePoints={operator.fatiguePoints ?? 0} size='dot' />
 				</div>
 
 				{/* Tap hint */}
@@ -501,7 +498,6 @@ const TeamView = ({ teamId }) => {
 		assignUnknownFate,
 		attachTeamTo,
 		detachTeamFrom,
-		fullRest,
 	} = useTeamsStore();
 	const { operators, fetchOperators } = useOperatorsStore();
 	const { kits, fetchKits } = useKitsStore();
@@ -895,12 +891,6 @@ const TeamView = ({ teamId }) => {
 							`${attachedTeams.length} attached`
 						:	"Attached Teams"}
 					</span>
-					<button
-						type='button'
-						onClick={() => fullRest(selectedTeam._id)}
-						className='flex items-center gap-1 font-mono text-[7px] tracking-widest uppercase px-2 py-0.5 border text-green-400/60 border-green-900/30 hover:text-green-400 hover:border-green-500/50 transition-colors'>
-						Full Rest
-					</button>
 					<button
 						type='button'
 						onClick={() => setShowAttachPicker((v) => !v)}

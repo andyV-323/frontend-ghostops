@@ -6,7 +6,7 @@ import { useOperatorsStore, useTeamsStore, useSheetStore, useKitsStore } from "@
 import { getOperatorDisplayImage } from "@/utils/operatorImage";
 import { PropTypes } from "prop-types";
 import { NewOperatorForm, AssignTeamSheet } from "@/components/forms";
-import { OperatorImageView, FatigueBadge } from "@/components";
+import { OperatorImageView } from "@/components";
 
 // ─── Status config ────────────────────────────────────────────
 const STATUS_MAP = {
@@ -107,7 +107,6 @@ function OperatorCard({ operatorId, openSheet, fetchTeams }) {
 				className={`font-mono text-[8px] tracking-widest uppercase ${status.text} leading-none`}>
 				{status.label}
 			</span>
-			<FatigueBadge fatiguePoints={operator.fatiguePoints ?? 0} size='dot' />
 			{/* Class */}
 			<span className='font-mono text-[8px] text-lines/40 truncate max-w-full text-center leading-none'>
 				{activeClasses[operator._id] || operator.class || "—"}

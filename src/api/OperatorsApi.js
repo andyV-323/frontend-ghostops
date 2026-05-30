@@ -60,9 +60,6 @@ export const uploadOperatorImage = async (imageFile) => {
 	}
 };
 
-export const updateCondition = async (operatorId, conditionLevel, fatiguePoints) =>
-	api.put(`/operators/${operatorId}/condition`, { conditionLevel, fatiguePoints });
-
 // Delete operator image
 export const deleteOperatorImage = async (imagePath) => {
 	try {

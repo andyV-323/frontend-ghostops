@@ -410,13 +410,6 @@ WeatherHUD.propTypes = {
 
 function TeamsSummaryHUD({ teams }) {
 	if (!teams?.length) return null;
-	const COND_COLOR = {
-		Fresh: "#7caa79",
-		Rested: "#7caa79",
-		Nominal: "#c8d4b4",
-		Fatigued: "#fbbf24",
-		Exhausted: "#f87171",
-	};
 	return (
 		<div
 			style={{
@@ -439,13 +432,6 @@ function TeamsSummaryHUD({ teams }) {
 			</div>
 			{teams.map((team) => {
 				const ops = (team.operators || []).filter((op) => op.status !== "KIA");
-				let worstColor = "#7caa79";
-				ops.forEach((op) => {
-					const c = COND_COLOR[op.conditionLevel] ?? "#7caa79";
-					if (c === "#f87171") worstColor = "#f87171";
-					else if (c === "#fbbf24" && worstColor !== "#f87171")
-						worstColor = "#fbbf24";
-				});
 				return (
 					<div
 						key={team._id}
@@ -455,7 +441,7 @@ function TeamsSummaryHUD({ teams }) {
 							gap: 6,
 							padding: "3px 8px",
 							borderBottom: "1px solid rgba(40,45,35,0.5)",
-							borderLeft: `2px solid ${worstColor}`,
+							borderLeft: "2px solid #7caa79",
 						}}>
 						<span
 							style={{

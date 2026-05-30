@@ -15,7 +15,6 @@ import { PropTypes } from "prop-types";
 import { EditOperatorForm } from "./forms";
 import ConfirmDialog from "./ConfirmDialog";
 import { Bio } from "./ai";
-import FatigueBadge from "./FatigueBadge";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import KitDetailView from "./KitDetailView";
 import { toast } from "react-toastify";
@@ -93,14 +92,6 @@ const OperatorImageView = ({ operator, openSheet }) => {
 	useEffect(() => {
 		if (operator?._id) fetchOperatorById(operator._id);
 	}, [operator?._id, fetchOperatorById]);
-
-	const handleFullRest = async () => {
-		if (!selectedOperator || (selectedOperator.fatiguePoints ?? 0) === 0)
-			return;
-		await OperatorsApi.updateCondition(selectedOperator._id, "Fresh", 0);
-		await fetchOperatorById(selectedOperator._id);
-		await fetchOperators();
-	};
 
 	const teamName = useMemo(() => {
 		const team = teams.find((t) =>
@@ -193,7 +184,6 @@ const OperatorImageView = ({ operator, openSheet }) => {
 									<span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
 									{status.label}
 								</span>
-								<FatigueBadge fatiguePoints={selectedOperator.fatiguePoints ?? 0} size='badge' />
 								<button
 									onClick={() =>
 										openSheet(
@@ -287,7 +277,7 @@ const OperatorImageView = ({ operator, openSheet }) => {
 					Edit
 				</button>
 
-				{/* Casualty + Full Rest buttons */}
+				{/* Casualty button */}
 				{!isKIA && (
 					<div className='absolute top-3 left-10 z-30 flex flex-col gap-1'>
 						<button
@@ -295,13 +285,6 @@ const OperatorImageView = ({ operator, openSheet }) => {
 							className='flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-red-400/50 border border-red-900/30 hover:border-red-500/50 hover:text-red-400 bg-blk/70 hover:bg-red-950/30 px-2.5 py-1.5 rounded-sm transition-all'>
 							Casualty
 						</button>
-						{(selectedOperator.fatiguePoints ?? 0) > 0 && (
-							<button
-								onClick={handleFullRest}
-								className='flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-green-400/50 border border-green-900/30 hover:border-green-500/50 hover:text-green-400 bg-blk/70 hover:bg-green-950/30 px-2.5 py-1.5 rounded-sm transition-all'>
-								Full Rest
-							</button>
-						)}
 					</div>
 				)}
 
