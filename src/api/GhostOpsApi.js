@@ -1,23 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // ghostOpsApi.js
-// Mission type registry + AAR generation via Groq.
+// Mission type registry + AI generation via Groq.
 //
 // Point placement → GeneratePoints.js (algorithmic, no AI)
 // Briefing generation → BriefingGenerator.js (pure function, no AI)
 // AAR generation → generateAAR() below — proxied through POST /api/ai/aar
-// Campaign generation → generateCampaign() below — proxied through POST /api/ai/campaign
+// Advisory generation → generateAdvisory() below — POST /api/ai/advisory
 // Groq key lives on the backend only — never exposed to the browser.
-//
-// PROVINCES_AI_CONTEXT has been removed entirely.
-// Province context is now built at call time via buildProvinceContext() utility.
-// Import that utility and PROVINCES in your caller (AIMissionGenerator.jsx).
-//
-// Mode structure:
-//   Random Mission — zero Groq, deterministic
-//   Mission        — zero Groq, deterministic
-//   AI Mode
-//     AI Random    — user picks province + location count, AI builds campaign
-//     AI Mission   — user picks province + specific locations, AI sequences them
 // ─────────────────────────────────────────────────────────────────────────────
 
 import api from "./ApiClient";
@@ -380,228 +369,41 @@ Write the after action report.`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// generateCampaign
-// Single Groq call producing the full operation structure for AI mode.
+// generateAdvisory
+// Single Groq call producing two contrasting COAs for a chosen mission.
+// Called by AIAdvisor.jsx after the player configures province/op-type/locations.
+// Returns the structured advisory JSON — no further Groq calls needed.
 //
-// Called by AIMissionGenerator.jsx after player configures inputs.
-// Returns structured JSON — no further Groq calls needed for this operation.
-//
-// Caller is responsible for building provinceContext before this call:
-//   import { buildProvinceContext } from '@/utils/buildProvinceContext';
-//   import { PROVINCES } from '@/config';
-//   const provinceContext = buildProvinceContext(selectedProvince, PROVINCES);
-//   const provinceData = PROVINCES[selectedProvince];
-//
-// Structure A (direct_action, convoy_interdiction, sabotage):
-//   Multiple teams, simultaneous objectives → returns { teams: [...] }
-//
-// Structure B (hvt_hunt, rescue, intel_gathering):
-//   Two-act intel-then-strike → returns { act1: {...}, act2: {...} }
-//
-// AI Random:  playerLocations = null,  locationCount = number (2–6)
-// AI Mission: playerLocations = array of location name strings, locationCount = null
+// The caller (AIAdvisor.jsx) builds systemPrompt and userPrompt using
+// buildTacticalContext() from @/utils/BuildTacticalContext before this call.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STRUCTURE_A_OP_TYPES = ["direct_action", "convoy_interdiction", "sabotage"];
-
-export async function generateCampaign({
+export async function generateAdvisory({
+	systemPrompt,
+	userPrompt,
+	province,
+	provinceLocationNames,
 	opType,
-	opTypeDef,
-	context,
-	province, // single province key string e.g. "FenBog"
-	provinceData, // full province object from PROVINCES[province]
-	provinceContext, // string built by buildProvinceContext() before this call
-	playerLocations, // null = AI Random | array of location name strings = AI Mission
-	locationCount, // number = AI Random only | null = AI Mission
-	missionTypes,
 }) {
-	const isRandom = !playerLocations;
-	const isStructureA = STRUCTURE_A_OP_TYPES.includes(opType);
-
-	const provinceLocationNames = provinceData.locations.map((l) => l.name);
-	const validMissionTypeIds = new Set(missionTypes.map((m) => m.id));
-
-	// ── Build the mission type reference list ─────────────────────────────────
-	const missionTypeRef = missionTypes
-		.map((m) => `  ${m.id} — ${m.fullLabel} (${m.category})`)
-		.join("\n");
-
-	// ── System prompt ─────────────────────────────────────────────────────────
-	const systemPrompt =
-		`You are a Ghost Recon Breakpoint special operations mission planner. ` +
-		`You generate classified operation orders for Ghost operatives on Auroa — ` +
-		`a remote technology archipelago seized by Sentinel Corp and defended by the Wolves, ` +
-		`a rogue special forces faction.\n\n` +
-		`Return ONLY valid JSON. No markdown. No explanation. No preamble.\n` +
-		`All location names must exactly match names from the provided province list.\n` +
-		`All missionTypeId values must exactly match values from the provided list.\n` +
-		`Write in tight military prose — terse, operational, no civilian tone.`;
-
-	// ── User prompt — branched by operation structure ─────────────────────────
-	let userPrompt;
-
-	if (isStructureA) {
-		// Structure A — Direct Action: simultaneous multi-team strike
-		const locationsBlock =
-			playerLocations ?
-				`The player has selected the following locations. Assign one team per location — use EXACTLY as listed:\n` +
-				playerLocations.map((loc, i) => `  Team ${i + 1}: "${loc}"`).join("\n")
-			:	`Choose ${locationCount ?? 2} distinct locations from the province list. Each becomes one team's objective.`;
-
-		userPrompt =
-			`Generate a Ghost Recon Breakpoint classified operation order.\n\n` +
-			`OPERATION TYPE: ${opTypeDef.label} (${opType})\n` +
-			`PLAYER CONTEXT: ${context || "No additional context provided — generate a compelling, grounded scenario."}\n` +
-			`PROVINCE: ${province}\n` +
-			`MODE: ${isRandom ? "AI Random" : "AI Mission"}\n\n` +
-			`AVAILABLE MISSION TYPE IDs (use these exactly):\n${missionTypeRef}\n\n` +
-			`PROVINCE AND AVAILABLE LOCATIONS:\n${provinceContext}\n\n` +
-			`${locationsBlock}\n\n` +
-			`Generate a Structure A — Direct Action operation.\n` +
-			`Multiple teams strike multiple objectives simultaneously in a single deployment.\n` +
-			`Each team gets one objective. Teams operate independently and exfil separately.\n\n` +
-			`Return this exact JSON:\n` +
-			`{\n` +
-			`  "operationName": "TWO WORD CODENAME IN CAPS",\n` +
-			`  "narrative": "3-4 sentences. Name the specific threat. Explain why command issued this tasking now. Include one specific Sentinel or Wolves activity detail. Military tone.",\n` +
-			`  "structure": "direct_action",\n` +
-			`  "friendlyConcerns": "One sentence about a secondary concern in the AO, or null if none.",\n` +
-			`  "exfilPlan": "One sentence describing exfil for all teams.",\n` +
-			`  "teams": [\n` +
-			`    {\n` +
-			`      "teamLabel": "Team 1",\n` +
-			`      "objective": "<exact location name from province list>",\n` +
-			`      "missionTypeId": "<exact ID from mission type list>",\n` +
-			`      "task": "2-3 sentences. What this team physically does. What they must confirm or destroy. What success looks like.",\n` +
-			`      "specialistRequired": "one word specialty or null"\n` +
-			`    }\n` +
-			`  ]\n` +
-			`}\n\n` +
-			`Rules:\n` +
-			`- One team per location the player selected\n` +
-			`- All missionTypeId values must be from the Direct Action or Overwatch categories\n` +
-			`- teamLabel is Team 1, Team 2, Team 3 etc\n` +
-			`- specialistRequired: "Demolition", "Sniper", "Medic", or null\n` +
-			`- narrative must reference the specific province and at least one location name`;
-	} else {
-		// Structure B — Intel Then Strike: multi-phase recon unlocks multi-phase strike
-		// Both act1 and act2 are arrays — AI decides how many phases per act.
-		const locationsLine =
-			playerLocations && playerLocations.length > 0 ?
-				`The player has selected ${playerLocations.length} location(s). Use ALL of them. ` +
-				`Decide how many go to act1 (recon) and how many to act2 (strike) based on the op type and context. ` +
-				`At least 1 location must appear in each act. Use each location EXACTLY as listed:\n` +
-				playerLocations.map((loc, i) => `  ${i + 1}. "${loc}"`).join("\n")
-			:	`Choose locations from the province list. Decide how many phases each act needs (at least 1 each). ` +
-				`Aim for ${locationCount ?? 3} total locations distributed across both acts.`;
-
-		userPrompt =
-			`Generate a Ghost Recon Breakpoint classified operation order.\n\n` +
-			`OPERATION TYPE: ${opTypeDef.label} (${opType})\n` +
-			`PLAYER CONTEXT: ${context || "No additional context provided — generate a compelling, grounded scenario."}\n` +
-			`PROVINCE: ${province}\n` +
-			`MODE: ${isRandom ? "AI Random" : "AI Mission"}\n\n` +
-			`AVAILABLE MISSION TYPE IDs (use these exactly):\n${missionTypeRef}\n\n` +
-			`PROVINCE AND AVAILABLE LOCATIONS:\n${provinceContext}\n\n` +
-			`${locationsLine}\n\n` +
-			`Generate a Structure B — Intel Then Strike operation.\n` +
-			`Act 1 contains one or more COVERT RECON phases. All must complete before Act 2 unlocks.\n` +
-			`Act 2 contains one or more STRIKE phases at the actual targets.\n` +
-			`Act 1 and Act 2 phases use DIFFERENT locations — recon observes from standoff, strike hits the objective.\n\n` +
-			`Return this exact JSON:\n` +
-			`{\n` +
-			`  "operationName": "TWO WORD CODENAME IN CAPS",\n` +
-			`  "narrative": "3-4 sentences. Name the specific HVT or target asset. Explain why intel is needed before striking. Include time pressure or intel gap detail. Military tone.",\n` +
-			`  "structure": "intel_then_strike",\n` +
-			`  "friendlyConcerns": "One sentence about a secondary concern, or null.",\n` +
-			`  "exfilPlan": "One sentence. Act 1 elements exfil quietly. Act 2 exfil matches mission type.",\n` +
-			`  "intelGate": "snake_case_label shared by all act1 phases e.g. vasquez_confirmed",\n` +
-			`  "act1": [\n` +
-			`    {\n` +
-			`      "teamLabel": "Recon 1",\n` +
-			`      "objective": "<standoff/observation location from province list>",\n` +
-			`      "missionTypeId": "<SR_POINT or SR_AREA or OW_OVERWATCH>",\n` +
-			`      "task": "2-3 sentences. Establish covert OP. What to observe. What intel to collect."\n` +
-			`    }\n` +
-			`  ],\n` +
-			`  "act2": [\n` +
-			`    {\n` +
-			`      "teamLabel": "Strike 1",\n` +
-			`      "objective": "<target location from province list>",\n` +
-			`      "missionTypeId": "<mission type matching the opType finalPhaseTypes>",\n` +
-			`      "task": "2-3 sentences. The decisive action using intel from Act 1.",\n` +
-			`      "specialistRequired": "one word or null"\n` +
-			`    }\n` +
-			`  ]\n` +
-			`}\n\n` +
-			`Rules:\n` +
-			`- act1 and act2 are arrays — include as many phase objects as needed to cover all locations\n` +
-			(playerLocations?.length > 0 ? `- ALL ${playerLocations.length} player-selected locations must appear across act1 and act2 combined\n` : "") +
-			`- No location may appear in both act1 and act2\n` +
-			`- act1 missionTypeId must be SR_POINT, SR_AREA, or OW_OVERWATCH\n` +
-			`- act2 missionTypeId must be one of: ${opTypeDef.finalPhaseTypes.join(", ")}\n` +
-			`- intelGate is a single top-level field shared by all act2 phases as their unlock condition\n` +
-			`- narrative must reference the specific province and target`;
-	}
-
-	// ── Backend proxy call ────────────────────────────────────────────────────
-	const res = await api.post("/ai/campaign", {
+	const res = await api.post("/ai/advisory", {
 		systemPrompt,
 		userPrompt,
 		province,
 		provinceLocationNames,
+		opType,
 	});
 
-	const campaign = res.data.campaign;
+	const advisory = res.data.advisory;
 
-	// ── Frontend validation ───────────────────────────────────────────────────
-	const isValidLoc  = (loc) => provinceLocationNames.some((n) => n.trim() === loc?.trim());
-	const isValidType = (id)  => validMissionTypeIds.has(id);
-
-	if (isStructureA) {
-		if (!Array.isArray(campaign.teams) || !campaign.teams.length) {
-			throw new Error("Campaign generation returned no teams. Try again.");
-		}
-		const bad = campaign.teams.filter(
-			(t) => !isValidLoc(t.objective) || !isValidType(t.missionTypeId),
-		);
-		if (bad.length) {
-			const detail = bad
-				.map((t) => `objective="${t.objective}" type="${t.missionTypeId}"`)
-				.join("; ");
-			throw new Error(`Campaign returned invalid team data: ${detail}. Try again.`);
-		}
-	} else {
-		// intel_then_strike — act1 and act2 are now arrays of phases
-		const act1 = campaign.act1;
-		const act2 = campaign.act2;
-		if (!Array.isArray(act1) || !act1.length) {
-			throw new Error("Campaign generation returned no act1 phases. Try again.");
-		}
-		if (!Array.isArray(act2) || !act2.length) {
-			throw new Error("Campaign generation returned no act2 phases. Try again.");
-		}
-		const allPhases = [...act1, ...act2];
-		const badLoc = allPhases.filter((p) => !isValidLoc(p.objective));
-		if (badLoc.length) {
-			const details = badLoc.map((p) => `"${p.objective}"`).join(", ");
-			throw new Error(`Campaign returned invalid location(s) not in ${province}: ${details}. Try again.`);
-		}
-		const badType = allPhases.filter((p) => !isValidType(p.missionTypeId));
-		if (badType.length) {
-			const details = badType.map((p) => `"${p.missionTypeId}"`).join(", ");
-			throw new Error(`Campaign returned invalid missionTypeId(s): ${details}. Try again.`);
-		}
-		if (!campaign.intelGate) {
-			throw new Error("Campaign generation missing intelGate. Try again.");
-		}
+	// ── Frontend sanity check ────────────────────────────────────────────────
+	if (!Array.isArray(advisory?.courses) || advisory.courses.length !== 2) {
+		throw new Error("Advisory generation returned unexpected structure. Try again.");
 	}
 
-	// ── Return with normalised top-level fields ───────────────────────────────
-	return {
-		...campaign,
-		operationStructure: campaign.structure,
-		friendlyConcerns:   campaign.friendlyConcerns ?? null,
-		exfilPlan:          campaign.exfilPlan ?? null,
-	};
+	const courseIds = advisory.courses.map((c) => c.id);
+	if (!advisory.recommendedCOA || !courseIds.includes(advisory.recommendedCOA)) {
+		throw new Error("Advisory generation returned an invalid recommended COA. Try again.");
+	}
+
+	return advisory;
 }

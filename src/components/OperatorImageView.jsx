@@ -174,10 +174,27 @@ const OperatorImageView = ({ operator, openSheet }) => {
 							<h2 className='font-mono text-2xl font-bold text-white tracking-wide truncate leading-none'>
 								{selectedOperator.callSign || "Unknown"}
 							</h2>
-							<p className='font-mono text-[9px] tracking-[0.22em] text-lines uppercase mt-1'>
-								{selectedOperator.class || "No Class"}
-								{selectedOperator.role ? ` · ${selectedOperator.role}` : ""}
-							</p>
+							<div className='flex flex-wrap items-center gap-1 mt-1'>
+								{(Array.isArray(selectedOperator.class)
+									? selectedOperator.class
+									: selectedOperator.class
+									? [selectedOperator.class]
+									: []
+								).slice(0, 3).map((cls) => (
+									<span
+										key={cls}
+										className='font-mono text-[8px] tracking-widest uppercase px-1.5 py-0.5 border border-lines/20 text-lines/55 rounded-sm'>
+										{cls}
+									</span>
+								))}
+								{(!selectedOperator.class ||
+									(Array.isArray(selectedOperator.class) &&
+										selectedOperator.class.length === 0)) && (
+									<span className='font-mono text-[9px] tracking-[0.22em] text-lines/35 uppercase'>
+										No Class
+									</span>
+								)}
+							</div>
 							<div className='flex flex-wrap items-center gap-1.5 mt-2'>
 								<span
 									className={`inline-flex items-center gap-1.5 font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-sm border ${status.badge}`}>

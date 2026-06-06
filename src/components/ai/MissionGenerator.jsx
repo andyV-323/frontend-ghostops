@@ -32,7 +32,7 @@ import {
 	faHandsBound,
 	faBrain,
 } from "@fortawesome/free-solid-svg-icons";
-import AIMissionGenerator from "@/components/ai/AIMissionGenerator";
+import AIAdvisor from "@/components/ai/AIAdvisor";
 
 // ── FA icon map ───────────────────────────────────────────────────────────────
 
@@ -351,10 +351,10 @@ export default function MissionGenerator({
 				})}
 			</div>
 
-			{/* ── AI mode — delegate entirely to AIMissionGenerator ───────── */}
+			{/* ── AI mode — delegate to AIAdvisor ──────────────────────────── */}
 			{
 				generationMode === "ai" ?
-					<AIMissionGenerator
+					<AIAdvisor
 						onGenerateAI={onGenerateAI}
 						setMapBounds={setMapBounds}
 						setImgURL={setImgURL}

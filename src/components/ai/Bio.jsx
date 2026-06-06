@@ -49,10 +49,13 @@ const Bio = ({ operator, refreshData }) => {
 	const handleGenerate = async () => {
 		setIsGenerating(true);
 		try {
+			const operatorClass = Array.isArray(operator.class)
+				? operator.class.join(", ")
+				: operator.class || null;
+
 			const res = await api.post("/ai/bio", {
 				callSign: operator.callSign,
-				operatorClass: operator.class,
-				role: operator.role || null,
+				operatorClass,
 				status: operator.status,
 				userNote: userNote.trim() || null,
 				kiaAO: isKIA ? kiaAO : null,

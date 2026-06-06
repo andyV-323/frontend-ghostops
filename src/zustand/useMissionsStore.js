@@ -111,48 +111,38 @@ const useMissionsStore = create((set, get) => ({
 		await get().updateMission(missionId, { briefingText });
 	},
 
-	// ── AI mission generator save ─────────────────────────────────────────────
-	// Called when AIMissionGenerator produces output.
-	// Saves everything in one write: standard generator fields + AI campaign fields.
+	// ── AI advisory save ──────────────────────────────────────────────────────
+	// Called when AIAdvisor produces output.
+	// Persists generator fields (map/location context) + advisory JSON.
 	//
-	// payload shape from AIMissionGenerator.onGenerateAI():
-	//   operationName, narrative, opType, aiGenerated, campaignPhases,
-	//   operationStructure, friendlyConcerns, exfilPlan,
-	//   selectedProvince, biome, bounds, imgURL, missionType,
-	//   briefing, infilPoint, exfilPoint, rallyPoint, infilMethod, exfilMethod, approachVector
+	// payload shape from AIAdvisor.onGenerateAI():
+	//   operationName, opType, aiGenerated, advisory,
+	//   selectedProvince, biome, bounds, imgURL, randomSelection
 
 	saveMissionGeneratorAI: async (missionId, payload) => {
 		if (!missionId) return;
 
 		const patch = {
-			// Standard fields — same as saveMissionGenerator
 			province: payload.selectedProvince,
 			biome: payload.biome,
-			briefingText: payload.briefing,
 
-			// Generator sub-doc — first phase drives the top-level generator
 			generator: {
 				generationMode: "ai",
 				selectedLocations: payload.randomSelection ?? [],
 				mapBounds: payload.bounds,
 				imgURL: payload.imgURL,
-				missionType: payload.missionType,
-				infilPoint: payload.infilPoint,
-				exfilPoint: payload.exfilPoint,
-				rallyPoint: payload.rallyPoint,
-				infilMethod: payload.infilMethod,
-				exfilMethod: payload.exfilMethod,
-				approachVector: payload.approachVector,
+				missionType: payload.missionType ?? "",
+				infilPoint: payload.infilPoint ?? null,
+				exfilPoint: payload.exfilPoint ?? null,
+				rallyPoint: payload.rallyPoint ?? null,
+				infilMethod: payload.infilMethod ?? "",
+				exfilMethod: payload.exfilMethod ?? "",
+				approachVector: payload.approachVector ?? "",
 			},
 
-			// AI campaign fields
 			aiGenerated: true,
 			opType: payload.opType,
-			operationNarrative: payload.narrative,
-			campaignPhases: payload.campaignPhases,
-			operationStructure: payload.operationStructure,
-			friendlyConcerns: payload.friendlyConcerns,
-			exfilPlan: payload.exfilPlan,
+			advisory: payload.advisory ?? null,
 		};
 
 		await get().updateMission(missionId, patch);

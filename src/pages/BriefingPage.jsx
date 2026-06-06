@@ -15,8 +15,8 @@ import {
 	AARSheet,
 	PhaseList,
 	PhaseReportSheet,
-	CampaignView,
 } from "@/components";
+import AdvisoryView from "@/components/AdvisoryView";
 import { MissionGenerator } from "@/components/ai";
 import useMissionsStore from "@/zustand/useMissionsStore";
 import { generateBriefing } from "@/utils/BriefingGenerator";
@@ -144,15 +144,9 @@ export default function BriefingPage({ onNewMission }) {
 	const g = activeMission?.generator || {};
 
 	// ── AI campaign fields ────────────────────────────────────────────────────
-	const campaignPhases = activeMission?.campaignPhases ?? [];
-	const totalCampaignPhases = campaignPhases.length;
-	const completedCampaignPhases = campaignPhases.filter(
-		(p) => p.status === "complete",
-	).length;
-	const isAIMission = !!activeMission?.aiGenerated;
+	const campaignPhases     = activeMission?.campaignPhases ?? [];
+	const isAIMission        = !!activeMission?.aiGenerated;
 	const operationStructure = activeMission?.operationStructure ?? "";
-	const friendlyConcerns   = activeMission?.friendlyConcerns ?? "";
-	const exfilPlan          = activeMission?.exfilPlan ?? "";
 
 	// For Structure A, multiple phases can be active simultaneously
 	const activePhases = isAIMission ? campaignPhases.filter((p) => p.status === "active") : [];
@@ -163,6 +157,14 @@ export default function BriefingPage({ onNewMission }) {
 	}, [activePhases.length]);
 
 	const [mapExpanded, setMapExpanded] = useState(false);
+	const [currentAdvisory, setCurrentAdvisory] = useState(
+		() => activeMission?.advisory ?? null,
+	);
+
+	// Rehydrate advisory whenever the active mission changes (page load / mission switch)
+	useEffect(() => {
+		setCurrentAdvisory(activeMission?.advisory ?? null);
+	}, [activeMission?._id]);
 
 	const activeCampaignPhase =
 		isAIMission ?
@@ -184,9 +186,11 @@ export default function BriefingPage({ onNewMission }) {
 
 	// ── Location markers ──────────────────────────────────────────────────────
 	const selectedLocations = g.selectedLocations || [];
-	const aiPhaseLocations = activeCampaignPhase?.location ? [activeCampaignPhase.location] : [];
+	// For advisory (isAIMission, no campaign phases): use saved selectedLocations from the generator.
+	// For classic campaign phases: use the active phase's location.
 	const locationSelection =
-		isAIMission ? aiPhaseLocations
+		isAIMission ?
+			activeCampaignPhase?.location ? [activeCampaignPhase.location] : selectedLocations
 		: generationMode === "ops" ? selectedLocations
 		: [];
 	const randomLocationSelection =
@@ -265,6 +269,7 @@ export default function BriefingPage({ onNewMission }) {
 
 	const handleGenerateAI = (payload) => {
 		if (!activeMission?._id) return;
+		if (payload.advisory) setCurrentAdvisory(payload.advisory);
 		saveMissionGeneratorAI(activeMission._id, payload);
 	};
 
@@ -325,28 +330,14 @@ export default function BriefingPage({ onNewMission }) {
 		);
 
 	const openPhaseListSheet = () => {
-		if (isAIMission) {
+		if (isAIMission && currentAdvisory) {
 			openSheet(
 				"bottom",
-				<CampaignView
-					mission={activeMission}
-					operationStructure={operationStructure}
-					friendlyConcerns={friendlyConcerns}
-					exfilPlan={exfilPlan}
-					onFileReport={() => {
-						close();
-						openPhaseSheet();
-					}}
-					onAAR={() => {
-						close();
-						openAARSheet();
-					}}
-					onClose={close}
-				/>,
-				"Campaign — " + (activeMission?.name ?? ""),
-				`${activeMission?.name} — AI Operation Phase Chain`,
+				<AdvisoryView advisory={currentAdvisory} />,
+				"Advisory — " + (activeMission?.name ?? ""),
+				`${activeMission?.name} — AI Tactical Advisory`,
 			);
-		} else {
+		} else if (!isAIMission) {
 			openSheet(
 				"right",
 				<PhaseList
@@ -439,9 +430,7 @@ export default function BriefingPage({ onNewMission }) {
 				onClick={openPhaseListSheet}
 				className={[
 					"flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase px-2 py-1 rounded-sm border transition-all",
-					isAIMission && totalCampaignPhases > 0 ?
-						"text-btn border-btn/30 bg-btn/5 hover:bg-btn/15 hover:border-btn/60"
-					: phaseCount > 0 ?
+					(isAIMission && currentAdvisory) || (!isAIMission && phaseCount > 0) ?
 						"text-btn border-btn/30 bg-btn/5 hover:bg-btn/15 hover:border-btn/60"
 					:	"text-lines/35 border-lines/15 hover:border-lines/30 hover:text-lines/55",
 				].join(" ")}>
@@ -450,13 +439,8 @@ export default function BriefingPage({ onNewMission }) {
 					className='text-[8px]'
 				/>
 				<span className='hidden sm:inline'>
-					{isAIMission ? "Campaign" : "Phases"}
+					{isAIMission ? "Advisory" : "Phases"}
 				</span>
-				{isAIMission && totalCampaignPhases > 0 && (
-					<span className='font-mono text-[8px] text-btn tabular-nums'>
-						{completedCampaignPhases}/{totalCampaignPhases}
-					</span>
-				)}
 				{!isAIMission && phaseCount > 0 && (
 					<span className='font-mono text-[8px] text-btn tabular-nums'>
 						{phaseCount}

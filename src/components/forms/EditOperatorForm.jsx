@@ -5,12 +5,11 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useOperatorsStore, useSheetStore } from "@/zustand";
 import { OperatorPropTypes } from "@/propTypes/OperatorPropTypes";
-import { useHandleChange, useFormActions, useConfirmDialog } from "@/hooks";
+import { useFormActions, useConfirmDialog } from "@/hooks";
 import { ConfirmDialog, ImageUpload } from "@/components";
 import { deleteOperatorImage } from "@/api/OperatorsApi";
 
 const EditOperatorForm = ({ operator }) => {
-	const handleChange = useHandleChange();
 	const { handleUpdateOperator, handleDeleteOperator } = useFormActions();
 	const { closeSheet } = useSheetStore();
 
@@ -45,9 +44,7 @@ const EditOperatorForm = ({ operator }) => {
 	};
 
 	useEffect(() => {
-		if (operator) {
-			fetchOperatorById(operatorId);
-		}
+		if (operator) fetchOperatorById(operatorId);
 	}, [operatorId]);
 
 	if (loading || !selectedOperator) {
@@ -58,12 +55,24 @@ const EditOperatorForm = ({ operator }) => {
 		);
 	}
 
-	const deleteOperator = (operatorId) => {
+	const deleteOperator = (id) => {
 		openDialog(async () => {
-			await handleDeleteOperator(operatorId);
+			await handleDeleteOperator(id);
 			await fetchOperators();
 			await closeSheet();
 		});
+	};
+
+	const selectedClasses = Array.isArray(selectedOperator.class)
+		? selectedOperator.class
+		: [];
+
+	const toggleClass = (cls) => {
+		const active = selectedClasses.includes(cls);
+		const next = active
+			? selectedClasses.filter((c) => c !== cls)
+			: [...selectedClasses, cls];
+		setSelectedOperator({ ...selectedOperator, class: next });
 	};
 
 	return (
@@ -71,18 +80,16 @@ const EditOperatorForm = ({ operator }) => {
 			<div className='flex flex-col items-end'>
 				<FontAwesomeIcon
 					icon={faTrash}
-					className=' text-red-600 text-2xl cursor-pointer hover:text-red-800'
+					className='text-red-600 text-2xl cursor-pointer hover:text-red-800'
 					onClick={() => deleteOperator(operatorId)}
 				/>
 				<br />
 				<form>
-					<h2 className='mb-4 text-xl font-bold '>I.D</h2>
+					<h2 className='mb-4 text-xl font-bold'>I.D</h2>
 					<div className='flex flex-col items-center'>
-						{/** THUMBNAIL IMAGE - PRESET ONLY **/}
+						{/** THUMBNAIL **/}
 						<div className='w-full mb-6'>
-							<label className='block mb-2 font-medium'>
-								Current Thumbnail
-							</label>
+							<label className='block mb-2 font-medium'>Current Thumbnail</label>
 							<div className='flex justify-center mb-3'>
 								<img
 									src={selectedOperator.image || "/ghost/Default.png"}
@@ -91,7 +98,6 @@ const EditOperatorForm = ({ operator }) => {
 									onError={(e) => (e.target.src = "/ghost/Default.png")}
 								/>
 							</div>
-
 							<label className='block mb-2 font-medium'>
 								Select Thumbnail (for Roster)
 							</label>
@@ -107,9 +113,7 @@ const EditOperatorForm = ({ operator }) => {
 								}>
 								<option value=''>Select Ghost</option>
 								{Object.keys(ghostID).map((key) => (
-									<option
-										key={key}
-										value={ghostID[key].image}>
+									<option key={key} value={ghostID[key].image}>
 										{key}
 									</option>
 								))}
@@ -121,9 +125,7 @@ const EditOperatorForm = ({ operator }) => {
 
 						{/** OPERATOR IMAGE **/}
 						<div className='mb-6 w-full flex flex-col gap-4'>
-							<h3 className='text-lg font-semibold text-fontz'>
-								Operator Image
-							</h3>
+							<h3 className='text-lg font-semibold text-fontz'>Operator Image</h3>
 							<div className='p-4 border border-gray-700 rounded-lg bg-gray-900/30'>
 								{selectedOperator.imageKey && (
 									<div className='mb-3'>
@@ -147,14 +149,12 @@ const EditOperatorForm = ({ operator }) => {
 									onImageUpload={handleImageUpload}
 								/>
 								{selectedOperator.imageKey && (
-									<p className='mt-2 text-xs text-green-400'>
-										✓ Image uploaded
-									</p>
+									<p className='mt-2 text-xs text-green-400'>✓ Image uploaded</p>
 								)}
 							</div>
 						</div>
 
-						{/*CALL SIGN*/}
+						{/** CALL SIGN **/}
 						<div className='w-full'>
 							<label className='block mb-2 font-medium'>
 								Call Sign <span className='text-red-500'>*</span>
@@ -165,47 +165,48 @@ const EditOperatorForm = ({ operator }) => {
 								className='form'
 								placeholder='Call Sign (e.g., Nomad, Fury)'
 								value={selectedOperator.callSign || ""}
-								onChange={handleChange}
-								required></input>
-						</div>
-						<br />
-
-						{/** CLASS **/}
-						<div className='w-full'>
-							<label className='block mb-2 font-medium'>Class</label>
-							<select
-								className='form '
-								value={selectedOperator.class || ""}
-								onChange={handleChange}
-								name='class'
-								required>
-								<option value=''>Select Class</option>
-								{CLASS.map((type) => (
-									<option
-										key={type}
-										value={type}>
-										{type}
-									</option>
-								))}
-							</select>
-						</div>
-						<br />
-
-						{/*Role*/}
-						<div className='w-full'>
-							<label className='block mb-2 font-medium text-fontz'>Role</label>
-							<input
-								type='text'
-								name='role'
-								className='form'
-								placeholder='Enter role (e.g., Sniper, Medic, Demolitions Expert, Cyber Warfare)'
-								value={selectedOperator?.role || ""}
-								onChange={handleChange}
+								onChange={(e) =>
+									setSelectedOperator({
+										...selectedOperator,
+										callSign: e.target.value,
+									})
+								}
+								required
 							/>
-							<p className='mt-1 text-xs text-gray-400'>
-								Define this operator&apos;s unique role and advanced training.
-								Be creative!
-							</p>
+						</div>
+						<br />
+
+						{/** CLASS — multi-select toggle, max 3 **/}
+						<div className='w-full'>
+							<label className='block mb-2 font-medium'>
+								Class{" "}
+								<span className='text-xs text-gray-400 font-normal'>
+									{selectedClasses.length}/3
+								</span>
+							</label>
+							<div className='grid grid-cols-3 gap-1.5 sm:grid-cols-4'>
+								{CLASS.map((cls) => {
+									const active = selectedClasses.includes(cls);
+									const atMax = selectedClasses.length >= 3 && !active;
+									return (
+										<button
+											key={cls}
+											type='button'
+											disabled={atMax}
+											onClick={() => toggleClass(cls)}
+											className={[
+												"py-2 px-1 border rounded-sm font-mono text-[10px] tracking-widest uppercase transition-all",
+												active
+													? "border-btn/50 bg-btn/10 text-btn"
+													: atMax
+													? "border-lines/10 text-lines/20 cursor-not-allowed"
+													: "border-lines/15 text-lines/40 hover:border-lines/30 hover:text-fontz/60",
+											].join(" ")}>
+											{cls}
+										</button>
+									);
+								})}
+							</div>
 						</div>
 
 						<br />
