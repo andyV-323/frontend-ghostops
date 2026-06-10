@@ -5,13 +5,13 @@ import {
 	faPeopleGroup,
 	faUsersGear,
 	faXmark,
-	faPlus,
-	faLink,
+	faBolt,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTeamsStore, useKitsStore, useOperatorsStore } from "@/zustand";
 import { TeamsApi } from "@/api";
 import { toast } from "react-toastify";
 import { PROVINCES } from "@/config";
+import { TEAMS as MISSION_TEMPLATES } from "@/config/teams";
 import { PropTypes } from "prop-types";
 import { useConfirmDialog } from "@/hooks";
 import { ConfirmDialog, TeamView } from "@/components";
@@ -36,6 +36,7 @@ function TeamOperator({
 	onDragStart,
 	onDragEnd,
 	onOperatorClick,
+	onUnassign,
 }) {
 	const { kits } = useKitsStore();
 	const { operators } = useOperatorsStore();
@@ -68,6 +69,24 @@ function TeamOperator({
 						getDot(op.status),
 					].join(" ")}
 				/>
+				{/* × unassign button */}
+				<button
+					onClick={(e) => {
+						e.stopPropagation();
+						onUnassign(op._id, teamId);
+					}}
+					title={`Unassign ${op.callSign}`}
+					className={[
+						"absolute -top-1 -right-1 w-4 h-4 rounded-full bg-neutral-900 border border-lines/60",
+						"flex items-center justify-center text-lines hover:text-red-400 hover:border-red-500/50",
+						"transition-all",
+						isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+					].join(" ")}>
+					<FontAwesomeIcon
+						icon={faXmark}
+						className='text-[8px]'
+					/>
+				</button>
 			</div>
 			<span className='font-mono text-[10px] tracking-wide text-lines group-hover:text-neutral-300 transition-colors text-center max-w-[48px] truncate leading-none'>
 				{op.callSign}
@@ -98,10 +117,13 @@ function TeamCard({
 	onAOChange,
 	onAttachTeam,
 	onDetachTeam,
+	onUnassignOperator,
+	onClearTeam,
+	onClearTeamAssets,
+	onDetachAllTeams,
+	onAutoAssign,
 }) {
-	const [showAddAsset, setShowAddAsset] = useState(false);
-	const [showAOPicker, setShowAOPicker] = useState(false);
-	const [showAttachPicker, setShowAttachPicker] = useState(false);
+	const [missionType, setMissionType] = useState("");
 	const isOver = dragOverTeam === team._id;
 
 	const attachedIds = new Set(
@@ -153,6 +175,12 @@ function TeamCard({
 					View
 				</button>
 				<button
+					onClick={() => onClearTeam(team._id)}
+					title='Clear team'
+					className='font-mono text-[10px] tracking-widest uppercase text-red-500/40 hover:text-red-400 border border-red-900/20 hover:border-red-500/40 px-1.5 py-0.5 rounded-sm transition-all'>
+					Clear
+				</button>
+				<button
 					onClick={() =>
 						openSheet(
 							"bottom",
@@ -186,6 +214,7 @@ function TeamCard({
 								onDragStart={onDragStart}
 								onDragEnd={onDragEnd}
 								onOperatorClick={onOperatorClick}
+								onUnassign={onUnassignOperator}
 							/>
 						))}
 					</div>
@@ -200,57 +229,66 @@ function TeamCard({
 			</div>
 
 			{/* ── AO ──────────────────────────────────────── */}
-			<div className='px-3 pt-2 pb-1 flex flex-col gap-1 border-t border-lines/60'>
+			<div className='px-3 pt-2 pb-2 flex flex-col gap-1 border-t border-lines/60'>
 				<p className='font-mono text-[10px] tracking-[0.25em] text-lines uppercase'>
 					AO
 				</p>
-				<div className='flex flex-wrap gap-1.5 items-center'>
-					{team.AO && (
-						<span className='inline-flex items-center gap-1 font-mono text-[10px] tracking-widest text-btn/70 bg-btn/5 border border-btn/30 px-1.5 py-0.5 uppercase'>
-							{team.AO}
-						</span>
-					)}
-					<button
-						onClick={() => setShowAOPicker((v) => !v)}
-						className='inline-flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase text-lines/60 hover:text-btn border border-lines/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
-						<FontAwesomeIcon
-							icon={faPlus}
-							className='text-[10px]'
-						/>
-						{team.AO ? "Change" : "AO"}
-					</button>
-				</div>
-				{showAOPicker && (
-					<select
-						className='w-full bg-neutral-950 border border-lines/60 rounded-sm px-2 py-1 font-mono text-[9px] text-lines outline-none focus:border-btn/50 transition-colors'
-						defaultValue={team.AO || ""}
-						onChange={(e) => {
-							onAOChange(team, e.target.value);
-							setShowAOPicker(false);
-						}}>
-						<option value=''>— No AO —</option>
-						{Object.keys(PROVINCES).map((key) => (
-							<option
-								key={key}
-								value={key}>
-								{key}
-							</option>
-						))}
-					</select>
-				)}
+				<select
+					value={team.AO || ""}
+					onChange={(e) => onAOChange(team, e.target.value)}
+					className='w-full bg-neutral-950 border border-lines/60 rounded-sm px-2 py-1 font-mono text-[9px] text-lines outline-none focus:border-btn/50 transition-colors'>
+					<option value=''>— No AO —</option>
+					{Object.keys(PROVINCES).map((key) => (
+						<option
+							key={key}
+							value={key}>
+							{key}
+						</option>
+					))}
+				</select>
+			</div>
+
+			{/* ── Auto-Assign ─────────────────────────────── */}
+			<div className='px-3 pb-2 flex gap-1.5 items-center border-t border-lines/60 pt-2'>
+				<FontAwesomeIcon
+					icon={faBolt}
+					className='text-lines/40 text-[9px] shrink-0'
+				/>
+				<select
+					value={missionType}
+					onChange={(e) => setMissionType(e.target.value)}
+					className='flex-1 bg-neutral-950 border border-lines/60 rounded-sm px-2 py-1 font-mono text-[9px] text-lines outline-none focus:border-btn/50 transition-colors'>
+					<option value=''>— Mission Type —</option>
+					{MISSION_TEMPLATES.map((t) => (
+						<option
+							key={t.name}
+							value={t.name}>
+							{t.name}
+						</option>
+					))}
+				</select>
+				<button
+					disabled={!missionType}
+					onClick={() => {
+						onAutoAssign(team._id, missionType);
+						setMissionType("");
+					}}
+					className='font-mono text-[9px] tracking-widest uppercase text-lines hover:text-btn border border-lines/60 hover:border-btn/40 px-2 py-1 rounded-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0'>
+					Fill
+				</button>
 			</div>
 
 			{/* ── Assets ──────────────────────────────────── */}
-			<div className='px-3 pb-3 flex flex-col gap-1.5 border-t border-lines/60'>
-				<div className='pt-2 flex flex-wrap gap-1.5 min-h-[18px]'>
-					{(team.assets || []).length === 0 ?
-						<span className='font-mono text-[10px] tracking-[0.3em] text-lines uppercase italic'>
-							No assets
-						</span>
-					:	(team.assets || []).map((asset) => {
-							const assetId = typeof asset === "object" ? asset._id : asset;
+			<div className='px-3 pt-2 pb-2 flex flex-col gap-1 border-t border-lines/60'>
+				<p className='font-mono text-[10px] tracking-[0.25em] text-lines uppercase'>
+					Assets
+				</p>
+				{(team.assets || []).length > 0 && (
+					<div className='flex flex-wrap gap-1.5'>
+						{(team.assets || []).map((asset) => {
+							const assetId = asset && typeof asset === "object" ? asset._id : asset;
 							const assetObj =
-								typeof asset === "object" ? asset : (
+								asset && typeof asset === "object" ? asset : (
 									fullVehicleList.find((v) => v._id === assetId)
 								);
 							const label =
@@ -270,58 +308,51 @@ function TeamCard({
 										className='text-lines hover:text-red-400 transition-colors ml-0.5'>
 										<FontAwesomeIcon
 											icon={faXmark}
-											className='text-[10px]'
+											className='text-[8px]'
 										/>
 									</button>
 								</span>
 							);
-						})
-					}
-					<button
-						onClick={() => setShowAddAsset((v) => !v)}
-						className='inline-flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase text-lines hover:text-btn border border-neutral-800/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
-						<FontAwesomeIcon
-							icon={faPlus}
-							className='text-[10px]'
-						/>
-						Asset
-					</button>
-				</div>
-				{/* Add asset dropdown */}
-				{showAddAsset && (
-					<select
-						className='w-full bg-neutral-950 border border-lines/60 rounded-sm px-2 py-1 font-mono text-[9px] text-lines outline-none focus:border-btn/50 transition-colors'
-						defaultValue=''
-						onChange={(e) => {
-							if (e.target.value) {
-								addVehicleToTeam(e.target.value, team._id);
-								setShowAddAsset(false);
-							}
-						}}>
-						<option value=''>— Select Asset —</option>
-						{allVehicles.map((v) => (
-							<option
-								key={v._id}
-								value={v._id}>
-								{v.nickName && v.nickName !== "None" ? `${v.nickName} — ` : ""}
-								{v.vehicle} · {v.condition} · {v.remainingFuel}%
-								{v.isRepairing ? " · Repairing" : ""}
-							</option>
-						))}
-					</select>
+						})}
+					</div>
 				)}
+				<select
+					value=''
+					onChange={(e) => {
+						const val = e.target.value;
+						if (val === "__clear__") {
+							onClearTeamAssets(team._id);
+						} else if (val) {
+							addVehicleToTeam(val, team._id);
+						}
+					}}
+					className='w-full bg-neutral-950 border border-lines/60 rounded-sm px-2 py-1 font-mono text-[9px] text-lines outline-none focus:border-btn/50 transition-colors'>
+					<option value=''>— Add Asset —</option>
+					{(team.assets || []).length > 0 && (
+						<option value='__clear__'>— Clear All Assets —</option>
+					)}
+					{allVehicles.map((v) => (
+						<option
+							key={v._id}
+							value={v._id}>
+							{v.nickName && v.nickName !== "None" ? `${v.nickName} — ` : ""}
+							{v.vehicle} · {v.condition} · {v.remainingFuel}%
+							{v.isRepairing ? " · Repairing" : ""}
+						</option>
+					))}
+				</select>
 			</div>
 
 			{/* ── Attached Teams ──────────────────────────── */}
-			<div className='px-3 pb-3 flex flex-col gap-1.5 border-t border-lines/60'>
-				<div className='pt-2 flex items-center gap-1.5 flex-wrap min-h-[18px]'>
-					{(team.attachedTeams || []).length === 0 ?
-						<span className='font-mono text-[10px] tracking-[0.3em] text-lines uppercase italic'>
-							No attached teams
-						</span>
-					:	(team.attachedTeams || []).map((attached) => {
-							const id = typeof attached === "object" ? attached._id : attached;
-							const name = typeof attached === "object" ? attached.name : id;
+			<div className='px-3 pt-2 pb-3 flex flex-col gap-1 border-t border-lines/60'>
+				<p className='font-mono text-[10px] tracking-[0.25em] text-lines uppercase'>
+					Attached
+				</p>
+				{(team.attachedTeams || []).length > 0 && (
+					<div className='flex flex-wrap gap-1.5'>
+						{(team.attachedTeams || []).map((attached) => {
+							const id = attached && typeof attached === "object" ? attached._id : attached;
+							const name = attached && typeof attached === "object" ? attached.name : id;
 							return (
 								<span
 									key={id}
@@ -335,43 +366,37 @@ function TeamCard({
 										className='text-lines hover:text-red-400 transition-colors ml-0.5'>
 										<FontAwesomeIcon
 											icon={faXmark}
-											className='text-[10px]'
+											className='text-[8px]'
 										/>
 									</button>
 								</span>
 							);
-						})
-					}
-					<button
-						onClick={() => setShowAttachPicker((v) => !v)}
-						className='inline-flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase text-lines hover:text-btn border border-lines/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
-						<FontAwesomeIcon
-							icon={faLink}
-							className='text-[10px]'
-						/>
-						Attach
-					</button>
-				</div>
-				{showAttachPicker && (
-					<select
-						className='w-full bg-neutral-950 border border-lines/60 rounded-sm px-2 py-1 font-mono text-[9px] text-lines outline-none focus:border-violet-900/50 transition-colors'
-						defaultValue=''
-						onChange={(e) => {
-							if (e.target.value) {
-								onAttachTeam(team._id, e.target.value);
-								setShowAttachPicker(false);
-							}
-						}}>
-						<option value=''>— Select Team —</option>
-						{attachableTeams.map((t) => (
-							<option
-								key={t._id}
-								value={t._id}>
-								{t.name}
-							</option>
-						))}
-					</select>
+						})}
+					</div>
 				)}
+				<select
+					value=''
+					onChange={(e) => {
+						const val = e.target.value;
+						if (val === "__clear__") {
+							onDetachAllTeams(team._id);
+						} else if (val) {
+							onAttachTeam(team._id, val);
+						}
+					}}
+					className='w-full bg-neutral-950 border border-lines/60 rounded-sm px-2 py-1 font-mono text-[9px] text-lines outline-none focus:border-btn/50 transition-colors'>
+					<option value=''>— Attach Team —</option>
+					{(team.attachedTeams || []).length > 0 && (
+						<option value='__clear__'>— Detach All —</option>
+					)}
+					{attachableTeams.map((t) => (
+						<option
+							key={t._id}
+							value={t._id}>
+							{t.name}
+						</option>
+					))}
+				</select>
 			</div>
 		</div>
 	);
@@ -393,6 +418,11 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		removeVehicleFromTeam,
 		attachTeamTo,
 		detachTeamFrom,
+		unassignOperatorFromTeam,
+		clearTeam,
+		clearTeamAssets,
+		detachAllTeams,
+		autoAssignTeam,
 	} = useTeamsStore();
 
 	const [selectedOperator, setSelectedOperator] = useState(null);
@@ -419,6 +449,15 @@ const Teams = ({ dataUpdated, openSheet }) => {
 			toast.error("Failed to update AO");
 			console.error(err);
 		}
+	};
+
+	const handleAutoAssign = (teamId, missionTypeName) => {
+		const template = MISSION_TEMPLATES.find((t) => t.name === missionTypeName);
+		if (!template) {
+			toast.error(`No template found for "${missionTypeName}"`);
+			return;
+		}
+		autoAssignTeam(teamId, template);
 	};
 
 	const allVehicles = useTeamsStore((s) => s.allVehicles);
@@ -568,6 +607,11 @@ const Teams = ({ dataUpdated, openSheet }) => {
 								onAOChange={handleAOChange}
 								onAttachTeam={attachTeamTo}
 								onDetachTeam={detachTeamFrom}
+								onUnassignOperator={unassignOperatorFromTeam}
+								onClearTeam={clearTeam}
+								onClearTeamAssets={clearTeamAssets}
+								onDetachAllTeams={detachAllTeams}
+								onAutoAssign={handleAutoAssign}
 							/>
 						))}
 					</div>
@@ -617,9 +661,9 @@ const Teams = ({ dataUpdated, openSheet }) => {
 				isOpen={isRemoveAllOpen}
 				closeDialog={closeRemoveAllDialog}
 				confirmAction={confirmRemoveAll}
-				title='Remove All Operators'
-				description='This will remove all operators from every team.'
-				message="All team assignments will be cleared. Operators won't be deleted, just unassigned."
+				title='Clear All Teams'
+				description='This will unassign all operators and clear all AOs from every team.'
+				message="Operators won't be deleted, just unassigned. AOs will be reset."
 			/>
 
 			<Sheet
@@ -651,6 +695,7 @@ TeamOperator.propTypes = {
 	onDragStart: PropTypes.func.isRequired,
 	onDragEnd: PropTypes.func.isRequired,
 	onOperatorClick: PropTypes.func.isRequired,
+	onUnassign: PropTypes.func.isRequired,
 };
 TeamCard.propTypes = {
 	team: PropTypes.object.isRequired,
@@ -673,6 +718,11 @@ TeamCard.propTypes = {
 	onAOChange: PropTypes.func.isRequired,
 	onAttachTeam: PropTypes.func.isRequired,
 	onDetachTeam: PropTypes.func.isRequired,
+	onUnassignOperator: PropTypes.func.isRequired,
+	onClearTeam: PropTypes.func.isRequired,
+	onClearTeamAssets: PropTypes.func.isRequired,
+	onDetachAllTeams: PropTypes.func.isRequired,
+	onAutoAssign: PropTypes.func.isRequired,
 };
 Teams.propTypes = {
 	dataUpdated: PropTypes.bool,

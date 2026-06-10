@@ -1,11 +1,11 @@
 // Roster.jsx — compact card grid
 import { useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUserPlus, faChevronRight } from "@fortawesome/free-solid-svg-icons";
-import { useOperatorsStore, useTeamsStore, useSheetStore, useKitsStore } from "@/zustand";
+import { faUserPlus } from "@fortawesome/free-solid-svg-icons";
+import { useOperatorsStore, useTeamsStore, useKitsStore } from "@/zustand";
 import { getOperatorDisplayImage } from "@/utils/operatorImage";
 import { PropTypes } from "prop-types";
-import { NewOperatorForm, AssignTeamSheet } from "@/components/forms";
+import { NewOperatorForm } from "@/components/forms";
 import { OperatorImageView } from "@/components";
 
 // ─── Status config ────────────────────────────────────────────
@@ -36,21 +36,49 @@ const STATUS_MAP = {
 	},
 };
 const getStatus = (s = "") => STATUS_MAP[s.toLowerCase()] ?? STATUS_MAP.kia;
-// ─── Team badge ───────────────────────────────────────────────
-function TeamBadge({ operator }) {
-	const { teams } = useTeamsStore();
-	const team = teams.find((t) =>
+// ─── Inline team selector ─────────────────────────────────────
+function OperatorTeamSelect({ operator }) {
+	const { teams, addOperatorToTeam, unassignOperatorFromTeam } = useTeamsStore();
+
+	const currentTeam = teams.find((t) =>
 		t.operators.some((op) => op._id === operator._id),
 	);
+
+	const unavailable =
+		["kia", "injured", "wounded"].includes(
+			(operator.status || "").toLowerCase(),
+		);
+
+	const handleChange = async (e) => {
+		const val = e.target.value;
+		if (!val) {
+			if (currentTeam) await unassignOperatorFromTeam(operator._id, currentTeam._id);
+		} else {
+			await addOperatorToTeam(operator._id, val);
+		}
+	};
+
 	return (
-		<span className={team ? "text-btn" : "text-lines/35"}>
-			{team ? team.name : "Unassigned"}
-		</span>
+		<select
+			value={currentTeam?._id || ""}
+			onChange={handleChange}
+			disabled={unavailable}
+			onClick={(e) => e.stopPropagation()}
+			className='w-full bg-neutral-950 border border-lines/15 rounded px-1.5 py-0.5 font-mono text-[8px] text-lines outline-none focus:border-btn/40 transition-colors disabled:opacity-40 cursor-pointer hover:border-lines/40'>
+			<option value=''>— Unassigned —</option>
+			{teams.map((t) => (
+				<option
+					key={t._id}
+					value={t._id}>
+					{t.name}
+				</option>
+			))}
+		</select>
 	);
 }
 
 // ─── Operator card ────────────────────────────────────────────
-function OperatorCard({ operatorId, openSheet, fetchTeams }) {
+function OperatorCard({ operatorId, openSheet }) {
 	const { operators, setClickedOperator, setSelectedOperator, activeClasses } =
 		useOperatorsStore();
 	const operator = operators.find((o) => o._id === operatorId);
@@ -112,31 +140,11 @@ function OperatorCard({ operatorId, openSheet, fetchTeams }) {
 				{activeClasses[operator._id] || operator.class || "—"}
 			</span>
 
-			{/* Team badge */}
+			{/* Inline team selector */}
 			<div
 				className='w-full mt-0.5'
-				onClick={(e) => {
-					e.stopPropagation();
-					openSheet(
-						"bottom",
-						<AssignTeamSheet
-							operator={operator}
-							onComplete={() => {
-								fetchTeams();
-								useSheetStore.getState().closeSheet();
-							}}
-						/>,
-						"Assign to Team",
-						`Assign ${operator.callSign} to a team or remove from current team.`,
-					);
-				}}>
-				<span className='flex items-center justify-center gap-1 w-full font-mono text-[8px] tracking-widest uppercase px-1.5 py-0.5 rounded border border-lines/15 hover:border-btn hover:text-btn transition-colors cursor-pointer'>
-					<TeamBadge operator={operator} />
-					<FontAwesomeIcon
-						icon={faChevronRight}
-						className='text-[6px] opacity-40'
-					/>
-				</span>
+				onClick={(e) => e.stopPropagation()}>
+				<OperatorTeamSelect operator={operator} />
 			</div>
 		</div>
 	);
@@ -190,7 +198,6 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 								key={operator._id}
 								operatorId={operator._id}
 								openSheet={openSheet}
-								fetchTeams={fetchTeams}
 							/>
 						))}
 					</div>
@@ -206,11 +213,10 @@ const TabbedRoster = ({ dataUpdated, openSheet }) => {
 };
 
 // ─── PropTypes ────────────────────────────────────────────────
-TeamBadge.propTypes = { operator: PropTypes.object.isRequired };
+OperatorTeamSelect.propTypes = { operator: PropTypes.object.isRequired };
 OperatorCard.propTypes = {
 	operatorId: PropTypes.string.isRequired,
 	openSheet: PropTypes.func.isRequired,
-	fetchTeams: PropTypes.func.isRequired,
 };
 TabbedRoster.propTypes = {
 	dataUpdated: PropTypes.bool,

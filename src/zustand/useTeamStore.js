@@ -13,6 +13,14 @@ import useMemorialStore from "./useMemorialStore";
 import useOperatorsStore from "./useOperatorStore";
 
 import { toast } from "react-toastify";
+
+// Safely extract a string ID from either a populated object or a bare ID string/value.
+// Guards against `null` (typeof null === "object") and non-string primitives.
+const toId = (v) => {
+	if (v && typeof v === "object") return v._id ?? null;
+	return v ?? null;
+};
+
 const useTeamsStore = create((set, get) => ({
 	teams: [],
 	team: null,
@@ -47,7 +55,7 @@ const useTeamsStore = create((set, get) => ({
 			const teams = get().teams || [];
 			const assignedIds = new Set(
 				teams.flatMap((t) =>
-					(t.assets || []).map((v) => (typeof v === "object" ? v._id : v)),
+					(t.assets || []).map((v) => (toId(v))),
 				),
 			);
 
@@ -511,7 +519,7 @@ const useTeamsStore = create((set, get) => ({
 			if (updatedSourceTeam && updatedTargetTeam) {
 				// Update source team (remove operator) - send only operator IDs
 				const sourceOperatorIds = updatedSourceTeam.operators.map((op) =>
-					typeof op === "object" ? op._id : op,
+					toId(op),
 				);
 
 				await TeamsApi.updateTeam(sourceTeamId, {
@@ -522,7 +530,7 @@ const useTeamsStore = create((set, get) => ({
 
 				// Update target team (add operator) - send only operator IDs
 				const targetOperatorIds = updatedTargetTeam.operators.map((op) =>
-					typeof op === "object" ? op._id : op,
+					toId(op),
 				);
 
 				await TeamsApi.updateTeam(targetTeamId, {
@@ -541,21 +549,252 @@ const useTeamsStore = create((set, get) => ({
 			get().fetchTeams();
 		}
 	},
-	// Remove all operators from all teams
+	// Remove all operators AND clear all AOs from every team
 	removeAllOperatorsFromTeams: async () => {
 		try {
-			const { teams, updateTeam, fetchTeams } = get();
+			const { teams } = get();
 
-			// Update each team to have empty operators array
+			set((state) => ({
+				teams: state.teams.map((t) => ({ ...t, operators: [], AO: null })),
+			}));
+
 			await Promise.all(
-				teams.map((team) => updateTeam({ ...team, operators: [] })),
+				teams.map((team) =>
+					TeamsApi.updateTeam(team._id, {
+						name: team.name,
+						createdBy: team.createdBy,
+						AO: null,
+						operators: [],
+						assets: (team.assets || []).map((a) =>
+							toId(a),
+						),
+					}),
+				),
 			);
 
-			await fetchTeams();
-			toast.success("All operators removed from teams!");
+			await get().fetchTeams();
+			toast.success("All teams cleared!");
 		} catch (error) {
-			console.error("Error removing operators:", error);
-			toast.error("Failed to remove operators from teams.");
+			console.error("Error clearing teams:", error);
+			toast.error("Failed to clear teams.");
+			get().fetchTeams();
+		}
+	},
+
+	// Remove one operator from one team
+	unassignOperatorFromTeam: async (operatorId, teamId) => {
+		try {
+			const { teams } = get();
+			const team = teams.find((t) => t._id === teamId);
+			if (!team) return;
+
+			set((state) => ({
+				teams: state.teams.map((t) =>
+					t._id === teamId ?
+						{ ...t, operators: t.operators.filter((op) => op._id !== operatorId) }
+					:	t,
+				),
+			}));
+
+			const updatedIds = team.operators
+				.filter((op) => op._id !== operatorId)
+				.map((op) => op._id);
+
+			await TeamsApi.updateTeam(teamId, {
+				name: team.name,
+				AO: team.AO,
+				operators: updatedIds,
+				assets: (team.assets || []).map((a) =>
+					toId(a),
+				),
+			});
+
+			toast.success("Operator unassigned");
+		} catch (error) {
+			console.error("ERROR unassigning operator:", error);
+			toast.error("Failed to unassign operator");
+			get().fetchTeams();
+		}
+	},
+
+	// Clear one team — operators AND AO
+	clearTeam: async (teamId) => {
+		try {
+			const { teams } = get();
+			const team = teams.find((t) => t._id === teamId);
+			if (!team) return;
+
+			set((state) => ({
+				teams: state.teams.map((t) =>
+					t._id === teamId ? { ...t, operators: [], AO: null } : t,
+				),
+			}));
+
+			await TeamsApi.updateTeam(teamId, {
+				name: team.name,
+				createdBy: team.createdBy,
+				AO: null,
+				operators: [],
+				assets: (team.assets || []).map((a) =>
+					toId(a),
+				),
+			});
+
+			toast.success(`${team.name} cleared`);
+		} catch (error) {
+			console.error("ERROR clearing team:", error);
+			toast.error("Failed to clear team");
+			get().fetchTeams();
+		}
+	},
+
+	// Remove all assets from one team
+	clearTeamAssets: async (teamId) => {
+		try {
+			const { teams } = get();
+			const team = teams.find((t) => t._id === teamId);
+			if (!team) return;
+
+			set((state) => ({
+				teams: state.teams.map((t) =>
+					t._id === teamId ? { ...t, assets: [] } : t,
+				),
+			}));
+
+			await TeamsApi.updateTeam(teamId, {
+				name: team.name,
+				AO: team.AO,
+				operators: (team.operators || []).map(toId),
+				assets: [],
+			});
+
+			toast.success("Assets cleared");
+			await get().fetchVehiclesForTeams();
+		} catch (error) {
+			console.error("ERROR clearing assets:", error);
+			toast.error("Failed to clear assets");
+			get().fetchTeams();
+		}
+	},
+
+	// Detach every attached team from a main team in one shot
+	detachAllTeams: async (mainTeamId) => {
+		try {
+			const { teams } = get();
+			const team = teams.find((t) => t._id === mainTeamId);
+			if (!team) return;
+
+			const attachedIds = (team.attachedTeams || []).map(toId).filter(Boolean);
+			if (attachedIds.length === 0) return;
+
+			await Promise.all(
+				attachedIds.map((id) => TeamsApi.detachTeam(mainTeamId, id)),
+			);
+
+			toast.success("All attached teams detached");
+			await get().fetchTeams();
+		} catch (error) {
+			console.error("ERROR detaching all teams:", error);
+			toast.error("Failed to detach all teams");
+			get().fetchTeams();
+		}
+	},
+
+	// Auto-assign operators to a team by mission-type template
+	// template = { name, lead, classes }
+	// Eligible pool: Active status + not locked on another team
+	autoAssignTeam: async (teamId, template) => {
+		try {
+			const { teams } = get();
+			const team = teams.find((t) => t._id === teamId);
+			if (!team) {
+				toast.error("Team not found");
+				return;
+			}
+
+			const { operators: allOps, activeClasses } =
+				useOperatorsStore.getState();
+
+			const lockedIds = new Set(
+				teams
+					.filter((t) => t._id !== teamId)
+					.flatMap((t) =>
+						t.operators.map((op) => (toId(op))),
+					),
+			);
+
+			const pool = allOps.filter((op) => {
+				const s = (op.status || "").toLowerCase();
+				return s === "active" && !lockedIds.has(op._id);
+			});
+
+			const total = template.classes.length;
+
+			if (pool.length === 0) {
+				toast.warning("0 eligible operators available — auto-assign skipped");
+				return;
+			}
+
+			const remaining = [...pool];
+			const picked = [];
+
+			const pickByClass = (cls) => {
+				const clsLower = (typeof cls === "string" ? cls : "").toLowerCase();
+				const idx = remaining.findIndex((op) => {
+					const raw = activeClasses[op._id] ?? op.class;
+					const eff = (typeof raw === "string" ? raw : "").toLowerCase();
+					return eff === clsLower;
+				});
+				return idx !== -1 ? remaining.splice(idx, 1)[0] : null;
+			};
+
+			// Fill lead slot first; fall back to any eligible if no class match
+			const otherSlots = [...template.classes];
+			const leadSlotIdx = otherSlots.findIndex(
+				(c) => c.toLowerCase() === template.lead.toLowerCase(),
+			);
+			if (leadSlotIdx !== -1) otherSlots.splice(leadSlotIdx, 1);
+
+			const lead =
+				pickByClass(template.lead) ??
+				(remaining.length > 0 ? remaining.shift() : null);
+			if (lead) picked.push(lead);
+
+			for (const cls of otherSlots) {
+				if (remaining.length === 0) break;
+				const op = pickByClass(cls) ?? remaining.shift();
+				if (op) picked.push(op);
+			}
+
+			const count = picked.length;
+			const pickedIds = picked.map((op) => op._id);
+
+			set((state) => ({
+				teams: state.teams.map((t) =>
+					t._id === teamId ? { ...t, operators: picked } : t,
+				),
+			}));
+
+			await TeamsApi.updateTeam(teamId, {
+				name: team.name,
+				AO: team.AO,
+				operators: pickedIds,
+				assets: (team.assets || []).map((a) =>
+					toId(a),
+				),
+			});
+
+			if (count === 0) {
+				toast.warning(`0 of ${total} slots filled — no eligible operators`);
+			} else if (count < total) {
+				toast.info(`Partial fill: ${count} of ${total} slots assigned`);
+			} else {
+				toast.success(`Auto-assigned ${count} of ${total} operators`);
+			}
+		} catch (error) {
+			console.error("ERROR auto-assigning team:", error);
+			toast.error("Auto-assign failed");
+			get().fetchTeams();
 		}
 	},
 	addVehicleToTeam: async (vehicleId, targetTeamId) => {
@@ -566,7 +805,7 @@ const useTeamsStore = create((set, get) => ({
 			if (!targetTeam) return toast.error("Target team not found");
 
 			const alreadyInTarget = (targetTeam.assets || []).some(
-				(v) => (typeof v === "object" ? v._id : v) === vehicleId,
+				(v) => (toId(v)) === vehicleId,
 			);
 			if (alreadyInTarget) return toast.warning("Vehicle already in this team");
 
@@ -574,7 +813,7 @@ const useTeamsStore = create((set, get) => ({
 				(t) =>
 					t._id !== targetTeamId &&
 					(t.assets || []).some(
-						(v) => (typeof v === "object" ? v._id : v) === vehicleId,
+						(v) => (toId(v)) === vehicleId,
 					),
 			);
 
@@ -588,7 +827,7 @@ const useTeamsStore = create((set, get) => ({
 						return {
 							...t,
 							assets: (t.assets || []).filter(
-								(v) => (typeof v === "object" ? v._id : v) !== vehicleId,
+								(v) => (toId(v)) !== vehicleId,
 							),
 						};
 					}
@@ -602,7 +841,7 @@ const useTeamsStore = create((set, get) => ({
 			// IDs only for backend
 			const targetAssetIds = [
 				...(targetTeam.assets || []).map((v) =>
-					typeof v === "object" ? v._id : v,
+					toId(v),
 				),
 				vehicleId,
 			];
@@ -611,20 +850,20 @@ const useTeamsStore = create((set, get) => ({
 				name: targetTeam.name,
 				AO: targetTeam.AO,
 				operators: (targetTeam.operators || []).map((op) =>
-					typeof op === "object" ? op._id : op,
+					toId(op),
 				),
 				assets: targetAssetIds,
 			});
 
 			if (sourceTeam) {
 				const sourceAssetIds = (sourceTeam.assets || [])
-					.filter((v) => (typeof v === "object" ? v._id : v) !== vehicleId)
-					.map((v) => (typeof v === "object" ? v._id : v));
+					.filter((v) => (toId(v)) !== vehicleId)
+					.map((v) => (toId(v)));
 
 				await TeamsApi.updateTeam(sourceTeam._id, {
 					name: sourceTeam.name,
 					operators: (sourceTeam.operators || []).map((op) =>
-						typeof op === "object" ? op._id : op,
+						toId(op),
 					),
 					assets: sourceAssetIds,
 				});
@@ -657,7 +896,7 @@ const useTeamsStore = create((set, get) => ({
 						{
 							...t,
 							assets: (t.assets || []).filter(
-								(v) => (typeof v === "object" ? v._id : v) !== vehicleId,
+								(v) => (toId(v)) !== vehicleId,
 							),
 						}
 					:	t,
@@ -665,13 +904,13 @@ const useTeamsStore = create((set, get) => ({
 			}));
 
 			const assetIds = (team.assets || [])
-				.filter((v) => (typeof v === "object" ? v._id : v) !== vehicleId)
-				.map((v) => (typeof v === "object" ? v._id : v));
+				.filter((v) => (toId(v)) !== vehicleId)
+				.map((v) => (toId(v)));
 
 			await TeamsApi.updateTeam(teamId, {
 				name: team.name,
 				operators: (team.operators || []).map((op) =>
-					typeof op === "object" ? op._id : op,
+					toId(op),
 				),
 				assets: assetIds,
 			});
@@ -705,7 +944,7 @@ const useTeamsStore = create((set, get) => ({
 			const { teams } = get();
 			const mainTeam = teams.find((t) => t._id === mainTeamId);
 			const alreadyAttached = (mainTeam?.attachedTeams || []).some(
-				(t) => (typeof t === "object" ? t._id : t) === teamId,
+				(t) => (toId(t)) === teamId,
 			);
 			if (alreadyAttached) {
 				toast.warning("Team is already attached");
