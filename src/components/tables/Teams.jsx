@@ -1,5 +1,15 @@
 // Teams.jsx — team cards grid, always-visible operators + assets
 import { useEffect, useState } from "react";
+
+const rolesObj = (roles) => {
+	if (!roles) return {};
+	if (roles instanceof Map) {
+		const out = {};
+		roles.forEach((v, k) => { if (v) out[String(k)] = v; });
+		return out;
+	}
+	return roles;
+};
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faPeopleGroup,
@@ -33,6 +43,8 @@ function TeamOperator({
 	op,
 	teamId,
 	isMobile,
+	isLead,
+	slotClass,
 	onDragStart,
 	onDragEnd,
 	onOperatorClick,
@@ -55,7 +67,12 @@ function TeamOperator({
 			onClick={(e) => onOperatorClick(op, e)}>
 			<div className='relative'>
 				<img
-					className='w-12 h-12 rounded-full border border-lines/60 group-hover:border-btn/50 bg-neutral-900 object-cover object-top transition-all'
+					className={[
+						"w-12 h-12 rounded-full border bg-neutral-900 object-cover object-top transition-all",
+						isLead ?
+							"border-btn shadow-[0_0_6px_rgba(124,170,121,0.45)]"
+						:	"border-lines/60 group-hover:border-btn/50",
+					].join(" ")}
 					src={avatarSrc}
 					onError={(e) => {
 						e.currentTarget.src = "/ghost/Default.png";
@@ -63,6 +80,11 @@ function TeamOperator({
 					alt={op.callSign}
 					title={op.callSign}
 				/>
+				{isLead && (
+					<span className='absolute -top-2.5 left-1/2 -translate-x-1/2 font-mono text-[6px] tracking-widest uppercase text-btn whitespace-nowrap'>
+						LEAD
+					</span>
+				)}
 				<span
 					className={[
 						"absolute -bottom-0.5 -left-0.5 w-2 h-2 rounded-full border border-lines/60",
@@ -88,9 +110,18 @@ function TeamOperator({
 					/>
 				</button>
 			</div>
-			<span className='font-mono text-[10px] tracking-wide text-lines group-hover:text-neutral-300 transition-colors text-center max-w-[48px] truncate leading-none'>
+			<span
+				className={[
+					"font-mono text-[10px] tracking-wide transition-colors text-center max-w-[52px] truncate leading-none",
+					isLead ? "text-btn" : "text-lines group-hover:text-neutral-300",
+				].join(" ")}>
 				{op.callSign}
 			</span>
+			{slotClass && (
+				<span className='font-mono text-[7px] tracking-widest uppercase text-lines/50 text-center max-w-[52px] truncate leading-none'>
+					{slotClass}
+				</span>
+			)}
 		</div>
 	);
 }
@@ -205,18 +236,26 @@ function TeamCard({
 				</p>
 				{team.operators.length > 0 ?
 					<div className='flex flex-wrap gap-3'>
-						{team.operators.map((op) => (
-							<TeamOperator
-								key={op._id}
-								op={op}
-								teamId={team._id}
-								isMobile={isMobile}
-								onDragStart={onDragStart}
-								onDragEnd={onDragEnd}
-								onOperatorClick={onOperatorClick}
-								onUnassign={onUnassignOperator}
-							/>
-						))}
+						{(() => {
+							const roles = rolesObj(team.operatorRoles);
+							return team.operators.map((op) => (
+								<TeamOperator
+									key={op._id}
+									op={op}
+									teamId={team._id}
+									isMobile={isMobile}
+									isLead={
+										!!team.leadId &&
+										String(op._id) === String(team.leadId)
+									}
+									slotClass={roles[op._id] || ""}
+									onDragStart={onDragStart}
+									onDragEnd={onDragEnd}
+									onOperatorClick={onOperatorClick}
+									onUnassign={onUnassignOperator}
+								/>
+							));
+						})()}
 					</div>
 				:	<p
 						className={[
@@ -692,6 +731,8 @@ TeamOperator.propTypes = {
 	op: PropTypes.object.isRequired,
 	teamId: PropTypes.string.isRequired,
 	isMobile: PropTypes.bool,
+	isLead: PropTypes.bool,
+	slotClass: PropTypes.string,
 	onDragStart: PropTypes.func.isRequired,
 	onDragEnd: PropTypes.func.isRequired,
 	onOperatorClick: PropTypes.func.isRequired,

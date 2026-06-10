@@ -1,5 +1,16 @@
 // Roster.jsx — compact card grid
 import { useEffect } from "react";
+
+// Plain-object view of a Mongoose Map or plain operatorRoles field
+const rolesObj = (roles) => {
+	if (!roles) return {};
+	if (roles instanceof Map) {
+		const out = {};
+		roles.forEach((v, k) => { if (v) out[String(k)] = v; });
+		return out;
+	}
+	return roles;
+};
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUserPlus } from "@fortawesome/free-solid-svg-icons";
 import { useOperatorsStore, useTeamsStore, useKitsStore } from "@/zustand";
@@ -36,20 +47,30 @@ const STATUS_MAP = {
 	},
 };
 const getStatus = (s = "") => STATUS_MAP[s.toLowerCase()] ?? STATUS_MAP.kia;
-// ─── Inline team selector ─────────────────────────────────────
+// ─── Inline team + class selector ────────────────────────────
 function OperatorTeamSelect({ operator }) {
-	const { teams, addOperatorToTeam, unassignOperatorFromTeam } = useTeamsStore();
+	const { teams, addOperatorToTeam, unassignOperatorFromTeam, setOperatorSlotClass } =
+		useTeamsStore();
 
 	const currentTeam = teams.find((t) =>
-		t.operators.some((op) => op._id === operator._id),
+		t.operators.some((op) => (op._id ?? op) === operator._id),
 	);
 
-	const unavailable =
-		["kia", "injured", "wounded"].includes(
-			(operator.status || "").toLowerCase(),
-		);
+	const currentSlotClass = currentTeam ?
+		(rolesObj(currentTeam.operatorRoles)[operator._id] || "")
+	:	"";
 
-	const handleChange = async (e) => {
+	const unavailable = ["kia", "injured", "wounded"].includes(
+		(operator.status || "").toLowerCase(),
+	);
+
+	// operator.class is [String] in the schema; secondaryClass not in schema (may be undefined)
+	const availableClasses = [
+		...(Array.isArray(operator.class) ? operator.class : operator.class ? [operator.class] : []),
+		...(operator.secondaryClass ? [operator.secondaryClass] : []),
+	].filter(Boolean).filter((c, i, arr) => arr.indexOf(c) === i);
+
+	const handleTeamChange = async (e) => {
 		const val = e.target.value;
 		if (!val) {
 			if (currentTeam) await unassignOperatorFromTeam(operator._id, currentTeam._id);
@@ -58,22 +79,48 @@ function OperatorTeamSelect({ operator }) {
 		}
 	};
 
+	const handleClassChange = async (e) => {
+		if (!currentTeam) return;
+		await setOperatorSlotClass(operator._id, currentTeam._id, e.target.value);
+	};
+
+	const selectCls =
+		"w-full bg-neutral-950 border border-lines/15 rounded px-1.5 py-0.5 font-mono text-[8px] text-lines outline-none focus:border-btn/40 transition-colors disabled:opacity-40 cursor-pointer hover:border-lines/40";
+
 	return (
-		<select
-			value={currentTeam?._id || ""}
-			onChange={handleChange}
-			disabled={unavailable}
-			onClick={(e) => e.stopPropagation()}
-			className='w-full bg-neutral-950 border border-lines/15 rounded px-1.5 py-0.5 font-mono text-[8px] text-lines outline-none focus:border-btn/40 transition-colors disabled:opacity-40 cursor-pointer hover:border-lines/40'>
-			<option value=''>— Unassigned —</option>
-			{teams.map((t) => (
-				<option
-					key={t._id}
-					value={t._id}>
-					{t.name}
-				</option>
-			))}
-		</select>
+		<div
+			className='w-full flex flex-col gap-0.5'
+			onClick={(e) => e.stopPropagation()}>
+			<select
+				value={currentTeam?._id || ""}
+				onChange={handleTeamChange}
+				disabled={unavailable}
+				className={selectCls}>
+				<option value=''>— Unassigned —</option>
+				{teams.map((t) => (
+					<option
+						key={t._id}
+						value={t._id}>
+						{t.name}
+					</option>
+				))}
+			</select>
+			{currentTeam && availableClasses.length > 0 && (
+				<select
+					value={currentSlotClass}
+					onChange={handleClassChange}
+					className={selectCls}>
+					<option value=''>— Class —</option>
+					{availableClasses.map((c) => (
+						<option
+							key={c}
+							value={c}>
+							{c}
+						</option>
+					))}
+				</select>
+			)}
+		</div>
 	);
 }
 
@@ -137,7 +184,7 @@ function OperatorCard({ operatorId, openSheet }) {
 			</span>
 			{/* Class */}
 			<span className='font-mono text-[8px] text-lines/40 truncate max-w-full text-center leading-none'>
-				{activeClasses[operator._id] || operator.class || "—"}
+				{activeClasses[operator._id] || (Array.isArray(operator.class) ? operator.class[0] : operator.class) || "—"}
 			</span>
 
 			{/* Inline team selector */}

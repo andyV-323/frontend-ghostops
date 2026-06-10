@@ -111,9 +111,12 @@ function OperatorCard({
 	assignedKits,
 	onViewKit,
 }) {
+	const { activeClasses } = useOperatorsStore();
 	const img = getOperatorDisplayImage(operator, assignedKits);
 	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
 	const isKIA = operator.status === "KIA";
+	const rawClass = Array.isArray(operator.class) ? operator.class[0] : operator.class;
+	const effectiveClass = activeClasses[operator._id] || rawClass;
 	const activeKit =
 		assignedKits.find((k) => k._id === operator.activeKitId) ||
 		assignedKits[0] ||
@@ -189,12 +192,21 @@ function OperatorCard({
 						<p className='font-mono text-xs font-bold text-neutral-100 leading-tight truncate'>
 							{operator.callSign || "Unknown"}
 						</p>
-						<p className='font-mono text-[9px] text-neutral-500 truncate uppercase tracking-wider'>
-							{operator.class || "—"}
+						<p className='font-mono text-[9px] text-neutral-500 uppercase tracking-wider leading-tight'>
+							{effectiveClass || "—"}
+							{operator.secondaryClass &&
+								operator.secondaryClass !== rawClass && (
+									<span className='text-neutral-700'>
+										{" "}
+										/ {operator.secondaryClass}
+									</span>
+								)}
 						</p>
-						<p className='font-mono text-[9px] text-neutral-500 truncate uppercase tracking-wider'>
-							{operator.role || "—"}
-						</p>
+						{operator.role && (
+							<p className='font-mono text-[9px] text-neutral-600 truncate uppercase tracking-wider'>
+								{operator.role}
+							</p>
+						)}
 					</div>
 
 					{activeKit ?
@@ -358,7 +370,7 @@ function KitSelectorSheet({ operator, kits, onToggleKit, onSetActiveKit }) {
 							{operator.callSign || "Unknown"}
 						</h3>
 						<p className='font-mono text-[9px] text-neutral-500 uppercase tracking-widest mt-0.5'>
-							{operator.class || operator.role || "—"}
+							{(Array.isArray(operator.class) ? operator.class[0] : operator.class) || operator.role || "—"}
 						</p>
 					</div>
 					<div className='flex items-center gap-2'>
