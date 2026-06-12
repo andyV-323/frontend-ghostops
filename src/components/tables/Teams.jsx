@@ -129,7 +129,6 @@ function TeamOperator({
 // ─── Team card ────────────────────────────────────────────────
 function TeamCard({
 	team,
-	allTeams,
 	isMobile,
 	dragOverTeam,
 	onDragOver,
@@ -141,28 +140,13 @@ function TeamCard({
 	onOperatorClick,
 	openSheet,
 	onViewTeam,
-	allVehicles,
-	fullVehicleList,
-	addVehicleToTeam,
-	removeVehicleFromTeam,
 	onAOChange,
-	onAttachTeam,
-	onDetachTeam,
 	onUnassignOperator,
 	onClearTeam,
-	onClearTeamAssets,
-	onDetachAllTeams,
 	onAutoAssign,
 }) {
 	const [missionType, setMissionType] = useState("");
 	const isOver = dragOverTeam === team._id;
-
-	const attachedIds = new Set(
-		(team.attachedTeams || []).map((t) => (typeof t === "object" ? t._id : t)),
-	);
-	const attachableTeams = allTeams.filter(
-		(t) => t._id !== team._id && !attachedIds.has(t._id),
-	);
 
 	return (
 		<div
@@ -317,126 +301,6 @@ function TeamCard({
 				</button>
 			</div>
 
-			{/* ── Assets ──────────────────────────────────── */}
-			<div className='px-3 pt-2 pb-2 flex flex-col gap-1 border-t border-lines/60'>
-				<p className='font-mono text-[10px] tracking-[0.25em] text-lines uppercase'>
-					Assets
-				</p>
-				{(team.assets || []).length > 0 && (
-					<div className='flex flex-wrap gap-1.5'>
-						{(team.assets || []).map((asset) => {
-							const assetId = asset && typeof asset === "object" ? asset._id : asset;
-							const assetObj =
-								asset && typeof asset === "object" ? asset : (
-									fullVehicleList.find((v) => v._id === assetId)
-								);
-							const label =
-								assetObj?.nickName && assetObj.nickName !== "None" ?
-									assetObj.nickName
-								:	assetObj?.vehicle || "Unknown";
-							return (
-								<span
-									key={assetId}
-									className='inline-flex items-center gap-1 font-mono text-[10px] tracking-widest text-btn/70 bg-btn/5 border border-btn/30 px-1.5 py-0.5 uppercase'>
-									{label}
-									<button
-										onClick={(e) => {
-											e.stopPropagation();
-											removeVehicleFromTeam(assetId, team._id);
-										}}
-										className='text-lines hover:text-red-400 transition-colors ml-0.5'>
-										<FontAwesomeIcon
-											icon={faXmark}
-											className='text-[8px]'
-										/>
-									</button>
-								</span>
-							);
-						})}
-					</div>
-				)}
-				<select
-					value=''
-					onChange={(e) => {
-						const val = e.target.value;
-						if (val === "__clear__") {
-							onClearTeamAssets(team._id);
-						} else if (val) {
-							addVehicleToTeam(val, team._id);
-						}
-					}}
-					className='w-full bg-neutral-950 border border-lines/60 rounded-sm px-2 py-1 font-mono text-[9px] text-lines outline-none focus:border-btn/50 transition-colors'>
-					<option value=''>— Add Asset —</option>
-					{(team.assets || []).length > 0 && (
-						<option value='__clear__'>— Clear All Assets —</option>
-					)}
-					{allVehicles.map((v) => (
-						<option
-							key={v._id}
-							value={v._id}>
-							{v.nickName && v.nickName !== "None" ? `${v.nickName} — ` : ""}
-							{v.vehicle} · {v.condition} · {v.remainingFuel}%
-							{v.isRepairing ? " · Repairing" : ""}
-						</option>
-					))}
-				</select>
-			</div>
-
-			{/* ── Attached Teams ──────────────────────────── */}
-			<div className='px-3 pt-2 pb-3 flex flex-col gap-1 border-t border-lines/60'>
-				<p className='font-mono text-[10px] tracking-[0.25em] text-lines uppercase'>
-					Attached
-				</p>
-				{(team.attachedTeams || []).length > 0 && (
-					<div className='flex flex-wrap gap-1.5'>
-						{(team.attachedTeams || []).map((attached) => {
-							const id = attached && typeof attached === "object" ? attached._id : attached;
-							const name = attached && typeof attached === "object" ? attached.name : id;
-							return (
-								<span
-									key={id}
-									className='inline-flex items-center gap-1 font-mono text-[10px] tracking-widest text-btn/70 bg-btn/5 border border-btn/30 px-1.5 py-0.5 uppercase'>
-									{name}
-									<button
-										onClick={(e) => {
-											e.stopPropagation();
-											onDetachTeam(team._id, id);
-										}}
-										className='text-lines hover:text-red-400 transition-colors ml-0.5'>
-										<FontAwesomeIcon
-											icon={faXmark}
-											className='text-[8px]'
-										/>
-									</button>
-								</span>
-							);
-						})}
-					</div>
-				)}
-				<select
-					value=''
-					onChange={(e) => {
-						const val = e.target.value;
-						if (val === "__clear__") {
-							onDetachAllTeams(team._id);
-						} else if (val) {
-							onAttachTeam(team._id, val);
-						}
-					}}
-					className='w-full bg-neutral-950 border border-lines/60 rounded-sm px-2 py-1 font-mono text-[9px] text-lines outline-none focus:border-btn/50 transition-colors'>
-					<option value=''>— Attach Team —</option>
-					{(team.attachedTeams || []).length > 0 && (
-						<option value='__clear__'>— Detach All —</option>
-					)}
-					{attachableTeams.map((t) => (
-						<option
-							key={t._id}
-							value={t._id}>
-							{t.name}
-						</option>
-					))}
-				</select>
-			</div>
 		</div>
 	);
 }
@@ -447,20 +311,13 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		teams,
 		fetchTeams,
 		fetchOperators,
-		fetchVehiclesForTeams,
 		assignRandomInjury,
 		assignRandomKIAInjury,
 		assignUnknownFate,
 		transferOperator,
 		removeAllOperatorsFromTeams,
-		addVehicleToTeam,
-		removeVehicleFromTeam,
-		attachTeamTo,
-		detachTeamFrom,
 		unassignOperatorFromTeam,
 		clearTeam,
-		clearTeamAssets,
-		detachAllTeams,
 		autoAssignTeam,
 	} = useTeamsStore();
 
@@ -499,8 +356,6 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		autoAssignTeam(teamId, template);
 	};
 
-	const allVehicles = useTeamsStore((s) => s.allVehicles);
-	const fullVehicleList = useTeamsStore((s) => s.fullVehicleList);
 	const userId = localStorage.getItem("userId");
 
 	const isMobile =
@@ -521,15 +376,8 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	useEffect(() => {
 		fetchTeams();
 		fetchOperators();
-		fetchVehiclesForTeams();
 		fetchKits();
-	}, [
-		fetchTeams,
-		dataUpdated,
-		fetchOperators,
-		fetchVehiclesForTeams,
-		fetchKits,
-	]);
+	}, [fetchTeams, dataUpdated, fetchOperators, fetchKits]);
 
 	const handleOperatorClick = (operator, e) => {
 		e.stopPropagation();
@@ -627,7 +475,6 @@ const Teams = ({ dataUpdated, openSheet }) => {
 							<TeamCard
 								key={team._id}
 								team={team}
-								allTeams={teams}
 								isMobile={isMobile}
 								dragOverTeam={dragOverTeam}
 								onDragOver={handleDragOver}
@@ -639,17 +486,9 @@ const Teams = ({ dataUpdated, openSheet }) => {
 								onOperatorClick={handleOperatorClick}
 								openSheet={openSheet}
 								onViewTeam={(id) => setTeamViewId(id)}
-								allVehicles={allVehicles}
-								fullVehicleList={fullVehicleList}
-								addVehicleToTeam={addVehicleToTeam}
-								removeVehicleFromTeam={removeVehicleFromTeam}
 								onAOChange={handleAOChange}
-								onAttachTeam={attachTeamTo}
-								onDetachTeam={detachTeamFrom}
 								onUnassignOperator={unassignOperatorFromTeam}
 								onClearTeam={clearTeam}
-								onClearTeamAssets={clearTeamAssets}
-								onDetachAllTeams={detachAllTeams}
 								onAutoAssign={handleAutoAssign}
 							/>
 						))}
@@ -740,7 +579,6 @@ TeamOperator.propTypes = {
 };
 TeamCard.propTypes = {
 	team: PropTypes.object.isRequired,
-	allTeams: PropTypes.array,
 	isMobile: PropTypes.bool,
 	dragOverTeam: PropTypes.string,
 	onDragOver: PropTypes.func.isRequired,
@@ -752,17 +590,9 @@ TeamCard.propTypes = {
 	onOperatorClick: PropTypes.func.isRequired,
 	openSheet: PropTypes.func.isRequired,
 	onViewTeam: PropTypes.func.isRequired,
-	allVehicles: PropTypes.array,
-	fullVehicleList: PropTypes.array,
-	addVehicleToTeam: PropTypes.func.isRequired,
-	removeVehicleFromTeam: PropTypes.func.isRequired,
 	onAOChange: PropTypes.func.isRequired,
-	onAttachTeam: PropTypes.func.isRequired,
-	onDetachTeam: PropTypes.func.isRequired,
 	onUnassignOperator: PropTypes.func.isRequired,
 	onClearTeam: PropTypes.func.isRequired,
-	onClearTeamAssets: PropTypes.func.isRequired,
-	onDetachAllTeams: PropTypes.func.isRequired,
 	onAutoAssign: PropTypes.func.isRequired,
 };
 Teams.propTypes = {

@@ -201,7 +201,7 @@ const useTeamsStore = create((set, get) => ({
 		}
 	},
 
-	addOperatorToTeam: async (operatorId, targetTeamId) => {
+	addOperatorToTeam: async (operatorId, targetTeamId, selectedClass) => {
 		try {
 			const { teams, fullOperatorList } = get();
 
@@ -222,10 +222,10 @@ const useTeamsStore = create((set, get) => ({
 			const operatorToMove = fullOperatorList.find((op) => op._id === operatorId);
 			if (!operatorToMove) { toast.error("Operator not found"); return; }
 
-			// Default slot class: current active class or primary class
+			// Use caller-provided class, then active class, then first class
 			const { activeClasses } = useOperatorsStore.getState();
 			const defaultSlotClass =
-				activeClasses[operatorId] || firstStr(operatorToMove.class) || "";
+				selectedClass || activeClasses[operatorId] || firstStr(operatorToMove.class) || "";
 
 			// Build updated operatorRoles for target
 			const targetRoles = {
@@ -776,8 +776,14 @@ const useTeamsStore = create((set, get) => ({
 				return;
 			}
 
-			const { operators: allOps, activeClasses } =
-				useOperatorsStore.getState();
+			// Use the operator list already fetched by fetchOperators() in this store,
+			// falling back to useOperatorsStore in case allOperators isn't populated yet.
+			const storeOps = get().allOperators;
+			const allOps = storeOps.length > 0
+				? storeOps
+				: useOperatorsStore.getState().operators.filter(
+						(op) => (op.status || "").toLowerCase() === "active",
+					);
 
 			const lockedIds = new Set(
 				teams
@@ -787,63 +793,97 @@ const useTeamsStore = create((set, get) => ({
 					),
 			);
 
-			const pool = allOps.filter((op) => {
-				const s = (op.status || "").toLowerCase();
-				return s === "active" && !lockedIds.has(op._id);
-			});
+			// Build a set of classes that are valid for this mission.
+			// template.validClasses is the explicit list from the config.
+			const validClassSet = new Set(
+				(template.validClasses || template.classes).map(
+					(c) => (typeof c === "string" ? c.toLowerCase() : ""),
+				),
+			);
+
+			const hasValidClass = (op) => {
+				const classes = Array.isArray(op.class) ? op.class : op.class ? [op.class] : [];
+				return classes.some(
+					(c) => typeof c === "string" && validClassSet.has(c.toLowerCase()),
+				);
+			};
+
+			// Filter the pool to only operators with a valid class for this mission.
+			// This guarantees no invalid class is ever added regardless of fallback path.
+			const validPool = allOps.filter(
+				(op) => !lockedIds.has(op._id) && hasValidClass(op),
+			);
 
 			const total = template.classes.length;
 
-			if (pool.length === 0) {
-				toast.warning("0 eligible operators available — auto-assign skipped");
+			if (validPool.length === 0) {
+				toast.warning("No eligible operators with valid classes — auto-assign skipped");
 				return;
 			}
 
-			const remaining = [...pool];
-			// Track { op, slotClass } to build operatorRoles after picking
+			const remaining = [...validPool];
 			const assignments = [];
 
-			// Operator.class is [String] — check if any of the operator's classes match cls.
+			// Pick an operator whose class exactly matches cls.
 			const pickByClass = (cls) => {
 				const clsLower = (typeof cls === "string" ? cls : "").toLowerCase();
 				const idx = remaining.findIndex((op) => {
-					const classes = Array.isArray(op.class)
-						? op.class
-						: op.class ? [op.class] : [];
-					return classes.some(
-						(c) => typeof c === "string" && c.toLowerCase() === clsLower,
-					);
+					const classes = Array.isArray(op.class) ? op.class : op.class ? [op.class] : [];
+					return classes.some((c) => typeof c === "string" && c.toLowerCase() === clsLower);
 				});
 				return idx !== -1 ? remaining.splice(idx, 1)[0] : null;
 			};
 
-			// Remove one instance of lead class from the remaining slots list
+			// Pick any operator still in remaining (all are valid classes at this point).
+			const pickAny = () =>
+				remaining.length > 0 ? remaining.splice(0, 1)[0] : null;
+
+			// Return the operator's class that is valid for this mission.
+			// Avoids labeling a multi-class operator (e.g. ["Pathfinder","Sharpshooter"])
+			// with an invalid class just because it happens to be first in the array.
+			const validSlotClass = (op) => {
+				const classes = Array.isArray(op.class) ? op.class : op.class ? [op.class] : [];
+				return (
+					classes.find((c) => typeof c === "string" && validClassSet.has(c.toLowerCase())) ||
+					firstStr(op.class)
+				);
+			};
+
+			// Remove one lead-class slot from the list so total count stays correct.
 			const otherSlots = [...template.classes];
 			const leadSlotIdx = otherSlots.findIndex(
 				(c) => c.toLowerCase() === template.lead.toLowerCase(),
 			);
 			if (leadSlotIdx !== -1) otherSlots.splice(leadSlotIdx, 1);
 
-			// Pick lead: try lead class first; fall back to first match among other slot
-			// classes — never assign an operator of a completely unrelated class as lead.
+			// Lead: exact lead class → any valid class → skip
 			const leadMatch = pickByClass(template.lead);
 			if (leadMatch) {
 				assignments.push({ op: leadMatch, slotClass: template.lead });
 			} else {
-				for (let i = 0; i < otherSlots.length; i++) {
-					const fallbackLead = pickByClass(otherSlots[i]);
-					if (fallbackLead) {
-						assignments.push({ op: fallbackLead, slotClass: otherSlots[i] });
-						otherSlots.splice(i, 1);
-						break;
-					}
+				const fallbackLead = pickAny();
+				if (fallbackLead) {
+					assignments.push({
+						op: fallbackLead,
+						slotClass: validSlotClass(fallbackLead),
+					});
 				}
 			}
 
-			// Fill remaining slots — strict class match only, no random fallback
+			// Fill each remaining slot: exact class match → any valid class → skip
 			for (const cls of otherSlots) {
 				const op = pickByClass(cls);
-				if (op) assignments.push({ op, slotClass: cls });
+				if (op) {
+					assignments.push({ op, slotClass: cls });
+				} else {
+					const fallback = pickAny();
+					if (fallback) {
+						assignments.push({
+							op: fallback,
+							slotClass: validSlotClass(fallback),
+						});
+					}
+				}
 			}
 
 			const picked = assignments.map((a) => a.op);
