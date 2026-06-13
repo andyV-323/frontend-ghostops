@@ -1,6 +1,16 @@
 // TeamView.jsx — Military Team Dossier
 
 import { useTeamsStore, useOperatorsStore, useKitsStore } from "@/zustand";
+
+const rolesObj = (roles) => {
+	if (!roles) return {};
+	if (roles instanceof Map) {
+		const out = {};
+		roles.forEach((v, k) => { if (v) out[String(k)] = v; });
+		return out;
+	}
+	return roles;
+};
 import { useEffect, useMemo, useState } from "react";
 import { ITEMS, GARAGE, PROVINCES } from "@/config";
 import { PropTypes } from "prop-types";
@@ -106,17 +116,17 @@ function FuelBar({ pct }) {
 /* ─── Operator portrait card (compact grid tile) ────────────── */
 function OperatorCard({
 	operator,
+	slotClass,
 	onInjuryClick,
 	onKitSelectClick,
 	assignedKits,
 	onViewKit,
 }) {
-	const { activeClasses } = useOperatorsStore();
 	const img = getOperatorDisplayImage(operator, assignedKits);
 	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
 	const isKIA = operator.status === "KIA";
 	const rawClass = Array.isArray(operator.class) ? operator.class[0] : operator.class;
-	const effectiveClass = activeClasses[operator._id] || rawClass;
+	const effectiveClass = slotClass || rawClass;
 	const activeKit =
 		assignedKits.find((k) => k._id === operator.activeKitId) ||
 		assignedKits[0] ||
@@ -508,8 +518,6 @@ const TeamView = ({ teamId }) => {
 		assignRandomInjury,
 		assignRandomKIAInjury,
 		assignUnknownFate,
-		attachTeamTo,
-		detachTeamFrom,
 	} = useTeamsStore();
 	const { operators, fetchOperators } = useOperatorsStore();
 	const { kits, fetchKits } = useKitsStore();
@@ -523,7 +531,6 @@ const TeamView = ({ teamId }) => {
 	const [showAOSelector, setShowAOSelector] = useState(false);
 	const [savingAO, setSavingAO] = useState(false);
 	const [localAO, setLocalAO] = useState("");
-	const [showAttachPicker, setShowAttachPicker] = useState(false);
 
 
 	useEffect(() => {
@@ -609,16 +616,13 @@ const TeamView = ({ teamId }) => {
 			assets !== null ?
 				Math.round((opsScore * 0.7 + assets * 0.3) * 100)
 			:	Math.round(opsScore * 100);
-		const attachedBonus = (selectedTeam?.attachedTeams?.length ?? 0) * 10;
-		const score = Math.min(100, base + attachedBonus);
 		return {
-			score,
+			score: Math.min(100, base),
 			active,
 			total,
 			assets: assets !== null ? Math.round(assets * 100) : null,
-			attachedBonus,
 		};
-	}, [teamOps, selectedTeam?.assets, selectedTeam?.attachedTeams]);
+	}, [teamOps, selectedTeam?.assets]);
 
 	/* Kit map: operatorId → kit[] (all assigned kits in order) */
 	const kitMap = useMemo(() => {
@@ -707,23 +711,6 @@ const TeamView = ({ teamId }) => {
 			setSavingAO(false);
 		}
 	};
-
-	const attachedTeams = useMemo(
-		() => selectedTeam?.attachedTeams || [],
-		[selectedTeam],
-	);
-
-	const attachableTeams = useMemo(
-		() =>
-			teams.filter((t) => {
-				if (t._id === teamId) return false;
-				const alreadyAttached = attachedTeams.some(
-					(a) => (typeof a === "object" ? a._id : a) === t._id,
-				);
-				return !alreadyAttached;
-			}),
-		[teams, teamId, attachedTeams],
-	);
 
 	if (!selectedTeam) {
 		return (
@@ -886,52 +873,10 @@ const TeamView = ({ teamId }) => {
 									<span className='text-neutral-500'>{readiness.assets}%</span>
 								</span>
 							)}
-							{readiness.attachedBonus > 0 && (
-								<span className='font-mono text-[7px] text-btn uppercase tracking-wide'>
-									ATTACHED{" "}
-									<span className='text-btn'>+{readiness.attachedBonus}%</span>
-								</span>
-							)}
 						</div>
 					</div>
 				)}
 
-				{/* Attach team row */}
-				<div className='mt-3 pt-3 border-t border-neutral-800/60 flex items-center gap-2 flex-wrap'>
-					<span className='font-mono text-[7px] tracking-[0.3em] text-neutral-600 uppercase flex-1'>
-						{attachedTeams.length > 0 ?
-							`${attachedTeams.length} attached`
-						:	"Attached Teams"}
-					</span>
-					<button
-						type='button'
-						onClick={() => setShowAttachPicker((v) => !v)}
-						className='flex items-center gap-1 font-mono text-[7px] tracking-widest uppercase px-2 py-0.5 border text-neutral-600 border-neutral-700/40 hover:text-btn hover:border-btn transition-colors'>
-						Attach
-					</button>
-				</div>
-				{showAttachPicker && (
-					<div className='mt-2'>
-						<select
-							className='w-full bg-neutral-950 border border-neutral-700/60 px-2 py-1 font-mono text-[9px] text-neutral-300 outline-none focus:border-btn'
-							defaultValue=''
-							onChange={(e) => {
-								if (e.target.value) {
-									attachTeamTo(teamId, e.target.value);
-									setShowAttachPicker(false);
-								}
-							}}>
-							<option value=''>— Select Team to Attach —</option>
-							{attachableTeams.map((t) => (
-								<option
-									key={t._id}
-									value={t._id}>
-									{t.name}
-								</option>
-							))}
-						</select>
-					</div>
-				)}
 			</div>
 
 			{/* ── Operator lineup ──────────────────────────── */}
@@ -945,6 +890,7 @@ const TeamView = ({ teamId }) => {
 						<OperatorCard
 							key={op._id || i}
 							operator={op}
+							slotClass={rolesObj(selectedTeam.operatorRoles)[op._id]}
 							onInjuryClick={handleOpenInjuryDialog}
 							onKitSelectClick={setKitSelectorOp}
 							assignedKits={kitMap[op._id] || []}
@@ -974,82 +920,6 @@ const TeamView = ({ teamId }) => {
 								asset={asset}
 							/>
 						))}
-					</div>
-				</>
-			)}
-
-			{/* ── Attached Teams ───────────────────────────── */}
-			{attachedTeams.length > 0 && (
-				<>
-					<SectionHeader
-						label='Attached Teams'
-						count={attachedTeams.length}
-					/>
-					<div className='flex flex-col divide-y divide-neutral-800/60 border-b border-neutral-800/60'>
-						{attachedTeams.map((attached) => {
-							const id = typeof attached === "object" ? attached._id : attached;
-							const name = typeof attached === "object" ? attached.name : id;
-							const ops =
-								typeof attached === "object" ? attached.operators || [] : [];
-							const assets =
-								typeof attached === "object" ? attached.assets || [] : [];
-
-							return (
-								<div
-									key={id}
-									className='px-4 py-3 bg-neutral-950/20'>
-									<div className='flex items-center gap-2 mb-2'>
-										<span className='font-mono text-[9px] font-semibold text-neutral-300 flex-1 truncate tracking-wide uppercase'>
-											{name}
-										</span>
-										<button
-											onClick={() => detachTeamFrom(teamId, id)}
-											className='flex items-center gap-1 font-mono text-[6px] tracking-widest uppercase text-neutral-700 hover:text-red-400 border border-neutral-800/40 hover:border-red-900/40 px-1.5 py-0.5 transition-colors'>
-											<FontAwesomeIcon
-												icon={faXmark}
-												className='text-[6px]'
-											/>
-											Detach
-										</button>
-									</div>
-
-									{ops.length > 0 ?
-										<div className={`grid mb-2 ${getOpCols(ops.length)}`}>
-											{ops.map((op, i) => {
-												const resolved =
-													typeof op === "object" && op._id ?
-														operators.find((o) => o._id === op._id) || op
-													:	op;
-												return (
-													<OperatorCard
-														key={resolved._id || i}
-														operator={resolved}
-														onInjuryClick={() => {}}
-														onKitSelectClick={setKitSelectorOp}
-														assignedKits={kitMap[resolved._id] || []}
-														onViewKit={(kit) => setViewingKit(kit)}
-													/>
-												);
-											})}
-										</div>
-									:	<span className='font-mono text-[7px] text-neutral-700 italic mb-2 block'>
-											No operators
-										</span>
-									}
-
-									{assets.length > 0 && (
-										<div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
-											{assets.map((asset, i) => (
-												<AssetCard
-													key={typeof asset === "object" ? asset._id || i : i}
-													asset={asset}
-												/>
-											))}
-										</div>
-									)}
-								</div>
-							);
-						})}
 					</div>
 				</>
 			)}
@@ -1129,6 +999,7 @@ SectionHeader.propTypes = { label: PropTypes.string, count: PropTypes.number };
 FuelBar.propTypes = { pct: PropTypes.number };
 OperatorCard.propTypes = {
 	operator: PropTypes.object,
+	slotClass: PropTypes.string,
 	onInjuryClick: PropTypes.func,
 	onKitSelectClick: PropTypes.func,
 	assignedKits: PropTypes.array,
