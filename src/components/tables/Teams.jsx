@@ -1,4 +1,4 @@
-// Teams.jsx — team cards grid, always-visible operators + assets
+// Teams.jsx — team cards grid, inline edit, + operator button
 import { useEffect, useState } from "react";
 
 const rolesObj = (roles) => {
@@ -10,14 +10,19 @@ const rolesObj = (roles) => {
 	}
 	return roles;
 };
+
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faPeopleGroup,
 	faUsersGear,
 	faXmark,
 	faBolt,
+	faPlus,
+	faCheck,
+	faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTeamsStore, useKitsStore, useOperatorsStore } from "@/zustand";
+import { useAuth } from "react-oidc-context";
 import { TeamsApi } from "@/api";
 import { toast } from "react-toastify";
 import { PROVINCES } from "@/config";
@@ -25,9 +30,22 @@ import { TEAMS as MISSION_TEMPLATES } from "@/config/teams";
 import { PropTypes } from "prop-types";
 import { useConfirmDialog } from "@/hooks";
 import { ConfirmDialog, TeamView } from "@/components";
-import { EditTeamForm, NewTeamForm } from "@/components/forms";
+import { AssignTeamSheet } from "@/components/forms";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { getOperatorDisplayImage } from "@/utils/operatorImage";
+
+// ─── NATO alphabet ────────────────────────────────────────────
+const NATO = [
+	"Alpha","Bravo","Charlie","Delta","Echo","Foxtrot","Golf","Hotel",
+	"India","Juliet","Kilo","Lima","Mike","November","Oscar","Papa",
+	"Quebec","Romeo","Sierra","Tango","Uniform","Victor","Whiskey",
+	"X-Ray","Yankee","Zulu",
+];
+
+function nextTeamName(existingTeams) {
+	const taken = new Set(existingTeams.map((t) => t.name));
+	return NATO.find((n) => !taken.has(n)) ?? `Team ${existingTeams.length + 1}`;
+}
 
 // ─── Status dot ───────────────────────────────────────────────
 const STATUS_DOT = {
@@ -126,6 +144,42 @@ function TeamOperator({
 	);
 }
 
+// ─── Inline team rename/delete editor ────────────────────────
+function EditTeamInline({ team, onSave, onDelete, onCancel }) {
+	const [name, setName] = useState(team.name);
+
+	return (
+		<div className='flex items-center gap-1.5 p-2 border-t border-lines/60 bg-neutral-950/80'>
+			<input
+				autoFocus
+				value={name}
+				onChange={(e) => setName(e.target.value)}
+				onKeyDown={(e) => {
+					if (e.key === "Enter") onSave(name.trim());
+					if (e.key === "Escape") onCancel();
+				}}
+				className='flex-1 bg-neutral-900 border border-lines/60 focus:border-btn/60 outline-none px-2 py-1 font-mono text-xs text-fontz'
+			/>
+			<button
+				onClick={() => onSave(name.trim())}
+				disabled={!name.trim()}
+				className='w-6 h-6 flex items-center justify-center text-btn hover:text-btn/70 disabled:opacity-30 transition-colors'>
+				<FontAwesomeIcon icon={faCheck} className='text-[10px]' />
+			</button>
+			<button
+				onClick={onDelete}
+				className='w-6 h-6 flex items-center justify-center text-red-500/60 hover:text-red-400 transition-colors'>
+				<FontAwesomeIcon icon={faTrash} className='text-[10px]' />
+			</button>
+			<button
+				onClick={onCancel}
+				className='w-6 h-6 flex items-center justify-center text-lines/50 hover:text-lines transition-colors'>
+				<FontAwesomeIcon icon={faXmark} className='text-[10px]' />
+			</button>
+		</div>
+	);
+}
+
 // ─── Team card ────────────────────────────────────────────────
 function TeamCard({
 	team,
@@ -138,15 +192,27 @@ function TeamCard({
 	onDragStart,
 	onDragEnd,
 	onOperatorClick,
-	openSheet,
 	onViewTeam,
 	onAOChange,
 	onUnassignOperator,
 	onClearTeam,
 	onAutoAssign,
+	onAddOperator,
+	onRenameTeam,
+	onDeleteTeam,
 }) {
 	const [missionType, setMissionType] = useState("");
+	const [editing, setEditing] = useState(false);
 	const isOver = dragOverTeam === team._id;
+
+	const handleSave = async (newName) => {
+		if (newName && newName !== team.name) await onRenameTeam(team, newName);
+		setEditing(false);
+	};
+	const handleDelete = async () => {
+		await onDeleteTeam(team._id);
+		setEditing(false);
+	};
 
 	return (
 		<div
@@ -196,16 +262,12 @@ function TeamCard({
 					Clear
 				</button>
 				<button
-					onClick={() =>
-						openSheet(
-							"bottom",
-							<EditTeamForm teamId={team._id} />,
-							"Edit Team",
-							"Modify team details or optimize with A.I.",
-						)
-					}
+					onClick={() => setEditing((v) => !v)}
 					title='Edit Team'
-					className='text-lines hover:text-btn transition-colors'>
+					className={[
+						"transition-colors",
+						editing ? "text-btn" : "text-lines hover:text-btn",
+					].join(" ")}>
 					<FontAwesomeIcon
 						icon={faUsersGear}
 						className='text-[10px]'
@@ -213,11 +275,30 @@ function TeamCard({
 				</button>
 			</div>
 
+			{/* ── Inline edit row ─────────────────────────── */}
+			{editing && (
+				<EditTeamInline
+					team={team}
+					onSave={handleSave}
+					onDelete={handleDelete}
+					onCancel={() => setEditing(false)}
+				/>
+			)}
+
 			{/* ── Operators ───────────────────────────────── */}
 			<div className='px-3 py-2.5 flex-1'>
-				<p className='font-mono text-[10px] tracking-[0.25em] text-lines uppercase mb-2'>
-					Operators
-				</p>
+				<div className='flex items-center justify-between mb-2'>
+					<p className='font-mono text-[10px] tracking-[0.25em] text-lines uppercase'>
+						Operators
+					</p>
+					<button
+						onClick={() => onAddOperator(team._id)}
+						title='Add operator'
+						className='flex items-center gap-1 font-mono text-[8px] tracking-widest uppercase text-lines/60 hover:text-btn border border-lines/40 hover:border-btn/40 px-1.5 py-0.5 transition-all'>
+						<FontAwesomeIcon icon={faPlus} className='text-[7px]' />
+						Add
+					</button>
+				</div>
 				{team.operators.length > 0 ?
 					<div className='flex flex-wrap gap-3'>
 						{(() => {
@@ -271,7 +352,7 @@ function TeamCard({
 				</select>
 			</div>
 
-			{/* ── Auto-Assign ─────────────────────────────── */}
+			{/* ── Auto-Fill ───────────────────────────────── */}
 			<div className='px-3 pb-2 flex gap-1.5 items-center border-t border-lines/60 pt-2'>
 				<FontAwesomeIcon
 					icon={faBolt}
@@ -281,7 +362,8 @@ function TeamCard({
 					value={missionType}
 					onChange={(e) => setMissionType(e.target.value)}
 					className='flex-1 bg-neutral-950 border border-lines/60 rounded-sm px-2 py-1 font-mono text-[9px] text-lines outline-none focus:border-btn/50 transition-colors'>
-					<option value=''>— Mission Type —</option>
+					<option value=''>— Auto Fill Team —</option>
+					<option value='__random__'>Random Team</option>
 					{MISSION_TEMPLATES.map((t) => (
 						<option
 							key={t.name}
@@ -307,6 +389,7 @@ function TeamCard({
 
 // ─── Main component ───────────────────────────────────────────
 const Teams = ({ dataUpdated, openSheet }) => {
+	const auth = useAuth();
 	const {
 		teams,
 		fetchTeams,
@@ -319,12 +402,20 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		unassignOperatorFromTeam,
 		clearTeam,
 		autoAssignTeam,
+		autoAssignRandom,
+		createTeam,
+		deleteTeam,
 	} = useTeamsStore();
 
 	const [selectedOperator, setSelectedOperator] = useState(null);
 	const [draggedOperator, setDraggedOperator] = useState(null);
 	const [dragOverTeam, setDragOverTeam] = useState(null);
 	const [teamViewId, setTeamViewId] = useState(null);
+	const [addOpTeamId, setAddOpTeamId] = useState(null);
+
+	// Fake operator object for AssignTeamSheet when opened from a team card
+	// We pass the selected op from the OperatorClick handler instead
+	const [addOpOperator, setAddOpOperator] = useState(null);
 
 	const handleAOChange = async (team, ao) => {
 		try {
@@ -348,6 +439,10 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	};
 
 	const handleAutoAssign = (teamId, missionTypeName) => {
+		if (missionTypeName === "__random__") {
+			autoAssignRandom(teamId);
+			return;
+		}
 		const template = MISSION_TEMPLATES.find((t) => t.name === missionTypeName);
 		if (!template) {
 			toast.error(`No template found for "${missionTypeName}"`);
@@ -356,7 +451,44 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		autoAssignTeam(teamId, template);
 	};
 
-	const userId = localStorage.getItem("userId");
+	const handleNewTeam = async () => {
+		const createdBy = auth.user?.profile?.sub;
+		if (!createdBy) { toast.error("Not authenticated"); return; }
+		const name = nextTeamName(teams);
+		await createTeam({ createdBy, name, operators: [], assets: [] });
+	};
+
+	const handleRenameTeam = async (team, newName) => {
+		try {
+			await TeamsApi.updateTeam(team._id, {
+				createdBy: team.createdBy,
+				name: newName,
+				AO: team.AO || null,
+				operators: (team.operators || []).map((op) =>
+					typeof op === "object" ? op._id : op,
+				),
+				assets: (team.assets || []).map((a) =>
+					typeof a === "object" ? a._id : a,
+				),
+			});
+			await fetchTeams();
+			toast.success(`Renamed to ${newName}`);
+		} catch {
+			toast.error("Failed to rename team");
+		}
+	};
+
+	const handleDeleteTeam = async (teamId) => {
+		try {
+			await deleteTeam(teamId);
+			await fetchTeams();
+			toast.success("Team deleted");
+		} catch {
+			toast.error("Failed to delete team");
+		}
+	};
+
+	const userId = auth.user?.profile?.sub ?? "";
 
 	const isMobile =
 		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -432,6 +564,12 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		setDraggedOperator(null);
 	};
 
+	// Find operator for AssignTeamSheet — we need a full operator object
+	// addOpTeamId drives the sheet; addOpOperator is set to null to show all teams
+	const assignSheetTarget = addOpTeamId
+		? teams.find((t) => t._id === addOpTeamId)
+		: null;
+
 	return (
 		<div className='flex flex-col h-full min-h-0'>
 			{/* ── Team card grid ───────────────────────────── */}
@@ -439,14 +577,7 @@ const Teams = ({ dataUpdated, openSheet }) => {
 				{/* ── Compact action row ───────────────────── */}
 				<div className='flex items-center gap-2 mb-3'>
 					<button
-						onClick={() =>
-							openSheet(
-								"top",
-								<NewTeamForm />,
-								"New Team",
-								"Create a team or let A.I generate one.",
-							)
-						}
+						onClick={handleNewTeam}
 						className='flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase text-lines hover:text-btn border border-lines/60 hover:border-btn/40 px-2 py-0.5 rounded-sm transition-all'
 						title='New Team'>
 						<FontAwesomeIcon
@@ -484,12 +615,14 @@ const Teams = ({ dataUpdated, openSheet }) => {
 								onDragStart={handleDragStart}
 								onDragEnd={handleDragEnd}
 								onOperatorClick={handleOperatorClick}
-								openSheet={openSheet}
 								onViewTeam={(id) => setTeamViewId(id)}
 								onAOChange={handleAOChange}
 								onUnassignOperator={unassignOperatorFromTeam}
 								onClearTeam={clearTeam}
 								onAutoAssign={handleAutoAssign}
+								onAddOperator={(teamId) => setAddOpTeamId(teamId)}
+								onRenameTeam={handleRenameTeam}
+								onDeleteTeam={handleDeleteTeam}
 							/>
 						))}
 					</div>
@@ -544,6 +677,35 @@ const Teams = ({ dataUpdated, openSheet }) => {
 				message="Operators won't be deleted, just unassigned. AOs will be reset."
 			/>
 
+			{/* Add operator sheet */}
+			<Sheet
+				open={!!addOpTeamId}
+				onOpenChange={(open) => {
+					if (!open) { setAddOpTeamId(null); setAddOpOperator(null); }
+				}}>
+				<SheetContent
+					side='right'
+					className='p-0 bg-neutral-900 border-l border-lines/40 overflow-hidden flex flex-col sm:max-w-sm'
+					aria-describedby={undefined}>
+					<SheetTitle className='px-4 pt-4 pb-0 font-mono text-[10px] tracking-[0.3em] text-lines uppercase'>
+						{assignSheetTarget ? `Add to ${assignSheetTarget.name}` : "Add Operator"}
+					</SheetTitle>
+					{/* AssignTeamSheet expects an operator; iterate from Roster view */}
+					{addOpTeamId && !addOpOperator && (
+						<AddOperatorPicker
+							targetTeamId={addOpTeamId}
+							onClose={() => { setAddOpTeamId(null); setAddOpOperator(null); }}
+						/>
+					)}
+					{addOpTeamId && addOpOperator && (
+						<AssignTeamSheet
+							operator={addOpOperator}
+							onComplete={() => { setAddOpTeamId(null); setAddOpOperator(null); fetchTeams(); }}
+						/>
+					)}
+				</SheetContent>
+			</Sheet>
+
 			<Sheet
 				open={!!teamViewId}
 				onOpenChange={(open) => {
@@ -565,6 +727,141 @@ const Teams = ({ dataUpdated, openSheet }) => {
 	);
 };
 
+// ─── Operator picker for "Add to team" ───────────────────────
+// Shows all unassigned / available operators; clicking one opens AssignTeamSheet
+function AddOperatorPicker({ targetTeamId, onClose }) {
+	const { operators, fetchOperators } = useOperatorsStore();
+	const { teams, fetchTeams, addOperatorToTeam } = useTeamsStore();
+	const [selectedOp, setSelectedOp] = useState(null);
+	const [selectedClass, setSelectedClass] = useState("");
+
+	useEffect(() => {
+		fetchOperators();
+	}, [fetchOperators]);
+
+	const assignedIds = new Set(
+		teams.flatMap((t) => t.operators.map((op) => (typeof op === "object" ? op._id : op))),
+	);
+
+	const available = operators.filter(
+		(op) => op.status !== "KIA" && !assignedIds.has(op._id),
+	);
+	const assigned = operators.filter(
+		(op) => op.status !== "KIA" && assignedIds.has(op._id),
+	);
+
+	const handlePick = async (op, cls) => {
+		await addOperatorToTeam(op._id, targetTeamId, cls);
+		await fetchTeams();
+		onClose();
+	};
+
+	if (selectedOp) {
+		const classes = Array.isArray(selectedOp.class)
+			? selectedOp.class.filter(Boolean)
+			: selectedOp.class ? [selectedOp.class] : [];
+
+		return (
+			<div className='flex flex-col flex-1 overflow-hidden'>
+				<div className='px-4 py-3 border-b border-lines/60 bg-neutral-950/60 flex items-center gap-3'>
+					<button
+						onClick={() => setSelectedOp(null)}
+						className='text-lines/50 hover:text-lines transition-colors font-mono text-[10px]'>
+						← Back
+					</button>
+					<span className='font-mono text-xs text-fontz font-bold'>{selectedOp.callSign}</span>
+				</div>
+				{classes.length > 1 && (
+					<div className='px-4 py-3 border-b border-lines/60'>
+						<p className='font-mono text-[10px] tracking-[0.25em] text-lines uppercase mb-2'>
+							Assign as class
+						</p>
+						<div className='flex flex-wrap gap-1.5'>
+							{classes.map((cls) => (
+								<button
+									key={cls}
+									onClick={() => setSelectedClass(cls)}
+									className={[
+										"font-mono text-[10px] tracking-widest uppercase px-2.5 py-1 border transition-all",
+										selectedClass === cls
+											? "border-btn bg-btn/10 text-btn"
+											: "border-lines/60 text-lines hover:border-btn/50 hover:text-neutral-300",
+									].join(" ")}>
+									{cls}
+								</button>
+							))}
+						</div>
+					</div>
+				)}
+				<div className='flex-1 flex flex-col items-center justify-center gap-3 px-4'>
+					<button
+						onClick={() => handlePick(selectedOp, selectedClass || classes[0])}
+						className='w-full font-mono text-[10px] tracking-widest uppercase text-btn border border-btn/40 bg-btn/5 hover:bg-btn/10 py-2.5 transition-all'>
+						Confirm Add to Team
+					</button>
+					<button onClick={() => setSelectedOp(null)} className='font-mono text-[9px] text-lines/40 hover:text-lines'>
+						Cancel
+					</button>
+				</div>
+			</div>
+		);
+	}
+
+	const OpRow = ({ op }) => {
+		const classes = Array.isArray(op.class)
+			? op.class.filter(Boolean).join(" / ")
+			: op.class || "—";
+		return (
+			<button
+				onClick={() => {
+					const cls = Array.isArray(op.class) ? op.class.filter(Boolean) : [op.class].filter(Boolean);
+					if (cls.length <= 1) {
+						handlePick(op, cls[0] || "");
+					} else {
+						setSelectedClass(cls[0]);
+						setSelectedOp(op);
+					}
+				}}
+				className='w-full flex items-center gap-3 px-4 py-2.5 border-b border-lines/20 hover:bg-neutral-800/40 transition-colors text-left'>
+				<img
+					src={op.image || "/ghost/Default.png"}
+					alt={op.callSign}
+					className='w-8 h-8 rounded-full border border-lines/50 object-cover object-top bg-neutral-900 shrink-0'
+					onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
+				/>
+				<div className='min-w-0'>
+					<p className='font-mono text-xs text-fontz truncate'>{op.callSign}</p>
+					<p className='font-mono text-[9px] text-lines/60 truncate'>{classes}</p>
+				</div>
+			</button>
+		);
+	};
+
+	return (
+		<div className='flex flex-col flex-1 overflow-y-auto'>
+			{available.length > 0 && (
+				<>
+					<div className='px-4 py-1.5 bg-neutral-950/60 border-b border-lines/20'>
+						<span className='font-mono text-[9px] tracking-widest text-lines/50 uppercase'>Available</span>
+					</div>
+					{available.map((op) => <OpRow key={op._id} op={op} />)}
+				</>
+			)}
+			{assigned.length > 0 && (
+				<>
+					<div className='px-4 py-1.5 bg-neutral-950/60 border-b border-lines/20 border-t border-lines/20'>
+						<span className='font-mono text-[9px] tracking-widest text-lines/50 uppercase'>Already Assigned</span>
+					</div>
+					{assigned.map((op) => <OpRow key={op._id} op={op} />)}
+				</>
+			)}
+			{operators.filter((o) => o.status !== "KIA").length === 0 && (
+				<p className='font-mono text-[9px] text-lines/40 italic px-4 py-6 text-center'>No operators available</p>
+			)}
+		</div>
+	);
+}
+
 // ─── PropTypes ────────────────────────────────────────────────
 TeamOperator.propTypes = {
 	op: PropTypes.object.isRequired,
@@ -577,6 +874,12 @@ TeamOperator.propTypes = {
 	onOperatorClick: PropTypes.func.isRequired,
 	onUnassign: PropTypes.func.isRequired,
 };
+EditTeamInline.propTypes = {
+	team: PropTypes.object.isRequired,
+	onSave: PropTypes.func.isRequired,
+	onDelete: PropTypes.func.isRequired,
+	onCancel: PropTypes.func.isRequired,
+};
 TeamCard.propTypes = {
 	team: PropTypes.object.isRequired,
 	isMobile: PropTypes.bool,
@@ -588,12 +891,18 @@ TeamCard.propTypes = {
 	onDragStart: PropTypes.func.isRequired,
 	onDragEnd: PropTypes.func.isRequired,
 	onOperatorClick: PropTypes.func.isRequired,
-	openSheet: PropTypes.func.isRequired,
 	onViewTeam: PropTypes.func.isRequired,
 	onAOChange: PropTypes.func.isRequired,
 	onUnassignOperator: PropTypes.func.isRequired,
 	onClearTeam: PropTypes.func.isRequired,
 	onAutoAssign: PropTypes.func.isRequired,
+	onAddOperator: PropTypes.func.isRequired,
+	onRenameTeam: PropTypes.func.isRequired,
+	onDeleteTeam: PropTypes.func.isRequired,
+};
+AddOperatorPicker.propTypes = {
+	targetTeamId: PropTypes.string.isRequired,
+	onClose: PropTypes.func.isRequired,
 };
 Teams.propTypes = {
 	dataUpdated: PropTypes.bool,

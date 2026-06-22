@@ -322,12 +322,8 @@ const useTeamsStore = create((set, get) => ({
 	// Create a new team
 	createTeam: async (teamData) => {
 		try {
-			if (
-				!teamData.createdBy ||
-				!teamData.name ||
-				teamData.operators.length === 0
-			) {
-				toast.warn("Please fill in all required fields before submitting.");
+			if (!teamData.createdBy || !teamData.name) {
+				toast.warn("Team name is required.");
 				return;
 			}
 
@@ -339,7 +335,7 @@ const useTeamsStore = create((set, get) => ({
 				"ERROR creating team:",
 				error.response?.data || error.message,
 			);
-			alert("Failed to create team. Check console for details.");
+			toast.error("Failed to create team.");
 		}
 	},
 
@@ -926,6 +922,67 @@ const useTeamsStore = create((set, get) => ({
 			get().fetchTeams();
 		}
 	},
+	// Assign 1–4 random available operators to a team (no class restrictions)
+	autoAssignRandom: async (teamId) => {
+		try {
+			const { teams } = get();
+			const team = teams.find((t) => t._id === teamId);
+			if (!team) { toast.error("Team not found"); return; }
+
+			const storeOps = get().allOperators;
+			const allOps = storeOps.length > 0
+				? storeOps
+				: useOperatorsStore.getState().operators;
+
+			const lockedIds = new Set(
+				teams
+					.filter((t) => t._id !== teamId)
+					.flatMap((t) => t.operators.map(toId)),
+			);
+
+			const pool = allOps.filter(
+				(op) => !lockedIds.has(op._id) && (op.status || "").toLowerCase() === "active",
+			);
+
+			if (pool.length === 0) {
+				toast.warning("No available operators for random assignment");
+				return;
+			}
+
+			const shuffled = [...pool].sort(() => Math.random() - 0.5);
+			const count = Math.min(4, Math.max(1, Math.floor(Math.random() * 4) + 1), shuffled.length);
+			const picked = shuffled.slice(0, count);
+			const pickedIds = picked.map((op) => op._id);
+			const leadId = picked[0]._id;
+			const operatorRoles = {};
+			picked.forEach((op) => {
+				const cls = Array.isArray(op.class) ? op.class[0] : op.class;
+				operatorRoles[op._id] = cls || "";
+			});
+
+			set((state) => ({
+				teams: state.teams.map((t) =>
+					t._id === teamId ? { ...t, operators: picked, operatorRoles, leadId } : t,
+				),
+			}));
+
+			await TeamsApi.updateTeam(teamId, {
+				name: team.name,
+				AO: team.AO,
+				operators: pickedIds,
+				operatorRoles,
+				leadId,
+				assets: (team.assets || []).map(toId),
+			});
+
+			toast.success(`Random team: ${count} operator${count !== 1 ? "s" : ""} assigned`);
+		} catch (error) {
+			console.error("ERROR random-assigning team:", error);
+			toast.error("Random assign failed");
+			get().fetchTeams();
+		}
+	},
+
 	addVehicleToTeam: async (vehicleId, targetTeamId) => {
 		try {
 			const { teams, fullVehicleList } = get();
