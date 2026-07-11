@@ -3,7 +3,7 @@ import { InfirmaryApi } from "@/api";
 import { useOperatorsStore } from "@/zustand";
 import { toast } from "react-toastify";
 
-const useInfirmaryStore = create((set) => ({
+const useInfirmaryStore = create((set, get) => ({
 	injuredOperators: [],
 
 	// Fetch all injured operators
@@ -31,6 +31,21 @@ const useInfirmaryStore = create((set) => ({
 			useOperatorsStore.getState().fetchOperators();
 		} catch (error) {
 			console.error("ERROR recovering operator:", error);
+		}
+	},
+
+	// Recover all injured operators at once
+	recoverAll: async () => {
+		const { injuredOperators } = get();
+		if (injuredOperators.length === 0) return;
+		try {
+			await Promise.all(injuredOperators.map((op) => InfirmaryApi.recoverOperator(op._id)));
+			set({ injuredOperators: [] });
+			toast.success(`${injuredOperators.length} operator${injuredOperators.length !== 1 ? "s" : ""} discharged`);
+			useOperatorsStore.getState().fetchOperators();
+		} catch (error) {
+			console.error("ERROR recovering all operators:", error);
+			toast.error("Failed to discharge all operators");
 		}
 	},
 

@@ -3,7 +3,7 @@ import { MemorialApi } from "@/api";
 import { useOperatorsStore } from "@/zustand";
 import { toast } from "react-toastify";
 
-const useMemorialStore = create((set) => ({
+const useMemorialStore = create((set, get) => ({
 	KIAOperators: [],
 
 	// Fetch all KIA operators
@@ -28,6 +28,21 @@ const useMemorialStore = create((set) => ({
 			console.error("ERROR reviving operator:", error);
 		}
 	},
+	// Revive all KIA operators at once
+	reviveAll: async () => {
+		const { KIAOperators } = get();
+		if (KIAOperators.length === 0) return;
+		try {
+			await Promise.all(KIAOperators.map((op) => MemorialApi.reviveOperator(op._id)));
+			set({ KIAOperators: [] });
+			toast.success(`${KIAOperators.length} operator${KIAOperators.length !== 1 ? "s" : ""} revived`);
+			useOperatorsStore.getState().fetchOperators();
+		} catch (error) {
+			console.error("ERROR reviving all operators:", error);
+			toast.error("Failed to revive all operators");
+		}
+	},
+
 	// Add an operator to Memorial
 	addKIAOperator: (newOperator) => {
 		set((state) => {

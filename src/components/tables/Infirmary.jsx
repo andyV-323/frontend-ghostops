@@ -3,6 +3,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSyringe, faChevronRight, faChevronLeft } from "@fortawesome/free-solid-svg-icons";
 import { PropTypes } from "prop-types";
 import { useInfirmaryStore, useSheetStore } from "@/zustand";
+import { useConfirmDialog } from "@/hooks";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 // ─── Recovery bar ─────────────────────────────────────────────
 function RecoveryBar({ progress }) {
@@ -130,7 +132,8 @@ Row.propTypes = { label: PropTypes.string, value: PropTypes.string };
 
 // ─── Main component ───────────────────────────────────────────
 const Infirmary = ({ openSheet }) => {
-	const { injuredOperators, fetchInjuredOperators, recoverOperator } = useInfirmaryStore();
+	const { injuredOperators, fetchInjuredOperators, recoverOperator, recoverAll } = useInfirmaryStore();
+	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
 
 	useEffect(() => {
 		fetchInjuredOperators();
@@ -155,8 +158,22 @@ const Infirmary = ({ openSheet }) => {
 	}
 
 	return (
+		<>
 		<div className='flex flex-col divide-y divide-lines/8'>
-			{injuredOperators.map((entry, index) => {
+			{/* Recover All button */}
+		<div className='flex items-center justify-between px-3 py-2 border-b border-lines/10 bg-blk/20'>
+			<span className='font-mono text-[9px] tracking-[0.25em] uppercase text-lines/30'>
+				{injuredOperators.length} wounded
+			</span>
+			<button
+				onClick={() => openDialog(() => recoverAll())}
+				className='flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase px-2.5 py-1 border border-btn/30 bg-btn/10 hover:bg-btn/20 text-btn/70 hover:text-btn transition-all'>
+				<FontAwesomeIcon icon={faSyringe} className='text-[8px]' />
+				Discharge All
+			</button>
+		</div>
+
+		{injuredOperators.map((entry, index) => {
 				const recoverySeconds = entry.recoveryHours * 3600;
 				const elapsed = Math.floor((Date.now() - new Date(entry.injuredAt)) / 1000);
 				const progress = Math.min(100, Math.floor((elapsed / recoverySeconds) * 100));
@@ -222,6 +239,16 @@ const Infirmary = ({ openSheet }) => {
 				);
 			})}
 		</div>
+
+		<ConfirmDialog
+			isOpen={isOpen}
+			closeDialog={closeDialog}
+			confirmAction={confirmAction}
+			title='Discharge All Operators'
+			description={`This will discharge all ${injuredOperators.length} wounded operator${injuredOperators.length !== 1 ? "s" : ""} and return them to Active status.`}
+			message='All infirmary records will be cleared. Operators will be marked as Active regardless of remaining recovery time.'
+		/>
+		</>
 	);
 };
 

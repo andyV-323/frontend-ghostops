@@ -3,6 +3,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBoltLightning, faChevronRight, faChevronLeft } from "@fortawesome/free-solid-svg-icons";
 import { PropTypes } from "prop-types";
 import { useMemorialStore, useSheetStore } from "@/zustand";
+import { useConfirmDialog } from "@/hooks";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 // ─── KIA detail sheet ─────────────────────────────────────────
 function KIADetail({ entry, onRevive, onBack }) {
@@ -84,7 +86,8 @@ Row.propTypes = { label: PropTypes.string, value: PropTypes.string };
 
 // ─── Main component ───────────────────────────────────────────
 const Memorial = ({ openSheet }) => {
-	const { KIAOperators, fetchKIAOperators, reviveOperator } = useMemorialStore();
+	const { KIAOperators, fetchKIAOperators, reviveOperator, reviveAll } = useMemorialStore();
+	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
 
 	useEffect(() => {
 		fetchKIAOperators();
@@ -109,8 +112,22 @@ const Memorial = ({ openSheet }) => {
 	}
 
 	return (
+		<>
 		<div className='flex flex-col divide-y divide-lines/8'>
-			{KIAOperators.map((entry, index) => {
+			{/* Revive All button */}
+		<div className='flex items-center justify-between px-3 py-2 border-b border-lines/10 bg-blk/20'>
+			<span className='font-mono text-[9px] tracking-[0.25em] uppercase text-lines/30'>
+				{KIAOperators.length} fallen
+			</span>
+			<button
+				onClick={() => openDialog(() => reviveAll())}
+				className='flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase px-2.5 py-1 border border-amber-800/30 bg-amber-500/10 hover:bg-amber-400/20 text-amber-500/70 hover:text-amber-400 transition-all'>
+				<FontAwesomeIcon icon={faBoltLightning} className='text-[8px]' />
+				Revive All
+			</button>
+		</div>
+
+		{KIAOperators.map((entry, index) => {
 				const handleOpen = () => {
 					if (!openSheet) return;
 					openSheet(
@@ -168,6 +185,16 @@ const Memorial = ({ openSheet }) => {
 				);
 			})}
 		</div>
+
+		<ConfirmDialog
+			isOpen={isOpen}
+			closeDialog={closeDialog}
+			confirmAction={confirmAction}
+			title='Revive All Operators'
+			description={`This will revive all ${KIAOperators.length} fallen operator${KIAOperators.length !== 1 ? "s" : ""} and return them to Active status.`}
+			message='This action cannot be undone. All KIA records will be cleared from the memorial.'
+		/>
+		</>
 	);
 };
 
