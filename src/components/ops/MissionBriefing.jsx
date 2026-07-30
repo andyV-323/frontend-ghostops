@@ -78,7 +78,7 @@ function WeaponSlot({ label, slot }) {
 }
 WeaponSlot.propTypes = { label: PropTypes.string, slot: PropTypes.object };
 
-function ProvinceView({ label, approachFrom, provinceId, bases, objectives, infil, exfil }) {
+function ProvinceView({ label, approachFrom, provinceId, bases, infil, exfil }) {
 	const provinceName = PROVINCE_DISPLAY_NAMES[provinceId] || provinceId || "—";
 	const provinceLocMap = Object.fromEntries(
 		(PROVINCES[provinceId]?.locations ?? []).map(l => [l.name, l])
@@ -103,38 +103,33 @@ function ProvinceView({ label, approachFrom, provinceId, bases, objectives, infi
 				</div>
 			)}
 
-			{/* Bases */}
+			{/* Bases & Objectives */}
 			{bases?.length > 0 && (
-				<div className='flex flex-col gap-1'>
-					<span className='font-mono text-[9px] tracking-[0.3em] uppercase text-lines/25 mb-0.5'>BASES</span>
-					{bases.map((b, i) => (
-						<div key={i} className='flex flex-col gap-0.5'>
-							<span className='font-mono text-[11px] text-fontz/70'>{b.locationId || "—"}</span>
+				<div className='flex flex-col gap-3'>
+					<span className='font-mono text-[9px] tracking-[0.3em] uppercase text-lines/25 mb-0.5'>BASES &amp; OBJECTIVES</span>
+					{bases.map((b, bi) => (
+						<div key={bi} className='flex flex-col gap-1 pl-2 border-l border-lines/10'>
+							<span className='font-mono text-[11px] text-fontz/70'>
+								BASE {bi + 1}{b.locationId ? ` — ${b.locationId}` : ""}
+							</span>
 							{b.note && <span className='font-mono text-[10px] text-lines/40 italic'>{b.note}</span>}
-						</div>
-					))}
-				</div>
-			)}
-
-			{/* Objectives */}
-			{objectives?.length > 0 && (
-				<div className='flex flex-col gap-2'>
-					<span className='font-mono text-[9px] tracking-[0.3em] uppercase text-lines/25 mb-0.5'>OBJECTIVES</span>
-					{objectives.map((obj, i) => (
-						<div key={i} className='flex flex-col gap-0.5'>
-							<div className='flex items-center gap-2'>
-								<span className='font-mono text-[9px] text-lines/25'>{i + 1}.</span>
-								<Badge color='btn'>{obj.type}</Badge>
-								{obj.targetId && (
-									<span className='font-mono text-[11px] text-fontz/70'>{obj.targetId}</span>
-								)}
-							</div>
-							{obj.locationId && provinceLocMap[obj.locationId] && (
-								<span className='font-mono text-[10px] text-lines/40 ml-4'>
-									@ {obj.locationId}
-								</span>
-							)}
-							{obj.note && <span className='font-mono text-[10px] text-lines/30 italic ml-4'>{obj.note}</span>}
+							{(b.objectives ?? []).map((obj, i) => (
+								<div key={i} className='flex flex-col gap-0.5 mt-1'>
+									<div className='flex items-center gap-2'>
+										<span className='font-mono text-[9px] text-lines/25'>{i + 1}.</span>
+										<Badge color='btn'>{obj.type}</Badge>
+										{obj.targetId && (
+											<span className='font-mono text-[11px] text-fontz/70'>{obj.targetId}</span>
+										)}
+									</div>
+									{obj.locationId && provinceLocMap[obj.locationId] && (
+										<span className='font-mono text-[10px] text-lines/40 ml-4'>
+											@ {obj.locationId}
+										</span>
+									)}
+									{obj.note && <span className='font-mono text-[10px] text-lines/30 italic ml-4'>{obj.note}</span>}
+								</div>
+							))}
 						</div>
 					))}
 				</div>
@@ -158,7 +153,6 @@ ProvinceView.propTypes = {
 	approachFrom: PropTypes.string,
 	provinceId: PropTypes.string,
 	bases: PropTypes.array,
-	objectives: PropTypes.array,
 	infil: PropTypes.object,
 	exfil: PropTypes.object,
 };
@@ -174,7 +168,6 @@ function LegView({ leg, index }) {
 				label='PROVINCE 1'
 				provinceId={leg.provinceId}
 				bases={leg.bases}
-				objectives={leg.objectives}
 				infil={leg.infil}
 				exfil={extraProvinces.length === 0 ? leg.exfil : null}
 			/>
@@ -186,7 +179,6 @@ function LegView({ leg, index }) {
 					approachFrom={segment.approachFrom}
 					provinceId={segment.provinceId}
 					bases={segment.bases}
-					objectives={segment.objectives}
 					exfil={i === extraProvinces.length - 1 ? leg.exfil : null}
 				/>
 			))}
@@ -221,15 +213,6 @@ export default function MissionBriefing({ mission }) {
 					<p className='font-mono text-[11px] text-lines/50 leading-relaxed mt-2 italic'>{meta.sitrep}</p>
 				)}
 			</div>
-
-			{/* Legs */}
-			{legs?.length > 0 && (
-				<Section title='Operation'>
-					<div className='flex flex-col gap-6'>
-						{legs.map((leg, i) => <LegView key={i} leg={leg} index={i} />)}
-					</div>
-				</Section>
-			)}
 
 			{/* ROE */}
 			{(activeROE.length > 0 || roe?.custom) && (
@@ -332,6 +315,15 @@ export default function MissionBriefing({ mission }) {
 								)}
 							</div>
 						)}
+					</div>
+				</Section>
+			)}
+
+			{/* Phases */}
+			{legs?.length > 0 && (
+				<Section title='Operation'>
+					<div className='flex flex-col gap-6'>
+						{legs.map((leg, i) => <LegView key={i} leg={leg} index={i} />)}
 					</div>
 				</Section>
 			)}

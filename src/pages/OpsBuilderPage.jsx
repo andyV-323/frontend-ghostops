@@ -284,8 +284,98 @@ function ObjectiveRow({ obj, index, onChange, onRemove }) {
 	);
 }
 
-// ── Bases editor ─────────────────────────────────────────────────────────
-function BasesEditor({ bases, provinceLocations, onChange }) {
+// ── Base row (a base + the objectives staged from it) ─────────────────────
+function BaseGroupRow({ base, index, provinceLocations, onChange, onRemove, canRemove }) {
+	function set(field, value) {
+		onChange({ ...base, [field]: value });
+	}
+	function addObjective() {
+		set("objectives", [...(base.objectives ?? []), defaultObjective()]);
+	}
+	function removeObjective(i) {
+		set(
+			"objectives",
+			base.objectives.filter((_, idx) => idx !== i),
+		);
+	}
+	function updateObjective(i, val) {
+		set(
+			"objectives",
+			base.objectives.map((o, idx) => (idx === i ? val : o)),
+		);
+	}
+
+	return (
+		<div className='flex flex-col gap-3 p-3 border border-lines/40 rounded-lg'>
+			<div className='flex items-center justify-between'>
+				<span className='text-sm font-semibold text-fontz'>
+					Base {index + 1}
+				</span>
+				{canRemove && (
+					<IconBtn
+						onClick={onRemove}
+						danger
+						title='Remove base'>
+						Remove
+					</IconBtn>
+				)}
+			</div>
+
+			<div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+				{provinceLocations.length > 0 && (
+					<Field label='Location'>
+						<select
+							className='form'
+							value={base.locationId ?? ""}
+							onChange={(e) => set("locationId", e.target.value || null)}>
+							<option value=''>— Optional —</option>
+							{provinceLocations.map((l) => (
+								<option
+									key={l.name}
+									value={l.name}>
+									{l.name}
+								</option>
+							))}
+						</select>
+					</Field>
+				)}
+				<Field label='Note'>
+					<input
+						className='form'
+						value={base.note ?? ""}
+						onChange={(e) => set("note", e.target.value)}
+						placeholder='Optional'
+					/>
+				</Field>
+			</div>
+
+			<div className='pl-4 border-l-2 border-lines/20 flex flex-col gap-3'>
+				<div className='flex items-center justify-between'>
+					<span className='text-xs font-medium text-gray-400'>
+						Objectives
+					</span>
+					<IconBtn
+						onClick={addObjective}
+						title='Add objective'>
+						+ Objective
+					</IconBtn>
+				</div>
+				{(base.objectives ?? []).map((obj, i) => (
+					<ObjectiveRow
+						key={i}
+						obj={obj}
+						index={i}
+						onChange={(val) => updateObjective(i, val)}
+						onRemove={() => removeObjective(i)}
+					/>
+				))}
+			</div>
+		</div>
+	);
+}
+
+// ── Base + Objectives group editor ─────────────────────────────────────────
+function BaseGroupEditor({ bases, provinceLocations, onChange }) {
 	function addBase() {
 		onChange([...(bases ?? []), defaultBase()]);
 	}
@@ -299,96 +389,24 @@ function BasesEditor({ bases, provinceLocations, onChange }) {
 	return (
 		<div className='flex flex-col gap-3'>
 			<div className='flex items-center justify-between'>
-				<span className='text-sm font-semibold text-fontz'>Bases</span>
+				<span className='text-sm font-semibold text-fontz'>
+					Bases &amp; Objectives
+				</span>
 				<IconBtn
 					onClick={addBase}
-					title='Add base'>
+					title='Add a base with its own objectives'>
 					+ Base
 				</IconBtn>
 			</div>
 			{(bases ?? []).map((base, i) => (
-				<div
+				<BaseGroupRow
 					key={i}
-					className='pl-4 border-l-2 border-lines/20 flex flex-col gap-2'>
-					<div className='flex items-center justify-between'>
-						<span className='text-xs font-medium text-gray-400'>
-							Base {i + 1}
-						</span>
-						<IconBtn
-							onClick={() => removeBase(i)}
-							danger>
-							Remove
-						</IconBtn>
-					</div>
-					<div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-						{provinceLocations.length > 0 && (
-							<Field label='Location'>
-								<select
-									className='form'
-									value={base.locationId ?? ""}
-									onChange={(e) =>
-										updateBase(i, {
-											...base,
-											locationId: e.target.value || null,
-										})
-									}>
-									<option value=''>— Optional —</option>
-									{provinceLocations.map((l) => (
-										<option
-											key={l.name}
-											value={l.name}>
-											{l.name}
-										</option>
-									))}
-								</select>
-							</Field>
-						)}
-						<Field label='Note'>
-							<input
-								className='form'
-								value={base.note ?? ""}
-								onChange={(e) =>
-									updateBase(i, { ...base, note: e.target.value })
-								}
-								placeholder='Optional'
-							/>
-						</Field>
-					</div>
-				</div>
-			))}
-		</div>
-	);
-}
-
-// ── Objectives editor ────────────────────────────────────────────────────
-function ObjectivesEditor({ objectives, onChange }) {
-	function addObjective() {
-		onChange([...(objectives ?? []), defaultObjective()]);
-	}
-	function removeObjective(i) {
-		onChange(objectives.filter((_, idx) => idx !== i));
-	}
-	function updateObjective(i, val) {
-		onChange(objectives.map((o, idx) => (idx === i ? val : o)));
-	}
-
-	return (
-		<div className='flex flex-col gap-3'>
-			<div className='flex items-center justify-between'>
-				<span className='text-sm font-semibold text-fontz'>Objectives</span>
-				<IconBtn
-					onClick={addObjective}
-					title='Add objective'>
-					+ Objective
-				</IconBtn>
-			</div>
-			{(objectives ?? []).map((obj, i) => (
-				<ObjectiveRow
-					key={i}
-					obj={obj}
+					base={base}
 					index={i}
-					onChange={(val) => updateObjective(i, val)}
-					onRemove={() => removeObjective(i)}
+					provinceLocations={provinceLocations}
+					onChange={(val) => updateBase(i, val)}
+					onRemove={() => removeBase(i)}
+					canRemove={bases.length > 1}
 				/>
 			))}
 		</div>
@@ -539,15 +557,10 @@ function ExtraProvinceBlock({
 				</Field>
 			</div>
 
-			<BasesEditor
+			<BaseGroupEditor
 				bases={segment.bases}
 				provinceLocations={provinceLocations}
 				onChange={(val) => set("bases", val)}
-			/>
-
-			<ObjectivesEditor
-				objectives={segment.objectives}
-				onChange={(val) => set("objectives", val)}
 			/>
 
 			{isLast && (
@@ -686,17 +699,11 @@ function LegBlock({ leg, index, onChange, onRemove, canRemove }) {
 				</div>
 			</div>
 
-			{/* Bases */}
-			<BasesEditor
+			{/* Bases & Objectives */}
+			<BaseGroupEditor
 				bases={leg.bases}
 				provinceLocations={provinceLocations}
 				onChange={(val) => set("bases", val)}
-			/>
-
-			{/* Objectives */}
-			<ObjectivesEditor
-				objectives={leg.objectives}
-				onChange={(val) => set("objectives", val)}
 			/>
 
 			{/* Additional Provinces */}
@@ -1137,28 +1144,6 @@ export default function OpsBuilderPage() {
 					</Field>
 				</div>
 
-				{/* ── Operation Legs ────────────────────────────────── */}
-				<div className='flex flex-col gap-4'>
-					<SectionHeader title='Operation Phases' />
-					{legs.map((leg, i) => (
-						<LegBlock
-							key={i}
-							leg={leg}
-							index={i}
-							onChange={(val) => updateLeg(i, val)}
-							onRemove={() => removeLeg(i)}
-							canRemove={legs.length > 1}
-						/>
-					))}
-					<button
-						type='button'
-						onClick={addLeg}
-						disabled={legs.length >= 8}
-						className='text-sm font-medium px-4 py-2.5 border border-dashed border-lines rounded-lg text-fontz/70 hover:border-btn hover:text-btn transition-colors disabled:opacity-40 disabled:cursor-not-allowed'>
-						+ Add Phase
-					</button>
-				</div>
-
 				{/* ── Rules of Engagement ───────────────────────────── */}
 				<div className='flex flex-col gap-4'>
 					<SectionHeader title='Rules of Engagement' />
@@ -1356,6 +1341,28 @@ export default function OpsBuilderPage() {
 						</Field>
 					</div>
 				)}
+
+				{/* ── Operation Phases ────────────────────────────── */}
+				<div className='flex flex-col gap-4'>
+					<SectionHeader title='Operation Phases' />
+					{legs.map((leg, i) => (
+						<LegBlock
+							key={i}
+							leg={leg}
+							index={i}
+							onChange={(val) => updateLeg(i, val)}
+							onRemove={() => removeLeg(i)}
+							canRemove={legs.length > 1}
+						/>
+					))}
+					<button
+						type='button'
+						onClick={addLeg}
+						disabled={legs.length >= 8}
+						className='text-sm font-medium px-4 py-2.5 border border-dashed border-lines rounded-lg text-fontz/70 hover:border-btn hover:text-btn transition-colors disabled:opacity-40 disabled:cursor-not-allowed'>
+						+ Add Phase
+					</button>
+				</div>
 			</div>
 
 			{/* ── Sticky footer ─────────────────────────────────────── */}

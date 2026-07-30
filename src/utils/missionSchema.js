@@ -89,7 +89,12 @@ export const defaultObjective = () => ({
 	note: "",
 });
 
-export const defaultBase = () => ({ locationId: null, note: "" });
+// A base is the anchor point for the objectives staged from it.
+export const defaultBase = () => ({
+	locationId: null,
+	note: "",
+	objectives: [defaultObjective()],
+});
 
 export const defaultExfil = () => ({
 	type: "Terrain Location",
@@ -105,15 +110,13 @@ export const defaultWeaponSlot = () => ({ weaponId: "", attachments: {} });
 export const defaultExtraProvince = () => ({
 	provinceId: "",
 	approachFrom: "North",
-	bases: [],
-	objectives: [defaultObjective()],
+	bases: [defaultBase()],
 });
 
 export const defaultLeg = () => ({
 	provinceId: "",
 	infil: { type: "Terrain Location", locationId: null, note: "" },
-	bases: [],
-	objectives: [defaultObjective()],
+	bases: [defaultBase()],
 	extraProvinces: [],
 	exfil: null,
 });
@@ -145,6 +148,39 @@ export const defaultMission = () => ({
 	},
 });
 
+// Objectives used to live in a flat list alongside bases; they now nest under
+// the base they're staged from. Fold old drafts/links into the new shape.
+function migrateBaseGroups(rawBases, legacyObjectives) {
+	const bases = Array.isArray(rawBases) ? rawBases : [];
+	const alreadyNested = bases.length > 0 && bases.every((b) => Array.isArray(b?.objectives));
+
+	if (alreadyNested) {
+		return bases.map((b) => ({
+			...defaultBase(),
+			...b,
+			objectives:
+				b.objectives.length > 0 ?
+					b.objectives.map((o) => ({ ...defaultObjective(), ...o }))
+				:	[defaultObjective()],
+		}));
+	}
+
+	const objectives =
+		Array.isArray(legacyObjectives) ?
+			legacyObjectives.map((o) => ({ ...defaultObjective(), ...o }))
+		:	[];
+
+	if (bases.length > 0) {
+		return bases.map((b, i) => ({
+			...defaultBase(),
+			...b,
+			objectives: i === 0 && objectives.length > 0 ? objectives : [defaultObjective()],
+		}));
+	}
+
+	return [{ ...defaultBase(), objectives: objectives.length > 0 ? objectives : [defaultObjective()] }];
+}
+
 // Tolerant migration — merges stored data onto defaults so new fields appear safely
 export function migrate(raw) {
 	if (!raw || typeof raw !== "object") return defaultMission();
@@ -167,11 +203,13 @@ export function migrate(raw) {
 				raw.legs.map((leg) => ({
 					...defaultLeg(),
 					...leg,
+					bases: migrateBaseGroups(leg.bases, leg.objectives),
 					extraProvinces:
 						Array.isArray(leg.extraProvinces) ?
 							leg.extraProvinces.map((p) => ({
 								...defaultExtraProvince(),
 								...p,
+								bases: migrateBaseGroups(p.bases, p.objectives),
 							}))
 						:	[],
 				}))

@@ -76,7 +76,6 @@ function ProvinceSegmentView({
 	approachFrom,
 	provinceId,
 	bases,
-	objectives,
 	infil,
 	exfil,
 }) {
@@ -89,26 +88,25 @@ function ProvinceSegmentView({
 		[province],
 	);
 
-	// Collect objective markers for the map (locations with coordinates)
+	// Collect objective + base markers for the map (locations with coordinates)
 	const mapLocations = useMemo(() => {
 		if (!province) return [];
 		const seen = new Set();
 		const out = [];
-		(objectives ?? []).forEach((obj) => {
-			const isLocType =
-				!PERSON_TARGET_TYPES.has(obj.type) &&
-				!VEHICLE_TARGET_TYPES.has(obj.type);
-			const name = isLocType ? obj.targetId || obj.locationId : null;
-			if (name && locByName[name] && !seen.has(name)) {
-				seen.add(name);
-				out.push({
-					...locByName[name],
-					name: `${obj.type}: ${name}`,
-				});
-			}
-		});
-		// Also include base locations
 		(bases ?? []).forEach((base) => {
+			(base.objectives ?? []).forEach((obj) => {
+				const isLocType =
+					!PERSON_TARGET_TYPES.has(obj.type) &&
+					!VEHICLE_TARGET_TYPES.has(obj.type);
+				const name = isLocType ? obj.targetId || obj.locationId : null;
+				if (name && locByName[name] && !seen.has(name)) {
+					seen.add(name);
+					out.push({
+						...locByName[name],
+						name: `${obj.type}: ${name}`,
+					});
+				}
+			});
 			if (
 				base.locationId &&
 				locByName[base.locationId] &&
@@ -119,7 +117,7 @@ function ProvinceSegmentView({
 			}
 		});
 		return out;
-	}, [objectives, bases, locByName, province]);
+	}, [bases, locByName, province]);
 
 	const infilPoint =
 		infil?.locationId ?
@@ -195,66 +193,63 @@ function ProvinceSegmentView({
 					</div>
 				)}
 
-				{/* Bases */}
+				{/* Bases & Objectives */}
 				{bases?.length > 0 && (
-					<div>
-						<span className='text-base font-medium text-gray-400 block mb-1'>
-							Bases
-						</span>
-						<div className='flex flex-col gap-2'>
-							{bases.map((b, i) => (
-								<div
-									key={i}
-									className='flex flex-col gap-0.5'>
-									<span className='text-base text-fontz'>
-										{b.locationId || "—"}
-									</span>
-									{b.note && (
-										<span className='text-sm text-gray-500 italic'>
-											{b.note}
-										</span>
-									)}
-								</div>
-							))}
-						</div>
-					</div>
-				)}
-
-				{/* Objectives */}
-				{objectives?.length > 0 && (
 					<div className='md:col-span-2'>
 						<span className='text-base font-medium text-gray-400 block mb-1'>
-							Objectives
+							Bases &amp; Objectives
 						</span>
-						<div className='flex flex-col gap-3'>
-							{objectives.map((obj, i) => (
+						<div className='flex flex-col gap-4'>
+							{bases.map((b, bi) => (
 								<div
-									key={i}
-									className='flex items-start gap-3'>
-									<span className='text-sm text-gray-500 mt-0.5 shrink-0'>
-										{i + 1}.
-									</span>
-									{VEHICLE_TARGET_TYPES.has(obj.type) && obj.targetId && (
-										<VehicleThumb
-											name={obj.targetId}
-											className='w-10 h-10'
-										/>
-									)}
-									<div className='flex flex-col gap-1'>
-										<div className='flex items-center gap-2 flex-wrap'>
-											<Badge color='btn'>{obj.type}</Badge>
-											{obj.targetId && (
-												<span className='text-base text-fontz'>
-													{obj.targetId}
-												</span>
-											)}
-										</div>
-										{obj.note && (
+									key={bi}
+									className='flex flex-col gap-2 pl-3 border-l-2 border-lines/20'>
+									<div className='flex flex-col gap-0.5'>
+										<span className='text-base text-fontz font-medium'>
+											Base {bi + 1}
+											{b.locationId ? ` — ${b.locationId}` : ""}
+										</span>
+										{b.note && (
 											<span className='text-sm text-gray-500 italic'>
-												{obj.note}
+												{b.note}
 											</span>
 										)}
 									</div>
+									{b.objectives?.length > 0 && (
+										<div className='flex flex-col gap-3 mt-1'>
+											{b.objectives.map((obj, i) => (
+												<div
+													key={i}
+													className='flex items-start gap-3'>
+													<span className='text-sm text-gray-500 mt-0.5 shrink-0'>
+														{i + 1}.
+													</span>
+													{VEHICLE_TARGET_TYPES.has(obj.type) &&
+														obj.targetId && (
+															<VehicleThumb
+																name={obj.targetId}
+																className='w-10 h-10'
+															/>
+														)}
+													<div className='flex flex-col gap-1'>
+														<div className='flex items-center gap-2 flex-wrap'>
+															<Badge color='btn'>{obj.type}</Badge>
+															{obj.targetId && (
+																<span className='text-base text-fontz'>
+																	{obj.targetId}
+																</span>
+															)}
+														</div>
+														{obj.note && (
+															<span className='text-sm text-gray-500 italic'>
+																{obj.note}
+															</span>
+														)}
+													</div>
+												</div>
+											))}
+										</div>
+									)}
 								</div>
 							))}
 						</div>
@@ -298,7 +293,6 @@ function LegSection({ leg, index }) {
 				label={leg.provinceId}
 				provinceId={leg.provinceId}
 				bases={leg.bases}
-				objectives={leg.objectives}
 				infil={leg.infil}
 				exfil={extraProvinces.length === 0 ? leg.exfil : null}
 			/>
@@ -310,7 +304,6 @@ function LegSection({ leg, index }) {
 					approachFrom={segment.approachFrom}
 					provinceId={segment.provinceId}
 					bases={segment.bases}
-					objectives={segment.objectives}
 					exfil={i === extraProvinces.length - 1 ? leg.exfil : null}
 				/>
 			))}
@@ -466,20 +459,7 @@ export default function OpsReaderPage() {
 				</div>
 			</div>
 
-			{/* Legs with maps */}
 			<div className='max-w-4xl mx-auto px-4 py-6'>
-				{legs?.length > 0 && (
-					<div className='flex flex-col'>
-						{legs.map((leg, i) => (
-							<LegSection
-								key={i}
-								leg={leg}
-								index={i}
-							/>
-						))}
-					</div>
-				)}
-
 				{/* ROE */}
 				{(activeROE.length > 0 || roe?.custom) && (
 					<div className='py-6 border-b border-lines/30'>
@@ -653,6 +633,19 @@ export default function OpsReaderPage() {
 								</div>
 							)}
 						</div>
+					</div>
+				)}
+
+				{/* Phases with maps */}
+				{legs?.length > 0 && (
+					<div className='flex flex-col'>
+						{legs.map((leg, i) => (
+							<LegSection
+								key={i}
+								leg={leg}
+								index={i}
+							/>
+						))}
 					</div>
 				)}
 			</div>
