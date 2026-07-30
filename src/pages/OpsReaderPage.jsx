@@ -145,7 +145,7 @@ function ProvinceSegmentView({
 			{/* Segment header */}
 			<div className='flex items-center gap-3 px-4 py-3 border-b border-lines bg-blk/50'>
 				<span className='text-lg font-semibold text-fontz'>{provinceName}</span>
-				<span className='text-base text-gray-400'>{province.biome}</span>
+				<span className='text-base text-gray-400'>{province?.biome}</span>
 				{approachFrom && (
 					<Badge color='amber'>Approaching from {approachFrom}</Badge>
 				)}
@@ -422,22 +422,40 @@ export default function OpsReaderPage() {
 			{/* Mission header */}
 			<div className='px-4 py-6 border-b border-lines/30 bg-background/40'>
 				<div className='max-w-4xl mx-auto flex flex-col gap-3'>
-					<h1 className='text-2xl font-bold text-fontz'>
-						{meta?.name || "Untitled Mission"}
-					</h1>
-					<div className='flex flex-wrap items-center gap-2'>
-						{meta?.difficulty && <Badge>Difficulty: {meta.difficulty}</Badge>}
-						{meta?.platform && <Badge>Platform: {meta.platform}</Badge>}
-					</div>
-					<div className='flex flex-wrap items-center gap-2'>
+					<div className='flex flex-col gap-1'>
+						<h1 className='text-2xl font-bold text-fontz'>
+							{meta?.name || "Untitled Mission"}
+						</h1>
 						{meta?.author && (
 							<span className='text-base text-gray-400'>by {meta.author}</span>
 						)}
-						{meta?.world && meta.world !== "Any" && (
-							<Badge color='amber'>{meta.world}</Badge>
-						)}
-						{meta?.timeOfDay && meta.timeOfDay !== "Any" && (
-							<Badge>{meta.timeOfDay}</Badge>
+					</div>
+					<div className='flex flex-col gap-1'>
+						{[
+							["Difficulty", meta?.difficulty],
+							["Platform", meta?.platform],
+							[
+								"World Parameters",
+								meta?.world && meta.world !== "Any" ? meta.world : null,
+							],
+							[
+								"Time of Day",
+								meta?.timeOfDay && meta.timeOfDay !== "Any" ?
+									meta.timeOfDay
+								:	null,
+							],
+						].map(
+							([label, value]) =>
+								value && (
+									<div
+										key={label}
+										className='flex items-baseline gap-2'>
+										<span className='text-sm text-gray-400'>{label}:</span>
+										<span className='text-sm font-medium text-fontz'>
+											{value}
+										</span>
+									</div>
+								),
 						)}
 					</div>
 					{meta?.sitrep && (
