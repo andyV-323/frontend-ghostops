@@ -347,10 +347,22 @@ const NoneGeographicalMap = ({
 
 		injectStyles();
 
+		// On mobile, a draggable/zoomable map steals vertical swipes meant to
+		// scroll the page (the finger lands on the map and pans/zooms it
+		// instead). Lock the map to a static, fitted view there instead.
+		const isMobile = window.innerWidth < 640;
+
 		const map = L.map(mapRef.current, {
 			center: [bounds[1][0] / 2, bounds[1][1] / 2],
 			zoom: 2, crs: L.CRS.Simple,
-			dragging: true, zoomControl: true, scrollWheelZoom: true, zoomAnimation: false,
+			dragging: !isMobile,
+			zoomControl: !isMobile,
+			scrollWheelZoom: !isMobile,
+			touchZoom: !isMobile,
+			doubleClickZoom: !isMobile,
+			boxZoom: !isMobile,
+			keyboard: !isMobile,
+			zoomAnimation: false,
 			attributionControl: false,
 		});
 		map.setMinZoom(-3);
@@ -403,23 +415,45 @@ const NoneGeographicalMap = ({
 
 		/* ── Controls ── */
 		buildLegend().addTo(map);
-		/* ── Auto-fit to objectives + infil ── */
-		const fitCoords = [...objCoords, ...(infilPoint ? [infilPoint] : [])];
-		if (fitCoords.length > 0) {
-			try { map.fitBounds(L.latLngBounds(fitCoords), { padding: [120, 120], maxZoom: -1 }); }
-			catch { map.setZoom(-2); }
+
+		/* ── Mobile whole-image fit ── */
+		// The panel is sized to the province image's own aspect ratio (see
+		// OpsReaderPage), so fitting the whole image fills it edge to edge
+		// with no cropping and no dead space.
+		const fitMobile = () => {
+			const m = mapInst.current;
+			if (!m) return;
+			try { m.fitBounds(bounds, { padding: [0, 0] }); }
+			catch { m.setZoom(-2); }
+		};
+
+		/* ── Auto-fit ── */
+		// Desktop keeps the tighter objectives+infil fit; mobile always shows
+		// the full province image (it can't pan/zoom to see the rest).
+		if (isMobile) {
+			fitMobile();
 		} else {
-			map.setZoom(-2);
+			const fitCoords = [...objCoords, ...(infilPoint ? [infilPoint] : [])];
+			if (fitCoords.length > 0) {
+				try { map.fitBounds(L.latLngBounds(fitCoords), { padding: [120, 120], maxZoom: -1 }); }
+				catch { map.setZoom(-2); }
+			} else {
+				map.setZoom(-2);
+			}
 		}
 
 		/* ── Mobile: recalculate size after layout is settled ── */
 		// Mobile browsers defer layout for off-screen elements; Leaflet may read
 		// 0 dimensions if the map panel is below the fold when it mounts.
 		const rafId = requestAnimationFrame(() => {
-			if (mapInst.current) mapInst.current.invalidateSize();
+			if (!mapInst.current) return;
+			mapInst.current.invalidateSize();
+			if (isMobile) fitMobile();
 		});
 		const timerId = setTimeout(() => {
-			if (mapInst.current) mapInst.current.invalidateSize();
+			if (!mapInst.current) return;
+			mapInst.current.invalidateSize();
+			if (isMobile) fitMobile();
 		}, 300);
 
 		return () => {

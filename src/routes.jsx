@@ -7,6 +7,10 @@ import MainLayout from "./layout/MainLayout";
 import Home  from "@/pages/Home";
 import Login from "@/pages/Login";
 
+// Lazy-load public ops pages — no auth required, split into separate chunks
+const OpsBuilderPage = lazy(() => import("@/pages/OpsBuilderPage"));
+const OpsReaderPage  = lazy(() => import("@/pages/OpsReaderPage"));
+
 // Lazy-load everything behind auth — split into separate chunks at build time
 const UnifiedDashboard = lazy(() => import("@/pages/UnifiedDashboard"));
 const Memorial         = lazy(() => import("@/components/tables/Memorial"));
@@ -26,10 +30,14 @@ const AppRoutes = () => {
 		<>
 			<AuthRedirector />
 			<Routes>
-				{/* Public */}
+				{/* Public — home with layout */}
 				<Route path='/' element={<MainLayout />}>
 					<Route index element={<Home />} />
 				</Route>
+
+				{/* Public — standalone, no header/footer */}
+				<Route path='ops/builder' element={<Suspense fallback={null}><OpsBuilderPage /></Suspense>} />
+				<Route path='ops/reader'  element={<Suspense fallback={null}><OpsReaderPage /></Suspense>} />
 				<Route path='login' element={<Login />} />
 
 				{/* Private — single Suspense covers the whole dashboard tree */}

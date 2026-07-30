@@ -9,6 +9,7 @@ const Header = () => {
 	// AWS Cognito
 	const { isAuthenticated, user, signIn, signUp, signOut } = useAuthService();
 	const [sidebarOpen, setSidebarOpen] = useState(false);
+	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
 	return (
 		<>
@@ -23,7 +24,17 @@ const Header = () => {
 						height='40'
 					/>
 
-					<div className='flex space-x-4'>
+					{/* Desktop links */}
+					<div className='hidden sm:flex items-center space-x-4'>
+						<Link
+							to='/ops/builder'
+							className='flex items-center gap-2 hover:opacity-80 transition-opacity'>
+							<img
+								src='/icons/OpsBuilder.svg'
+								alt='GhostOpsAI'
+								className='h-8 w-auto'
+							/>
+						</Link>
 						<button
 							onClick={signIn}
 							className='text-white hover:text-btn'>
@@ -35,7 +46,56 @@ const Header = () => {
 							Sign up
 						</Button>
 					</div>
+
+					{/* Mobile menu toggle */}
+					<button
+						onClick={() => setMobileMenuOpen((prev) => !prev)}
+						className='sm:hidden text-white p-2'
+						aria-label='Menu'>
+						<FontAwesomeIcon
+							icon={mobileMenuOpen ? faTimes : faBars}
+							className='text-xl'
+						/>
+					</button>
 				</header>
+			)}
+
+			{/* === MOBILE MENU (VISIBLE ONLY WHEN NOT LOGGED IN + TOGGLED OPEN) === */}
+			{!isAuthenticated && mobileMenuOpen && (
+				<>
+					<div
+						onClick={() => setMobileMenuOpen(false)}
+						className='fixed inset-0 bg-black/40 z-[1001] sm:hidden'
+					/>
+					<div className='fixed top-[4.5rem] left-0 w-full bg-black border-t border-lines/20 z-[1002] sm:hidden flex flex-col p-3 gap-1 shadow-lg'>
+						<Link
+							to='/ops/builder'
+							onClick={() => setMobileMenuOpen(false)}
+							className='flex items-center gap-2 text-white py-3 px-3 rounded-lg hover:bg-white/5 transition-colors'>
+							<img
+								src='/icons/OpsBuilder.svg'
+								alt=''
+								className='h-6 w-auto'
+							/>
+						</Link>
+						<button
+							onClick={() => {
+								setMobileMenuOpen(false);
+								signIn();
+							}}
+							className='text-left text-white py-3 px-3 rounded-lg hover:bg-white/5 transition-colors'>
+							Sign in
+						</button>
+						<button
+							onClick={() => {
+								setMobileMenuOpen(false);
+								signUp();
+							}}
+							className='text-left text-btn font-medium py-3 px-3 rounded-lg hover:bg-white/5 transition-colors'>
+							Sign up
+						</button>
+					</div>
+				</>
 			)}
 
 			{/* === SIDEBAR (VISIBLE AFTER LOGIN) === */}
@@ -71,7 +131,12 @@ const Header = () => {
 								className='mt-10'
 								alt='User Avatar'
 							/>
-							<p className='mt-2 text-sm'>{user?.profile?.['cognito:username'] || user?.profile?.preferred_username || user?.profile?.email || "User"}</p>
+							<p className='mt-2 text-sm'>
+								{user?.profile?.["cognito:username"] ||
+									user?.profile?.preferred_username ||
+									user?.profile?.email ||
+									"User"}
+							</p>
 						</div>
 
 						{/* Quick Links */}
@@ -82,6 +147,13 @@ const Header = () => {
 										to='/dashboard'
 										className='hover:underline hover:text-white'>
 										Home
+									</Link>
+								</li>
+								<li>
+									<Link
+										to='/ops/builder'
+										className='hover:underline hover:text-white'>
+										Ops Builder
 									</Link>
 								</li>
 								<li>
