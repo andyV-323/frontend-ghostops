@@ -65,6 +65,30 @@ function readSaves() {
 // ── helpers ──────────────────────────────────────────────────────────────
 const cls = (...args) => args.filter(Boolean).join(" ");
 
+const slugify = (name) =>
+	(name || "")
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.slice(0, 60) || "mission";
+
+// Best-effort — the share link works fine on its own if this fails
+// (no token configured, network error, backend down, etc.).
+async function shortenLink(url, alias) {
+	try {
+		const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/shorten`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ url, alias }),
+		});
+		if (!res.ok) return null;
+		const data = await res.json();
+		return data?.shortUrl || null;
+	} catch {
+		return null;
+	}
+}
+
 const labelCls = "block text-sm font-medium text-gray-400 mb-2";
 const secondaryBtnCls =
 	"text-sm font-medium px-3 py-1.5 rounded-lg border border-lines text-fontz hover:bg-highlight hover:text-white transition-colors";
@@ -785,6 +809,7 @@ export default function OpsBuilderPage() {
 	});
 	const [saves, setSaves] = useState(readSaves);
 	const [copied, setCopied] = useState(false);
+	const [shortening, setShortening] = useState(false);
 	const [saveLabel, setSaveLabel] = useState("Save");
 	const [showSavesMenu, setShowSavesMenu] = useState(false);
 	const [nameEditing, setNameEditing] = useState(false);
@@ -907,10 +932,16 @@ export default function OpsBuilderPage() {
 	}
 
 	// ── Other footer actions ──────────────────────────────────────────────
-	function copyLink() {
+	async function copyLink() {
 		const encoded = encodeMission(mission);
-		const url = `${window.location.origin}/ops/reader#${encoded}`;
-		navigator.clipboard.writeText(url).then(() => {
+		const slug = slugify(mission.meta.name);
+		const url = `${window.location.origin}/ops/reader/${slug}#${encoded}`;
+
+		setShortening(true);
+		const shortUrl = await shortenLink(url, slug);
+		setShortening(false);
+
+		navigator.clipboard.writeText(shortUrl || url).then(() => {
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2500);
 		});
@@ -1476,17 +1507,20 @@ export default function OpsBuilderPage() {
 					<button
 						type='button'
 						onClick={copyLink}
+						disabled={shortening}
 						title='Copy Mission Link'
 						className={cls(
 							copied ? "btn" : "btn opacity-90",
-							"flex items-center gap-2",
+							"flex items-center gap-2 disabled:opacity-60 disabled:cursor-wait",
 						)}>
 						<FontAwesomeIcon icon={copied ? faCheck : faLink} />
 						<span className='hidden sm:inline'>
-							{copied ? "Link Copied!" : "Copy Mission Link"}
+							{shortening ? "Shortening…"
+							: copied ? "Link Copied!"
+							: "Copy Mission Link"}
 						</span>
 						<span className='sm:hidden'>
-							{copied ? "Copied!" : "Copy Link"}
+							{shortening ? "…" : copied ? "Copied!" : "Copy Link"}
 						</span>
 					</button>
 				</div>

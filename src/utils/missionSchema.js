@@ -45,20 +45,55 @@ export const ROE_RULES = [
 export const ROE_RULE_MAP = Object.fromEntries(ROE_RULES.map((r) => [r.id, r]));
 
 export const OBJECTIVE_TYPES = [
-	"Eliminate HVT",
-	"Destroy",
-	"Disable",
-	"Steal",
-	"Recover Intel",
-	"Rescue",
-	"Recon-Photograph",
+	"Direct Action",
+	"HVT Elimination",
+	"HVT Capture",
+	"Personnel Recovery",
+	"Hostage Rescue",
+	"Reconnaissance",
+	"Intelligence Gathering",
+	"Surveillance",
 	"Sabotage",
+	"Infrastructure Attack",
+	"Drone Neutralization",
+	"Technology Recovery",
+	"Convoy Interdiction",
+	"Convoy Escort",
+	"Vehicle Recovery",
+	"Facility Assault",
+	"Stronghold Clearance",
+	"Covert Infiltration",
+	"Covert Extraction",
+	"Counterattack",
+	"Area Defense",
+	"VIP Protection",
+	"Civilian Evacuation",
+	"Resistance Support",
+	"Search and Rescue",
+	"Crash Site Recovery",
+	"Maritime Interdiction",
+	"Airfield Assault",
+	"Explosive Ordnance Disposal",
+	"Combat Search and Rescue",
+	"Counterintelligence",
+	"Electronic Warfare",
+	"Target Designation",
+	"Long-Range Patrol",
+	"Multi-Objective Operation",
 ];
 
 // Target is a free-text person name for these objective types
-export const PERSON_TARGET_TYPES = new Set(["Eliminate HVT", "Rescue"]);
-// Target is a vehicle name from GARAGE for this type
-export const VEHICLE_TARGET_TYPES = new Set(["Steal"]);
+export const PERSON_TARGET_TYPES = new Set([
+	"HVT Elimination",
+	"HVT Capture",
+	"Personnel Recovery",
+	"Hostage Rescue",
+	"VIP Protection",
+	"Search and Rescue",
+	"Combat Search and Rescue",
+]);
+// Target is a vehicle name from GARAGE for these objective types
+export const VEHICLE_TARGET_TYPES = new Set(["Vehicle Recovery"]);
 // All others: target is a province location name
 
 export const INFIL_EXFIL_TYPES = [
@@ -83,7 +118,7 @@ export const LIST_MODES = ["None", "All", "List"];
 export const MODS = ["Spartan Mod", "Fear the Radio"];
 
 export const defaultObjective = () => ({
-	type: "Eliminate HVT",
+	type: "HVT Elimination",
 	targetId: "",
 	locationId: null,
 	note: "",
@@ -152,7 +187,8 @@ export const defaultMission = () => ({
 // the base they're staged from. Fold old drafts/links into the new shape.
 function migrateBaseGroups(rawBases, legacyObjectives) {
 	const bases = Array.isArray(rawBases) ? rawBases : [];
-	const alreadyNested = bases.length > 0 && bases.every((b) => Array.isArray(b?.objectives));
+	const alreadyNested =
+		bases.length > 0 && bases.every((b) => Array.isArray(b?.objectives));
 
 	if (alreadyNested) {
 		return bases.map((b) => ({
@@ -174,11 +210,17 @@ function migrateBaseGroups(rawBases, legacyObjectives) {
 		return bases.map((b, i) => ({
 			...defaultBase(),
 			...b,
-			objectives: i === 0 && objectives.length > 0 ? objectives : [defaultObjective()],
+			objectives:
+				i === 0 && objectives.length > 0 ? objectives : [defaultObjective()],
 		}));
 	}
 
-	return [{ ...defaultBase(), objectives: objectives.length > 0 ? objectives : [defaultObjective()] }];
+	return [
+		{
+			...defaultBase(),
+			objectives: objectives.length > 0 ? objectives : [defaultObjective()],
+		},
+	];
 }
 
 // Tolerant migration — merges stored data onto defaults so new fields appear safely

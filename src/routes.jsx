@@ -38,6 +38,7 @@ const AppRoutes = () => {
 				{/* Public — standalone, no header/footer */}
 				<Route path='ops/builder' element={<Suspense fallback={null}><OpsBuilderPage /></Suspense>} />
 				<Route path='ops/reader'  element={<Suspense fallback={null}><OpsReaderPage /></Suspense>} />
+				<Route path='ops/reader/:slug' element={<Suspense fallback={null}><OpsReaderPage /></Suspense>} />
 				<Route path='login' element={<Login />} />
 
 				{/* Private — single Suspense covers the whole dashboard tree */}
