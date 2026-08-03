@@ -6,7 +6,12 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const Contact = () => {
 	const formRef = useRef();
+	const mountedAt = useRef(Date.now());
 	const [form, setForm] = useState({ name: "", email: "", message: "" });
+	// Honeypot — real visitors never see or fill this field; bots that
+	// blindly fill every input do. Kept out of `form` so it never touches
+	// the visible UI state.
+	const [company, setCompany] = useState("");
 	const { alert, showAlert, hideAlert } = useAlert();
 	const [loading, setLoading] = useState(false);
 	const [sent, setSent] = useState(false);
@@ -41,7 +46,13 @@ const Contact = () => {
 			const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/contact`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name, email, message }),
+				body: JSON.stringify({
+					name,
+					email,
+					message,
+					company,
+					formStartedAt: mountedAt.current,
+				}),
 			});
 
 			const data = await res.json();
@@ -54,6 +65,7 @@ const Contact = () => {
 			setSent(true);
 			showAlert({ show: true, text: "Message sent — thanks for reaching out!", type: "success" });
 			setForm({ name: "", email: "", message: "" });
+			setCompany("");
 			setTimeout(() => { hideAlert(); setSent(false); }, 5000);
 		} catch {
 			showAlert({ show: true, text: "Network error. Please check your connection and try again.", type: "danger" });
@@ -86,6 +98,28 @@ const Contact = () => {
 					{alert.show && <Alert {...alert} />}
 
 					<form onSubmit={handleSubmit} className='flex flex-col gap-5' noValidate>
+						{/* Honeypot — hidden from real visitors, bots fill it anyway */}
+						<div
+							aria-hidden='true'
+							style={{
+								position: "absolute",
+								left: "-9999px",
+								width: "1px",
+								height: "1px",
+								overflow: "hidden",
+							}}>
+							<label htmlFor='company'>Company</label>
+							<input
+								type='text'
+								id='company'
+								name='company'
+								tabIndex={-1}
+								autoComplete='off'
+								value={company}
+								onChange={(e) => setCompany(e.target.value)}
+							/>
+						</div>
+
 						<div className='grid grid-cols-1 md:grid-cols-2 gap-5'>
 							{/* Name */}
 							<div className='flex flex-col gap-1.5'>
