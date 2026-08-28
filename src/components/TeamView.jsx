@@ -1,20 +1,17 @@
 // TeamView.jsx — Military Team Dossier
 
 import { useTeamsStore, useOperatorsStore, useKitsStore } from "@/zustand";
+import {
+	activeMembers,
+	reserveMembers,
+	memberOperatorId,
+} from "@/utils/teamMembers";
 
-const rolesObj = (roles) => {
-	if (!roles) return {};
-	if (roles instanceof Map) {
-		const out = {};
-		roles.forEach((v, k) => { if (v) out[String(k)] = v; });
-		return out;
-	}
-	return roles;
-};
 import { useEffect, useMemo, useState } from "react";
 import { ITEMS, GARAGE, PROVINCES } from "@/config";
 import { PropTypes } from "prop-types";
 import ConfirmDialog from "./ConfirmDialog";
+import SlotControl from "./SlotControl";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faShieldHalved,
@@ -25,6 +22,8 @@ import {
 	faChevronUp,
 	faXmark,
 	faLocationDot,
+	faCaretUp,
+	faCaretDown,
 } from "@fortawesome/free-solid-svg-icons";
 import { TeamsApi, OperatorsApi } from "@/api";
 import { toast } from "react-toastify";
@@ -64,17 +63,6 @@ const CONDITION_BADGE = {
 	Critical: "text-red-400 border-red-900/50 bg-red-950/30",
 };
 
-/* ─── Op grid columns ───────────────────────────────────────── */
-function getOpCols(count) {
-	if (count === 1) return "grid-cols-1";
-	if (count === 2) return "grid-cols-2";
-	if (count === 3) return "grid-cols-2 sm:grid-cols-3";
-	if (count === 5) return "grid-cols-2 sm:grid-cols-5";
-	if (count === 6) return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6";
-	if (count === 7) return "grid-cols-2 sm:grid-cols-4 lg:grid-cols-7";
-	return "grid-cols-2 sm:grid-cols-4";
-}
-
 /* ─── Section header ────────────────────────────────────────── */
 function SectionHeader({ label, count }) {
 	return (
@@ -113,14 +101,17 @@ function FuelBar({ pct }) {
 	);
 }
 
-/* ─── Operator portrait card (compact grid tile) ────────────── */
+/* ─── Active operator portrait card (large, corner slot number) ─── */
 function OperatorCard({
 	operator,
+	slotNum,
 	slotClass,
 	onInjuryClick,
 	onKitSelectClick,
 	assignedKits,
 	onViewKit,
+	isControlOpen,
+	onToggleControl,
 }) {
 	const img = getOperatorDisplayImage(operator, assignedKits);
 	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
@@ -138,6 +129,11 @@ function OperatorCard({
 				"relative flex flex-col overflow-hidden border-r border-neutral-800/50 last:border-r-0 select-none",
 				isKIA ? "opacity-60" : "",
 			].join(" ")}>
+			{/* Corner slot number */}
+			<span className='absolute top-1.5 left-1.5 z-10 font-mono text-[10px] font-bold text-neutral-200 bg-neutral-950/70 border border-neutral-700/60 w-5 h-5 flex items-center justify-center rounded-sm'>
+				{slotNum}
+			</span>
+
 			{/* Portrait — clickable for kit selection */}
 			<div
 				role='button'
@@ -161,7 +157,7 @@ function OperatorCard({
 				/>
 
 				{/* Top badges */}
-				<div className='absolute top-0 left-0 right-0 flex items-start justify-between p-1.5 gap-1'>
+				<div className='absolute top-0 left-0 right-0 flex items-start justify-end p-1.5 gap-1'>
 					<span
 						className={`w-2 h-2 rounded-full mt-0.5 shrink-0 ${status.dot}`}
 					/>
@@ -204,19 +200,7 @@ function OperatorCard({
 						</p>
 						<p className='font-mono text-[9px] text-neutral-500 uppercase tracking-wider leading-tight'>
 							{effectiveClass || "—"}
-							{operator.secondaryClass &&
-								operator.secondaryClass !== rawClass && (
-									<span className='text-neutral-700'>
-										{" "}
-										/ {operator.secondaryClass}
-									</span>
-								)}
 						</p>
-						{operator.role && (
-							<p className='font-mono text-[9px] text-neutral-600 truncate uppercase tracking-wider'>
-								{operator.role}
-							</p>
-						)}
 					</div>
 
 					{activeKit ?
@@ -238,6 +222,16 @@ function OperatorCard({
 				</div>
 			</div>
 
+			{/* Slot control toggle — the control itself renders full-width below
+			    the grid (see TeamView body) since a 5x44px control doesn't fit
+			    inside one grid column. */}
+			<button
+				type='button'
+				onClick={(e) => { e.stopPropagation(); onToggleControl(operator._id); }}
+				className='w-full font-mono text-[8px] tracking-widest uppercase text-lines/50 hover:text-btn py-1.5 border-t border-neutral-800/60 transition-colors'>
+				{isControlOpen ? "Close" : "Reassign"}
+			</button>
+
 			{/* Injury button */}
 			<button
 				onClick={(e) => {
@@ -246,13 +240,204 @@ function OperatorCard({
 				}}
 				disabled={isKIA}
 				className={[
-					"w-full flex items-center justify-center gap-1 font-mono text-[8px] tracking-widest uppercase py-1.5 border transition-all",
+					"w-full flex items-center justify-center gap-1 font-mono text-[8px] tracking-widest uppercase py-1.5 border-t transition-all",
 					isKIA ?
 						"text-neutral-800 border-neutral-900/40 cursor-not-allowed"
-					:	"text-red-400/40 border-red-900/30 hover:text-red-400 hover:border-red-500/50 hover:bg-red-950/20",
+					:	"text-red-400/40 border-neutral-800/60 hover:text-red-400 hover:border-red-500/50 hover:bg-red-950/20",
 				].join(" ")}>
 				Casualty
 			</button>
+		</div>
+	);
+}
+
+/* ─── Empty active slot ─────────────────────────────────────── */
+function EmptySlotCard({ slotNum }) {
+	return (
+		<div className='flex flex-col items-center justify-center gap-2 border-r border-neutral-800/50 last:border-r-0 h-56 sm:h-60 border-dashed'>
+			<span className='font-mono text-2xl text-neutral-800'>{slotNum}</span>
+			<span className='font-mono text-[8px] tracking-widest text-neutral-700 uppercase'>Empty</span>
+		</div>
+	);
+}
+
+/* ─── Reserve card (compact, half height) ──────────────────── */
+function ReserveCard({ operator, slotClass, canMoveUp, canMoveDown, onReorder, isControlOpen, onToggleControl }) {
+	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
+	return (
+		<div className='flex flex-col items-center gap-1.5 border border-neutral-800/60 bg-neutral-900/30 p-2 w-28 shrink-0'>
+			<div className='flex items-center gap-1 self-stretch justify-center'>
+				<button
+					disabled={!canMoveUp}
+					onClick={() => onReorder("up")}
+					className='text-neutral-600 hover:text-btn disabled:opacity-20 disabled:cursor-not-allowed transition-colors'>
+					<FontAwesomeIcon icon={faCaretUp} className='text-[10px]' />
+				</button>
+				<button
+					disabled={!canMoveDown}
+					onClick={() => onReorder("down")}
+					className='text-neutral-600 hover:text-btn disabled:opacity-20 disabled:cursor-not-allowed transition-colors'>
+					<FontAwesomeIcon icon={faCaretDown} className='text-[10px]' />
+				</button>
+			</div>
+			{/* Status dot must live outside the overflow-hidden circular mask,
+			    or the corner dot gets clipped away by the rounded-full avatar. */}
+			<div className='relative w-12 h-12 shrink-0'>
+				<div className='w-12 h-12 rounded-full overflow-hidden border border-neutral-700/60'>
+					<img
+						src={operator.image || "/ghost/Default.png"}
+						alt={operator.callSign}
+						className='w-full h-full object-cover object-top grayscale-[50%] opacity-80'
+						onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
+					/>
+				</div>
+				<span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-neutral-900 ${status.dot}`} />
+			</div>
+			<p className='font-mono text-[9px] text-neutral-300 truncate max-w-full leading-none'>{operator.callSign}</p>
+			<p className='font-mono text-[7px] text-neutral-600 uppercase tracking-widest truncate max-w-full leading-none'>
+				{slotClass || (Array.isArray(operator.class) ? operator.class[0] : "") || "—"}
+			</p>
+			{/* Toggle only — the control itself renders full-width below the
+			    reserve strip (see TeamView body); it doesn't fit in this card. */}
+			<button
+				type='button'
+				onClick={() => onToggleControl(operator._id)}
+				className='font-mono text-[7px] tracking-widest uppercase text-lines/50 hover:text-btn transition-colors'>
+				{isControlOpen ? "Close" : "Reassign"}
+			</button>
+		</div>
+	);
+}
+
+/* ─── Assign table — replaces the old "ADD TO {TEAM}" drawer ─── */
+function AssignTable({ team, teams, operators, onAdd }) {
+	const [expandedId, setExpandedId] = useState(null);
+	const [pendingClass, setPendingClass] = useState("");
+
+	const onThisTeamIds = new Set(
+		[...activeMembers(team), ...reserveMembers(team)].map(memberOperatorId),
+	);
+
+	const teamOfOperator = (opId) => {
+		for (const t of teams) {
+			if (t._id === team._id) continue;
+			const ids = [...activeMembers(t), ...reserveMembers(t)].map(memberOperatorId);
+			if (ids.includes(opId)) return t;
+		}
+		return null;
+	};
+
+	const eligible = operators.filter((op) => op.status !== "KIA");
+	const unassigned = eligible.filter((op) => !onThisTeamIds.has(op._id) && !teamOfOperator(op._id));
+	const onOtherTeam = eligible.filter((op) => !onThisTeamIds.has(op._id) && teamOfOperator(op._id));
+	const onThisTeam = eligible.filter((op) => onThisTeamIds.has(op._id));
+
+	const classesFor = (op) =>
+		(Array.isArray(op.class) ? op.class : op.class ? [op.class] : []).filter(Boolean);
+
+	const handleRowClick = (op) => {
+		const classes = classesFor(op);
+		if (classes.length <= 1) {
+			onAdd(op._id, classes[0] || "");
+			return;
+		}
+		if (expandedId === op._id) {
+			onAdd(op._id, pendingClass || classes[0]);
+			setExpandedId(null);
+		} else {
+			setExpandedId(op._id);
+			setPendingClass(classes[0]);
+		}
+	};
+
+	const Row = ({ op, disabled, teamBadge }) => {
+		const classes = classesFor(op);
+		return (
+			<div className='border-b border-neutral-800/40 last:border-0'>
+				<button
+					type='button'
+					disabled={disabled}
+					onClick={() => handleRowClick(op)}
+					className={[
+						"w-full flex items-center gap-3 px-4 py-2 text-left transition-colors",
+						disabled ?
+							"opacity-40 cursor-not-allowed"
+						:	"hover:bg-neutral-800/40",
+					].join(" ")}>
+					<img
+						src={op.image || "/ghost/Default.png"}
+						alt={op.callSign}
+						className='w-7 h-7 rounded-full border border-neutral-700/60 object-cover object-top bg-neutral-900 shrink-0'
+						onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
+					/>
+					<div className='min-w-0 flex-1'>
+						<p className='font-mono text-[11px] text-neutral-200 truncate'>{op.callSign}</p>
+						<p className='font-mono text-[8px] text-neutral-600 truncate'>{classes.join(" / ") || "—"}</p>
+					</div>
+					{teamBadge && (
+						<span className='font-mono text-[7px] tracking-widest uppercase text-btn/60 border border-btn/25 px-1.5 py-0.5 shrink-0'>
+							{teamBadge}
+						</span>
+					)}
+				</button>
+				{expandedId === op._id && classes.length > 1 && (
+					<div className='px-4 pb-2 flex flex-wrap gap-1.5'>
+						{classes.map((cls) => (
+							<button
+								key={cls}
+								onClick={() => setPendingClass(cls)}
+								className={[
+									"font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border transition-all",
+									pendingClass === cls ?
+										"border-btn bg-btn/10 text-btn"
+									:	"border-neutral-700 text-neutral-400 hover:border-btn/50",
+								].join(" ")}>
+								{cls}
+							</button>
+						))}
+						<button
+							onClick={() => { onAdd(op._id, pendingClass); setExpandedId(null); }}
+							className='font-mono text-[8px] tracking-widest uppercase px-2 py-0.5 border border-btn/50 text-btn bg-btn/5 hover:bg-btn/10 transition-all'>
+							Confirm
+						</button>
+					</div>
+				)}
+			</div>
+		);
+	};
+
+	return (
+		<div className='flex flex-col'>
+			<SectionHeader label='Assign Operator' count={unassigned.length + onOtherTeam.length} />
+			{unassigned.length === 0 && onOtherTeam.length === 0 && onThisTeam.length === 0 && (
+				<p className='font-mono text-[9px] text-neutral-700 italic px-4 py-6 text-center'>No operators available</p>
+			)}
+			{unassigned.length > 0 && (
+				<>
+					<div className='px-4 py-1.5 bg-neutral-950/40'>
+						<span className='font-mono text-[8px] tracking-widest text-neutral-600 uppercase'>Unassigned</span>
+					</div>
+					{unassigned.map((op) => <Row key={op._id} op={op} />)}
+				</>
+			)}
+			{onOtherTeam.length > 0 && (
+				<>
+					<div className='px-4 py-1.5 bg-neutral-950/40'>
+						<span className='font-mono text-[8px] tracking-widest text-neutral-600 uppercase'>Other Teams</span>
+					</div>
+					{onOtherTeam.map((op) => (
+						<Row key={op._id} op={op} teamBadge={teamOfOperator(op._id)?.name} />
+					))}
+				</>
+			)}
+			{onThisTeam.length > 0 && (
+				<>
+					<div className='px-4 py-1.5 bg-neutral-950/40'>
+						<span className='font-mono text-[8px] tracking-widest text-neutral-600 uppercase'>On This Team</span>
+					</div>
+					{onThisTeam.map((op) => <Row key={op._id} op={op} disabled />)}
+				</>
+			)}
 		</div>
 	);
 }
@@ -518,10 +703,20 @@ const TeamView = ({ teamId }) => {
 		assignRandomInjury,
 		assignRandomKIAInjury,
 		assignUnknownFate,
+		assignSlot,
+		reorderReserve,
+		addToTeam,
 	} = useTeamsStore();
 	const { operators, fetchOperators } = useOperatorsStore();
 	const { kits, fetchKits } = useKitsStore();
 	const userId = localStorage.getItem("userId");
+
+	// Which member's slot control is expanded — shared by Active + Reserve
+	// sections. The control itself needs ~220px (five 44px tap targets) so it
+	// renders in a full-width row below the grid/strip, not inside a card.
+	const [controlOperatorId, setControlOperatorId] = useState(null);
+	const toggleControl = (operatorId) =>
+		setControlOperatorId((cur) => (cur === operatorId ? null : operatorId));
 
 	const [isInjuryDialogOpen, setIsInjuryDialogOpen] = useState(false);
 	const [selectedOperator, setSelectedOperator] = useState(null);
@@ -576,15 +771,33 @@ const TeamView = ({ teamId }) => {
 		setLocalAO(selectedTeam?.AO || "");
 	}, [selectedTeam?.AO]);
 
-	const teamOps = useMemo(() => {
-		if (!selectedTeam?.operators || operators.length === 0) return [];
-		return selectedTeam.operators
-			.map((op) => {
-				const id = typeof op === "object" ? op._id : op;
-				return operators.find((o) => o._id === id) || op;
-			})
-			.filter(Boolean);
-	}, [selectedTeam, operators]);
+	// Resolve a membership record to its Operator (populated or looked up
+	// from the operators store), tolerating either shape.
+	const resolveOp = (member) => {
+		if (!member) return null;
+		const id = memberOperatorId(member);
+		return operators.find((o) => o._id === id) || (typeof member.operatorId === "object" ? member.operatorId : null);
+	};
+
+	// activeOps[i] is the resolved operator for slot i+1, or null if empty.
+	const activeOps = useMemo(
+		() => (selectedTeam?.activeSlots ?? []).map((m) => (m ? resolveOp(m) : null)),
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[selectedTeam, operators],
+	);
+	const reserveOps = useMemo(
+		() => (selectedTeam?.reserves ?? []).map((m) => resolveOp(m)).filter(Boolean),
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[selectedTeam, operators],
+	);
+
+	// Readiness/status counts intentionally cover the whole roster (active +
+	// reserve), unchanged in meaning from before this rework — only the
+	// underlying data source (activeSlots/reserves vs. flat operators) changed.
+	const teamOps = useMemo(
+		() => [...activeOps.filter(Boolean), ...reserveOps],
+		[activeOps, reserveOps],
+	);
 
 	const statusCounts = useMemo(
 		() => ({
@@ -694,12 +907,6 @@ const TeamView = ({ teamId }) => {
 				createdBy: selectedTeam.createdBy,
 				name: selectedTeam.name,
 				AO: newAO || null,
-				operators: (selectedTeam.operators || []).map((op) =>
-					typeof op === "object" ? op._id : op,
-				),
-				assets: (selectedTeam.assets || []).map((a) =>
-					typeof a === "object" ? a._id : a,
-				),
 			});
 			await fetchTeams();
 			toast.success(newAO ? `AO set to ${newAO}` : "AO cleared");
@@ -731,8 +938,6 @@ const TeamView = ({ teamId }) => {
 		readiness.score >= 75 ? "bg-green-500"
 		: readiness.score >= 40 ? "bg-amber-400"
 		: "bg-red-500";
-
-	const opCols = getOpCols(teamOps.length);
 
 	const assetCount = selectedTeam?.assets?.length ?? 0;
 
@@ -879,32 +1084,78 @@ const TeamView = ({ teamId }) => {
 
 			</div>
 
-			{/* ── Operator lineup ──────────────────────────── */}
+			{/* ── Active lineup — 4 fixed slots ────────────── */}
 			<SectionHeader
-				label='Operators'
-				count={teamOps.length}
+				label='Active'
+				count={activeOps.filter(Boolean).length}
 			/>
-			{teamOps.length > 0 ?
-				<div className={`grid border-b border-neutral-800/60 ${opCols}`}>
-					{teamOps.map((op, i) => (
+			<div className='grid grid-cols-2 sm:grid-cols-4'>
+				{activeOps.map((op, i) =>
+					op ?
 						<OperatorCard
-							key={op._id || i}
+							key={op._id}
 							operator={op}
-							slotClass={rolesObj(selectedTeam.operatorRoles)[op._id]}
+							slotNum={i + 1}
+							slotClass={selectedTeam.activeSlots?.[i]?.class}
 							onInjuryClick={handleOpenInjuryDialog}
 							onKitSelectClick={setKitSelectorOp}
 							assignedKits={kitMap[op._id] || []}
 							onViewKit={(kit) => setViewingKit(kit)}
+							isControlOpen={controlOperatorId === op._id}
+							onToggleControl={toggleControl}
+						/>
+					:	<EmptySlotCard key={`empty-${i}`} slotNum={i + 1} />,
+				)}
+			</div>
+			{(() => {
+				const openIdx = activeOps.findIndex((op) => op && op._id === controlOperatorId);
+				if (openIdx === -1) return null;
+				return (
+					<div className='flex justify-center py-2 border-t border-neutral-800/60 bg-neutral-950/40'>
+						<SlotControl
+							currentSlot={openIdx + 1}
+							onSelect={(slot) => {
+								assignSlot(selectedTeam._id, controlOperatorId, slot);
+								setControlOperatorId(null);
+							}}
+						/>
+					</div>
+				);
+			})()}
+			<div className='border-b border-neutral-800/60' />
+
+			{/* ── Reserve ─────────────────────────────────── */}
+			<SectionHeader label='Reserve' count={reserveOps.length} />
+			{reserveOps.length > 0 ?
+				<div className='flex gap-2 overflow-x-auto px-3 py-3 border-b border-neutral-800/60'>
+					{reserveOps.map((op, i) => (
+						<ReserveCard
+							key={op._id}
+							operator={op}
+							slotClass={selectedTeam.reserves?.[i]?.class}
+							canMoveUp={i > 0}
+							canMoveDown={i < reserveOps.length - 1}
+							onReorder={(direction) => reorderReserve(selectedTeam._id, op._id, direction)}
+							isControlOpen={controlOperatorId === op._id}
+							onToggleControl={toggleControl}
 						/>
 					))}
 				</div>
-			:	<div className='flex flex-col items-center justify-center py-12 gap-2 border-b border-neutral-800/60'>
-					<div className='w-6 h-6 border border-neutral-700/40 rotate-45' />
-					<p className='font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase'>
-						No operators assigned
-					</p>
+			:	<div className='flex items-center justify-center py-6 border-b border-neutral-800/60'>
+					<p className='font-mono text-[9px] text-neutral-700 uppercase tracking-widest'>No reserves</p>
 				</div>
 			}
+			{reserveOps.some((op) => op._id === controlOperatorId) && (
+				<div className='flex justify-center py-2 border-t-0 border-b border-neutral-800/60 bg-neutral-950/40'>
+					<SlotControl
+						currentSlot={null}
+						onSelect={(slot) => {
+							assignSlot(selectedTeam._id, controlOperatorId, slot);
+							setControlOperatorId(null);
+						}}
+					/>
+				</div>
+			)}
 
 			{/* ── Assets ──────────────────────────────────── */}
 			{assetCount > 0 && (
@@ -924,14 +1175,13 @@ const TeamView = ({ teamId }) => {
 				</>
 			)}
 
-			{!teamOps.length && !assetCount && (
-				<div className='flex flex-col items-center justify-center py-16 gap-3'>
-					<div className='w-8 h-8 border border-neutral-700/40 rotate-45' />
-					<p className='font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase'>
-						No team data
-					</p>
-				</div>
-			)}
+			{/* ── Assign table — replaces the old add-to-team drawer ──── */}
+			<AssignTable
+				team={selectedTeam}
+				teams={teams}
+				operators={operators}
+				onAdd={(operatorId, cls) => addToTeam(selectedTeam._id, operatorId, cls)}
+			/>
 
 			{/* Injury dialog */}
 			{isInjuryDialogOpen && selectedOperator && (
@@ -999,11 +1249,24 @@ SectionHeader.propTypes = { label: PropTypes.string, count: PropTypes.number };
 FuelBar.propTypes = { pct: PropTypes.number };
 OperatorCard.propTypes = {
 	operator: PropTypes.object,
+	slotNum: PropTypes.number,
 	slotClass: PropTypes.string,
 	onInjuryClick: PropTypes.func,
 	onKitSelectClick: PropTypes.func,
 	assignedKits: PropTypes.array,
 	onViewKit: PropTypes.func,
+	isControlOpen: PropTypes.bool,
+	onToggleControl: PropTypes.func,
+};
+EmptySlotCard.propTypes = { slotNum: PropTypes.number };
+ReserveCard.propTypes = {
+	operator: PropTypes.object,
+	slotClass: PropTypes.string,
+	canMoveUp: PropTypes.bool,
+	canMoveDown: PropTypes.bool,
+	onReorder: PropTypes.func,
+	isControlOpen: PropTypes.bool,
+	onToggleControl: PropTypes.func,
 };
 AssetCard.propTypes = { asset: PropTypes.object };
 TeamView.propTypes = { teamId: PropTypes.string.isRequired };

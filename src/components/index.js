@@ -14,6 +14,8 @@ import AuroaMap from "./AuroaMap";
 import ImageUpload from "./ImageUpload";
 import OperatorImageView from "./OperatorImageView";
 import TeamView from "./TeamView";
+import SlotControl from "./SlotControl";
+import RosterTable from "./RosterTable";
 import WeatherPanel from "./WeatherPanel";
 import AARSheet from "./AARSheet";
 import PhaseList from "./PhaseList";
@@ -39,6 +41,8 @@ export {
 	ImageUpload,
 	OperatorImageView,
 	TeamView,
+	SlotControl,
+	RosterTable,
 	WeatherPanel,
 	AARSheet,
 	PhaseList,

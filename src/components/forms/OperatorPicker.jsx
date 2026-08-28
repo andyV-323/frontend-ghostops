@@ -8,6 +8,7 @@ import {
 	faStar,
 } from "@fortawesome/free-solid-svg-icons";
 import { PropTypes } from "prop-types";
+import { findOperatorTeam } from "@/utils/teamMembers";
 
 const STATUS_DOT = {
 	Active:  "bg-green-500 shadow-[0_0_5px_rgba(74,222,128,0.6)]",
@@ -75,10 +76,7 @@ const OperatorPicker = ({ allOperators, selected, squads = [], teams = [], onAdd
 	const [search, setSearch]       = useState("");
 	const [activeFilter, setFilter] = useState("all");
 
-	const getTeamName = (opId) => {
-		const team = teams.find((t) => t.operators?.some((op) => op._id === opId));
-		return team ? team.name : null;
-	};
+	const getTeamName = (opId) => findOperatorTeam(teams, opId)?.team.name ?? null;
 
 	const available = allOperators.filter((op) => {
 		if (selected.includes(op._id)) return false;

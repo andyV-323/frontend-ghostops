@@ -2,9 +2,10 @@
 import { useState } from "react";
 import { useTeamsStore } from "@/zustand";
 import { PropTypes } from "prop-types";
+import { findOperatorTeam, totalCount } from "@/utils/teamMembers";
 
 const AssignTeamSheet = ({ operator, onComplete }) => {
-	const { teams, addOperatorToTeam, fetchTeams } = useTeamsStore();
+	const { teams, addOperatorToTeam, unassignOperatorFromTeam } = useTeamsStore();
 
 	const operatorClasses = Array.isArray(operator.class)
 		? operator.class.filter(Boolean)
@@ -12,9 +13,7 @@ const AssignTeamSheet = ({ operator, onComplete }) => {
 
 	const [selectedClass, setSelectedClass] = useState(operatorClasses[0] || "");
 
-	const currentTeam = teams.find((team) =>
-		team.operators.some((op) => op._id === operator._id),
-	);
+	const currentTeam = findOperatorTeam(teams, operator._id)?.team ?? null;
 
 	const isOperatorUnavailable =
 		operator.status === "KIA" || operator.status === "Injured";
@@ -28,12 +27,7 @@ const AssignTeamSheet = ({ operator, onComplete }) => {
 	const handleUnassign = async () => {
 		if (!currentTeam) return;
 		try {
-			const { updateTeam } = useTeamsStore.getState();
-			const updatedOperators = currentTeam.operators
-				.filter((op) => op._id !== operator._id)
-				.map((op) => op._id);
-			await updateTeam({ ...currentTeam, operators: updatedOperators });
-			await fetchTeams();
+			await unassignOperatorFromTeam(operator._id, currentTeam._id);
 			if (onComplete) onComplete();
 		} catch (error) {
 			console.error("Error unassigning operator:", error);
@@ -93,7 +87,7 @@ const AssignTeamSheet = ({ operator, onComplete }) => {
 			<ul className='space-y-2'>
 				{teams.map((team) => {
 					const isCurrentTeam = currentTeam?._id === team._id;
-					const operatorCount = team.operators.length;
+					const operatorCount = totalCount(team);
 					const isDisabled = isOperatorUnavailable && !isCurrentTeam;
 
 					return (

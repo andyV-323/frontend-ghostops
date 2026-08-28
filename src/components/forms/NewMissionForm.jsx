@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { PropTypes } from "prop-types";
 import { useMissionsStore, useTeamsStore, useSheetStore } from "@/zustand";
 import { Button } from "@material-tailwind/react";
+import { totalCount } from "@/utils/teamMembers";
 
 const NewMissionForm = ({ onComplete }) => {
 	const { createMission } = useMissionsStore();
@@ -138,8 +139,8 @@ const NewMissionForm = ({ onComplete }) => {
 												{team.name}
 											</span>
 											<span className='text-sm text-gray-400'>
-												{team.operators?.length || 0} operator
-												{team.operators?.length !== 1 && "s"}
+												{totalCount(team)} operator
+												{totalCount(team) !== 1 && "s"}
 											</span>
 										</div>
 										{team.AO && (

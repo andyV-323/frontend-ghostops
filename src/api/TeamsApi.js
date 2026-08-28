@@ -34,6 +34,23 @@ export const attachTeam = async (mainTeamId, teamId) =>
 export const detachTeam = async (mainTeamId, attachedTeamId) =>
 	api.delete(`/teams/${mainTeamId}/attach/${attachedTeamId}`);
 
+// Move an operator to a specific active slot (1-4) or reserves (slot=null).
+// Swaps with the slot's current occupant if it's filled.
+export const assignSlot = async (teamId, operatorId, slot) =>
+	api.patch(`/teams/${teamId}/assign-slot`, { operatorId, slot });
+
+// Move one position up/down within the reserve order.
+export const reorderReserve = async (teamId, operatorId, direction) =>
+	api.patch(`/teams/${teamId}/reorder-reserve`, { operatorId, direction });
+
+// Reserve -> active slot. Bumps any current occupant to the front of reserves.
+export const promoteReserve = async (teamId, operatorId, slot) =>
+	api.patch(`/teams/${teamId}/promote-reserve`, { operatorId, slot });
+
+// Fills the lowest-numbered empty active slot, or reserves if the team is full.
+export const addToTeam = async (teamId, operatorId, classUsed) =>
+	api.patch(`/teams/${teamId}/add`, { operatorId, classUsed });
+
 //Remove injured or KIA Operator
 export const removeOperatorFromTeams = async (operatorId) => {
 	try {

@@ -7,6 +7,7 @@ import { useConfirmDialog } from "@/hooks";
 import { ConfirmDialog } from "@/components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
+import { totalCount } from "@/utils/teamMembers";
 
 const EditMissionForm = ({ mission, onComplete }) => {
 	const { updateMission, deleteMission } = useMissionsStore();
@@ -164,8 +165,8 @@ const EditMissionForm = ({ mission, onComplete }) => {
 												{team.name}
 											</span>
 											<span className='text-sm text-gray-400'>
-												{team.operators?.length || 0} operator
-												{team.operators?.length !== 1 && "s"}
+												{totalCount(team)} operator
+												{totalCount(team) !== 1 && "s"}
 											</span>
 										</div>
 										{team.AO && (

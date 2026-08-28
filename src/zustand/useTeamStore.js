@@ -11,6 +11,7 @@ import { INJURIES } from "../config";
 import useInfirmaryStore from "./useInfirmaryStore";
 import useMemorialStore from "./useMemorialStore";
 import useOperatorsStore from "./useOperatorStore";
+import { memberOperatorId, activeMembers, reserveMembers } from "../utils/teamMembers";
 
 import { toast } from "react-toastify";
 
@@ -24,18 +25,25 @@ const toId = (v) => {
 // Operator.class is [String] in the schema — take first element as a single class string.
 const firstStr = (v) => Array.isArray(v) ? (v[0] || "") : (typeof v === "string" ? v : "");
 
-// Serialize a Mongoose Map or plain object of operatorRoles to a plain object.
-const rolesObj = (roles) => {
-	if (!roles) return {};
-	if (roles instanceof Map) {
-		const out = {};
-		roles.forEach((v, k) => { if (v) out[String(k)] = v; });
-		return out;
-	}
-	const out = {};
-	Object.entries(roles).forEach(([k, v]) => { if (v) out[String(k)] = v; });
-	return out;
-};
+// Splits a flat operator-id array into the dense 4-slot + reserves shape,
+// carrying over each operator's existing class on this team (if any) so a
+// re-save from the legacy OperatorPicker widget (NewTeamForm/EditTeamForm)
+// doesn't clobber classes that were set through the slot control elsewhere.
+function splitIntoSlotsAndReserves(operatorIds, existingTeam) {
+	const existingClassById = {};
+	[...activeMembers(existingTeam), ...reserveMembers(existingTeam)].forEach((m) => {
+		const id = memberOperatorId(m);
+		if (id) existingClassById[id] = m.class ?? null;
+	});
+	const activeSlots = [null, null, null, null];
+	const reserves = [];
+	operatorIds.forEach((id, i) => {
+		const member = { operatorId: id, class: existingClassById[id] ?? null };
+		if (i < 4) activeSlots[i] = member;
+		else reserves.push(member);
+	});
+	return { activeSlots, reserves };
+}
 
 const useTeamsStore = create((set, get) => ({
 	teams: [],
@@ -83,13 +91,13 @@ const useTeamsStore = create((set, get) => ({
 		}
 	},
 
+	// Fetches one team for the legacy edit form (EditTeamForm's OperatorPicker
+	// widget wants a flat operator-id array, not the slot/reserve shape).
 	fetchTeamById: async (teamId) => {
 		try {
 			const response = await TeamsApi.getTeamById(teamId);
 
-			// The API returns { data: { data: actualTeamData } }
 			let teamData = null;
-
 			if (response.data && response.data.data) {
 				teamData = response.data.data;
 			} else if (response.data) {
@@ -102,31 +110,23 @@ const useTeamsStore = create((set, get) => ({
 				return;
 			}
 
-			let operatorIds = [];
-			if (teamData.operators && Array.isArray(teamData.operators)) {
-				operatorIds = teamData.operators.map((op) => {
-					// If operator is an object with _id, extract the _id
-					if (typeof op === "object" && op._id) {
-						return op._id;
-					}
-					// If operator is already a string ID, use it directly
-					return op;
-				});
-			}
+			const operatorIds = [
+				...activeMembers(teamData).map(memberOperatorId),
+				...reserveMembers(teamData).map(memberOperatorId),
+			].filter(Boolean);
 
-			let assetIds = [];
-			if (teamData.assets && Array.isArray(teamData.assets)) {
-				assetIds = teamData.assets.map((v) =>
-					typeof v === "object" && v._id ? v._id : v,
-				);
-			}
+			const assetIds = (teamData.assets || []).map((v) =>
+				typeof v === "object" && v._id ? v._id : v,
+			);
 
-			const stateUpdate = {
+			set({
 				team: {
 					_id: teamData._id,
 					createdBy: teamData.createdBy || "",
 					name: teamData.name || "",
 					AO: teamData.AO || null,
+					activeSlots: teamData.activeSlots,
+					reserves: teamData.reserves,
 					operators: operatorIds,
 					assets: assetIds,
 				},
@@ -134,20 +134,9 @@ const useTeamsStore = create((set, get) => ({
 				teamAO: teamData.AO || "",
 				operators: operatorIds,
 				assets: assetIds,
-			};
-
-			set(stateUpdate);
-
-			// Verify state was set correctly
-			setTimeout(() => {
-				const currentState = get();
-				console.log("Verified teamName:", currentState.teamName);
-				console.log("Verified operators:", currentState.operators);
-			}, 100);
+			});
 		} catch (error) {
 			console.error("ERROR fetching team:", error);
-			console.error("Error message:", error.message);
-			console.error("Error response:", error.response?.data);
 			set({ team: null });
 		}
 	},
@@ -158,21 +147,34 @@ const useTeamsStore = create((set, get) => ({
 	// Set team AO
 	setTeamAO: (ao) => set({ teamAO: ao }),
 
+	// Generic team update — used by the name/AO/asset form (EditTeamForm) and
+	// the legacy OperatorPicker widget. A flat `operators` id array (from
+	// OperatorPicker) is translated into activeSlots/reserves here; anything
+	// doing slot-aware assignment should use assignSlot/addToTeam instead.
 	updateTeam: async (teamData) => {
 		try {
 			if (!teamData._id) {
 				console.error("ERROR: Missing team ID");
-
 				return;
 			}
 
-			await TeamsApi.updateTeam(teamData._id, {
+			const payload = {
 				createdBy: teamData.createdBy,
 				name: teamData.name,
 				AO: teamData.AO ?? null,
-				operators: teamData.operators,
-				assets: teamData.assets,
-			});
+				assets: (teamData.assets || []).map(toId),
+			};
+
+			if (Array.isArray(teamData.operators)) {
+				const existingTeam =
+					get().teams.find((t) => t._id === teamData._id) || get().team;
+				const ids = teamData.operators.map(toId).filter(Boolean);
+				const { activeSlots, reserves } = splitIntoSlotsAndReserves(ids, existingTeam);
+				payload.activeSlots = activeSlots;
+				payload.reserves = reserves;
+			}
+
+			await TeamsApi.updateTeam(teamData._id, payload);
 
 			toast.success("Team updated successfully!");
 		} catch (error) {
@@ -201,109 +203,75 @@ const useTeamsStore = create((set, get) => ({
 		}
 	},
 
-	addOperatorToTeam: async (operatorId, targetTeamId, selectedClass) => {
+	// ── Slot / reserve management (server-authoritative — each call is a
+	// single atomic backend write; the response replaces this team in state) ──
+	assignSlot: async (teamId, operatorId, slot) => {
 		try {
-			const { teams, fullOperatorList } = get();
-
-			const targetTeam = teams.find((team) => team._id === targetTeamId);
-			if (!targetTeam) { toast.error("Target team not found"); return; }
-
-			const operatorAlreadyInTarget = targetTeam.operators.some(
-				(op) => toId(op) === operatorId,
-			);
-			if (operatorAlreadyInTarget) { toast.warning("Operator is already in this team"); return; }
-
-			const sourceTeam = teams.find(
-				(team) =>
-					team._id !== targetTeamId &&
-					team.operators.some((op) => toId(op) === operatorId),
-			);
-
-			const operatorToMove = fullOperatorList.find((op) => op._id === operatorId);
-			if (!operatorToMove) { toast.error("Operator not found"); return; }
-
-			// Use caller-provided class, then active class, then first class
-			const { activeClasses } = useOperatorsStore.getState();
-			const defaultSlotClass =
-				selectedClass || activeClasses[operatorId] || firstStr(operatorToMove.class) || "";
-
-			// Build updated operatorRoles for target
-			const targetRoles = {
-				...rolesObj(targetTeam.operatorRoles),
-				[operatorId]: defaultSlotClass,
-			};
-			// Remove from source roles if transferring
-			const sourceRoles = sourceTeam ?
-				Object.fromEntries(
-					Object.entries(rolesObj(sourceTeam.operatorRoles)).filter(
-						([k]) => k !== operatorId,
-					),
-				)
-			:	null;
-
-			// Optimistic update
-			set((state) => ({
-				teams: state.teams.map((team) => {
-					if (sourceTeam && team._id === sourceTeam._id) {
-						return {
-							...team,
-							operators: team.operators.filter((op) => toId(op) !== operatorId),
-							operatorRoles: sourceRoles,
-							leadId: team.leadId === operatorId ? null : team.leadId,
-						};
-					}
-					if (team._id === targetTeamId) {
-						return {
-							...team,
-							operators: [...team.operators, operatorToMove],
-							operatorRoles: targetRoles,
-						};
-					}
-					return team;
-				}),
-			}));
-
-			const updatedTargetOperatorIds = [
-				...targetTeam.operators.map(toId),
-				operatorId,
-			];
-			await TeamsApi.updateTeam(targetTeamId, {
-				name: targetTeam.name,
-				operators: updatedTargetOperatorIds,
-				operatorRoles: targetRoles,
-			});
-
-			if (sourceTeam) {
-				const updatedSourceOperatorIds = sourceTeam.operators
-					.filter((op) => toId(op) !== operatorId)
-					.map(toId);
-
-				await TeamsApi.updateTeam(sourceTeam._id, {
-					name: sourceTeam.name,
-					operators: updatedSourceOperatorIds,
-					operatorRoles: sourceRoles,
-					leadId: sourceTeam.leadId === operatorId ? null : (sourceTeam.leadId ?? null),
-				});
-
-				toast.success(
-					`${operatorToMove.callSign} transferred from ${sourceTeam.name} to ${targetTeam.name}!`,
-				);
-			} else {
-				toast.success(
-					`${operatorToMove.callSign} added to ${targetTeam.name}!`,
-				);
-			}
-
-			// Refresh operators list to update availability
-			await get().fetchOperators();
+			const res = await TeamsApi.assignSlot(teamId, operatorId, slot);
+			const team = res.data.team;
+			set((state) => ({ teams: state.teams.map((t) => (t._id === teamId ? team : t)) }));
+			return team;
 		} catch (error) {
-			console.error("ERROR adding/transferring operator:", error);
-			toast.error("Failed to transfer operator");
-
-			// Revert optimistic update on error
+			console.error("ERROR assigning slot:", error);
+			toast.error(error.response?.data?.error || "Failed to assign slot");
 			get().fetchTeams();
 		}
 	},
+
+	reorderReserve: async (teamId, operatorId, direction) => {
+		try {
+			const res = await TeamsApi.reorderReserve(teamId, operatorId, direction);
+			const team = res.data.team;
+			set((state) => ({ teams: state.teams.map((t) => (t._id === teamId ? team : t)) }));
+			return team;
+		} catch (error) {
+			console.error("ERROR reordering reserve:", error);
+			toast.error("Failed to reorder reserve");
+			get().fetchTeams();
+		}
+	},
+
+	promoteReserve: async (teamId, operatorId, slot) => {
+		try {
+			const res = await TeamsApi.promoteReserve(teamId, operatorId, slot);
+			const team = res.data.team;
+			set((state) => ({ teams: state.teams.map((t) => (t._id === teamId ? team : t)) }));
+			return team;
+		} catch (error) {
+			console.error("ERROR promoting reserve:", error);
+			toast.error("Failed to promote reserve");
+			get().fetchTeams();
+		}
+	},
+
+	// Fills the lowest-numbered empty slot, or reserves if full. Also the
+	// cross-team "add/transfer" path used by the assign table and the
+	// operator-centric AssignTeamSheet.
+	addToTeam: async (teamId, operatorId, classUsed) => {
+		try {
+			const res = await TeamsApi.addToTeam(teamId, operatorId, classUsed);
+			const { team, destination } = res.data;
+			set((state) => ({ teams: state.teams.map((t) => (t._id === teamId ? team : t)) }));
+			const opName =
+				get().fullOperatorList.find((o) => o._id === operatorId)?.callSign || "Operator";
+			toast.success(
+				destination?.type === "slot" ?
+					`${opName} added to Slot ${destination.slot}`
+				:	`${opName} added to Reserves`,
+			);
+			await get().fetchOperators();
+			return { team, destination };
+		} catch (error) {
+			console.error("ERROR adding operator to team:", error);
+			toast.error(error.response?.data?.error || "Failed to add operator");
+			get().fetchTeams();
+		}
+	},
+
+	// Back-compat alias — Roster.jsx / AssignTeamSheet.jsx call this with
+	// (operatorId, teamId, selectedClass); keep that call shape, delegate to addToTeam.
+	addOperatorToTeam: async (operatorId, targetTeamId, selectedClass) =>
+		get().addToTeam(targetTeamId, operatorId, selectedClass),
 
 	// Also update your existing addOperator function to be more clear about its purpose
 	// This one is for the form state (EditTeamForm)
@@ -399,8 +367,11 @@ const useTeamsStore = create((set, get) => ({
 
 		if (!operator && state.teams) {
 			for (const team of state.teams) {
-				if (team.operators) {
-					operator = team.operators.find((op) => op._id === operatorId);
+				const member = [...activeMembers(team), ...reserveMembers(team)].find(
+					(m) => memberOperatorId(m) === operatorId,
+				);
+				if (member) {
+					operator = typeof member.operatorId === "object" ? member.operatorId : null;
 					if (operator) break;
 				}
 			}
@@ -479,94 +450,6 @@ const useTeamsStore = create((set, get) => ({
 		}
 	},
 
-	// Transfer operator between teams via drag and drop
-	transferOperator: async (operatorId, sourceTeamId, targetTeamId) => {
-		try {
-			// Store the original state for potential rollback
-			const originalTeams = get().teams;
-
-			// Find the operator to transfer from the current state
-			const sourceTeam = originalTeams.find(
-				(team) => team._id === sourceTeamId,
-			);
-			const operatorToTransfer = sourceTeam?.operators.find(
-				(op) => op._id === operatorId,
-			);
-
-			if (!operatorToTransfer) {
-				toast.error("Operator not found");
-				return;
-			}
-
-			// Optimistic update - update UI immediately
-			set((state) => ({
-				teams: state.teams.map((team) => {
-					if (team._id === sourceTeamId) {
-						// Remove operator from source team
-						return {
-							...team,
-							operators: team.operators.filter((op) => op._id !== operatorId),
-						};
-					}
-					if (team._id === targetTeamId) {
-						// Check if operator is already in target team
-						const operatorExists = team.operators.some(
-							(op) => op._id === operatorId,
-						);
-						if (!operatorExists) {
-							// Add operator to target team
-							return {
-								...team,
-								operators: [...team.operators, operatorToTransfer],
-							};
-						}
-					}
-					return team;
-				}),
-			}));
-
-			// Get the updated teams state for API calls
-			const currentState = get();
-			const updatedSourceTeam = currentState.teams.find(
-				(team) => team._id === sourceTeamId,
-			);
-			const updatedTargetTeam = currentState.teams.find(
-				(team) => team._id === targetTeamId,
-			);
-
-			if (updatedSourceTeam && updatedTargetTeam) {
-				// Update source team (remove operator) - send only operator IDs
-				const sourceOperatorIds = updatedSourceTeam.operators.map((op) =>
-					toId(op),
-				);
-
-				await TeamsApi.updateTeam(sourceTeamId, {
-					name: updatedSourceTeam.name,
-					AO: updatedSourceTeam.AO,
-					operators: sourceOperatorIds,
-				});
-
-				// Update target team (add operator) - send only operator IDs
-				const targetOperatorIds = updatedTargetTeam.operators.map((op) =>
-					toId(op),
-				);
-
-				await TeamsApi.updateTeam(targetTeamId, {
-					name: updatedTargetTeam.name,
-					AO: updatedTargetTeam.AO,
-					operators: targetOperatorIds,
-				});
-
-				toast.success("Operator transferred successfully!");
-			}
-		} catch (error) {
-			console.error("ERROR transferring operator:", error);
-			toast.error("Failed to transfer operator");
-
-			// Revert optimistic update on error by fetching fresh data
-			get().fetchTeams();
-		}
-	},
 	// Remove all operators AND clear all AOs, roles, and lead from every team
 	removeAllOperatorsFromTeams: async () => {
 		try {
@@ -575,9 +458,9 @@ const useTeamsStore = create((set, get) => ({
 			set((state) => ({
 				teams: state.teams.map((t) => ({
 					...t,
-					operators: [],
+					activeSlots: [null, null, null, null],
+					reserves: [],
 					AO: null,
-					operatorRoles: {},
 					leadId: null,
 				})),
 			}));
@@ -588,8 +471,8 @@ const useTeamsStore = create((set, get) => ({
 						name: team.name,
 						createdBy: team.createdBy,
 						AO: null,
-						operators: [],
-						operatorRoles: {},
+						activeSlots: [null, null, null, null],
+						reserves: [],
 						leadId: null,
 						assets: (team.assets || []).map(toId),
 					}),
@@ -605,38 +488,32 @@ const useTeamsStore = create((set, get) => ({
 		}
 	},
 
-	// Remove one operator from one team
+	// Remove one operator from one team entirely (not to reserves — off the team)
 	unassignOperatorFromTeam: async (operatorId, teamId) => {
 		try {
 			const { teams } = get();
 			const team = teams.find((t) => t._id === teamId);
 			if (!team) return;
 
-			const updatedRoles = Object.fromEntries(
-				Object.entries(rolesObj(team.operatorRoles)).filter(([k]) => k !== operatorId),
+			const activeSlots = (team.activeSlots || []).map((m) =>
+				m && memberOperatorId(m) === operatorId ? null : m,
+			);
+			const reserves = (team.reserves || []).filter(
+				(m) => memberOperatorId(m) !== operatorId,
 			);
 			const updatedLeadId = team.leadId === operatorId ? null : (team.leadId ?? null);
 
 			set((state) => ({
 				teams: state.teams.map((t) =>
-					t._id === teamId ?
-						{
-							...t,
-							operators: t.operators.filter((op) => toId(op) !== operatorId),
-							operatorRoles: updatedRoles,
-							leadId: updatedLeadId,
-						}
-					:	t,
+					t._id === teamId ? { ...t, activeSlots, reserves, leadId: updatedLeadId } : t,
 				),
 			}));
-
-			const updatedIds = team.operators.filter((op) => toId(op) !== operatorId).map(toId);
 
 			await TeamsApi.updateTeam(teamId, {
 				name: team.name,
 				AO: team.AO,
-				operators: updatedIds,
-				operatorRoles: updatedRoles,
+				activeSlots,
+				reserves,
 				leadId: updatedLeadId,
 			});
 
@@ -655,19 +532,18 @@ const useTeamsStore = create((set, get) => ({
 			const team = teams.find((t) => t._id === teamId);
 			if (!team) return;
 
-			const updatedRoles = {
-				...rolesObj(team.operatorRoles),
-				[operatorId]: slotClass || undefined,
-			};
-			if (!slotClass) delete updatedRoles[operatorId];
+			const patchMember = (m) =>
+				m && memberOperatorId(m) === operatorId ? { ...m, class: slotClass || null } : m;
+			const activeSlots = (team.activeSlots || []).map(patchMember);
+			const reserves = (team.reserves || []).map(patchMember);
 
 			set((state) => ({
 				teams: state.teams.map((t) =>
-					t._id === teamId ? { ...t, operatorRoles: updatedRoles } : t,
+					t._id === teamId ? { ...t, activeSlots, reserves } : t,
 				),
 			}));
 
-			await TeamsApi.updateTeam(teamId, { operatorRoles: updatedRoles });
+			await TeamsApi.updateTeam(teamId, { activeSlots, reserves });
 		} catch (error) {
 			console.error("ERROR setting slot class:", error);
 			toast.error("Failed to update class");
@@ -675,7 +551,7 @@ const useTeamsStore = create((set, get) => ({
 		}
 	},
 
-	// Clear one team — operators, AO, roles, and lead
+	// Clear one team — operators, AO, and lead
 	clearTeam: async (teamId) => {
 		try {
 			const { teams } = get();
@@ -685,7 +561,7 @@ const useTeamsStore = create((set, get) => ({
 			set((state) => ({
 				teams: state.teams.map((t) =>
 					t._id === teamId ?
-						{ ...t, operators: [], AO: null, operatorRoles: {}, leadId: null }
+						{ ...t, activeSlots: [null, null, null, null], reserves: [], AO: null, leadId: null }
 					:	t,
 				),
 			}));
@@ -694,8 +570,8 @@ const useTeamsStore = create((set, get) => ({
 				name: team.name,
 				createdBy: team.createdBy,
 				AO: null,
-				operators: [],
-				operatorRoles: {},
+				activeSlots: [null, null, null, null],
+				reserves: [],
 				leadId: null,
 				assets: (team.assets || []).map(toId),
 			});
@@ -724,7 +600,6 @@ const useTeamsStore = create((set, get) => ({
 			await TeamsApi.updateTeam(teamId, {
 				name: team.name,
 				AO: team.AO,
-				operators: (team.operators || []).map(toId),
 				assets: [],
 			});
 
@@ -784,9 +659,7 @@ const useTeamsStore = create((set, get) => ({
 			const lockedIds = new Set(
 				teams
 					.filter((t) => t._id !== teamId)
-					.flatMap((t) =>
-						t.operators.map((op) => (toId(op))),
-					),
+					.flatMap((t) => [...activeMembers(t), ...reserveMembers(t)].map(memberOperatorId)),
 			);
 
 			// Build a set of classes that are valid for this mission.
@@ -882,29 +755,27 @@ const useTeamsStore = create((set, get) => ({
 				}
 			}
 
-			const picked = assignments.map((a) => a.op);
-			const pickedIds = picked.map((op) => op._id);
-			const leadId = assignments[0]?.op._id ?? null;
-			const operatorRoles = {};
-			assignments.forEach(({ op, slotClass }) => {
-				operatorRoles[op._id] = slotClass;
+			const count = assignments.length;
+			const activeSlots = [null, null, null, null];
+			const reserves = [];
+			assignments.forEach(({ op, slotClass }, i) => {
+				const member = { operatorId: op._id, class: slotClass || null };
+				if (i < 4) activeSlots[i] = member;
+				else reserves.push(member);
 			});
-
-			const count = picked.length;
+			const leadId = assignments[0]?.op._id ?? null;
 
 			set((state) => ({
 				teams: state.teams.map((t) =>
-					t._id === teamId ?
-						{ ...t, operators: picked, operatorRoles, leadId }
-					:	t,
+					t._id === teamId ? { ...t, activeSlots, reserves, leadId } : t,
 				),
 			}));
 
 			await TeamsApi.updateTeam(teamId, {
 				name: team.name,
 				AO: team.AO,
-				operators: pickedIds,
-				operatorRoles,
+				activeSlots,
+				reserves,
 				leadId,
 				assets: (team.assets || []).map(toId),
 			});
@@ -937,7 +808,7 @@ const useTeamsStore = create((set, get) => ({
 			const lockedIds = new Set(
 				teams
 					.filter((t) => t._id !== teamId)
-					.flatMap((t) => t.operators.map(toId)),
+					.flatMap((t) => [...activeMembers(t), ...reserveMembers(t)].map(memberOperatorId)),
 			);
 
 			const pool = allOps.filter(
@@ -952,25 +823,25 @@ const useTeamsStore = create((set, get) => ({
 			const shuffled = [...pool].sort(() => Math.random() - 0.5);
 			const count = Math.min(4, Math.max(1, Math.floor(Math.random() * 4) + 1), shuffled.length);
 			const picked = shuffled.slice(0, count);
-			const pickedIds = picked.map((op) => op._id);
 			const leadId = picked[0]._id;
-			const operatorRoles = {};
-			picked.forEach((op) => {
+
+			const activeSlots = [null, null, null, null];
+			picked.forEach((op, i) => {
 				const cls = Array.isArray(op.class) ? op.class[0] : op.class;
-				operatorRoles[op._id] = cls || "";
+				activeSlots[i] = { operatorId: op._id, class: cls || null };
 			});
 
 			set((state) => ({
 				teams: state.teams.map((t) =>
-					t._id === teamId ? { ...t, operators: picked, operatorRoles, leadId } : t,
+					t._id === teamId ? { ...t, activeSlots, reserves: [], leadId } : t,
 				),
 			}));
 
 			await TeamsApi.updateTeam(teamId, {
 				name: team.name,
 				AO: team.AO,
-				operators: pickedIds,
-				operatorRoles,
+				activeSlots,
+				reserves: [],
 				leadId,
 				assets: (team.assets || []).map(toId),
 			});
@@ -1035,9 +906,6 @@ const useTeamsStore = create((set, get) => ({
 			await TeamsApi.updateTeam(targetTeamId, {
 				name: targetTeam.name,
 				AO: targetTeam.AO,
-				operators: (targetTeam.operators || []).map((op) =>
-					toId(op),
-				),
 				assets: targetAssetIds,
 			});
 
@@ -1048,9 +916,6 @@ const useTeamsStore = create((set, get) => ({
 
 				await TeamsApi.updateTeam(sourceTeam._id, {
 					name: sourceTeam.name,
-					operators: (sourceTeam.operators || []).map((op) =>
-						toId(op),
-					),
 					assets: sourceAssetIds,
 				});
 
@@ -1095,9 +960,6 @@ const useTeamsStore = create((set, get) => ({
 
 			await TeamsApi.updateTeam(teamId, {
 				name: team.name,
-				operators: (team.operators || []).map((op) =>
-					toId(op),
-				),
 				assets: assetIds,
 			});
 

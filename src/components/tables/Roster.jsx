@@ -1,16 +1,5 @@
 // Roster.jsx — compact card grid
 import { useEffect } from "react";
-
-// Plain-object view of a Mongoose Map or plain operatorRoles field
-const rolesObj = (roles) => {
-	if (!roles) return {};
-	if (roles instanceof Map) {
-		const out = {};
-		roles.forEach((v, k) => { if (v) out[String(k)] = v; });
-		return out;
-	}
-	return roles;
-};
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUserPlus } from "@fortawesome/free-solid-svg-icons";
 import { useOperatorsStore, useTeamsStore, useKitsStore } from "@/zustand";
@@ -18,6 +7,7 @@ import { getOperatorDisplayImage } from "@/utils/operatorImage";
 import { PropTypes } from "prop-types";
 import { NewOperatorForm } from "@/components/forms";
 import { OperatorImageView } from "@/components";
+import { findOperatorTeam, memberFor } from "@/utils/teamMembers";
 
 // ─── Status config ────────────────────────────────────────────
 const STATUS_MAP = {
@@ -52,12 +42,10 @@ function OperatorTeamSelect({ operator }) {
 	const { teams, addOperatorToTeam, unassignOperatorFromTeam, setOperatorSlotClass } =
 		useTeamsStore();
 
-	const currentTeam = teams.find((t) =>
-		t.operators.some((op) => (op._id ?? op) === operator._id),
-	);
+	const currentTeam = findOperatorTeam(teams, operator._id)?.team ?? null;
 
 	const currentSlotClass = currentTeam ?
-		(rolesObj(currentTeam.operatorRoles)[operator._id] || "")
+		(memberFor(currentTeam, operator._id)?.class || "")
 	:	"";
 
 	const unavailable = ["kia", "injured", "wounded"].includes(
