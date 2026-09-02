@@ -71,7 +71,7 @@ function ActiveSlot({ team, slotNum, member, isControlOpen, onToggleControl, onO
 
 	if (!member || !operator) {
 		return (
-			<div className='w-20 h-20 mx-auto flex items-center justify-center border border-dashed border-lines/30 rounded-sm'>
+			<div className='w-20 h-20 shrink-0 flex items-center justify-center border border-dashed border-lines/30 rounded-sm'>
 				<span className='font-mono text-sm text-lines/25'>{slotNum}</span>
 			</div>
 		);
@@ -92,7 +92,7 @@ function ActiveSlot({ team, slotNum, member, isControlOpen, onToggleControl, onO
 				if (e.key === "Enter" || e.key === " ") onOperatorClick(operator, e);
 			}}
 			className={[
-				"group relative flex flex-col items-center justify-center gap-0.5 w-20 mx-auto py-1.5 border rounded-sm transition-colors cursor-pointer",
+				"group relative flex flex-col items-center justify-center gap-0.5 w-20 shrink-0 py-1.5 border rounded-sm transition-colors cursor-pointer",
 				isControlOpen ? "border-btn/50" : "border-lines/30 hover:border-btn/40",
 			].join(" ")}>
 			<span className='absolute top-1 left-1 font-mono text-[8px] text-lines/50'>{slotNum}</span>
@@ -332,7 +332,7 @@ function TeamCard({
 				<>
 					{/* ── Active slots — full size, corner number ──── */}
 					<div className='px-3 py-2.5'>
-						<div className='grid grid-cols-4 gap-2'>
+						<div className='flex flex-wrap justify-center gap-0.5'>
 							{[0, 1, 2, 3].map((i) => {
 								const member = team.activeSlots?.[i] ?? null;
 								const opId = member ? memberOperatorId(member) : null;
