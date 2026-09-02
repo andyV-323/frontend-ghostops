@@ -71,8 +71,8 @@ function ActiveSlot({ team, slotNum, member, isControlOpen, onToggleControl, onO
 
 	if (!member || !operator) {
 		return (
-			<div className='w-16 h-16 mx-auto flex items-center justify-center border border-dashed border-lines/30 rounded-sm'>
-				<span className='font-mono text-xs text-lines/25'>{slotNum}</span>
+			<div className='w-20 h-20 mx-auto flex items-center justify-center border border-dashed border-lines/30 rounded-sm'>
+				<span className='font-mono text-sm text-lines/25'>{slotNum}</span>
 			</div>
 		);
 	}
@@ -81,52 +81,53 @@ function ActiveSlot({ team, slotNum, member, isControlOpen, onToggleControl, onO
 	const isLead = !!team.leadId && String(operator._id) === String(team.leadId);
 
 	return (
-		<div className='relative'>
-			<div
-				role='button'
-				tabIndex={0}
-				onClick={(e) => {
-					e.stopPropagation();
-					onOperatorClick(operator, e);
-				}}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") onOperatorClick(operator, e);
-				}}
-				className={[
-					"group relative flex flex-col items-center justify-center gap-0.5 w-16 mx-auto py-1.5 border rounded-sm transition-colors cursor-pointer",
-					isControlOpen ? "border-btn/50" : "border-lines/30 hover:border-btn/40",
-				].join(" ")}>
-				<span className='absolute top-1 left-1 font-mono text-[8px] text-lines/50'>{slotNum}</span>
-				<img
-					className={[
-						"w-9 h-9 rounded-full border object-cover object-top",
-						isLead ? "border-btn shadow-[0_0_6px_rgba(124,170,121,0.45)]" : "border-lines/60",
-					].join(" ")}
-					src={avatarSrc}
-					onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
-					alt={operator.callSign}
-				/>
-				<span className={["absolute top-8 right-3 w-1.5 h-1.5 rounded-full border border-blk", getDot(operator.status)].join(" ")} />
-				<span className='font-mono text-[8px] text-lines truncate max-w-[90%] leading-none'>{operator.callSign}</span>
-				{member.class && (
-					<span className='font-mono text-[6px] tracking-widest uppercase text-lines/40 truncate max-w-[90%] leading-none'>
-						{member.class}
-					</span>
-				)}
-			</div>
-			{/* Reassign — separate tap target from the casualty-dialog square above */}
+		<div
+			role='button'
+			tabIndex={0}
+			onClick={(e) => {
+				e.stopPropagation();
+				onOperatorClick(operator, e);
+			}}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") onOperatorClick(operator, e);
+			}}
+			className={[
+				"group relative flex flex-col items-center justify-center gap-0.5 w-20 mx-auto py-1.5 border rounded-sm transition-colors cursor-pointer",
+				isControlOpen ? "border-btn/50" : "border-lines/30 hover:border-btn/40",
+			].join(" ")}>
+			<span className='absolute top-1 left-1 font-mono text-[8px] text-lines/50'>{slotNum}</span>
+			{/* Reassign — inside the square's bounds so neighboring slots can sit
+			    flush against each other without the button overlapping. */}
 			<button
 				type='button'
 				onClick={(e) => { e.stopPropagation(); onToggleControl(operator._id); }}
 				title={isControlOpen ? "Close" : "Reassign"}
 				className={[
-					"absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full border flex items-center justify-center transition-colors z-10",
+					"absolute top-1 right-1 w-5 h-5 rounded-full border flex items-center justify-center transition-colors z-10",
 					isControlOpen ?
 						"bg-btn/20 border-btn text-btn"
 					:	"bg-neutral-900 border-lines/40 text-lines/50 hover:border-btn/50 hover:text-btn",
 				].join(" ")}>
 				<FontAwesomeIcon icon={faArrowsRotate} className='text-[8px]' />
 			</button>
+			<div className='relative w-10 h-10 mt-2'>
+				<img
+					className={[
+						"w-10 h-10 rounded-full border object-cover object-top",
+						isLead ? "border-btn shadow-[0_0_6px_rgba(124,170,121,0.45)]" : "border-lines/60",
+					].join(" ")}
+					src={avatarSrc}
+					onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
+					alt={operator.callSign}
+				/>
+				<span className={["absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-blk", getDot(operator.status)].join(" ")} />
+			</div>
+			<span className='font-mono text-[8px] text-lines truncate max-w-[90%] leading-none'>{operator.callSign}</span>
+			{member.class && (
+				<span className='font-mono text-[6px] tracking-widest uppercase text-lines/40 truncate max-w-[90%] leading-none'>
+					{member.class}
+				</span>
+			)}
 		</div>
 	);
 }
