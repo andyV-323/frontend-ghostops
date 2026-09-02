@@ -129,10 +129,19 @@ function OperatorCard({
 				"relative flex flex-col overflow-hidden border-r border-neutral-800/50 last:border-r-0 select-none",
 				isKIA ? "opacity-60" : "",
 			].join(" ")}>
-			{/* Corner slot number */}
-			<span className='absolute top-1.5 left-1.5 z-10 font-mono text-[10px] font-bold text-neutral-200 bg-neutral-950/70 border border-neutral-700/60 w-5 h-5 flex items-center justify-center rounded-sm'>
+			{/* Corner slot number — click to open the slot menu */}
+			<button
+				type='button'
+				onClick={(e) => { e.stopPropagation(); onToggleControl(operator._id); }}
+				title={isControlOpen ? "Close" : "Reassign"}
+				className={[
+					"absolute top-1.5 left-1.5 z-10 font-mono text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-sm border transition-colors",
+					isControlOpen ?
+						"bg-btn/20 border-btn text-btn"
+					:	"bg-neutral-950/70 border-neutral-700/60 text-neutral-200 hover:border-btn/50 hover:text-btn",
+				].join(" ")}>
 				{slotNum}
-			</span>
+			</button>
 
 			{/* Portrait — clickable for kit selection */}
 			<div
@@ -222,16 +231,6 @@ function OperatorCard({
 				</div>
 			</div>
 
-			{/* Slot control toggle — the control itself renders full-width below
-			    the grid (see TeamView body) since a 5x44px control doesn't fit
-			    inside one grid column. */}
-			<button
-				type='button'
-				onClick={(e) => { e.stopPropagation(); onToggleControl(operator._id); }}
-				className='w-full font-mono text-[8px] tracking-widest uppercase text-lines/50 hover:text-btn py-1.5 border-t border-neutral-800/60 transition-colors'>
-				{isControlOpen ? "Close" : "Reassign"}
-			</button>
-
 			{/* Injury button */}
 			<button
 				onClick={(e) => {
@@ -262,24 +261,21 @@ function EmptySlotCard({ slotNum }) {
 }
 
 /* ─── Reserve card (compact, half height) ──────────────────── */
-function ReserveCard({ operator, slotClass, canMoveUp, canMoveDown, onReorder, isControlOpen, onToggleControl }) {
+// Reorder (▲▼) moves into the shared expanded tray in the TeamView body when
+// this card is open — a 112px card has no room for it inline.
+function ReserveCard({ operator, slotClass, isControlOpen, onToggleControl }) {
 	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
 	return (
-		<div className='flex flex-col items-center gap-1.5 border border-neutral-800/60 bg-neutral-900/30 p-2 w-28 shrink-0'>
-			<div className='flex items-center gap-1 self-stretch justify-center'>
-				<button
-					disabled={!canMoveUp}
-					onClick={() => onReorder("up")}
-					className='text-neutral-600 hover:text-btn disabled:opacity-20 disabled:cursor-not-allowed transition-colors'>
-					<FontAwesomeIcon icon={faCaretUp} className='text-[10px]' />
-				</button>
-				<button
-					disabled={!canMoveDown}
-					onClick={() => onReorder("down")}
-					className='text-neutral-600 hover:text-btn disabled:opacity-20 disabled:cursor-not-allowed transition-colors'>
-					<FontAwesomeIcon icon={faCaretDown} className='text-[10px]' />
-				</button>
-			</div>
+		<button
+			type='button'
+			onClick={() => onToggleControl(operator._id)}
+			title={isControlOpen ? "Close" : "Reassign"}
+			className={[
+				"flex flex-col items-center gap-1.5 border p-2 w-28 shrink-0 transition-colors",
+				isControlOpen ?
+					"border-btn/60 bg-btn/5"
+				:	"border-neutral-800/60 bg-neutral-900/30 hover:border-neutral-700/60",
+			].join(" ")}>
 			{/* Status dot must live outside the overflow-hidden circular mask,
 			    or the corner dot gets clipped away by the rounded-full avatar. */}
 			<div className='relative w-12 h-12 shrink-0'>
@@ -297,15 +293,7 @@ function ReserveCard({ operator, slotClass, canMoveUp, canMoveDown, onReorder, i
 			<p className='font-mono text-[7px] text-neutral-600 uppercase tracking-widest truncate max-w-full leading-none'>
 				{slotClass || (Array.isArray(operator.class) ? operator.class[0] : "") || "—"}
 			</p>
-			{/* Toggle only — the control itself renders full-width below the
-			    reserve strip (see TeamView body); it doesn't fit in this card. */}
-			<button
-				type='button'
-				onClick={() => onToggleControl(operator._id)}
-				className='font-mono text-[7px] tracking-widest uppercase text-lines/50 hover:text-btn transition-colors'>
-				{isControlOpen ? "Close" : "Reassign"}
-			</button>
-		</div>
+		</button>
 	);
 }
 
@@ -1133,9 +1121,6 @@ const TeamView = ({ teamId }) => {
 							key={op._id}
 							operator={op}
 							slotClass={selectedTeam.reserves?.[i]?.class}
-							canMoveUp={i > 0}
-							canMoveDown={i < reserveOps.length - 1}
-							onReorder={(direction) => reorderReserve(selectedTeam._id, op._id, direction)}
 							isControlOpen={controlOperatorId === op._id}
 							onToggleControl={toggleControl}
 						/>
@@ -1145,17 +1130,35 @@ const TeamView = ({ teamId }) => {
 					<p className='font-mono text-[9px] text-neutral-700 uppercase tracking-widest'>No reserves</p>
 				</div>
 			}
-			{reserveOps.some((op) => op._id === controlOperatorId) && (
-				<div className='flex justify-center py-2 border-t-0 border-b border-neutral-800/60 bg-neutral-950/40'>
-					<SlotControl
-						currentSlot={null}
-						onSelect={(slot) => {
-							assignSlot(selectedTeam._id, controlOperatorId, slot);
-							setControlOperatorId(null);
-						}}
-					/>
-				</div>
-			)}
+			{(() => {
+				const openIdx = reserveOps.findIndex((op) => op._id === controlOperatorId);
+				if (openIdx === -1) return null;
+				return (
+					<div className='flex items-center justify-center gap-3 py-2 border-b border-neutral-800/60 bg-neutral-950/40'>
+						<div className='flex items-center gap-1'>
+							<button
+								disabled={openIdx === 0}
+								onClick={() => reorderReserve(selectedTeam._id, controlOperatorId, "up")}
+								className='text-neutral-600 hover:text-btn disabled:opacity-20 disabled:cursor-not-allowed transition-colors'>
+								<FontAwesomeIcon icon={faCaretUp} className='text-[12px]' />
+							</button>
+							<button
+								disabled={openIdx === reserveOps.length - 1}
+								onClick={() => reorderReserve(selectedTeam._id, controlOperatorId, "down")}
+								className='text-neutral-600 hover:text-btn disabled:opacity-20 disabled:cursor-not-allowed transition-colors'>
+								<FontAwesomeIcon icon={faCaretDown} className='text-[12px]' />
+							</button>
+						</div>
+						<SlotControl
+							currentSlot={null}
+							onSelect={(slot) => {
+								assignSlot(selectedTeam._id, controlOperatorId, slot);
+								setControlOperatorId(null);
+							}}
+						/>
+					</div>
+				);
+			})()}
 
 			{/* ── Assets ──────────────────────────────────── */}
 			{assetCount > 0 && (
@@ -1262,9 +1265,6 @@ EmptySlotCard.propTypes = { slotNum: PropTypes.number };
 ReserveCard.propTypes = {
 	operator: PropTypes.object,
 	slotClass: PropTypes.string,
-	canMoveUp: PropTypes.bool,
-	canMoveDown: PropTypes.bool,
-	onReorder: PropTypes.func,
 	isControlOpen: PropTypes.bool,
 	onToggleControl: PropTypes.func,
 };

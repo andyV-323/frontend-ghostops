@@ -24,6 +24,7 @@ const EditOperatorForm = ({ operator }) => {
 	} = useOperatorsStore();
 	const { isOpen, openDialog, closeDialog, confirmAction } = useConfirmDialog();
 	const [removingImage, setRemovingImage] = useState(false);
+	const [customClassInput, setCustomClassInput] = useState("");
 
 	const handleImageUpload = async (imageUrl) => {
 		if (selectedOperator.imageKey) {
@@ -66,6 +67,7 @@ const EditOperatorForm = ({ operator }) => {
 	const selectedClasses = Array.isArray(selectedOperator.class)
 		? selectedOperator.class
 		: [];
+	const customClasses = selectedClasses.filter((c) => !CLASS.includes(c));
 
 	const toggleClass = (cls) => {
 		const active = selectedClasses.includes(cls);
@@ -73,6 +75,13 @@ const EditOperatorForm = ({ operator }) => {
 			? selectedClasses.filter((c) => c !== cls)
 			: [...selectedClasses, cls];
 		setSelectedOperator({ ...selectedOperator, class: next });
+	};
+
+	const addCustomClass = () => {
+		const trimmed = customClassInput.trim();
+		if (!trimmed || selectedClasses.length >= 3 || selectedClasses.includes(trimmed)) return;
+		toggleClass(trimmed);
+		setCustomClassInput("");
 	};
 
 	return (
@@ -206,6 +215,46 @@ const EditOperatorForm = ({ operator }) => {
 										</button>
 									);
 								})}
+							</div>
+
+							{customClasses.length > 0 && (
+								<div className='flex flex-wrap gap-1.5 mt-2'>
+									{customClasses.map((cls) => (
+										<button
+											key={cls}
+											type='button'
+											onClick={() => toggleClass(cls)}
+											className='flex items-center gap-1.5 py-2 px-2 border rounded-sm font-mono text-[10px] tracking-widest uppercase border-btn/50 bg-btn/10 text-btn transition-all'>
+											{cls}
+											<span className='text-btn/60'>×</span>
+										</button>
+									))}
+								</div>
+							)}
+
+							<div className='flex gap-1.5 mt-2'>
+								<input
+									type='text'
+									value={customClassInput}
+									onChange={(e) => setCustomClassInput(e.target.value)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") {
+											e.preventDefault();
+											addCustomClass();
+										}
+									}}
+									placeholder='Custom class...'
+									disabled={selectedClasses.length >= 3}
+									maxLength={24}
+									className='form flex-1 text-xs disabled:opacity-40'
+								/>
+								<button
+									type='button'
+									onClick={addCustomClass}
+									disabled={!customClassInput.trim() || selectedClasses.length >= 3}
+									className='font-mono text-[10px] tracking-widest uppercase px-3 py-1.5 border rounded-sm border-btn/50 text-btn hover:bg-btn/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all'>
+									Add
+								</button>
 							</div>
 						</div>
 
