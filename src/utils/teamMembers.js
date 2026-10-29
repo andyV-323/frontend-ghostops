@@ -21,8 +21,10 @@ export const memberOperator = (member) => {
 
 export const activeMembers = (team) => (team?.activeSlots ?? []).filter(Boolean);
 export const reserveMembers = (team) => team?.reserves ?? [];
+export const casualtyMembers = (team) => team?.casualties ?? [];
 export const activeCount = (team) => activeMembers(team).length;
 export const reserveCount = (team) => reserveMembers(team).length;
+export const casualtyCount = (team) => casualtyMembers(team).length;
 export const totalCount = (team) => activeCount(team) + reserveCount(team);
 
 // 1-4 if the operator is in an active slot on this team, else null.

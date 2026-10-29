@@ -4,6 +4,7 @@ import { useTeamsStore, useOperatorsStore, useKitsStore } from "@/zustand";
 import {
 	activeMembers,
 	reserveMembers,
+	casualtyMembers,
 	memberOperatorId,
 } from "@/utils/teamMembers";
 
@@ -129,19 +130,11 @@ function OperatorCard({
 				"relative flex flex-col overflow-hidden border-r border-neutral-800/50 last:border-r-0 select-none",
 				isKIA ? "opacity-60" : "",
 			].join(" ")}>
-			{/* Corner slot number — click to open the slot menu */}
-			<button
-				type='button'
-				onClick={(e) => { e.stopPropagation(); onToggleControl(operator._id); }}
-				title={isControlOpen ? "Close" : "Reassign"}
-				className={[
-					"absolute top-1.5 left-1.5 z-10 font-mono text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-sm border transition-colors",
-					isControlOpen ?
-						"bg-btn/20 border-btn text-btn"
-					:	"bg-neutral-950/70 border-neutral-700/60 text-neutral-200 hover:border-btn/50 hover:text-btn",
-				].join(" ")}>
+			{/* Corner slot number — display only, no longer opens the slot menu */}
+			<span
+				className='absolute top-1.5 left-1.5 z-10 font-mono text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-sm border bg-neutral-950/70 border-neutral-700/60 text-neutral-200'>
 				{slotNum}
-			</button>
+			</span>
 
 			{/* Portrait — clickable for kit selection */}
 			<div
@@ -231,6 +224,19 @@ function OperatorCard({
 				</div>
 			</div>
 
+			{/* Switch Slot — opens the shared slot menu below the grid */}
+			<button
+				type='button'
+				onClick={(e) => { e.stopPropagation(); onToggleControl(operator._id); }}
+				className={[
+					"w-full flex items-center justify-center gap-1 font-mono text-[8px] tracking-widest uppercase py-1.5 border-t transition-all",
+					isControlOpen ?
+						"text-btn border-btn/40 bg-btn/10"
+					:	"text-neutral-400 border-neutral-800/60 hover:text-btn hover:border-btn/40 hover:bg-btn/5",
+				].join(" ")}>
+				Switch Slot
+			</button>
+
 			{/* Injury button */}
 			<button
 				onClick={(e) => {
@@ -297,19 +303,61 @@ function ReserveCard({ operator, slotClass, isControlOpen, onToggleControl }) {
 	);
 }
 
+/* ─── Casualty card — same visual + interaction pattern as Reserve. Only
+   reassignable once status has recovered back to Active — a still-Injured/
+   KIA operator stays display-only. ──────────────────────────────── */
+function CasualtyCard({ operator, slotClass, isControlOpen, onToggleControl }) {
+	const status = STATUS_MAP[operator.status] || STATUS_MAP.Active;
+	const reassignable = operator.status === "Active";
+	return (
+		<button
+			type='button'
+			disabled={!reassignable}
+			onClick={() => onToggleControl(operator._id)}
+			title={
+				reassignable ? (isControlOpen ? "Close" : "Recovered — tap to reassign")
+				:	"Casualty"
+			}
+			className={[
+				"flex flex-col items-center gap-1.5 border p-2 w-28 shrink-0 transition-colors",
+				!reassignable ?
+					"border-neutral-800/60 bg-neutral-900/30 cursor-default"
+				: isControlOpen ?
+					"border-btn/60 bg-btn/5"
+				:	"border-neutral-800/60 bg-neutral-900/30 hover:border-neutral-700/60",
+			].join(" ")}>
+			<div className='relative w-12 h-12 shrink-0'>
+				<div className='w-12 h-12 rounded-full overflow-hidden border border-neutral-700/60'>
+					<img
+						src={operator.image || "/ghost/Default.png"}
+						alt={operator.callSign}
+						className='w-full h-full object-cover object-top grayscale opacity-70'
+						onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
+					/>
+				</div>
+				<span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-neutral-900 ${status.dot}`} />
+			</div>
+			<p className='font-mono text-[9px] text-neutral-300 truncate max-w-full leading-none'>{operator.callSign}</p>
+			<p className='font-mono text-[7px] text-neutral-600 uppercase tracking-widest truncate max-w-full leading-none'>
+				{slotClass || (Array.isArray(operator.class) ? operator.class[0] : "") || "—"}
+			</p>
+		</button>
+	);
+}
+
 /* ─── Assign table — replaces the old "ADD TO {TEAM}" drawer ─── */
 function AssignTable({ team, teams, operators, onAdd }) {
 	const [expandedId, setExpandedId] = useState(null);
 	const [pendingClass, setPendingClass] = useState("");
 
 	const onThisTeamIds = new Set(
-		[...activeMembers(team), ...reserveMembers(team)].map(memberOperatorId),
+		[...activeMembers(team), ...reserveMembers(team), ...casualtyMembers(team)].map(memberOperatorId),
 	);
 
 	const teamOfOperator = (opId) => {
 		for (const t of teams) {
 			if (t._id === team._id) continue;
-			const ids = [...activeMembers(t), ...reserveMembers(t)].map(memberOperatorId);
+			const ids = [...activeMembers(t), ...reserveMembers(t), ...casualtyMembers(t)].map(memberOperatorId);
 			if (ids.includes(opId)) return t;
 		}
 		return null;
@@ -694,6 +742,7 @@ const TeamView = ({ teamId }) => {
 		assignSlot,
 		reorderReserve,
 		addToTeam,
+		unassignOperatorFromTeam,
 	} = useTeamsStore();
 	const { operators, fetchOperators } = useOperatorsStore();
 	const { kits, fetchKits } = useKitsStore();
@@ -778,13 +827,18 @@ const TeamView = ({ teamId }) => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[selectedTeam, operators],
 	);
+	const casualtyOps = useMemo(
+		() => (selectedTeam?.casualties ?? []).map((m) => resolveOp(m)).filter(Boolean),
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[selectedTeam, operators],
+	);
 
-	// Readiness/status counts intentionally cover the whole roster (active +
-	// reserve), unchanged in meaning from before this rework — only the
-	// underlying data source (activeSlots/reserves vs. flat operators) changed.
+	// Readiness/status counts cover the whole roster (active + reserve +
+	// casualties) so a WIA/KIA operator moving into Casualties doesn't just
+	// vanish from the team's status badges and readiness denominator.
 	const teamOps = useMemo(
-		() => [...activeOps.filter(Boolean), ...reserveOps],
-		[activeOps, reserveOps],
+		() => [...activeOps.filter(Boolean), ...reserveOps, ...casualtyOps],
+		[activeOps, reserveOps, casualtyOps],
 	);
 
 	const statusCounts = useMemo(
@@ -1106,6 +1160,10 @@ const TeamView = ({ teamId }) => {
 								assignSlot(selectedTeam._id, controlOperatorId, slot);
 								setControlOperatorId(null);
 							}}
+							onUnassign={() => {
+								unassignOperatorFromTeam(controlOperatorId, selectedTeam._id);
+								setControlOperatorId(null);
+							}}
 						/>
 					</div>
 				);
@@ -1153,6 +1211,48 @@ const TeamView = ({ teamId }) => {
 							currentSlot={null}
 							onSelect={(slot) => {
 								assignSlot(selectedTeam._id, controlOperatorId, slot);
+								setControlOperatorId(null);
+							}}
+							onUnassign={() => {
+								unassignOperatorFromTeam(controlOperatorId, selectedTeam._id);
+								setControlOperatorId(null);
+							}}
+						/>
+					</div>
+				);
+			})()}
+
+			{/* ── Casualties — same pattern as Reserve ────── */}
+			<SectionHeader label='Casualties' count={casualtyOps.length} />
+			{casualtyOps.length > 0 ?
+				<div className='flex gap-2 overflow-x-auto px-3 py-3 border-b border-neutral-800/60'>
+					{casualtyOps.map((op, i) => (
+						<CasualtyCard
+							key={op._id}
+							operator={op}
+							slotClass={selectedTeam.casualties?.[i]?.class}
+							isControlOpen={controlOperatorId === op._id}
+							onToggleControl={toggleControl}
+						/>
+					))}
+				</div>
+			:	<div className='flex items-center justify-center py-6 border-b border-neutral-800/60'>
+					<p className='font-mono text-[9px] text-neutral-700 uppercase tracking-widest'>No casualties</p>
+				</div>
+			}
+			{(() => {
+				const openIdx = casualtyOps.findIndex((op) => op._id === controlOperatorId);
+				if (openIdx === -1) return null;
+				return (
+					<div className='flex justify-center py-2 border-b border-neutral-800/60 bg-neutral-950/40'>
+						<SlotControl
+							currentSlot={null}
+							onSelect={(slot) => {
+								assignSlot(selectedTeam._id, controlOperatorId, slot);
+								setControlOperatorId(null);
+							}}
+							onUnassign={() => {
+								unassignOperatorFromTeam(controlOperatorId, selectedTeam._id);
 								setControlOperatorId(null);
 							}}
 						/>
@@ -1263,6 +1363,12 @@ OperatorCard.propTypes = {
 };
 EmptySlotCard.propTypes = { slotNum: PropTypes.number };
 ReserveCard.propTypes = {
+	operator: PropTypes.object,
+	slotClass: PropTypes.string,
+	isControlOpen: PropTypes.bool,
+	onToggleControl: PropTypes.func,
+};
+CasualtyCard.propTypes = {
 	operator: PropTypes.object,
 	slotClass: PropTypes.string,
 	isControlOpen: PropTypes.bool,

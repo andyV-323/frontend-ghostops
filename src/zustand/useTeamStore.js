@@ -501,11 +501,14 @@ const useTeamsStore = create((set, get) => ({
 			const reserves = (team.reserves || []).filter(
 				(m) => memberOperatorId(m) !== operatorId,
 			);
+			const casualties = (team.casualties || []).filter(
+				(m) => memberOperatorId(m) !== operatorId,
+			);
 			const updatedLeadId = team.leadId === operatorId ? null : (team.leadId ?? null);
 
 			set((state) => ({
 				teams: state.teams.map((t) =>
-					t._id === teamId ? { ...t, activeSlots, reserves, leadId: updatedLeadId } : t,
+					t._id === teamId ? { ...t, activeSlots, reserves, casualties, leadId: updatedLeadId } : t,
 				),
 			}));
 
@@ -514,6 +517,7 @@ const useTeamsStore = create((set, get) => ({
 				AO: team.AO,
 				activeSlots,
 				reserves,
+				casualties,
 				leadId: updatedLeadId,
 			});
 

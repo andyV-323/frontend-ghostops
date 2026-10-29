@@ -11,7 +11,6 @@ import {
 	faTrash,
 	faChevronDown,
 	faChevronUp,
-	faArrowsRotate,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTeamsStore, useKitsStore, useOperatorsStore } from "@/zustand";
 import { useAuth } from "react-oidc-context";
@@ -26,6 +25,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { getOperatorDisplayImage } from "@/utils/operatorImage";
 import {
 	reserveMembers,
+	casualtyMembers,
 	activeCount,
 	reserveCount,
 	memberOperatorId,
@@ -96,20 +96,6 @@ function ActiveSlot({ team, slotNum, member, isControlOpen, onToggleControl, onO
 				isControlOpen ? "border-btn/50" : "border-lines/30 hover:border-btn/40",
 			].join(" ")}>
 			<span className='absolute top-1 left-1 font-mono text-[8px] text-lines/50'>{slotNum}</span>
-			{/* Reassign — inside the square's bounds so neighboring slots can sit
-			    flush against each other without the button overlapping. */}
-			<button
-				type='button'
-				onClick={(e) => { e.stopPropagation(); onToggleControl(operator._id); }}
-				title={isControlOpen ? "Close" : "Reassign"}
-				className={[
-					"absolute top-1 right-1 w-5 h-5 rounded-full border flex items-center justify-center transition-colors z-10",
-					isControlOpen ?
-						"bg-btn/20 border-btn text-btn"
-					:	"bg-neutral-900 border-lines/40 text-lines/50 hover:border-btn/50 hover:text-btn",
-				].join(" ")}>
-				<FontAwesomeIcon icon={faArrowsRotate} className='text-[8px]' />
-			</button>
 			<div className='relative w-10 h-10 mt-2'>
 				<img
 					className={[
@@ -128,6 +114,18 @@ function ActiveSlot({ team, slotNum, member, isControlOpen, onToggleControl, onO
 					{member.class}
 				</span>
 			)}
+			<button
+				type='button'
+				onClick={(e) => { e.stopPropagation(); onToggleControl(operator._id); }}
+				title={isControlOpen ? "Close" : "Switch Slot"}
+				className={[
+					"mt-1 w-full py-1 font-mono text-[6px] tracking-widest uppercase border-t transition-colors",
+					isControlOpen ?
+						"text-btn border-btn/40 bg-btn/10"
+					:	"text-lines/50 border-lines/20 hover:text-btn hover:border-btn/30",
+				].join(" ")}>
+				Switch Slot
+			</button>
 		</div>
 	);
 }
@@ -135,7 +133,7 @@ function ActiveSlot({ team, slotNum, member, isControlOpen, onToggleControl, onO
 // ─── Reserve row ────────────────────────────────────────────────
 const RESERVE_VISIBLE = 4;
 
-function ReserveRow({ team, controlOperatorId, onToggleControl, onAssignSlot, onOperatorClick }) {
+function ReserveRow({ team, controlOperatorId, onToggleControl, onAssignSlot, onUnassign, onOperatorClick }) {
 	const reserves = reserveMembers(team);
 	const visible = reserves.slice(0, RESERVE_VISIBLE);
 	const overflow = reserves.length - visible.length;
@@ -170,6 +168,7 @@ function ReserveRow({ team, controlOperatorId, onToggleControl, onAssignSlot, on
 						key={id}
 						currentSlot={null}
 						onSelect={(slot) => onAssignSlot(id, slot)}
+						onUnassign={() => onUnassign(id)}
 					/>
 				);
 			})}
@@ -198,6 +197,92 @@ function ReserveAvatar({ member, isControlOpen, onToggleControl, onOperatorClick
 			].join(" ")}>
 			<img
 				className='w-full h-full object-cover object-top grayscale-[60%]'
+				src={avatarSrc}
+				onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
+				alt={operator.callSign}
+			/>
+		</button>
+	);
+}
+
+// ─── Casualty row — same visual + interaction pattern as Reserve. Only
+// reassignable once status has recovered back to Active — a still-Injured/
+// KIA operator stays display-only, since "assign to slot 2" doesn't make
+// sense while they're actually wounded/dead. ───────────────────────────
+const CASUALTY_VISIBLE = 4;
+
+function CasualtyRow({ team, controlOperatorId, onToggleControl, onAssignSlot, onUnassign }) {
+	const casualties = casualtyMembers(team);
+	const visible = casualties.slice(0, CASUALTY_VISIBLE);
+	const overflow = casualties.length - visible.length;
+
+	if (casualties.length === 0) {
+		return <p className='font-mono text-[9px] text-lines/30 italic'>No casualties</p>;
+	}
+
+	return (
+		<div className='flex flex-col gap-1.5'>
+			<div className='flex items-center gap-2 flex-wrap'>
+				{visible.map((m) => (
+					<CasualtyAvatar
+						key={memberOperatorId(m)}
+						member={m}
+						isControlOpen={controlOperatorId === memberOperatorId(m)}
+						onToggleControl={onToggleControl}
+					/>
+				))}
+				{overflow > 0 && (
+					<span className='font-mono text-[10px] text-lines/50 border border-lines/30 rounded-full w-6 h-6 flex items-center justify-center shrink-0'>
+						+{overflow}
+					</span>
+				)}
+			</div>
+			{visible.map((m) => {
+				const id = memberOperatorId(m);
+				if (controlOperatorId !== id) return null;
+				return (
+					<SlotControl
+						key={id}
+						currentSlot={null}
+						onSelect={(slot) => onAssignSlot(id, slot)}
+						onUnassign={() => onUnassign(id)}
+					/>
+				);
+			})}
+		</div>
+	);
+}
+
+function CasualtyAvatar({ member, isControlOpen, onToggleControl }) {
+	const { kits } = useKitsStore();
+	const operator = useResolveOperator(member);
+	if (!operator) return null;
+	const avatarSrc = getOperatorDisplayImage(operator, kits);
+	const reassignable = operator.status === "Active";
+
+	return (
+		<button
+			type='button'
+			disabled={!reassignable}
+			onClick={(e) => {
+				e.stopPropagation();
+				onToggleControl(operator._id);
+			}}
+			title={
+				reassignable ?
+					`${operator.callSign} — recovered, tap to reassign`
+				:	`${operator.callSign} — casualty`
+			}
+			className={[
+				"relative w-7 h-7 rounded-full border overflow-hidden shrink-0 transition-all",
+				!reassignable ?
+					"border-red-900/30 opacity-70 cursor-default"
+				: isControlOpen ?
+					"border-btn opacity-100 cursor-pointer"
+				:	"border-red-900/30 opacity-70 hover:opacity-100 hover:border-lines/40 cursor-pointer",
+			].join(" ")}>
+			<img
+				className='w-full h-full object-cover object-top grayscale'
 				src={avatarSrc}
 				onError={(e) => { e.currentTarget.src = "/ghost/Default.png"; }}
 				alt={operator.callSign}
@@ -251,6 +336,7 @@ function TeamCard({
 	onViewTeam,
 	onAOChange,
 	onAssignSlot,
+	onUnassignOperator,
 	onClearTeam,
 	onAutoAssign,
 	onRenameTeam,
@@ -278,50 +364,63 @@ function TeamCard({
 		await onAssignSlot(team._id, operatorId, slot);
 		setControlOperatorId(null);
 	};
+	const handleUnassign = async (operatorId) => {
+		await onUnassignOperator(operatorId, team._id);
+		setControlOperatorId(null);
+	};
 
 	return (
 		<div className='flex flex-col border border-lines/60 bg-neutral-950/40 transition-all duration-150 overflow-hidden'>
-			{/* ── Card header ─────────────────────────────── */}
-			<div className='flex items-center gap-2 px-3 py-2 border-b border-lines/60 bg-neutral-950/60'>
+			{/* ── Card header — MANAGE sits directly after the name (left side),
+			    not centered. The old centering trick used two flex-1 regions
+			    flanking MANAGE, which on narrow/mobile widths crushed one of
+			    those regions toward zero width while its shrink-0 children
+			    stayed full-size and silently overflowed on top of MANAGE.
+			    Dropping the centering removes that failure mode entirely —
+			    the right-side group is pushed to the end with ml-auto instead,
+			    and flex-wrap still lets it drop to its own line if needed. */}
+			<div className='flex flex-wrap items-center gap-x-2 gap-y-1.5 px-3 py-2 border-b border-lines/60 bg-neutral-950/60'>
 				<button
 					onClick={onToggleCollapse}
 					title={collapsed ? "Expand" : "Collapse"}
 					className='text-lines/50 hover:text-btn transition-colors shrink-0'>
 					<FontAwesomeIcon icon={collapsed ? faChevronDown : faChevronUp} className='text-[9px]' />
 				</button>
-				<span className='font-mono text-sm tracking-[0.15em] text-lines uppercase flex-1 truncate'>
+				<span className='font-mono text-sm tracking-[0.15em] text-lines uppercase truncate max-w-[9rem] shrink'>
 					{team.name}
-				</span>
-				{team.AO && (
-					<span className='font-mono text-[9px] tracking-widest uppercase text-btn/70 border border-btn/30 bg-btn/5 px-1.5 py-0.5 shrink-0'>
-						{team.AO}
-					</span>
-				)}
-				<span
-					className={[
-						"font-mono text-[10px] tracking-[0.2em] tabular-nums shrink-0 uppercase",
-						underStrength ? "text-amber-400" : "text-lines",
-					].join(" ")}>
-					{nActive}/4 · {nReserve} RES
 				</span>
 				<button
 					onClick={() => onViewTeam(team._id)}
-					title='Team View'
-					className='font-mono text-[10px] tracking-widest uppercase text-lines hover:text-btn border border-lines/60 hover:border-btn/40 px-1.5 py-0.5 rounded-sm transition-all'>
-					View
+					title='Manage Team'
+					className='font-mono text-[10px] tracking-widest uppercase text-lines hover:text-btn border border-lines/60 hover:border-btn/40 px-2.5 py-1 rounded-sm transition-all shrink-0'>
+					Manage
 				</button>
-				<button
-					onClick={() => onClearTeam(team._id)}
-					title='Clear team'
-					className='font-mono text-[10px] tracking-widest uppercase text-red-500/40 hover:text-red-400 border border-red-900/20 hover:border-red-500/40 px-1.5 py-0.5 rounded-sm transition-all'>
-					Clear
-				</button>
-				<button
-					onClick={() => setEditing((v) => !v)}
-					title='Edit Team'
-					className={["transition-colors", editing ? "text-btn" : "text-lines hover:text-btn"].join(" ")}>
-					<FontAwesomeIcon icon={faUsersGear} className='text-[10px]' />
-				</button>
+				<div className='flex items-center justify-end gap-2 ml-auto'>
+					{team.AO && (
+						<span className='font-mono text-[9px] tracking-widest uppercase text-btn/70 border border-btn/30 bg-btn/5 px-1.5 py-0.5 shrink-0'>
+							{team.AO}
+						</span>
+					)}
+					<span
+						className={[
+							"font-mono text-[10px] tracking-[0.2em] tabular-nums shrink-0 uppercase",
+							underStrength ? "text-amber-400" : "text-lines",
+						].join(" ")}>
+						{nActive}/4 · {nReserve} RES
+					</span>
+					<button
+						onClick={() => onClearTeam(team._id)}
+						title='Clear team'
+						className='font-mono text-[10px] tracking-widest uppercase text-red-500/40 hover:text-red-400 border border-red-900/20 hover:border-red-500/40 px-1.5 py-0.5 rounded-sm transition-all shrink-0'>
+						Clear
+					</button>
+					<button
+						onClick={() => setEditing((v) => !v)}
+						title='Edit Team'
+						className={["transition-colors shrink-0", editing ? "text-btn" : "text-lines hover:text-btn"].join(" ")}>
+						<FontAwesomeIcon icon={faUsersGear} className='text-[10px]' />
+					</button>
+				</div>
 			</div>
 
 			{editing && (
@@ -361,6 +460,7 @@ function TeamCard({
 									<SlotControl
 										currentSlot={openSlotNum}
 										onSelect={(slot) => handleAssignSlot(controlOperatorId, slot)}
+										onUnassign={() => handleUnassign(controlOperatorId)}
 									/>
 								</div>
 							);
@@ -375,7 +475,20 @@ function TeamCard({
 							controlOperatorId={controlOperatorId}
 							onToggleControl={toggleControl}
 							onAssignSlot={handleAssignSlot}
+							onUnassign={handleUnassign}
 							onOperatorClick={onOperatorClick}
+						/>
+					</div>
+
+					{/* ── Casualties — same pattern as Reserve ───────── */}
+					<div className='px-3 pb-2.5 flex flex-col gap-1'>
+						<p className='font-mono text-[9px] tracking-[0.25em] text-lines/50 uppercase'>Casualties</p>
+						<CasualtyRow
+							team={team}
+							controlOperatorId={controlOperatorId}
+							onToggleControl={toggleControl}
+							onAssignSlot={handleAssignSlot}
+							onUnassign={handleUnassign}
 						/>
 					</div>
 
@@ -439,11 +552,13 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		createTeam,
 		deleteTeam,
 		assignSlot,
+		unassignOperatorFromTeam,
 	} = useTeamsStore();
 
 	const [selectedOperator, setSelectedOperator] = useState(null);
 	const [teamViewId, setTeamViewId] = useState(null);
 	const [collapsedIds, setCollapsedIds] = useState(() => new Set());
+	const [clearTarget, setClearTarget] = useState(null);
 
 	const handleAOChange = async (team, ao) => {
 		try {
@@ -513,6 +628,12 @@ const Teams = ({ dataUpdated, openSheet }) => {
 		closeDialog: closeRemoveAllDialog,
 		confirmAction: confirmRemoveAll,
 	} = useConfirmDialog();
+	const {
+		isOpen: isClearTeamOpen,
+		openDialog: openClearTeamDialog,
+		closeDialog: closeClearTeamDialog,
+		confirmAction: confirmClearTeam,
+	} = useConfirmDialog();
 
 	const { fetchKits } = useKitsStore();
 
@@ -536,6 +657,15 @@ const Teams = ({ dataUpdated, openSheet }) => {
 			else next.add(teamId);
 			return next;
 		});
+
+	const handleClearTeamRequest = (teamId) => {
+		const team = teams.find((t) => t._id === teamId);
+		if (!team) return;
+		setClearTarget(team);
+		openClearTeamDialog(async () => {
+			await clearTeam(teamId);
+		});
+	};
 
 	return (
 		<div className='flex flex-col h-full min-h-0'>
@@ -575,7 +705,8 @@ const Teams = ({ dataUpdated, openSheet }) => {
 								onViewTeam={(id) => setTeamViewId(id)}
 								onAOChange={handleAOChange}
 								onAssignSlot={assignSlot}
-								onClearTeam={clearTeam}
+								onUnassignOperator={unassignOperatorFromTeam}
+								onClearTeam={handleClearTeamRequest}
 								onAutoAssign={handleAutoAssign}
 								onRenameTeam={handleRenameTeam}
 								onDeleteTeam={handleDeleteTeam}
@@ -623,6 +754,14 @@ const Teams = ({ dataUpdated, openSheet }) => {
 				description='This will unassign all operators and clear all AOs from every team.'
 				message="Operators won't be deleted, just unassigned. AOs will be reset."
 			/>
+			<ConfirmDialog
+				isOpen={isClearTeamOpen}
+				closeDialog={closeClearTeamDialog}
+				confirmAction={confirmClearTeam}
+				title='Clear Team'
+				description={`Clear ${clearTarget?.name || "this team"}? This cannot be undone.`}
+				message="Operators won't be deleted, just unassigned. The AO will be reset."
+			/>
 
 			<Sheet
 				open={!!teamViewId}
@@ -660,6 +799,7 @@ TeamCard.propTypes = {
 	onViewTeam: PropTypes.func.isRequired,
 	onAOChange: PropTypes.func.isRequired,
 	onAssignSlot: PropTypes.func.isRequired,
+	onUnassignOperator: PropTypes.func.isRequired,
 	onClearTeam: PropTypes.func.isRequired,
 	onAutoAssign: PropTypes.func.isRequired,
 	onRenameTeam: PropTypes.func.isRequired,
